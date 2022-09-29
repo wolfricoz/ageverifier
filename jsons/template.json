@@ -2,5 +2,5 @@
     "Name": "Rico's Coding Hub",
     "addrole": [],
     "remrole": [],
-    "welcome": ""
+    "welcome": "This can be changed with /config welcome"
 }

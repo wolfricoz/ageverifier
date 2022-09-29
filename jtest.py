@@ -1,7 +1,6 @@
 import json
 import os
 from abc import ABC, abstractmethod
-name = "Rico"
 # Data to be written
 class configer(ABC):
     @abstractmethod
@@ -11,7 +10,7 @@ class configer(ABC):
             "Name": guildname,
             "addrole": [],
             "remrole": [],
-            "welcome": "",
+            "welcome": "This can be changed with /config welcome",
         }
         json_object = json.dumps(dictionary, indent=4)
         if os.path.exists(f"jsons/{guildid}.json"):
@@ -36,7 +35,6 @@ class configer(ABC):
                     await interaction.followup.send(f"Role added to {key}")
             with open(f"jsons/{guildid}.json", 'w') as f:
                 json.dump(data, f, indent=4)
-            return data[key]
     async def remrole(guildid, roleid, key):
         if os.path.exists(f"jsons/{guildid}.json"):
             with open(f"jsons/{guildid}.json") as f:
@@ -44,5 +42,12 @@ class configer(ABC):
                 data[key].remove(roleid)
             with open(f"jsons/{guildid}.json", 'w') as f:
                 json.dump(data, f, indent=4)
-            return data[key]
+    async def welcome(guildid, interaction,key, welcome):
+        if os.path.exists(f"jsons/{guildid}.json"):
+            with open(f"jsons/{guildid}.json") as f:
+                data = json.load(f)
+                data[key] = welcome
+            with open(f"jsons/{guildid}.json", 'w') as f:
+                json.dump(data, f, indent=4)
+            await interaction.followup.send(f"welcome updated to '{welcome}'")
 

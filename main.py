@@ -80,7 +80,10 @@ class main():
             tr = permissions(guild.id, None, None, None, None)
             session.add(tr)
             session.commit()
+        #CREATES JSON
         await configer.create(guild.id, guild.name)
+        #SYNCS COMMANDS
+        await bot.tree.sync()
 
     @bot.event
     async def setup_hook():
@@ -113,13 +116,17 @@ class main():
             raise error
 
     tree = bot.tree
+
     @tree.error
     async def on_app_command_error(
             interaction: Interaction,
             error: AppCommandError
     ):
         await interaction.channel.send(f"Command failed: {error}")
-    """    @bot.listen()
+        print(error)
+        raise error
+
+    @bot.listen()
     async def on_message(message):
         # Enforces lobby format
         dobreg = re.compile("([0-9][0-9]) (1[0-2]|[0]?[0-9]|1)\/([0-3]?[0-9])\/([0-2][0-9][0-9][0-9])")
@@ -142,15 +149,9 @@ class main():
                     if int(match.group(1)) < 18:
                         await channel.send(
                             f"<@&{p.lobbystaff}> {message.author.mention} has given an age under the age of 18: {message.content}")
-                    if int(match.group(1)) > 18 and not int(match.group(1)) > 20:
+                    elif int(match.group(1)) > 18 and not int(match.group(1)) > 20:
                         await channel.send(
                             f"<@&{p.lobbystaff}> user has given age. You can let them through with `?18a {message.author.mention} {message.content}`")
-                    elif int(match.group(1)) > 21 and not int(match.group(1)) > 24:
-                        await channel.send(
-                            f"<@&{p.lobbystaff}> user has given age. You can let them through with `?21a {message.author.mention} {message.content}`")
-                    elif int(match.group(1)) > 25:
-                        await channel.send(
-                            f"<@&{p.lobbystaff}> user has given age. You can let them through with `?25a {message.author.mention} {message.content}`")
                     return
                 else:
                     try:
@@ -163,7 +164,6 @@ class main():
                     return
         else:
             pass
-    
-    """
+
 
 bot.run(TOKEN)

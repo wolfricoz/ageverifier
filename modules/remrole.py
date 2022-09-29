@@ -17,10 +17,13 @@ class config(commands.GroupCog, name="remrole"):
         self.bot = bot
 
     @app_commands.command(name="add", description="**CONFIG COMMAND**: Adds role to list that will be removed from user when /approve is used")
+    @app_commands.checks.has_permissions(manage_guild=True)
     async def radd(self, interaction: discord.Interaction, role: discord.Role):
         await interaction.response.defer(ephemeral=True)
         await configer.addrole(interaction.guild.id, interaction, role.id, "remrole")
+
     @app_commands.command(name="remove", description="**CONFIG COMMAND**: Removes role from list that will be removed from user when /approve is used")
+    @app_commands.checks.has_permissions(manage_guild=True)
     async def rrem(self, interaction: discord.Interaction, role: discord.Role):
         await interaction.response.defer( ephemeral=True)
         try:
