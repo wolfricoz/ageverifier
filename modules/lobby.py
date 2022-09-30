@@ -112,7 +112,7 @@ class lobby(commands.Cog, name="Lobby"):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @app_commands.command(name="dblookup")
+    @app_commands.command(name="dblookup", description="Check user's age in DB. only works on users in server")
     @adefs.check_slash_admin_roles()
     async def dblookup(self, interaction: discord.Interaction, userid: discord.Member):
         await interaction.response.defer(ephemeral=True)
@@ -128,7 +128,7 @@ user: <@{exists.uid}>
 UID: {exists.uid}
 DOB: {exists.dob}""")
 
-    @app_commands.command(name="dbremove")
+    @app_commands.command(name="dbremove", description="DEV: Removes user from database. This can be requested by users.")
     @adefs.check_slash_admin_roles()
     async def dbremoveid(self, interaction: discord.Interaction, userid: str):
         await interaction.response.defer(ephemeral=True)
@@ -144,7 +144,7 @@ DOB: {exists.dob}""")
         else:
             await interaction.followup.send("Please contact Rico Stryker#6666 or send an email to roleplaymeetsappeals@gmail.com to have the entry removed")
 
-    @app_commands.command(name="approve")
+    @app_commands.command(name="approve", description="Approve a user to enter your server. this command checks ages and logs them")
     @adefs.check_slash_db_roles()
     async def sapprove(self, interaction: discord.Interaction, user: discord.Member, age: int, dob: str) -> None:
         """Command to let users through the lobby, checks ages and logs them."""
@@ -213,7 +213,7 @@ DOB: {exists.dob}""")
                 await interaction.channel.send("Channel **modlobby** not set. Use ?config modlobby #channel to fix this.")
         await interaction.followup.send(f"{user} has been let through the lobby")
 
-    @app_commands.command(name="returnlobby")
+    @app_commands.command(name="returnlobby", description="Returns user to the lobby by removing roles")
     @adefs.check_slash_db_roles()
     async def returnlobby(self, interaction: discord.Interaction, user: discord.Member):
         """Command sends users back to the lobby and removes roles"""
@@ -237,7 +237,7 @@ DOB: {exists.dob}""")
         await interaction.followup.send(f"{user.mention} has been moved back to the lobby by {interaction.user.mention}")
 
 
-    @app_commands.command(name="agecheck")
+    @app_commands.command(name="agecheck", description="Calculates the age of the user based on the dob.")
     @adefs.check_slash_db_roles()
     async def agecheck(self, interaction: discord.Interaction, dob: str, ):
         await interaction.response.defer(ephemeral=True)
@@ -253,7 +253,7 @@ DOB: {exists.dob}""")
         age_output = str(agechecker).split()[0]
         await interaction.followup.send('this users age is: {}'.format(age_output) + " years.")
 
-    @app_commands.command(name="agefix")
+    @app_commands.command(name="agefix", description="Edits database entry with the correct date of birth")
     @adefs.check_slash_admin_roles()
     async def agefix(self, interaction: discord.Interaction, user: discord.Member, age: int, dob: str):
         await interaction.response.defer(ephemeral=True)

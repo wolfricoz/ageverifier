@@ -63,7 +63,7 @@ class main():
         # SYNCS UP SLASH COMMANDS
         await bot.tree.sync()
         return guilds
-
+    @bot.event
     async def on_guild_join(guild):
         # adds guild to database and creates a config
         exists = session.query(db.config).filter_by(guild=guild.id).first()
@@ -84,7 +84,8 @@ class main():
         await configer.create(guild.id, guild.name)
         #SYNCS COMMANDS
         await bot.tree.sync()
-
+        # sends owner instructions
+        await guild.owner.send("Thank you for inviting Age Verifier, please read https://docs.google.com/document/d/1jlDPYCjYO0vpIcDpKAuWBX-iNDyxOTSdLhn_SsVGeks/edit?usp=sharing to set up the bot")
     @bot.event
     async def setup_hook():
         for filename in os.listdir("modules"):
