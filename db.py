@@ -2,15 +2,16 @@ from sqlalchemy import create_engine
 from sqlalchemy import Column, String, Integer, Boolean, BigInteger, ARRAY, JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import QueuePool
 from dotenv import load_dotenv
 import os
 import pymysql
 pymysql.install_as_MySQLdb()
 load_dotenv('config.env')
 DBTOKEN = os.getenv("DB")
-
+os.system('tzutil /s "Eastern Standard Time')
 #sqlalchemy
-engine = create_engine(DBTOKEN, echo=False) #connects to the database
+engine = create_engine(DBTOKEN, echo=False, pool_pre_ping=True, poolclass=QueuePool) #connects to the database
 base = declarative_base()
 #class creates table
 class user (base):

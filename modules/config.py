@@ -7,6 +7,8 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import select, column
 import typing
 from discord import app_commands
+import os
+import jtest
 from jtest import configer
 import logging
 Session = sessionmaker(bind=db.engine)
@@ -16,7 +18,6 @@ class config(commands.GroupCog, name="config"):
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-    #TODO: Change this into 2 commands, config channel and config role
     @app_commands.command(name="role", description="**CONFIG COMMAND**: Sets up the channels for the bot.")
     @app_commands.choices(option=[
         Choice(name="Admin", value="admin"),
@@ -91,10 +92,21 @@ class config(commands.GroupCog, name="config"):
 • general #channel
 """)
     @app_commands.command(name="welcome", description="**CONFIG COMMAND**: changes welcome message for when /approve is used")
-    @commands.has_permissions(manage_guild=True)
+    @app_commands.checks.has_permissions(manage_guild=True)
     async def welcome(self, interaction: discord.Interaction, message: str):
         await interaction.response.defer(ephemeral=True)
         await configer.welcome(interaction.guild.id,  interaction,"welcome", message)
+
+    @app_commands.command(name="update")
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def updateconfig(self, interaction: discord.Interaction):
+        if interaction.user.id == 188647277181665280:
+            await interaction.response.defer(ephemeral=True)
+            for file in os.listdir("jsons"):
+                await jtest.configer.updateconfig(file[:-5])
+            await interaction.followup.send("Success!")
+        else:
+            await interaction.response.send_message("This is a dev command", ephemeral=True)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(config(bot))

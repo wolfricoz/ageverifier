@@ -6,6 +6,9 @@ from discord.ext import commands
 from discord import app_commands
 from discord import Interaction
 from discord.app_commands import AppCommandError
+import logging
+import traceback
+import pytz
 #imports dotenv, and loads items
 from dotenv import load_dotenv
 load_dotenv("config.env")
@@ -19,6 +22,17 @@ bot = commands.Bot(command_prefix=prefix, case_insensitive=False, intents=intent
 from jtest import configer
 #imports database and starts it
 import db
+#error logging
+logger = logging.getLogger('discord')
+logger.setLevel(logging.WARN)
+handler = logging.FileHandler(filename='bot.log', encoding='utf-8', mode='w')
+handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
+logger.addHandler(handler)
+logger2 = logging.getLogger('sqlalchemy')
+logger2.setLevel(logging.WARN)
+handler2 = logging.FileHandler(filename='bot.log', encoding='utf-8', mode='w')
+handler2.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
+logger2.addHandler(handler2)
 exec(open("db.py").read())
 Session = sessionmaker(bind=db.engine)
 session = Session()
@@ -26,6 +40,7 @@ session = Session()
 async def sync(ctx):
     s = await ctx.bot.tree.sync()
     await ctx.send(f"bot has synced {len(s)} servers")
+
 class main():
     @bot.event
     async def on_ready():
@@ -47,19 +62,28 @@ class main():
             if exists is not None:
                 pass
             else:
-                tr = db.config(guild.id, None, None, None, None)
-                session.add(tr)
-                session.commit()
+                try:
+                    tr = db.config(guild.id, None, None, None, None)
+                    session.add(tr)
+                    session.commit()
+                except:
+                    session.rollback()
+                    session.close()
             p = session.query(db.permissions).filter_by(guild=guild.id).first()
             if p is not None:
                 pass
             else:
-                tr = db.permissions(guild.id, None, None, None, None)
-                session.add(tr)
-                session.commit()
+                try:
+                    tr = db.permissions(guild.id, None, None, None, None)
+                    session.add(tr)
+                    session.commit()
+                except:
+                    session.rollback()
+                    session.close()
         # PRINTS HOW MANY GUILDS / SERVERS THE BOT IS IN.
         formguilds = "\n".join(guilds)
-        #await devroom.send(f"{formguilds} \nRMRbot is in {guild_count} guilds. ")
+        devroom = bot.get_channel(1022319186950758472)
+        await devroom.send(f"{formguilds} \nAgeverifier 1.0 is in {guild_count} guilds. ")
         # SYNCS UP SLASH COMMANDS
         await bot.tree.sync()
         return guilds
@@ -70,16 +94,24 @@ class main():
         if exists is not None:
             pass
         else:
-            tr = config(guild.id, None, None, None, None)
-            session.add(tr)
-            session.commit()
+            try:
+                tr = db.config(guild.id, None, None, None, None)
+                session.add(tr)
+                session.commit()
+            except:
+                session.rollback()
+                session.close()
         p = session.query(db.permissions).filter_by(guild=guild.id).first()
         if p is not None:
             pass
         else:
-            tr = permissions(guild.id, None, None, None, None)
-            session.add(tr)
-            session.commit()
+            try:
+                tr = db.permissions(guild.id, None, None, None, None)
+                session.add(tr)
+                session.commit()
+            except:
+                session.rollback()
+                session.close()
         #CREATES JSON
         await configer.create(guild.id, guild.name)
         #SYNCS COMMANDS
@@ -88,83 +120,20 @@ class main():
         await guild.owner.send("Thank you for inviting Age Verifier, please read https://docs.google.com/document/d/1jlDPYCjYO0vpIcDpKAuWBX-iNDyxOTSdLhn_SsVGeks/edit?usp=sharing to set up the bot")
     @bot.event
     async def setup_hook():
+        '''Connects the cogs to the bot'''
         for filename in os.listdir("modules"):
-
             if filename.endswith('.py'):
                 await bot.load_extension(f"modules.{filename[:-3]}")
                 print({filename[:-3]})
             else:
                 print(f'Unable to load {filename[:-3]}')
-
-    @bot.event
-    async def on_command_error(ctx, interaction: discord.Interaction, error):
-        if isinstance(error, commands.MissingRequiredArgument):
-            import time
-            await ctx.send("Please fill in the required arguments")
-        elif isinstance(error, commands.CommandNotFound):
-            pass
-        elif isinstance(error, commands.CheckFailure):
-            await ctx.send("You do not have permission")
-        elif isinstance(error, commands.MemberNotFound):
-            await ctx.send("User not found")
-        elif isinstance(error, commands.CommandInvokeError):
-            await ctx.send("Command failed: See log.")
-            await ctx.send(error)
-            raise error
-        else:
-            await interaction.response.send_message(error)
-            await ctx.send(error)
-            raise error
-
     tree = bot.tree
-
     @tree.error
     async def on_app_command_error(
             interaction: Interaction,
             error: AppCommandError
     ):
-        await interaction.channel.send(f"Command failed: {error}")
-        print(error)
-        raise error
-
-    @bot.listen()
-    async def on_message(message):
-        # Enforces lobby format
-        dobreg = re.compile("([0-9][0-9]) (1[0-2]|[0]?[0-9]|1)\/([0-3]?[0-9])\/([0-2][0-9][0-9][0-9])")
-        match = dobreg.search(message.content)
-        if message.guild is None:
-            return
-        if message.author.bot:
-            return
-        # Searches the config for the lobby for a specific guild
-        p = session.query(db.permissions).filter_by(guild=message.guild.id).first()
-        c = session.query(db.config).filter_by(guild=message.guild.id).first()
-        staff = [p.mod, p.admin, p.trial]
-        # reminder: change back to c.lobby
-        if message.author.get_role(p.mod) is None and message.author.get_role(
-                p.admin) is None and message.author.get_role(p.trial) is None:
-            if message.channel.id == c.lobby:
-                if match:
-                    channel = bot.get_channel(c.modlobby)
-                    await message.add_reaction("🤖")
-                    if int(match.group(1)) < 18:
-                        await channel.send(
-                            f"<@&{p.lobbystaff}> {message.author.mention} has given an age under the age of 18: {message.content}")
-                    elif int(match.group(1)) > 18 and not int(match.group(1)) > 20:
-                        await channel.send(
-                            f"<@&{p.lobbystaff}> user has given age. You can let them through with `?18a {message.author.mention} {message.content}`")
-                    return
-                else:
-                    try:
-                        await message.author.send(
-                            f"Please use format age mm/dd/yyyy \n Example: `122 01/01/1900` \n __**Do not round up your age**__ \n You can input your age and dob at: <#{c.lobby}>")
-                    except:
-                        await message.channel.send(
-                            f"Couldn't message {message.author.mention}! Please use format age mm/dd/yyyy \n Example: `122 01/01/1900")
-                    await message.delete()
-                    return
-        else:
-            pass
-
-
+        await interaction.followup.send(f"Command failed: {error}")
+        logging.error(traceback.format_exc())
+        #raise error
 bot.run(TOKEN)

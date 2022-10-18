@@ -1,4 +1,5 @@
 import json
+import logging
 
 import discord
 from discord.ext import commands
@@ -71,6 +72,22 @@ class agecalc(ABC):
         with open(f"jsons/{guildid}.json") as f:
             addroles = json.load(f)
         for role in addroles["remrole"]:
+            r = interaction.guild.get_role(role)
+            await user.remove_roles(r)
+        else:
+            print("Finished removing")
+    async def waitingadd(interaction, guildid, user):
+        with open(f"jsons/{guildid}.json") as f:
+            addroles = json.load(f)
+        for role in addroles["waitingrole"]:
+            r = interaction.guild.get_role(role)
+            await user.add_roles(r)
+        else:
+            print("Finished adding")
+    async def waitingrem(interaction, guildid, user):
+        with open(f"jsons/{guildid}.json") as f:
+            addroles = json.load(f)
+        for role in addroles["waitingrole"]:
             r = interaction.guild.get_role(role)
             await user.remove_roles(r)
         else:
@@ -164,9 +181,9 @@ DOB: {exists.dob}""")
             if dblookup.dobcheck(self, user, regdob) is True:
                 # Role adding
                 # await ctx.send('This user\'s age is correct')
-                # TODO: Make a better system for this.
                 await agecalc.addroles(interaction, interaction.guild.id, user)
                 await agecalc.remroles(interaction, interaction.guild.id, user)
+                await agecalc.waitingrem(interaction, interaction.guild.id, user)
                 # output for lobby ages
                 from datetime import datetime
                 username = user.mention
@@ -188,9 +205,12 @@ DOB: {exists.dob}""")
                 await agecalc.welcome(interaction, user, general)
                 # this deletes user info
                 await agecalc.removemessage(interaction, bot, user)
+                await interaction.followup.send(f"{user} has been let through the lobby")
             else:
-                waiting = discord.utils.get(interaction.guild.roles, name="Waiting in Lobby")
-                await user.add_roles(waiting)
+                try:
+                    await agecalc.waitingadd(interaction, interaction.guild.id, user)
+                except:
+                    logging.exception("Couldn't add waiting role(s)")
                 channel = bot.get_channel(925193288997298226)
                 try:
                     channel = bot.get_channel(c.modlobby)
@@ -200,18 +220,21 @@ DOB: {exists.dob}""")
                         f'<@&{a.admin}> User {user.mention}\'s dob ({regdob}) does not match a previously given dob ({u.dob}) and has been given Waiting in Lobby. \n \n To check previously given ages or edit them use: ?agelookup or ?agefix')
                 except:
                     await interaction.channel.send("Channel **modlobby** not set. Use ?config modlobby #channel to fix this.")
+                await interaction.followup.send(f"DOB ERROR: {user}")
 
         else:
-            waiting = discord.utils.get(interaction.guild.roles, name="Waiting in Lobby")
-            await user.add_roles(waiting)
-            print(agecalc.agecheckfail(arg2))
+            try:
+                await agecalc.waitingadd(interaction, interaction.guild.id, user)
+            except:
+                logging.exception("Couldn't add waiting role(s)")
             try:
                 channel = bot.get_channel(c.modlobby)
                 await channel.send(
-                     f'<@&{a.admin}> User {user.mention}\'s age does not match and has been timed out. User gave {age} but dob indicates {agecalc.agecheckfail(arg2)}')
+                     f'<@&{a.admin}> User {user.mention}\'s age does not match and has been timed out. User gave {age} but dob indicates {agecalc.agecheckfail(regdob)}')
             except:
                 await interaction.channel.send("Channel **modlobby** not set. Use ?config modlobby #channel to fix this.")
-        await interaction.followup.send(f"{user} has been let through the lobby")
+            await interaction.followup.send(f"AGE ERROR: {user}")
+
 
     @app_commands.command(name="returnlobby", description="Returns user to the lobby by removing roles")
     @adefs.check_slash_db_roles()

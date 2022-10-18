@@ -11,6 +11,7 @@ class configer(ABC):
             "addrole": [],
             "remrole": [],
             "welcome": "This can be changed with /config welcome",
+            "waitingrole": [],
         }
         json_object = json.dumps(dictionary, indent=4)
         if os.path.exists(f"jsons/{guildid}.json"):
@@ -50,4 +51,19 @@ class configer(ABC):
             with open(f"jsons/{guildid}.json", 'w') as f:
                 json.dump(data, f, indent=4)
             await interaction.followup.send(f"welcome updated to '{welcome}'")
+    async def updateconfig(guildid):
+        with open(f'jsons/{guildid}.json', 'r+') as file:
+            data = json.load(file)
+            newdictionary = {
+                "Name": data['Name'],
+                "addrole": data['addrole'],
+                "remrole": data['remrole'],
+                "welcome": data['welcome'],
+                "waitingrole": [],
+            }
+            print(newdictionary)
+
+        with open(f'jsons/{guildid}.json', 'w') as f:
+            json.dump(newdictionary, f, indent=4)
+
 
