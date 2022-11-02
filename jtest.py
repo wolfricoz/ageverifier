@@ -22,7 +22,7 @@ class configer(ABC):
             with open(f"jsons/{guildid}.json", "w") as outfile:
                 outfile.write(json_object)
                 print(f"config created for {guildid}")
-
+    @abstractmethod
     async def addrole(guildid, interaction, roleid, key):
         if os.path.exists(f"jsons/{guildid}.json"):
             with open(f"jsons/{guildid}.json") as f:
@@ -36,6 +36,7 @@ class configer(ABC):
                     await interaction.followup.send(f"Role added to {key}")
             with open(f"jsons/{guildid}.json", 'w') as f:
                 json.dump(data, f, indent=4)
+    @abstractmethod
     async def remrole(guildid, roleid, key):
         if os.path.exists(f"jsons/{guildid}.json"):
             with open(f"jsons/{guildid}.json") as f:
@@ -43,6 +44,7 @@ class configer(ABC):
                 data[key].remove(roleid)
             with open(f"jsons/{guildid}.json", 'w') as f:
                 json.dump(data, f, indent=4)
+    @abstractmethod
     async def welcome(guildid, interaction,key, welcome):
         if os.path.exists(f"jsons/{guildid}.json"):
             with open(f"jsons/{guildid}.json") as f:
@@ -51,6 +53,7 @@ class configer(ABC):
             with open(f"jsons/{guildid}.json", 'w') as f:
                 json.dump(data, f, indent=4)
             await interaction.followup.send(f"welcome updated to '{welcome}'")
+    @abstractmethod
     async def updateconfig(guildid):
         with open(f'jsons/{guildid}.json', 'r+') as file:
             data = json.load(file)
@@ -65,5 +68,20 @@ class configer(ABC):
 
         with open(f'jsons/{guildid}.json', 'w') as f:
             json.dump(newdictionary, f, indent=4)
+    @abstractmethod
+    async def viewconfig(interaction, guildid):
+        if os.path.exists(f"jsons/{guildid}.json"):
+            with open(f"jsons/{guildid}.json") as f:
+                data = json.load(f)
+                vdict = f"""
+Name: {data['Name']}
+addrole: {data['addrole']}
+remrole: {data['remrole']}
+welcome: {data['welcome']}
+waitingrole: {data['waitingrole']}
+                """
+                await interaction.channel.send(vdict)
+
+
 
 

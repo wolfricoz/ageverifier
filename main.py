@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import os
 import re
 #imports discord
@@ -19,6 +20,7 @@ intent = discord.Intents.default()
 intent.message_content = True
 intent.members = True
 bot = commands.Bot(command_prefix=prefix, case_insensitive=False, intents=intent)
+from functools import lru_cache
 from jtest import configer
 #imports database and starts it
 import db
@@ -44,7 +46,6 @@ async def sync(ctx):
 class main():
     @bot.event
     async def on_ready():
-        #devroom = bot.get_channel(987679198560796713)
         # CREATES A COUNTER TO KEEP TRACK OF HOW MANY GUILDS / SERVERS THE BOT IS CONNECTED TO.
         guild_count = 0
         guilds = []
@@ -83,7 +84,7 @@ class main():
         # PRINTS HOW MANY GUILDS / SERVERS THE BOT IS IN.
         formguilds = "\n".join(guilds)
         devroom = bot.get_channel(1022319186950758472)
-        await devroom.send(f"{formguilds} \nAgeverifier 1.0 is in {guild_count} guilds. ")
+        await devroom.send(f"{formguilds} \nAgeverifier 1.0 is in {guild_count} guilds.")
         # SYNCS UP SLASH COMMANDS
         await bot.tree.sync()
         return guilds
@@ -118,6 +119,8 @@ class main():
         await bot.tree.sync()
         # sends owner instructions
         await guild.owner.send("Thank you for inviting Age Verifier, please read https://docs.google.com/document/d/1jlDPYCjYO0vpIcDpKAuWBX-iNDyxOTSdLhn_SsVGeks/edit?usp=sharing to set up the bot")
+        log = bot.get_channel(1022319186950758472)
+        await log.send(f"Joined {guild}({guild.id})")
     @bot.event
     async def setup_hook():
         '''Connects the cogs to the bot'''
@@ -133,7 +136,12 @@ class main():
             interaction: Interaction,
             error: AppCommandError
     ):
-        await interaction.followup.send(f"Command failed: {error}")
-        logging.error(traceback.format_exc())
+        if isinstance(error, app_commands.CheckFailure):
+            await interaction.response.send_message(f"No permissions", ephemeral=True)
+        else:
+            await interaction.followup.send(f"Command failed: {error}")
+            logging.error(traceback.format_exc())
+            channel = bot.get_channel(1033490229371342990)
+            await channel.send(traceback.format_exc())
         #raise error
 bot.run(TOKEN)

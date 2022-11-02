@@ -108,6 +108,14 @@ class config(commands.GroupCog, name="config"):
         else:
             await interaction.response.send_message("This is a dev command", ephemeral=True)
 
+    @app_commands.command(name="view")
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def updateconfig(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        await jtest.configer.viewconfig(interaction, interaction.guild.id)
+        await interaction.followup.send("Successfully loaded config")
+
+
 async def setup(bot: commands.Bot):
     await bot.add_cog(config(bot))
 

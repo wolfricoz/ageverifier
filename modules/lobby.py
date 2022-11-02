@@ -1,6 +1,6 @@
 import json
 import logging
-
+from functools import lru_cache
 import discord
 from discord.ext import commands
 from abc import ABC, abstractmethod
@@ -198,7 +198,7 @@ DOB: {exists.dob}""")
                     await log.send(
                         f"user: {username}\n Age: {age} \n DOB: {regdob} \n User info:  UID: {userid} \n joined at: {userjoinformatted} \n \n executed: {executed} \n staff: {staff}")
                 except:
-                    await interaction.channel.send("Channel **agelobby** not set. Use ?config agelobby #channel to fix this.")
+                    await interaction.channel.send("Channel **agelobby** not set. Use /config channel agelobby #channel to fix this.")
 
                 # welcomes them in general chat.
                 general = bot.get_channel(c.general)
@@ -217,9 +217,9 @@ DOB: {exists.dob}""")
                     u = session.query(db.user).filter_by(uid=user.id).first()
 
                     await channel.send(
-                        f'<@&{a.admin}> User {user.mention}\'s dob ({regdob}) does not match a previously given dob ({u.dob}) and has been given Waiting in Lobby. \n \n To check previously given ages or edit them use: ?agelookup or ?agefix')
+                        f'<@&{a.admin}> User {user.mention}\'s dob ({regdob}) does not match a previously given dob ({u.dob}) and has been given Waiting in Lobby. \n \n To check previously given ages or edit them use: /dblookup or /agefix')
                 except:
-                    await interaction.channel.send("Channel **modlobby** not set. Use ?config modlobby #channel to fix this.")
+                    await interaction.channel.send("Channel **modlobby** not set. Use /config channel modlobby #channel to fix this.")
                 await interaction.followup.send(f"DOB ERROR: {user}")
 
         else:
@@ -232,7 +232,7 @@ DOB: {exists.dob}""")
                 await channel.send(
                      f'<@&{a.admin}> User {user.mention}\'s age does not match and has been timed out. User gave {age} but dob indicates {agecalc.agecheckfail(regdob)}')
             except:
-                await interaction.channel.send("Channel **modlobby** not set. Use ?config modlobby #channel to fix this.")
+                await interaction.channel.send("Channel **modlobby** not set. Use /config channel modlobby #channel to fix this.")
             await interaction.followup.send(f"AGE ERROR: {user}")
 
 
@@ -287,14 +287,34 @@ DOB: {exists.dob}""")
         userdata = session.query(db.user).filter_by(uid=user.id).first()
         userdata.dob = regdob
         session.commit()
-        await channel.send(f"""user: {user.mention}
+        await channel.send(f"""**updated user info:** 
+user: {user.mention}
+UID: {user.id} 
 Age: {age}
 DOB: {regdob}
-User info:  UID: {user.id} 
+
 
 Entry updated by: {interaction.user}""")
         await interaction.followup.send(f"{user.name}'s data has been updated to: {age} {regdob}")
 
+    @app_commands.command(name="agefixid", description="Edits database entry with the correct date of birth")
+    @adefs.check_slash_admin_roles()
+    async def agefixid(self, interaction: discord.Interaction, userid: str, age: int, dob: str):
+        await interaction.response.defer(ephemeral=True)
+        c = session.query(db.config).filter_by(guild=interaction.guild.id).first()
+        agelog = c.agelog
+        channel = self.bot.get_channel(agelog)
+        regdob = agecalc.regex(dob)
+        userdata = session.query(db.user).filter_by(uid=userid).first()
+        userdata.dob = regdob
+        session.commit()
+        await channel.send(f"""**updated user info:**  
+UID: {userid} 
+Age: {age}
+DOB: {regdob}
+
+Entry updated by: {interaction.user}""")
+        await interaction.followup.send(f"{userid.name}'s data has been updated to: {age} {regdob}")
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(lobby(bot))
