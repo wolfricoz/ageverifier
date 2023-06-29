@@ -28,9 +28,9 @@ class config(commands.GroupCog, name="remrole"):
         await interaction.response.defer( ephemeral=True)
         try:
             await configer.remrole(interaction.guild.id, interaction, role.id, "remrole")
-            await interaction.followup.send(f"{Role} was removed from config.")
+            await interaction.followup.send(f"{role} was removed from config.")
         except:
-            await interaction.followup.send(f"{Role} was not in the list.")
+            await interaction.followup.send(f"{role} was not in the list.")
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(config(bot))

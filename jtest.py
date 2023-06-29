@@ -10,6 +10,7 @@ class configer(ABC):
             "Name": guildname,
             "addrole": [],
             "remrole": [],
+            "welcomeusers": True,
             "welcome": "This can be changed with /config welcome",
             "waitingrole": [],
         }
@@ -58,16 +59,33 @@ class configer(ABC):
         with open(f'jsons/{guildid}.json', 'r+') as file:
             data = json.load(file)
             newdictionary = {
-                "Name": data['Name'],
-                "addrole": data['addrole'],
-                "remrole": data['remrole'],
-                "welcome": data['welcome'],
-                "waitingrole": [],
+                "Name": data.get('Name', None),
+                "addrole": data.get('addrole', []),
+                "remrole": data.get('remrole', []),
+                "welcomeusers": data.get("welcomeusers", False),
+                "welcome": data.get('welcome', "This can be changed with /config welcome"),
+                "waitingrole": data.get('waitingrole', []),
+                "delete": data.get('delete', False)
             }
-            print(newdictionary)
 
         with open(f'jsons/{guildid}.json', 'w') as f:
             json.dump(newdictionary, f, indent=4)
+
+    @abstractmethod
+    def read(guildid, key):
+        with open(f'jsons/{guildid}.json', 'r+') as file:
+            data = json.load(file)
+            value = data[key]
+        return value
+    @abstractmethod
+    def trueorfalse(guildid, key, value: bool):
+        with open(f'jsons/{guildid}.json', 'r+') as file:
+            data = json.load(file)
+            data[key] = value
+        with open(f'jsons/{guildid}.json', 'w') as file:
+            json.dump(data, file, indent=4)
+
+
     @abstractmethod
     async def viewconfig(interaction, guildid):
         if os.path.exists(f"jsons/{guildid}.json"):
@@ -77,10 +95,11 @@ class configer(ABC):
 Name: {data['Name']}
 addrole: {data['addrole']}
 remrole: {data['remrole']}
+welcomeusers: {data['welcomeusers']},
 welcome: {data['welcome']}
 waitingrole: {data['waitingrole']}
                 """
-                await interaction.channel.send(vdict)
+                return vdict
 
 
 

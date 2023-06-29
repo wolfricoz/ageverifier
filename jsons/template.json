@@ -1,0 +1,8 @@
+{
+    "Name": "Rico's Coding Hub",
+    "addrole": [],
+    "remrole": [],
+    "welcomeusers": true,
+    "welcome": "This can be changed with /config welcome",
+    "waitingrole": []
+}

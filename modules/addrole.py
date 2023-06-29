@@ -35,3 +35,4 @@ async def setup(bot: commands.Bot):
     await bot.add_cog(config(bot))
 
 session.commit()
+session.close()
