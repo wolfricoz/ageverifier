@@ -78,7 +78,7 @@ class main():
         # PRINTS HOW MANY GUILDS / SERVERS THE BOT IS IN.
         formguilds = "\n".join(guilds)
         devroom = bot.get_channel(1022319186950758472)
-        await devroom.send(f"{formguilds} \nAgeverifier 1.2 is in {guild_count} guilds.")
+        await devroom.send(f"{formguilds} \nAgeverifier 1.3 is in {guild_count} guilds.")
         # SYNCS UP SLASH COMMANDS
         await bot.tree.sync()
         return guilds
