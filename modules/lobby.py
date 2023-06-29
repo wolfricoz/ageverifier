@@ -320,9 +320,7 @@ DOB: {exists.dob}""")
                     # this deletes user info
                     await interaction.followup.send(f"{user} has been let through the lobby")
                     if jtest.configer.read(interaction.guild.id, "delete") is False:
-                        print('delete was False')
                         return
-                    print('delete was True')
                     await AgeCalc.removemessage(interaction, self.bot, user)
 
                 else:
