@@ -19,6 +19,9 @@ class Events(commands.Cog):
         bot = self.bot
         dobreg = re.compile(r"([0-9][0-9]) (1[0-2]|[0]?[0-9]|1)/([0-3]?[0-9])/([0-2][0-9][0-9][0-9])")
         match = dobreg.search(message.content)
+        waitmessage = f"{message.author.mention} Thank you for submitting your age! " \
+                      f"One of our staff members will let you through into the main server once they are available. " \
+                      f"Please be patient, as our lobby is handled manually."
         if message.guild is None:
             return
         if message.author.bot:
@@ -26,6 +29,7 @@ class Events(commands.Cog):
         # Searches the config for the lobby for a specific guild
         p = session.query(db.permissions).filter_by(guild=message.guild.id).first()
         c = session.query(db.config).filter_by(guild=message.guild.id).first()
+        lobby = bot.get_channel(c.lobby)
         # reminder: change back to c.lobby
         if message.author.get_role(p.mod) is None and message.author.get_role(
                 p.admin) is None and message.author.get_role(p.trial) is None:
@@ -62,6 +66,7 @@ class Events(commands.Cog):
                             f"<@&{p.lobbystaff}> {message.author.mention} has given {message.content}. "
                             f"You can let them through with `/approve user:{message.author.mention} "
                             f"age:{match.group(1)} dob:{match.group(2)}/{match.group(3)}/{match.group(4)}`")
+                        await lobby.send(waitmessage)
                     return
                 else:
                     channel = bot.get_channel(c.modlobby)
