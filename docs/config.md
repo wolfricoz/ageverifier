@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Lobby Guide
-nav_order: 3
+nav_order: 4
 ---
 
 <h1>Config and setup</h1>
