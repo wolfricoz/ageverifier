@@ -1,510 +1,294 @@
-import json
-import re
-import traceback
-from abc import ABC, abstractmethod
-from datetime import datetime
+"""this module handles the lobby."""
+import datetime
 
 import discord
-from dateutil.relativedelta import relativedelta
 from discord import app_commands
+from discord.app_commands import Choice
 from discord.ext import commands
-from sqlalchemy.orm import sessionmaker
 
-import adefs
-import db
-import logging
-
-import jtest
-
-Session = sessionmaker(bind=db.engine)
-session = Session()
+import classes.permissions as permissions
+import databases.current
+from classes.AgeCalculations import AgeCalculations
+from classes.databaseController import UserTransactions, ConfigData, VerificationTransactions
+from classes.lobbyprocess import LobbyProcess
 
 
-class AgeCalc(ABC):
-    @abstractmethod
-    def agechecker(self, arg1, arg2):
-        age = arg1
-        dob = str(arg2)
-        dob_object = datetime.strptime(dob, "%m/%d/%Y")
-        today = datetime.now()
-        a = relativedelta(today, dob_object)
-        age_calculate = a.years - int(age)
-        return age_calculate
-
-    def regex(arg2):
-        datetime.strptime(arg2, '%m/%d/%Y')
-        dob = str(arg2)
-        dob_object = re.search(r"([0-1]?[0-9])/([0-3]?[0-9])/([0-2][0-9][0-9][0-9])", dob)
-        month = dob_object.group(1).zfill(2)
-        day = dob_object.group(2).zfill(2)
-        year = dob_object.group(3)
-        fulldob = f"{month}/{day}/{year}"
-        print(fulldob)
-        return fulldob
-
-    def agecheckfail(arg1):
-        bot = commands.Bot
-        from datetime import datetime, timedelta
-        dob = str(arg1)
-        dob_object = datetime.strptime(dob, "%m/%d/%Y")
-        today = datetime.now()
-        leapyear = ((today - dob_object) / 365.25) / 4
-        deltad = leapyear - timedelta(days=1)
-        agechecker = ((today - dob_object) - deltad) / 365
-        print(agechecker)
-        age_output = str(agechecker).split()[0]
-        return age_output
-
-    # async def removemessage(ctx, bot, user):
-    #     c = session.query(db.config).filter_by(guild=ctx.guild.id).first()
-    #     print(c.lobby)
-    #     channel = bot.get_channel(c.lobby)
-    #     messages = channel.history(limit=100)
-    #     count = 0
-    #     async for message in messages:
-    #         if message.author == user or user in message.mentions and count < 10:
-    #             count += 1
-    #             print(message.id)
-    #             await message.delete()
-
-    async def addroles(interaction, guildid, user):
-        with open(f"jsons/{guildid}.json") as f:
-            addroles = json.load(f)
-        for role in addroles["addrole"]:
-            r = interaction.guild.get_role(role)
-            await user.add_roles(r)
-        else:
-            print("Finished adding")
-
-    async def remroles(interaction, guildid, user):
-        with open(f"jsons/{guildid}.json") as f:
-            addroles = json.load(f)
-        for role in addroles["remrole"]:
-            r = interaction.guild.get_role(role)
-            await user.remove_roles(r)
-        else:
-            print("Finished removing")
-
-    async def waitingadd(interaction, guildid, user):
-        with open(f"jsons/{guildid}.json") as f:
-            addroles = json.load(f)
-        for role in addroles["waitingrole"]:
-            r = interaction.guild.get_role(role)
-            await user.add_roles(r)
-        else:
-            print("Finished adding")
-
-    async def waitingrem(interaction, guildid, user):
-        with open(f"jsons/{guildid}.json") as f:
-            addroles = json.load(f)
-        for role in addroles["waitingrole"]:
-            try:
-                r = interaction.guild.get_role(role)
-                await user.remove_roles(r)
-            except Exception as e:
-                logging.error(f"failed to add roles. \n {e}")
-        else:
-            print("Finished removing")
-
-    async def welcome(interaction, user, general):
-        with open(f"jsons/{interaction.guild.id}.json") as f:
-            data = json.load(f)
-            if data['welcomeusers'] is True:
-                try:
-                    exists = session.query(db.config).filter_by(guild=interaction.guild.id).first()
-
-                    welcomemessage = data["welcome"]
-                    await general.send(
-                        f"Welcome to {interaction.guild.name}, {user.mention}! {welcomemessage}")
-
-                except:
-                    await interaction.channel.send(
-                        "Channel **general** not set. Use ?config general #channel to fix this.")
-            else:
-                pass
-    @abstractmethod
-    async def removemessage(interaction, bot, user):
-        c = session.query(db.config).filter_by(guild=interaction.guild.id).first()
-        channel = bot.get_channel(c.lobby)
-        messages = channel.history(limit=100)
-        format = re.compile(r"failed to follow the format", flags=re.MULTILINE)
-        count = 0
-        async for message in messages:
-            if message.author == user or user in message.mentions and count < 10:
-                count += 1
-                await message.delete()
-        channel = bot.get_channel(c.modlobby)
-        messages = channel.history(limit=100)
-        count = 0
-        async for message in messages:
-            if user in message.mentions and count < 5:
-                if message.author.bot:
-                    vmatch = format.search(message.content)
-                    if vmatch is not None:
-                        pass
-                    else:
-                        count += 1
-                        await message.delete()
-
-class dblookup(ABC):
-
-    @abstractmethod
-    def dobsave(self, userid: discord.Member, dob):
-        exists = session.query(db.user).filter_by(uid=userid.id).first()
-        if exists is not None:
-            pass
-        else:
-            try:
-                tr = db.user(userid.id, dob)
-                session.add(tr)
-                session.commit()
-            except:
-                print("Database error, rolled back")
-                session.rollback()
-                session.close()
-
-    async def dobsaveid(self, userid: int, dob):
-        exists = session.query(db.user).filter_by(uid=userid).first()
-        if exists is not None:
-            pass
-        else:
-            try:
-                tr = db.user(userid, dob)
-                session.add(tr)
-                session.commit()
-            except:
-                print("Database error, rolled back")
-                session.rollback()
-                session.close()
-
-    def dobcheck(self, userid: discord.Member, dob):
-        exists = session.query(db.user).filter_by(uid=userid.id).first()
-        if exists.dob == dob:
-            return True
-        else:
-            return False
-
-    @abstractmethod
-    def idcheckchecker(self, userid: discord.Member):
-        exists = session.query(db.idcheck).filter_by(uid=userid.id).first()
-        if exists is not None:
-            if exists.check:
-                return True
-            else:
-                return False
-        else:
-            return False
-
-    @abstractmethod
-    def idcheckeradd(self, userid: int):
-        idchecker = session.query(db.idcheck).filter_by(uid=userid).first()
-        if idchecker is not None:
-            idchecker.check = True
-            session.commit()
-        else:
-            try:
-                idcheck = db.idcheck(userid, True)
-                session.add(idcheck)
-                session.commit()
-            except:
-                session.rollback()
-                session.close()
-                logging.exception("failed to  log to database")
-
-    @abstractmethod
-    def idcheckerremove(self, userid: int):
-        idchecker = session.query(db.idcheck).filter_by(uid=userid).first()
-        if idchecker is not None:
-            idchecker.check = False
-            session.commit()
-        else:
-            try:
-                idcheck = db.idcheck(userid, False)
-                session.add(idcheck)
-                session.commit()
-            except:
-                session.rollback()
-                session.close()
-                logging.exception("failed to  log to database")
-
-
-class lobby(commands.Cog, name="Lobby"):
-    def __init__(self, bot: commands.Bot):
+class Lobby(commands.GroupCog):
+    def __init__(self, bot):
         self.bot = bot
+        self.index = 0
+        self.bot.add_view(self.VerifyButton())
+        self.bot.add_view(self.AgeButtons())
 
-    @app_commands.command(name="dblookup", description="Check user's age in DB. only works on users in server")
-    @adefs.check_slash_admin_roles()
-    async def dblookup(self, interaction: discord.Interaction, user: discord.Member):
+    class VerifyModal(discord.ui.Modal):
+        # Our modal classes MUST subclass `discord.ui.Modal`,
+        # but the title can be whatever you want.
+        title = "Verify your age"
+        custom_id = "verify"
+        # This will be a short input, where the user can enter their name
+        # It will also have a placeholder, as denoted by the `placeholder` kwarg.
+        # By default, it is required and is a short-style input which is exactly
+        # what we want.
+        age = discord.ui.TextInput(
+                label='age',
+                placeholder='99',
+                max_length=3,
+
+        )
+
+        # This is a longer, paragraph style input, where user can submit feedback
+        # Unlike the name, it is not required. If filled out, however, it will
+        # only accept a maximum of 300 characters, as denoted by the
+        # `max_length=300` kwarg.
+        dateofbirth = discord.ui.TextInput(
+                label='Date of Birth (mm/dd/yyyy)',
+                placeholder='mm/dd/yyyy',
+                max_length=10
+        )
+
+        # Requires age checks, and then needs to send a message to the lobby channel; also make the lobby channel a config item.
+        # Add in all the checks before it even gets to the lobby; age matches dob, dob already exists but diff?
+
+        async def on_submit(self, interaction: discord.Interaction):
+            userdata: databases.current.Users = UserTransactions.get_user(interaction.user.id)
+            modlobby = ConfigData().get_key_int(interaction.guild.id, "lobbymod")
+            channel = interaction.guild.get_channel(modlobby)
+            age = self.age.value
+            # validates inputs with regex
+            if await AgeCalculations.infocheck(interaction, age, self.dateofbirth.value, channel) is False:
+                return
+            dob = self.dateofbirth.value.replace("-", "/").replace(".", "/")
+
+            print(dob)
+            # Checks if date of birth and age match
+            if int(age) < 18:
+                await channel.send(
+                        f"[Info] User {interaction.user.mention}\'s gave an age below 18 and was added to the ID list.\n"
+                        f"[Lobby Debug] Age: {age} dob {dob}")
+                await interaction.response.send_message(
+                        f'Unfortunately you are too young for our server. If you are 17 you may wait in the lobby.',
+                        ephemeral=True)
+                VerificationTransactions.set_idcheck_to_true(interaction.user.id,
+                                                             f"{datetime.datetime.now(datetime.timezone.utc).strftime('%m/%d/%Y')}: User is under the age of 18")
+                return
+            # Checks if user is underaged
+            agechecked, years = AgeCalculations.agechecker(age, dob)
+            if agechecked != 0:
+                await channel.send(
+                        f"[Info] User {interaction.user.mention}\'s age does not match and has been timed out. User gave {age} but dob indicates {years}\n"
+                        f"[Lobby Debug] Age: {age} dob {dob}")
+                await interaction.response.send_message(
+                        f'A staff member will contact you within 24 hours, please wait patiently.',
+                        ephemeral=True)
+                return
+            # Checks if user has a date of birth in the database, and if the date of births match.
+            if AgeCalculations.check_date_of_birth(userdata, dob) is False:
+                await channel.send(
+                        f"[Info] User {interaction.user.mention}\'s date of birth does not match. Given: {dob} Recorded: {userdata.dob.strftime('%m/%d/%Y')}\n"
+                        f"[Lobby Debug] Age: {age} dob {dob}")
+                await interaction.response.send_message(
+                        f'A staff member will contact you within 24 hours, please wait patiently.',
+                        ephemeral=True)
+                return
+
+            # Check if user needs to ID or has previously ID'd
+            if await AgeCalculations.id_check_or_id_verified(interaction.user, interaction.guild, channel):
+                await interaction.response.send_message(
+                        f'A staff member will contact you within 24 hours, please wait patiently.', ephemeral=True)
+                return
+            # Check the age and send the right command/button based upon that.
+            # command_prefix = AgeCalculations.prefix(age)
+            # Check Chat History
+            # await AgeCalculations.check_history(interaction.user, channel)
+            # Sends the buttons and information to lobby channel
+            await channel.send(
+                    f"\n{interaction.user.mention} has given {age} {dob}. You can let them through with the buttons below"
+                    f"\n"
+                    f"[LOBBY DEBUG] `?approve {interaction.user.mention} {age} {dob}`",
+                    view=Lobby.AgeButtons(age=age, dob=dob, user=interaction.user))
+
+            await interaction.response.send_message(
+                    f'Thank you for submitting your age and dob! We will let you through within 24 hours.',
+                    ephemeral=True)
+
+        async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
+            print(error)
+            await interaction.response.send_message('Oops! Something went wrong.\n'
+                                                    f'{error}')
+            raise error
+
+    class VerifyButton(discord.ui.View):
+        def __init__(self):
+            super().__init__(timeout=None)
+
+        @discord.ui.button(label="Verify Here!", style=discord.ButtonStyle.red, custom_id="verify")
+        async def test(self, interaction: discord.Interaction, button: discord.ui.Button):
+            await interaction.response.send_modal(Lobby.VerifyModal())
+
+    class AgeButtons(discord.ui.View):
+        def __init__(self, age: int = None, dob: str = None, user: discord.Member = None):
+            self.age = age
+            self.dob = dob
+            self.user = user
+            super().__init__(timeout=None)
+
+        @discord.ui.button(label="Allow", style=discord.ButtonStyle.green, custom_id="allow")
+        async def allow(self, interaction: discord.Interaction, button: discord.ui.Button):
+            """starts approving process"""
+            if self.age is None or self.dob is None or self.user is None:
+                await interaction.response.send_message('Missing data, please use the command.', ephemeral=True)
+                return
+            button.disabled = True
+            # Share this with the age commands
+            await LobbyProcess.approve_user(interaction.guild, self.user, self.dob, self.age, interaction.user.name)
+
+        @discord.ui.button(label="Manual ID Check", style=discord.ButtonStyle.red, custom_id="ID")
+        async def manual_id(self, interaction: discord.Interaction, button: discord.ui.Button):
+            """Flags user for manual id."""
+            if self.user is None:
+                await interaction.response.send_message('Missing data, please manually report user to admins',
+                                                        ephemeral=True)
+            idcheck = ConfigData().get_key_int(interaction.guild.id, "idlog")
+            admin = ConfigData().get_key(interaction.guild.id, "admin")
+            idlog = interaction.guild.get_channel(idcheck)
+            VerificationTransactions.set_idcheck_to_true(self.user.id, f"manually flagged by {interaction.user.name}")
+            await idlog.send(
+                    f"<@&{admin[0]}> {interaction.user.mention} has flagged {self.user.mention} for manual ID.")
+            return
+
+    @app_commands.command(name="button")
+    @permissions.check_app_roles_admin()
+    async def verify_button(self, interaction: discord.Interaction, text: str):
+        """Verification button for the lobby; initiates the whole process"""
+        await interaction.channel.send(text, view=self.VerifyButton())
+
+    @app_commands.command()
+    @app_commands.choices(operation=[Choice(name=x, value=x) for x in
+                                     ['add', 'update', 'delete', 'get']])
+    @permissions.check_app_roles_admin()
+    async def database(self, interaction: discord.Interaction, operation: Choice['str'], userid: str, dob: str = None):
+        """One stop shop to handle all age entry management"""
         await interaction.response.defer(ephemeral=True)
-        try:
-            exists = session.query(db.user).filter_by(uid=user.id).first()
-        except:
-            await interaction.followup.send(f"{user.mention} has not been found")
-        if exists is None:
-            await interaction.followup.send(f"{user.mention} has not been found")
-        else:
-            await interaction.followup.send(f"""__**DB LOOKUP**__
-user: <@{exists.uid}>
-UID: {exists.uid}
-DOB: {exists.dob}""")
+        match operation.value.upper():
+            case "UPDATE":
+                if await AgeCalculations.validatedob(dob, interaction) is False:
+                    return
+                UserTransactions.update_user_dob(userid, dob)
+                await interaction.followup.send(f"<@{userid}>'s dob updated to: {dob}")
+            case "DELETE":
+                if UserTransactions.user_delete(userid) is False:
+                    await interaction.followup.send(f"Can't find entry: <@{userid}>")
+                    return
+                await interaction.followup.send(f"Deleted entry: <@{userid}>")
+            case "ADD":
+                if await AgeCalculations.validatedob(dob, interaction) is False:
+                    return
+                UserTransactions.add_user_full(str(userid), dob)
+                await interaction.followup.send(f"<@{userid}> added to the database with dob: {dob}")
+            case "GET":
+                user = UserTransactions.get_user(userid)
+                await interaction.followup.send(f"**__USER INFO__**\n"
+                                                f"user: <@{user.uid}>\n"
+                                                f"dob: {user.dob.strftime('%m/%d/%Y')}")
 
-    @app_commands.command(name="dbremove",
-                          description="DEV: Removes user from database. This can be requested by users.")
-    @adefs.check_slash_admin_roles()
-    async def dbremoveid(self, interaction: discord.Interaction, userid: str):
+    @app_commands.command()
+    @app_commands.choices(process=[Choice(name=x, value=x) for x in
+                                   ["True", "False"]])
+    @permissions.check_app_roles_admin()
+    async def idverify(self, interaction: discord.Interaction, process: Choice['str'],
+                       user: discord.Member, dob: str):
+        """ID verifies user. process True will put the user through the lobby."""
         await interaction.response.defer(ephemeral=True)
-        user = int(userid)
-        if interaction.user.id == 188647277181665280:
-            try:
-                exists = session.query(db.user).filter_by(uid=user).first()
-                session.delete(exists)
-                session.commit()
-                await interaction.followup.send("Removal complete")
-            except:
-                await interaction.followup.send("Removal failed")
-        else:
-            await interaction.followup.send(
-                "Please contact Rico Stryker#6666 or send an email to roleplaymeetsappeals@gmail.com to have the entry removed")
+        lobbylog = ConfigData().get_key_int(interaction.guild.id, "lobbylog")
 
-    @app_commands.command(name="approve",
-                          description="Approve a user to enter your server. this command checks ages and logs them")
-    @adefs.check_slash_db_roles()
-    async def sapprove(self, interaction: discord.Interaction, user: discord.Member, age: int, dob: str) -> None:
-        """Command to let users through the lobby, checks ages and logs them."""
-        await interaction.response.defer(ephemeral=True)
-        c = session.query(db.config).filter_by(guild=interaction.guild.id).first()
-        a = session.query(db.permissions).filter_by(guild=interaction.guild.id).first()
-        lobbyid = c.lobby
-        agelog = c.agelog
-        modlobby = c.modlobby
-        general = c.general
-        regdob = AgeCalc.regex(dob)
-        print(regdob)
-        bot = self.bot
-        if dblookup.idcheckchecker(self, user) is True:
-            channel = bot.get_channel(c.modlobby)
-            await channel.send(f"<@&{a.admin}> user {user.mention} was flagged for manual ID check.")
-        else:
-            if AgeCalc.agechecker(self, age, regdob) == 0:
-                try:
-                    dblookup.dobsave(self, user, regdob)
-                except:
-                    logging.critical(f"Failed to add user to DB: {user.id} {dob}")
-                    interaction.followup.send(f"Failed to add user to DB: {user.id} {dob}, report to Rico.")
-                print(dblookup.dobcheck(self, user, regdob))
-                if dblookup.dobcheck(self, user, regdob) is True:
-                    # Role adding
-                    # await ctx.send('This user\'s age is correct')
-                    await AgeCalc.addroles(interaction, interaction.guild.id, user)
-                    await AgeCalc.remroles(interaction, interaction.guild.id, user)
-                    await AgeCalc.waitingrem(interaction, interaction.guild.id, user)
-                    # output for lobby ages
-                    from datetime import datetime
-                    username = user.mention
-                    userid = user.id
-                    userjoin = user.joined_at
-                    userjoinformatted = userjoin.strftime('%m/%d/%Y %I:%M:%S %p')
-                    executed = datetime.now().strftime('%m/%d/%Y %I:%M:%S %p')
-                    print(userjoinformatted)
-                    staff = interaction.user
-                    try:
-                        log = bot.get_channel(c.agelog)
-                        await log.send(
-                            f"user: {username}\n Age: {age} \n DOB: {regdob} \n User info:  UID: {userid} \n joined at: {userjoinformatted} \n \n executed: {executed} \n staff: {staff}")
-                    except:
-                        await interaction.channel.send(
-                            "Channel **agelobby** not set. Use /config channel agelobby #channel to fix this.")
-                    # welcomes them in general chat.
-                    general = bot.get_channel(c.general)
-                    await AgeCalc.welcome(interaction, user, general)
-                    # this deletes user info
-                    await interaction.followup.send(f"{user} has been let through the lobby")
-                    if jtest.configer.read(interaction.guild.id, "delete") is False:
-                        return
-                    await AgeCalc.removemessage(interaction, self.bot, user)
-
-                else:
-                    try:
-                        await AgeCalc.waitingadd(interaction, interaction.guild.id, user)
-                    except:
-                        logging.exception("Couldn't add waiting role(s)")
-                    channel = bot.get_channel(925193288997298226)
-                    try:
-                        channel = bot.get_channel(c.modlobby)
-                        u = session.query(db.user).filter_by(uid=user.id).first()
-
-                        await channel.send(
-                            f'<@&{a.admin}> User {user.mention}\'s dob ({regdob}) does not match a previously given dob ({u.dob}) and has been given Waiting in Lobby. \n \n To check previously given ages or edit them use: /dblookup or /agefix')
-                    except:
-                        await interaction.channel.send(
-                            "Channel **modlobby** not set. Use /config channel modlobby #channel to fix this.")
-                    await interaction.followup.send(f"DOB ERROR: {user}")
-
-            else:
-                try:
-                    await AgeCalc.waitingadd(interaction, interaction.guild.id, user)
-                except:
-                    logging.exception("Couldn't add waiting role(s)")
-                try:
-                    channel = bot.get_channel(c.modlobby)
-                    await channel.send(
-                        f'<@&{a.admin}> User {user.mention}\'s age does not match and has been timed out. User gave {age} but dob indicates {AgeCalc.agecheckfail(regdob)}')
-                except:
-                    await interaction.channel.send(
-                        "Channel **modlobby** not set. Use /config channel modlobby #channel to fix this.")
-                await interaction.followup.send(f"AGE ERROR: {user}")
-
-    @app_commands.command(name="returnlobby", description="Returns user to the lobby by removing roles")
-    @adefs.check_slash_db_roles()
-    async def returnlobby(self, interaction: discord.Interaction, user: discord.Member):
-        """Command sends users back to the lobby and removes roles"""
-        bot = self.bot
-        await interaction.response.defer()
-        with open(f"jsons/{interaction.guild.id}.json") as f:
-            addroles = json.load(f)
-        for role in addroles["addrole"]:
-            r = interaction.guild.get_role(role)
-            await user.remove_roles(r)
-        else:
-            print("Finished removing")
-        with open(f"jsons/{interaction.guild.id}.json") as f:
-            addroles = json.load(f)
-        for role in addroles["remrole"]:
-            r = interaction.guild.get_role(role)
-            await user.add_roles(r)
-        else:
-            print("Finished adding")
-        await interaction.followup.send(
-            f"{user.mention} has been moved back to the lobby by {interaction.user.mention}")
-
-    @app_commands.command(name="agecheck", description="Calculates the age of the user based on the dob.")
-    @adefs.check_slash_db_roles()
-    async def agecheck(self, interaction: discord.Interaction, dob: str, ):
-        await interaction.response.defer(ephemeral=True)
-        bot = self.bot
-        from datetime import datetime, timedelta
-        dob = str(dob)
-        dob_object = datetime.strptime(dob, "%m/%d/%Y")
-        today = datetime.now()
-        leapyear = ((today - dob_object) / 365.25) / 4
-        deltad = leapyear - timedelta(days=1)
-        agechecker = ((today - dob_object) - deltad) / 365
-        print(agechecker)
-        age_output = str(agechecker).split()[0]
-        await interaction.followup.send('this users age is: {}'.format(age_output) + " years.")
-
-    @app_commands.command(name="agefix", description="Edits database entry with the correct date of birth")
-    @adefs.check_slash_admin_roles()
-    async def agefix(self, interaction: discord.Interaction, user: discord.Member, age: int, dob: str):
-        await interaction.response.defer(ephemeral=True)
-        c = session.query(db.config).filter_by(guild=interaction.guild.id).first()
-        agelog = c.agelog
-        channel = self.bot.get_channel(agelog)
-        regdob = AgeCalc.regex(dob)
-        userdata = session.query(db.user).filter_by(uid=user.id).first()
-        userdata.dob = regdob
-        session.commit()
-        await channel.send(f"""**updated user info:** 
+        agelog = interaction.guild.get_channel(lobbylog)
+        await AgeCalculations.validatedob(dob, interaction)
+        print(f"matching time: {process.value.upper()}")
+        match process.value.upper():
+            case "TRUE":
+                print("true")
+                VerificationTransactions.idverify_update(user.id, dob)
+                await interaction.followup.send(
+                        f"{user.mention} has been ID verified with date of birth: {dob}")
+                await agelog.send(f"""**USER ID VERIFICATION**
 user: {user.mention}
-UID: {user.id} 
-Age: {age}
-DOB: {regdob}
-
-
-Entry updated by: {interaction.user}""")
-        await interaction.followup.send(f"{user.name}'s data has been updated to: {age} {regdob}")
-
-    @app_commands.command(name="agefixid", description="Edits database entry with the correct date of birth")
-    @adefs.check_slash_admin_roles()
-    async def agefixid(self, interaction: discord.Interaction, userid: str, age: int, dob: str):
-        await interaction.response.defer(ephemeral=True)
-        c = session.query(db.config).filter_by(guild=interaction.guild.id).first()
-        agelog = c.agelog
-        channel = self.bot.get_channel(agelog)
-        regdob = AgeCalc.regex(dob)
-        userdata = session.query(db.user).filter_by(uid=userid).first()
-        userdata.dob = regdob
-        session.commit()
-        await channel.send(f"""**updated user info:**  
-UID: {userid} 
-Age: {age}
-DOB: {regdob}
-
-Entry updated by: {interaction.user}""")
-        await interaction.followup.send(f"{userid}'s data has been updated to: {age} {regdob}")
-
-    @app_commands.command(name="ageadd", description="Add ages to the database")
-    @adefs.check_slash_db_roles()
-    async def ageadd(self, interaction: discord.Interaction, user: str, age: str, dob: str):
-        await interaction.response.defer()
-        c = session.query(db.config).filter_by(guild=interaction.guild.id).first()
-        agelog = c.agelog
-        channel = self.bot.get_channel(agelog)
-        regdob = AgeCalc.regex(dob)
-        await dblookup.dobsaveid(self, int(user), regdob)
-        await channel.send(f"""**USER ADDED**
-Age: {age}
-DOB: {dob}
-UID: {user} 
-
-Entry updated by: {interaction.user}""")
-        await interaction.followup.send(f"User was added to the database")
-
-    @app_commands.command(name="idverify", description="approves user for ID verification.")
-    @adefs.check_slash_admin_roles()
-    async def idverify(self, interaction: discord.Interaction, user: discord.Member, age: str, dob: str):
-        await interaction.response.defer(ephemeral=True)
-        c = session.query(db.config).filter_by(guild=interaction.guild.id).first()
-        agelog = c.agelog
-        channel = self.bot.get_channel(agelog)
-        regdob = AgeCalc.regex(dob)
-        try:
-            userdata = session.query(db.user).filter_by(uid=user.id).first()
-            if userdata is not None:
-                userdata.dob = regdob
-            else:
-                dblookup.dobsave(self, user, regdob)
-            idchecker = session.query(db.idcheck).filter_by(uid=user.id).first()
-            if idchecker is not None:
-                idchecker.check = False
-                session.commit()
-            else:
-                try:
-                    idcheck = db.idcheck(user.id, False)
-                    session.add(idcheck)
-                    session.commit()
-                except:
-                    session.rollback()
-                    session.close()
-                    logging.exception("failed to  log to database")
-            await channel.send(f"""**USER ID VERIFICATION**
-user: {user.mention}
-Age: {age}
 DOB: {dob}
 UID: {user.id} 
 **ID VERIFIED BY:** {interaction.user}""")
-            await interaction.followup.send(f"Entry for {user} updated to: {age} {regdob}")
-        except:
-            session.rollback()
-            session.close()
-            await interaction.followup.send(f"Command failed: {traceback.format_exc()}")
-    @app_commands.command(name="idadd", description="add a user to manual ID list")
-    @adefs.check_slash_db_roles()
-    async def addverify(self, interaction: discord.Interaction, userid: str):
-        await interaction.response.defer(ephemeral=True)
-        dblookup.idcheckeradd(self, userid)
-        await interaction.followup.send(f"Added user {userid} to the ID list")
+                age = AgeCalculations.dob_to_age(dob)
+                await LobbyProcess.approve_user(interaction.guild, user, dob, age, interaction.user.name)
+            case "FALSE":
+                VerificationTransactions.idverify_update(user.id, dob)
+                await interaction.followup.send(
+                        f"{user.mention} has been ID verified with date of birth: {dob}")
+                await agelog.send(f"""**USER ID VERIFICATION**
+user: {user.mention}
+DOB: {dob}
+UID: {user.id} 
+**ID VERIFIED BY:** {interaction.user}""")
+            # case "GET":
+            #     user = VerificationTransactions.get_id_info(userid)
+            #     if user is None:
+            #         await interaction.followup.send("Not found")
+            #         return
+            #     await interaction.followup.send(f"**__USER INFO__**\n"
+            #                                     f"user: <@{user.uid}>\n"
+            #                                     f"Reason: {user.reason}\n"
+            #                                     f"idcheck: {user.idcheck}\n"
+            #                                     f"idverifier: {user.idverified}\n"
+            #                                     f"verifieddob: {user.verifieddob}\n")
 
-    @app_commands.command(name="idremove", description="remove a user to manual ID list")
-    @adefs.check_slash_admin_roles()
-    async def remverify(self, interaction: discord.Interaction, userid: str):
-        await interaction.response.defer(ephemeral=True)
-        dblookup.idcheckerremove(self, userid)
-        await interaction.followup.send(f"Removed user {userid} to the ID list")
+    @app_commands.command()
+    @permissions.check_app_roles()
+    async def returnlobby(self, interaction: discord.Interaction, user: discord.Member):
+        """returns user to lobby; removes the roles."""
+        await interaction.response.defer()
+        add: list = ConfigData().get_key(interaction.guild.id, "add")
+        rem: list = ConfigData().get_key(interaction.guild.id, "rem")
+        returns: list = ConfigData().get_key(interaction.guild.id, "return")
+        add.append(ConfigData().get_key_int(interaction.guild.id, "18"))
+        add.append(ConfigData().get_key_int(interaction.guild.id, "21"))
+        add.append(ConfigData().get_key_int(interaction.guild.id, "25"))
+        rm = []
+        ra = []
+        for role in rem:
+            r = interaction.guild.get_role(role)
+            ra.append(r)
+        for role in add + returns:
+            r = interaction.guild.get_role(role)
+            rm.append(r)
+        await user.remove_roles(*rm, reason="returning to lobby")
+        await user.add_roles(*ra, reason="returning to lobby")
+        await interaction.followup.send(
+                f"{user.mention} has been moved back to the lobby by {interaction.user.mention}")
+
+    @app_commands.command()
+    @permissions.check_app_roles()
+    async def agecheck(self, interaction: discord.Interaction, dob: str):
+        """Checks the age of a dob"""
+        age = AgeCalculations.dob_to_age(dob)
+        await interaction.response.send_message(f"As of today {dob} is {age} years old", ephemeral=True)
+
+    @commands.command(name="appprove")
+    @permissions.check_roles()
+    async def approve(self, ctx: commands.Context, user: discord.Member, age: int, dob: str):
+        """allows user to enter"""
+        dob = AgeCalculations.regex(dob)
+        await LobbyProcess.approve_user(ctx.guild, user, dob, age, ctx.author.name)
+        await ctx.message.delete()
 
 
-async def setup(bot: commands.Bot):
-    await bot.add_cog(lobby(bot))
+    # Event
+
+    @commands.Cog.listener()
+    async def on_member_join(self, member: discord.Member):
+        """posts the button for the user to verify with."""
+        lobby = ConfigData().get_key_int(member.guild.id, "lobby")
+        channel = member.guild.get_channel(lobby)
+        lobbywelcome = ConfigData().get_key(member.guild.id, "lobbywelcome")
+        await channel.send(f"Welcome {member.mention}! {lobbywelcome}", view=self.VerifyButton())
 
 
-session.commit()
+async def setup(bot):
+    """Adds the cog to the bot."""
+    await bot.add_cog(Lobby(bot))

@@ -1,159 +1,220 @@
+"""Config options for the bot."""
+import os
+
 import discord
 from discord import app_commands
-from discord.ext import commands
-from sqlalchemy.orm import sessionmaker
-
-import db
-import jtest
-from jtest import configer
-
-Session = sessionmaker(bind=db.engine)
-session = Session()
 from discord.app_commands import Choice
+from discord.ext import commands
 
+from classes import permissions
+from classes.databaseController import ConfigTransactions, ConfigData
+from views.modals.configinput import ConfigInputUnique
+from views.select.configselectroles import *
 
 class config(commands.GroupCog, name="config"):
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @app_commands.command(name="role", description="**CONFIG COMMAND**: Sets up the channels for the bot.")
-    @app_commands.choices(option=[
-        Choice(name="Admin", value="admin"),
-        Choice(name="Mod", value="mod"),
-        Choice(name="Trial", value="trial"),
-        Choice(name="Lobby Staff", value="lobbystaff")
-    ])
-    @app_commands.checks.has_permissions(manage_guild=True)
-    async def crole(self, interaction: discord.Interaction, option: Choice[str], input: discord.Role):
-        await interaction.response.defer(ephemeral=True)
-        c = session.query(db.config).filter_by(guild=interaction.guild.id).first()
-        p = session.query(db.permissions).filter_by(guild=interaction.guild.id).first()
-        match option.value:
-            case "admin":
-                p.admin = input.id
-                session.commit()
-                session.close()
-                await interaction.followup.send(f"Value **admin** role has been updated to {input.id}")
-            case "mod":
-                p.mod = input.id
-                session.commit()
-                session.close()
-                await interaction.followup.send(f"Value **mod** role has been updated to {input.id}")
-            case "trial":
-                p.trial = input.id
-                session.commit()
-                session.close()
-                await interaction.followup.send(f"Value **trial** role has been updated to {input.id}")
-            case "lobbystaff":
-                p.lobbystaff = input.id
-                session.commit()
-                session.close()
-                await interaction.followup.send(f"Value **lobbystaff** role has been updated to {input.id}")
-            case default:
-                await interaction.followup.send("""**Config options**: 
-• admin @role
-• mod @role
-• trial @role
-• lobbystaff @role""")
+    messagechoices = ['welcomemessage', "lobbywelcome"]
+    channelchoices = ['helpchannel', 'inviteinfo', 'general', "lobby", "lobbylog", "lobbymod",
+                      "idlog"]
+    rolechoices = {"moderator role": "mod", "administrator role": "admin", 'add to user': 'add', 'remove from user': "rem", "remove on return": "return"}
 
-    @app_commands.command(name="channel", description="**CONFIG COMMAND**: Sets up the channels for the bot")
-    @app_commands.choices(option=[
-        Choice(name="Lobby", value="lobby"),
-        Choice(name="Age logging channel", value="agelog"),
-        Choice(name="Moderator Lobby", value="modlobby"),
-        Choice(name="General Chat", value="general")
-    ])
-    @app_commands.checks.has_permissions(manage_guild=True)
-    async def cchannel(self, interaction: discord.Interaction, option: Choice[str], input: discord.TextChannel):
-        print(interaction.guild.id)
-        c = session.query(db.config).filter_by(guild=interaction.guild.id).first()
-        p = session.query(db.permissions).filter_by(guild=interaction.guild.id).first()
-        await interaction.response.defer(ephemeral=True)
-        match option.value:
-            case "lobby":
-                c.lobby = input.id
-                session.commit()
-                session.close()
-                await interaction.followup.send(f"Value **lobby** channel has been updated to {input.id}")
-            case "agelog":
-                c.agelog = input.id
-                session.commit()
-                session.close()
-                await interaction.followup.send(f"Value **agelog** channel has been updated to {input.id}")
-            case "modlobby":
-                c.modlobby = input.id
-                session.commit()
-                session.close()
-                await interaction.followup.send(f"Value **modlobby** channel has been updated to {input.id}")
-            case "general":
-                c.general = input.id
-                session.commit()
-                session.close()
-                await interaction.followup.send(f"Value **general** channel has been updated to {input.id}")
-            case default:
-                await interaction.followup.send("""**Config options**: 
-• lobby #channel
-• agelog #channel
-• modlobby #channel
-• general #channel
-""")
 
-    @app_commands.command(name="welcome",
-                          description="**CONFIG COMMAND**: turns on/off welcome message for when /approve is used")
+    @app_commands.command(name='setup')
     @app_commands.checks.has_permissions(manage_guild=True)
-    @app_commands.choices(option=[
-        Choice(name="on", value="True"),
-        Choice(name="off", value="False")
-    ])
-    async def welcome(self, interaction: discord.Interaction, option: Choice[str]):
+    async def configsetup(self, interaction: discord.Interaction):
+        """Sets up the config for the bot."""
         await interaction.response.defer(ephemeral=True)
-        match option.value:
-            case "True":
-                await configer.welcome(interaction.guild.id, interaction, "welcomeusers", True)
-            case "False":
-                await configer.welcome(interaction.guild.id, interaction, "welcomeusers", False)
-            case default:
-                await interaction.followup.send("ERROR: couldn't edit. Contact Rico")
+        for item in self.channelchoices:
+            view = ConfigSelectChannels()
+            msg = await interaction.channel.send(f"Choose a channel for key: {item}", view=view)
+            await view.wait()
+            await msg.delete()
+            if view.value is None:
+                await interaction.followup.send("Setup cancelled")
+                return
+            ConfigTransactions.config_unique_add(interaction.guild.id, item, int(view.value[0]), overwrite=True)
+        for expl,role in self.rolechoices.items():
+            view = ConfigSelectRoles()
+            msg = await interaction.channel.send(f"{expl}: {role}\nWill add role to the config, if you wish for the old role to be deleted please use the /config role command.", view=view)
+            await view.wait()
+            await msg.delete()
+            if view.value is None:
+                await interaction.followup.send("Setup cancelled")
+                return
+            ConfigTransactions.config_key_add(interaction.guild.id, role, int(view.value[0]), overwrite=True)
+        await interaction.followup.send("Config has been set up, please setup the messages with /config messages", ephemeral=True)
 
-    @app_commands.command(name="delete", description="**CONFIG COMMAND**: turns on/off deletion of messages.")
+    @app_commands.command()
+    @app_commands.choices(key=[Choice(name=x, value=x) for x in messagechoices])
+    @app_commands.choices(action=[Choice(name=x, value=x) for x in ['set', 'Remove']])
     @app_commands.checks.has_permissions(manage_guild=True)
-    @app_commands.choices(option=[
-        Choice(name="on", value="True"),
-        Choice(name="off", value="False")
-    ])
-    async def lobbydelete(self, interaction: discord.Interaction, option: Choice[str]):
+    async def messages(self, interaction: discord.Interaction, key: Choice[str], action: Choice[str]):
+        """Sets the messages such as welcome, lobby welcome and reminder messages."""
+        match action.value.lower():
+            case 'set':
+                await interaction.response.send_modal(ConfigInputUnique(key=key.value))
+            case 'remove':
+                await interaction.response.defer(ephemeral=True)
+                result = ConfigTransactions.config_unique_remove(guildid=interaction.guild.id, key=key.value)
+                if result is False:
+                    await interaction.followup.send(f"{key.value} was not in database")
+                    return
+                await interaction.followup.send(f"{key.value} has been removed from the database")
+            case _:
+                raise NotImplementedError
+
+    @app_commands.command()
+    @app_commands.choices(action=[Choice(name=x, value=x) for x in ["enabled", "disabled"]])
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def welcometoggle(self, interaction: discord.Interaction, action: Choice[str]):
+        """Enables/Disables the welcome message for the general channel."""
+        match action.value.upper():
+            case "ENABLED":
+                ConfigTransactions.toggle_welcome(interaction.guild.id, "WELCOME", action.value.upper())
+            case "DISABLED":
+                ConfigTransactions.toggle_welcome(interaction.guild.id, "WELCOME", action.value.upper())
+        await interaction.response.send_message(f"Welcome has been set to {action.value}", ephemeral=True)
+
+    @app_commands.command()
+    @app_commands.choices(key=[Choice(name=x, value=x) for x in channelchoices])
+    @app_commands.choices(action=[Choice(name=x, value=x) for x in ["set", "remove"]])
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def channels(self, interaction: discord.Interaction, key: Choice[str], action: Choice[str],
+                       value: discord.TextChannel = None):
+        """adds the channels to the config, you can only add 1 value per option."""
         await interaction.response.defer(ephemeral=True)
-        match option.value:
-            case "True":
-                configer.trueorfalse(interaction.guild.id, "delete", True)
-                await interaction.followup.send("Automatic deletion of messages is now **__on__**")
-            case "False":
-                configer.trueorfalse(interaction.guild.id, "delete", False)
-                await interaction.followup.send("Automatic deletion of messages is now **__off__**")
-            case default:
-                await interaction.followup.send("ERROR: couldn't edit. Contact Rico")
+        if value is not None:
+            value = value.id
+        match action.value.lower():
+            case 'set':
+                ConfigTransactions.config_unique_add(guildid=interaction.guild.id, key=key.value, value=value,
+                                                     overwrite=True)
+                await interaction.followup.send(f"{key.value} has been added to the database with value:\n{value}")
+            case 'remove':
+                result = ConfigTransactions.config_unique_remove(guildid=interaction.guild.id, key=key.value)
+                if result is False:
+                    await interaction.followup.send(f"{key.value} was not in database")
+                    return
+                await interaction.followup.send(f"{key.value} has been removed from the database")
+            case _:
+                raise NotImplementedError
 
-    @app_commands.command(name="welcomemessage",
-                          description="**CONFIG COMMAND**: changes welcome message for when /approve is used")
+    @app_commands.command()
+    @app_commands.choices(action=[Choice(name=x, value=x) for x in ['add', 'remove']])
     @app_commands.checks.has_permissions(manage_guild=True)
-    async def welcomemessage(self, interaction: discord.Interaction, message: str):
+    async def forums(self, interaction: discord.Interaction, action: Choice[str],
+                     value: discord.ForumChannel = None):
+        """Adds forums to the automod for checking. You can add multiple forums!"""
         await interaction.response.defer(ephemeral=True)
-        await configer.welcome(interaction.guild.id, interaction, "welcome", message)
+        value = value.id
+        match action.value.lower():
+            case 'add':
+                ConfigTransactions.config_key_add(guildid=interaction.guild.id, key="FORUM", value=value,
+                                                  overwrite=True)
+                await interaction.followup.send(f"Forum has been added to the database with value:\n{value}")
+            case 'remove':
+                result = ConfigTransactions.config_key_remove(guildid=interaction.guild.id, key="FORUM", value=value)
+                if result is False:
+                    await interaction.followup.send(f"<#{value}> was not in database")
+                    return
+                await interaction.followup.send(f"<#{value}> has been removed from the database")
+            case _:
+                raise NotImplementedError
 
-    @app_commands.command(name="view")
+    @app_commands.command()
+    @app_commands.choices(key=[Choice(name=ke, value=val) for ke, val in rolechoices.items()])
+    @app_commands.choices(action=[Choice(name=x, value=x) for x in ['add', 'Remove']])
     @app_commands.checks.has_permissions(manage_guild=True)
-    async def viewconfig(self, interaction: discord.Interaction):
+    async def roles(self, interaction: discord.Interaction, key: Choice[str], action: Choice[str], value: discord.Role):
+        """Add roles to the database, for the bot to use."""
+        await interaction.response.defer(ephemeral=True)
+        value = value.id
+        match action.value.lower():
+            case 'add':
+                result = ConfigTransactions.config_key_add(guildid=interaction.guild.id, key=key.value.upper(),
+                                                           value=value, overwrite=False)
+                if result is False:
+                    await interaction.followup.send(f"{key.name}: <@&{value}> already exists")
+                    return
+                await interaction.followup.send(f"{key.name}: <@&{value}> has been added to the database")
+            case 'remove':
+                result = ConfigTransactions.config_key_remove(guildid=interaction.guild.id, key=key.value.upper(),
+                                                              value=value)
+                if result is False:
+                    await interaction.followup.send(f"{key.name}: <@&{value}> could not be found in database")
+                await interaction.followup.send(f"{key.name}: <@&{value}> has been removed from the database")
+            case _:
+                raise NotImplementedError
+
+    @app_commands.command()
+    @app_commands.choices(action=[Choice(name=x, value=x) for x in ["add", "remove"]])
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def searchcommands(self, interaction: discord.Interaction, action: Choice[str], name: str):
+        """Adds search command to the /forum warn command"""
+
+        if len(name) > 10:
+            await interaction.followup.send("Please keep the name under 10 characters")
+            return
+        key = f"SEARCH-{name}"
+        match action.value.lower():
+            case 'add':
+
+                await interaction.response.send_modal(ConfigInputUnique(key=key))
+
+            case 'remove':
+                await interaction.response.defer(ephemeral=True)
+                result = ConfigTransactions.config_unique_remove(guildid=interaction.guild.id, key=key.upper())
+                if result is False:
+                    await interaction.followup.send(f"{key.name} could not be found in database")
+                await interaction.followup.send(f"{key.name} has been removed from the database")
+            case _:
+                raise NotImplementedError
+
+    @app_commands.command()
+    @app_commands.choices(action=[Choice(name=x, value=x) for x in ["add", "remove"]])
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def banmessages(self, interaction: discord.Interaction, action: Choice[str], name: str):
+        """Adds an option to the /ban command."""
+
+        if len(name) > 10:
+            await interaction.followup.send("Please keep the name under 10 characters")
+            return
+        key = f"BAN-{name}"
+        match action.value.lower():
+            case 'add':
+                await interaction.response.send_modal(ConfigInputUnique(key=key))
+            case 'remove':
+                await interaction.response.defer(ephemeral=True)
+                result = ConfigTransactions.config_unique_remove(guildid=interaction.guild.id, key=key.upper())
+                if result is False:
+                    await interaction.followup.send(f"{key.name} could not be found in database")
+                await interaction.followup.send(f"{key.name} has been removed from the database")
+            case _:
+                raise NotImplementedError
+
+    @app_commands.command()
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def view(self, interaction: discord.Interaction):
+        """Prints all the config options"""
+        # configoptions = ['welcomemessage', "lobbywelcome", "reminder", "dev", 'helpchannel', 'inviteinfo', 'general', "lobby", "lobbylog", "lobbymod",
+        #                  "idlog", "advertmod", "advertlog", "removallog", "nsfwlog", "warnlog", "FORUM", "mod", "admin", "add", "rem", "18", "21", "25", "return", "nsfw", "partner", "posttimeout", "SEARCH"]
+
+        roles = [x for x in self.rolechoices.values()]
+        other = ["FORUM", "SEARCH"]
+        optionsall = self.messagechoices + self.channelchoices + roles
         await interaction.response.defer()
-
-        channels = session.query(db.config).filter_by(guild=interaction.guild.id).first()
-        roles = session.query(db.permissions).filter_by(guild=interaction.guild.id).first()
-        await interaction.followup.send(
-            f"{await jtest.configer.viewconfig(interaction, interaction.guild.id)}\nAdmin role: {roles.admin}\nMod role: {roles.mod}\nTrial role: {roles.trial}\nLobbystaff (ping)role: {roles.lobbystaff}\n\n Lobby channel: {channels.lobby}\n Agelog channel: {channels.agelog}\nmodlobby channel: {channels.modlobby}\ngeneral channel: {channels.general}")
+        with open('config.txt', 'w') as file:
+            file.write(f"Config for {interaction.guild.name}: \n\n")
+            for item in optionsall:
+                info = ConfigData().get_key_or_none(interaction.guild.id, item)
+                file.write(f"{item}: {info}\n")
+        await interaction.followup.send(f"Config for {interaction.guild.name}", file=discord.File(file.name))
+        os.remove(file.name)
 
 
 async def setup(bot: commands.Bot):
+    """Adds the cog to the bot"""
     await bot.add_cog(config(bot))
-
-
-session.commit()

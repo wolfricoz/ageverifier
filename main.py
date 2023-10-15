@@ -1,136 +1,101 @@
-#!/usr/bin/env python
+# IMPORT DISCORD.PY. ALLOWS ACCESS TO DISCORD'S API.
+# IMPORT THE OS MODULE.
 import os
 
-# imports discord
 import discord
 from discord.ext import commands
-# imports dotenv, and loads items
+# IMPORT LOAD_DOTENV FUNCTION FROM DOTENV MODULE.
 from dotenv import load_dotenv
-from sqlalchemy.orm import sessionmaker
 
-load_dotenv("config.env")
-prefix = os.getenv('PREFIX')
-TOKEN = os.getenv('TOKEN')
-# declares bots intents, and allows commands to be ran
-intent = discord.Intents.default()
-intent.message_content = True
-intent.members = True
-activity = discord.Activity(type=discord.ActivityType.watching, name="age verificationn")
-bot = commands.Bot(command_prefix=prefix, case_insensitive=False, intents=intent, activity=activity,
-                   status=discord.Status.online)
-from jtest import configer
-# imports database and starts it
-import db
+from classes import permissions
+from classes.databaseController import ConfigData, ConfigTransactions, UserTransactions
+from databases import current as db
 
-# error logging
-exec(open("db.py").read())
-Session = sessionmaker(bind=db.engine)
-session = Session()
+# Creating database
+db.database.create()
+# Declares the bots intent
+
+# Load the data from env
+load_dotenv('rmrbot/.env')
+DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
+PREFIX = os.getenv("PREFIX")
+DBTOKEN = os.getenv("DB")
+version = os.getenv('VERSION')
+intents = discord.Intents.default()
+intents.message_content = True
+intents.members = True
+activity = discord.Activity(type=discord.ActivityType.watching, name="over RMR")
+bot = commands.Bot(command_prefix=PREFIX, case_insensitive=False, intents=intents, activity=activity)
+bot.DEV = int(os.getenv("DEV"))
 
 
+# Move to devtools?
 @bot.command()
-async def sync(ctx):
-    s = await ctx.bot.tree.sync()
-    await ctx.send(f"bot has synced {len(s)} servers")
+@commands.is_owner()
+async def stop(ctx):
+    await ctx.send("Rmrbot shutting down")
+    exit()
 
 
-class main():
-    @bot.event
-    async def on_ready():
-        # CREATES A COUNTER TO KEEP TRACK OF HOW MANY GUILDS / SERVERS THE BOT IS CONNECTED TO.
-        guild_count = 0
-        guilds = []
-        # LOOPS THROUGH ALL THE GUILD / SERVERS THAT THE BOT IS ASSOCIATED WITH.
+bot.invites = {}
 
-        for guild in bot.guilds:
-            # PRINT THE SERVER'S ID AND NAME AND CHECKS IF GUILD CONFIG EXISTS, IF NOT IT CREATES.
-            guilds.append(f"- {guild.id} (name: {guild.name})")
-            await configer.create(guild.id, guild.name)
-            await configer.updateconfig(guild.id)
 
-            # INCREMENTS THE GUILD COUNTER.
-            guild_count = guild_count + 1
-            # ADDS GUILDS TO MYSQL DATABASE
-            exists = session.query(db.config).filter_by(guild=guild.id).first()
-            if exists is not None:
-                pass
-            else:
-                try:
-                    tr = db.config(guild.id, None, None, None, None)
-                    session.add(tr)
-                    session.commit()
-                    session.close()
-                except:
-                    session.rollback()
-                    session.close()
-            p = session.query(db.permissions).filter_by(guild=guild.id).first()
-            if p is not None:
-                pass
-            else:
-                try:
-                    tr = db.permissions(guild.id, None, None, None, None)
-                    session.add(tr)
-                    session.commit()
-                    session.close()
-                except:
-                    session.rollback()
-                    session.close()
-        # PRINTS HOW MANY GUILDS / SERVERS THE BOT IS IN.
-        formguilds = "\n".join(guilds)
-        devroom = bot.get_channel(1022319186950758472)
-        await devroom.send(f"{formguilds} \nAgeverifier 1.3 is in {guild_count} guilds.")
-        # SYNCS UP SLASH COMMANDS
-        await bot.tree.sync()
-        return guilds
+# EVENT LISTENER FOR WHEN THE BOT HAS SWITCHED FROM OFFLINE TO ONLINE.
+@bot.event
+async def on_ready():
+    devroom = bot.get_channel(bot.DEV)
+    # CREATES A COUNTER TO KEEP TRACK OF HOW MANY GUILDS / SERVERS THE BOT IS CONNECTED TO.
+    guilds = []
+    for guild in bot.guilds:
+        ConfigTransactions.server_add(guild.id)
+        ConfigData().load_guild(guild.id)
+        guilds.append(guild.name)
+        bot.invites[guild.id] = await guild.invites()
+    formguilds = "\n".join(guilds)
+    await bot.tree.sync()
+    await devroom.send(f"{formguilds} \nAgeVerifier is in {len(guilds)} guilds. Ageverifier {version}")
+    print("Commands synced, start up _done_")
+    return guilds
 
-    @bot.event
-    async def on_guild_join(guild):
-        # adds guild to database and creates a config
-        exists = session.query(db.config).filter_by(guild=guild.id).first()
-        if exists is not None:
-            pass
+
+# This can become its own cog.
+@bot.event
+async def on_guild_join(guild):
+    # adds user to database
+    ConfigTransactions.server_add(guild.id)
+    ConfigData().load_guild(guild.id)
+
+
+@bot.event
+async def on_member_join(member):
+    UserTransactions.add_user_empty(member.id)
+
+
+# cogloader
+@bot.event
+async def setup_hook():
+    bot.lobbyages = bot.get_channel(454425835064262657)
+    for filename in os.listdir("modules"):
+
+        if filename.endswith('.py'):
+            await bot.load_extension(f"modules.{filename[:-3]}")
+            print({filename[:-3]})
         else:
-            try:
-                tr = db.config(guild.id, None, None, None, None)
-                session.add(tr)
-                session.commit()
-                session.close()
-            except:
-                session.rollback()
-                session.close()
-        p = session.query(db.permissions).filter_by(guild=guild.id).first()
-        if p is not None:
-            pass
-        else:
-            try:
-                tr = db.permissions(guild.id, None, None, None, None)
-                session.add(tr)
-                session.commit()
-                session.close()
-            except:
-                session.rollback()
-                session.close()
-        # CREATES JSON
-        await configer.create(guild.id, guild.name)
-        # SYNCS COMMANDS
-        await bot.tree.sync()
-        # sends owner instructions
-        await guild.owner.send(
-            "Thank you for inviting Age Verifier, please read https://docs.google.com/document/d/1jlDPYCjYO0vpIcDpKAuWBX-iNDyxOTSdLhn_SsVGeks/edit?usp=sharing to set up the bot")
-        log = bot.get_channel(1022319186950758472)
-        await log.send(f"Joined {guild}({guild.id})")
-
-    @bot.event
-    async def setup_hook():
-        '''Connects the cogs to the bot'''
-        for filename in os.listdir("modules"):
-            if filename.endswith('.py'):
-                await bot.load_extension(f"modules.{filename[:-3]}")
-                print({filename[:-3]})
-            else:
-                print(f'Unable to load {filename[:-3]}')
-
-    tree = bot.tree
+            print(f'Unable to load {filename[:-3]}')
 
 
-bot.run(TOKEN)
+@bot.command(aliases=["cr", "reload"])
+@permissions.check_roles_admin()
+async def cogreload(ctx):
+    filesloaded = []
+    for filename in os.listdir("modules"):
+        if filename.endswith('.py'):
+            await bot.reload_extension(f"modules.{filename[:-3]}")
+            filesloaded.append(filename[:-3])
+    fp = ', '.join(filesloaded)
+    await ctx.send(f"Modules loaded: {fp}")
+    await bot.tree.sync()
+
+
+# EXECUTES THE BOT WITH THE SPECIFIED TOKEN.
+bot.run(DISCORD_TOKEN)
