@@ -50,7 +50,11 @@ async def on_ready():
         ConfigTransactions.server_add(guild.id)
         ConfigData().load_guild(guild.id)
         guilds.append(guild.name)
-        bot.invites[guild.id] = await guild.invites()
+        try:
+            bot.invites[guild.id] = await guild.invites()
+        except discord.errors.Forbidden:
+            await guild.owner.send("I need the manage server permission to work properly.")
+            pass
     formguilds = "\n".join(guilds)
     await bot.tree.sync()
     await devroom.send(f"{formguilds} \nAgeVerifier is in {len(guilds)} guilds. Ageverifier {version}")
