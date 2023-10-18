@@ -20,6 +20,7 @@ class inviteInfo(commands.Cog):
     @commands.Cog.listener()
     async def on_member_join(self, member):
         """reads invite dictionary, and outputs user info"""
+        self.bot.invites[member.guild.id] = await member.guild.invites()
         infochannel = ConfigData().get_key_int(member.guild.id, 'inviteinfo')
         if infochannel is None:
             return
@@ -39,7 +40,7 @@ Member joined at {datetime.now().strftime("%m/%d/%Y")}
                 except:
                     pass
                 embed.set_footer(text=f"USERID: {member.id}")
-                channel = self.bot.get_channel(1155647574288642060)
+                channel = self.bot.get_channel(infochannel)
                 await channel.send(embed=embed)
 
                 self.bot.invites[member.guild.id] = invites_after_join
