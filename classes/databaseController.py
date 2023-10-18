@@ -353,6 +353,7 @@ class VerificationTransactions(ABC):
         UserTransactions.add_user_empty(userid, True)
         idcheck = IdVerification(uid=userid, verifieddob=datetime.strptime(dob, "%m/%d/%Y"), idverified=idcheck)
         session.add(idcheck)
+
         session.commit()
         UserTransactions.update_user_dob(userid, dob)
 
@@ -366,6 +367,8 @@ class VerificationTransactions(ABC):
             return
         userdata.verifieddob = datetime.strptime(dob, "%m/%d/%Y")
         userdata.idverified = idcheck
+        userdata.idcheck = False
+        userdata.reason = "User ID Verified"
         session.commit()
         UserTransactions.update_user_dob(userid, dob)
 

@@ -2,6 +2,9 @@ import datetime
 import re
 from abc import ABC, abstractmethod
 import discord
+from discord.utils import get
+
+from classes.AgeCalculations import AgeCalculations
 from classes.databaseController import UserTransactions, ConfigData
 
 
@@ -9,40 +12,42 @@ class LobbyProcess(ABC):
     @staticmethod
     @abstractmethod
     async def approve_user(guild, user, dob, age, staff):
+        # checks if user is on the id list
+        if await AgeCalculations.id_check(guild, user):
+            return
         # updates user's age if it exists, otherwise makes a new entry
         UserTransactions.update_user_dob(user.id, dob)
-        # Adds roles to the user
-        await LobbyProcess.add_roles_user(user, guild)
-        # Removes roles from the user
-        await LobbyProcess.remove_roles_user(user, guild)
-        # check add the right age role
+
+        # check add the right age role, not needed for ageverifier.
         # await LobbyProcess.calculate_age_role(user, guild, age)
+
+        # changes user's roles; adds and removes
+        await LobbyProcess.change_user_roles(user, guild)
+
         # Log age and dob to lobbylog
         await LobbyProcess.log(user, guild, dob, age, staff)
+
         # fetches welcoming message and welcomes them in general channel
         await LobbyProcess.welcome(user, guild)
-        # Cleans up the messages
+
+        # Cleans up the messages in the lobby and where the command was executed
         await LobbyProcess.clean_up(guild, user)
 
     @staticmethod
     @abstractmethod
-    async def add_roles_user(user, guild):
-        confroles = ConfigData().get_key(guild.id, "ADD")
-        roles = []
-        for role in confroles:
-            verrole = guild.get_role(int(role))
-            roles.append(verrole)
-        await user.add_roles(*roles)
-
-    @staticmethod
-    @abstractmethod
-    async def remove_roles_user(user, guild):
-        confroles = ConfigData().get_key(guild.id, "REM")
-        roles = []
-        for role in confroles:
-            verrole = guild.get_role(int(role))
-            roles.append(verrole)
-        await user.remove_roles(*roles)
+    async def change_user_roles(user, guild):
+        confaddroles = ConfigData().get_key(guild.id, "ADD")
+        add_roles = []
+        for role in confaddroles:
+            verrole = get(guild.roles, id=int(role))
+            add_roles.append(verrole)
+        confremroles = ConfigData().get_key(guild.id, "REM")
+        rem_roles = []
+        for role in confremroles:
+            verrole = get(guild.roles, id=int(role))
+            rem_roles.append(verrole)
+        await user.remove_roles(*rem_roles)
+        await user.add_roles(*add_roles)
 
     @staticmethod
     @abstractmethod
