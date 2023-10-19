@@ -53,7 +53,10 @@ async def on_ready():
         try:
             bot.invites[guild.id] = await guild.invites()
         except discord.errors.Forbidden:
-            await guild.owner.send("I need the manage server permission to work properly.")
+            try:
+                await guild.owner.send("I need the manage server permission to work properly.")
+            except discord.errors.Forbidden:
+                print(f"Unable to send message to {guild.owner.name} in {guild.name}")
             pass
     formguilds = "\n".join(guilds)
     await bot.tree.sync()
