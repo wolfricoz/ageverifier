@@ -273,7 +273,7 @@ UID: {user.id}
         age = AgeCalculations.dob_to_age(dob)
         await interaction.response.send_message(f"As of today {dob} is {age} years old", ephemeral=True)
 
-    @commands.command(name="appprove")
+    @commands.command(name="approve")
     @permissions.check_roles()
     async def approve(self, ctx: commands.Context, user: discord.Member, age: int, dob: str):
         """allows user to enter"""
