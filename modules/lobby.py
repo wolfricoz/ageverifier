@@ -78,7 +78,7 @@ class Lobby(commands.GroupCog):
             agechecked, years = AgeCalculations.agechecker(age, dob)
             if agechecked != 0:
                 await idchannel.send(
-                        f"[Info] <@{admin[0]}> User {interaction.user.mention}\'s age does not match and has been timed out. User gave {age} but dob indicates {years}\n"
+                        f"[Info] <@&{admin[0]}> User {interaction.user.mention}\'s age does not match and has been timed out. User gave {age} but dob indicates {years}\n"
                         f"[Lobby Debug] Age: {age} dob {dob}")
                 await interaction.response.send_message(
                         f'A staff member will contact you within 24 hours, please wait patiently.',
@@ -87,7 +87,7 @@ class Lobby(commands.GroupCog):
             # Checks if user has a date of birth in the database, and if the date of births match.
             if AgeCalculations.check_date_of_birth(userdata, dob) is False:
                 await idchannel.send(
-                        f"[Info] <@{admin[0]}> User {interaction.user.mention}\'s date of birth does not match. Given: {dob} Recorded: {userdata.dob.strftime('%m/%d/%Y')}\n"
+                        f"[Info] <@&{admin[0]}> User {interaction.user.mention}\'s date of birth does not match. Given: {dob} Recorded: {userdata.dob.strftime('%m/%d/%Y')}\n"
                         f"[Lobby Debug] Age: {age} dob {dob}")
                 await interaction.response.send_message(
                         f'A staff member will contact you within 24 hours, please wait patiently.',
