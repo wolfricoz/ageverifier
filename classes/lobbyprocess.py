@@ -25,7 +25,7 @@ class LobbyProcess(ABC):
         await LobbyProcess.change_user_roles(user, guild)
 
         # Log age and dob to lobbylog
-        await LobbyProcess.log(user, guild, dob, age, staff)
+        await LobbyProcess.log(user, guild, age, dob, staff)
 
         # fetches welcoming message and welcomes them in general channel
         await LobbyProcess.welcome(user, guild)
