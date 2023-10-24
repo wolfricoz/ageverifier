@@ -4,9 +4,10 @@ from abc import ABC, abstractmethod
 from datetime import timezone, timedelta
 
 import sqlalchemy.exc
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import Select
-from sqlalchemy.exc import SQLAlchemyError
+
 import databases.current as db
 from databases.current import *
 
@@ -17,6 +18,14 @@ class ConfigNotFound(Exception):
     """config item was not found or has not been added yet."""
 
     def __init__(self, message="guild config has not been loaded yet or has not been created yet."):
+        self.message = message
+        super().__init__(self.message)
+
+
+class CommitError(Exception):
+    """the commit failed."""
+
+    def __init__(self, message="Commiting the data to the database failed and has been rolled back; please try again."):
         self.message = message
         super().__init__(self.message)
 
@@ -39,6 +48,21 @@ class UserNotFound(Exception):
         super().__init__(self.message)
 
 
+class DatabaseTransactions(ABC):
+
+    @staticmethod
+    @abstractmethod
+    def commit(session):
+        try:
+            session.commit()
+        except SQLAlchemyError as e:
+            print(e)
+            session.rollback()
+            raise CommitError()
+        finally:
+            session.close()
+
+
 class UserTransactions(ABC):
 
     @staticmethod
@@ -48,7 +72,7 @@ class UserTransactions(ABC):
             return False
         item = db.Users(uid=userid)
         session.merge(item)
-        session.commit()
+        DatabaseTransactions.commit(session)
         return True
 
     @staticmethod
@@ -57,7 +81,7 @@ class UserTransactions(ABC):
         try:
             item = db.Users(uid=userid, dob=datetime.strptime(dob, "%m/%d/%Y"), entry=datetime.now(tz=timezone.utc))
             session.merge(item)
-            session.commit()
+            DatabaseTransactions.commit(session)
             return True
         except ValueError:
             return False
@@ -67,14 +91,11 @@ class UserTransactions(ABC):
     def update_user_dob(userid: int, dob: str):
         userdata: Users = session.scalar(Select(Users).where(Users.uid == userid))
         if userdata is None:
-            print("entry not found, making a new one.")
             UserTransactions.add_user_full(userid, dob)
             return False
-        print("entry found, updating now")
         userdata.dob = datetime.strptime(dob, "%m/%d/%Y")
         userdata.entry = datetime.now(tz=timezone.utc)
-        print(datetime.now(tz=timezone.utc))
-        session.commit()
+        DatabaseTransactions.commit(session)
         return True
 
     @staticmethod
@@ -85,7 +106,7 @@ class UserTransactions(ABC):
             if userdata is None:
                 return False
             session.delete(userdata)
-            session.commit()
+            DatabaseTransactions.commit(session)
             return True
         except sqlalchemy.exc.IntegrityError:
             session.rollback()
@@ -111,7 +132,7 @@ class UserTransactions(ABC):
         try:
             userdata = session.scalar(Select(Users).where(Users.uid == userid))
             userdata.entry = datetime.now()
-            session.commit()
+            DatabaseTransactions.commit(session)
         except SQLAlchemyError:
             session.rollback()
             session.close()
@@ -128,7 +149,7 @@ class UserTransactions(ABC):
             return False
         exists = session.scalar(Select(db.Config).where(db.Config.guild == guildid, db.Config.key == key.upper()))
         session.delete(exists)
-        session.commit()
+        DatabaseTransactions.commit(session)
         ConfigData().load_guild(guildid)
         return True
 
@@ -148,7 +169,7 @@ class UserTransactions(ABC):
     def user_add_warning(userid: int, reason: str):
         item = db.Warnings(uid=userid, reason=reason, type="WARN")
         session.add(item)
-        session.commit()
+        DatabaseTransactions.commit(session)
         return True
 
     @staticmethod
@@ -156,7 +177,7 @@ class UserTransactions(ABC):
     def user_add_watchlist(userid: int, reason: str):
         item = db.Warnings(uid=userid, reason=reason, type="WATCH")
         session.add(item)
-        session.commit()
+        DatabaseTransactions.commit(session)
         return True
 
     @staticmethod
@@ -178,7 +199,7 @@ class UserTransactions(ABC):
     def user_remove_warning(id: int):
         warning = session.scalar(Select(Warnings).where(Warnings.id == id))
         session.delete(warning)
-        session.commit()
+        DatabaseTransactions.commit(session)
 
 
 # RULE: ALL db transactions have to go through this file. Keep to it dumbass
@@ -193,7 +214,7 @@ class ConfigTransactions(ABC):
             return False
         item = db.Config(guild=guildid, key=key.upper(), value=value)
         session.merge(item)
-        session.commit()
+        DatabaseTransactions.commit(session)
         ConfigData().load_guild(guildid)
         return True
 
@@ -207,7 +228,7 @@ class ConfigTransactions(ABC):
             ConfigTransactions.config_unique_add(guildid, key, value, overwrite=True)
             return
         guilddata.value = value
-        session.commit()
+        DatabaseTransactions.commit(session)
         ConfigData().load_guild(guildid)
         return True
 
@@ -227,7 +248,7 @@ class ConfigTransactions(ABC):
             return False
         item = db.Config(guild=guildid, key=key.upper(), value=value)
         session.add(item)
-        session.commit()
+        DatabaseTransactions.commit(session)
         ConfigData().load_guild(guildid)
         return True
 
@@ -249,7 +270,7 @@ class ConfigTransactions(ABC):
         exists = session.scalar(
                 Select(db.Config).where(db.Config.guild == guildid, db.Config.key == key, db.Config.value == value))
         session.delete(exists)
-        session.commit()
+        DatabaseTransactions.commit(session)
         ConfigData().load_guild(guildid)
 
     @staticmethod
@@ -260,7 +281,7 @@ class ConfigTransactions(ABC):
         exists = session.scalar(
                 Select(db.Config).where(db.Config.guild == guildid, db.Config.key == key))
         session.delete(exists)
-        session.commit()
+        DatabaseTransactions.commit(session)
         ConfigData().load_guild(guildid)
 
     @staticmethod
@@ -278,7 +299,7 @@ class ConfigTransactions(ABC):
     def server_add(guildid):
         g = db.Servers(guild=guildid)
         session.merge(g)
-        session.commit()
+        DatabaseTransactions.commit(session)
         ConfigTransactions.welcome_add(guildid)
         ConfigData().load_guild(guildid)
 
@@ -289,7 +310,7 @@ class ConfigTransactions(ABC):
             return
         welcome = Config(guild=guildid, key="WELCOME", value="ENABLED")
         session.merge(welcome)
-        session.commit()
+        DatabaseTransactions.commit(session)
 
     @staticmethod
     @abstractmethod
@@ -315,7 +336,7 @@ class VerificationTransactions(ABC):
             return
         userdata.reason = reason
         userdata.idcheck = idcheck
-        session.commit()
+        DatabaseTransactions.commit(session)
 
     @staticmethod
     @abstractmethod
@@ -323,7 +344,7 @@ class VerificationTransactions(ABC):
         UserTransactions.add_user_empty(userid, True)
         idcheck = IdVerification(uid=userid, reason=reason, idcheck=idcheck)
         session.add(idcheck)
-        session.commit()
+        DatabaseTransactions.commit(session)
 
     @staticmethod
     @abstractmethod
@@ -334,7 +355,7 @@ class VerificationTransactions(ABC):
             return
         userdata.idcheck = True
         userdata.reason = reason
-        session.commit()
+        DatabaseTransactions.commit(session)
 
     @staticmethod
     @abstractmethod
@@ -345,7 +366,7 @@ class VerificationTransactions(ABC):
             return
         userdata.idcheck = False
         userdata.reason = None
-        session.commit()
+        DatabaseTransactions.commit(session)
 
     @staticmethod
     @abstractmethod
@@ -353,23 +374,22 @@ class VerificationTransactions(ABC):
         UserTransactions.add_user_empty(userid, True)
         idcheck = IdVerification(uid=userid, verifieddob=datetime.strptime(dob, "%m/%d/%Y"), idverified=idcheck)
         session.add(idcheck)
-
-        session.commit()
+        DatabaseTransactions.commit(session)
         UserTransactions.update_user_dob(userid, dob)
 
     @staticmethod
     @abstractmethod
-    def idverify_update(userid, dob: str, idcheck=True):
+    def idverify_update(userid, dob: str, idverified=True):
 
         userdata = session.scalar(Select(IdVerification).where(IdVerification.uid == userid))
         if userdata is None:
-            VerificationTransactions.add_idcheck(userid, dob)
+            VerificationTransactions.add_idcheck(userid, dob, idcheck=False)
             return
         userdata.verifieddob = datetime.strptime(dob, "%m/%d/%Y")
-        userdata.idverified = idcheck
+        userdata.idverified = idverified
         userdata.idcheck = False
         userdata.reason = "User ID Verified"
-        session.commit()
+        DatabaseTransactions.commit(session)
         UserTransactions.update_user_dob(userid, dob)
 
 
@@ -417,13 +437,14 @@ class ConfigData(ABC):
         try:
             return int(self.conf[guildid][key.upper()])
         except KeyError:
-            raise KeyNotFound(key)
+            raise KeyNotFound(key.upper())
 
     def get_key(self, guildid: int, key: str):
         try:
             return self.conf[guildid][key.upper()]
+
         except KeyError:
-            raise KeyNotFound(key)
+            raise KeyNotFound(key.upper())
 
     def get_key_or_none(self, guildid: int, key: str):
         return self.conf[guildid].get(key.upper(), None)
@@ -457,7 +478,7 @@ class SearchWarningTransactions(ABC):
         UserTransactions.add_user_empty(userid)
         search_warning = Warnings(uid=userid, reason=reason, type="SEARCH")
         session.add(search_warning)
-        session.commit()
+        DatabaseTransactions.commit(session)
         total_warnings, active_warnings = SearchWarningTransactions.get_total_warnings(userid)
         return total_warnings, active_warnings
 
@@ -469,7 +490,7 @@ class TimersTransactions(ABC):
         """Adds timer to the database"""
         entry = Timers(uid=userid, guild=guildid, removal=time_in_hours, role=roleid, reason=reason)
         session.add(entry)
-        session.commit()
+        DatabaseTransactions.commit(session)
 
     @staticmethod
     @abstractmethod
@@ -490,5 +511,4 @@ class TimersTransactions(ABC):
     def remove_timer(id):
         timer = session.scalar(Select(Timers).where(Timers.id == id))
         session.delete(timer)
-        session.commit()
-
+        DatabaseTransactions.commit(session)
