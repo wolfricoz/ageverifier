@@ -1,4 +1,5 @@
 """This cogs handles all the tasks."""
+import asyncio
 import logging
 import os
 from datetime import datetime, timedelta
@@ -34,24 +35,39 @@ class Tasks(commands.GroupCog):
         print("config reload")
         ConfigData().output_to_json()
 
-    @tasks.loop(hours=24)
+    async def user_expiration_update(self, userids):
+        """updates entry time, if entry is expired this also removes it."""
+        logging.debug(f"Checking all entries for expiration at {datetime.now()}")
+        for guild in self.bot.guilds:
+            for member in guild.members:
+                await asyncio.sleep(0.1)
+                if member.id not in userids:
+                    logging.debug(f"User {member.id} not found in database, adding.")
+                    UserTransactions.add_user_empty(member.id)
+                    continue
+                logging.debug(f"Updating entry time for {member.id}")
+                UserTransactions.update_entry_date(member.id)
+
+    async def user_expiration_remove(self, userdata, removaldate):
+        """removes expired entries."""
+        for entry in userdata:
+            if entry.entry < removaldate:
+                await asyncio.sleep(0.1)
+                UserTransactions.user_delete(entry.uid)
+                logging.debug(f"Database record: {entry.uid} expired")
+
+    @tasks.loop(hours=48)
     async def check_users_expiration(self):
         """updates entry time, if entry is expired this also removes it."""
+        if self.check_users_expiration.current_loop == 0:
+            return
         print("checking user entries")
         userdata = UserTransactions.get_all_users()
         userids = [x.uid for x in userdata]
         removaldate = datetime.now() - timedelta(days=730)
-        for guild in self.bot.guilds:
-            for member in guild.members:
-                if member.id not in userids:
-                    UserTransactions.add_user_empty(member.id)
-                    continue
-                UserTransactions.update_entry_date(member.id)
-
-        for entry in userdata:
-            if entry.entry < removaldate:
-                UserTransactions.user_delete(entry.uid)
-                logging.debug(f"Database record: {entry.uid} expired")
+        await self.user_expiration_update(userids)
+        await self.user_expiration_remove(userdata, removaldate)
+        print("Finished checking all entries")
 
     @app_commands.command(name="expirecheck")
     @permissions.check_app_roles_admin()
