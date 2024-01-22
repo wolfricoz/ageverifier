@@ -106,3 +106,12 @@ class LobbyProcess(ABC):
         message = ConfigData().get_key(guild.id, "welcomemessage")
         channel = guild.get_channel(int(general))
         await channel.send(f"Welcome to {guild.name} {user.mention}! {message}")
+
+    @staticmethod
+    @abstractmethod
+    async def age_log(age_log_channel, userid, dob, interaction, operation="added"):
+        await age_log_channel.send(f"USER {operation.upper()}\n"
+                                   f"DOB: {dob}\n"
+                                   f"UID: {userid}\n"
+                                   f"Entry updated by: {interaction.user.name}")
+        await interaction.channel.send(f"{operation} <@{userid}>({userid}) date of birth with dob: {dob}")

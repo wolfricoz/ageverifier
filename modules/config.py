@@ -173,27 +173,27 @@ class config(commands.GroupCog, name="config"):
             case _:
                 raise NotImplementedError
 
-    @app_commands.command()
-    @app_commands.choices(action=[Choice(name=x, value=x) for x in ["add", "remove"]])
-    @app_commands.checks.has_permissions(manage_guild=True)
-    async def banmessages(self, interaction: discord.Interaction, action: Choice[str], name: str):
-        """Adds an option to the /ban command."""
-
-        if len(name) > 10:
-            await interaction.followup.send("Please keep the name under 10 characters")
-            return
-        key = f"BAN-{name}"
-        match action.value.lower():
-            case 'add':
-                await interaction.response.send_modal(ConfigInputUnique(key=key))
-            case 'remove':
-                await interaction.response.defer(ephemeral=True)
-                result = ConfigTransactions.config_unique_remove(guildid=interaction.guild.id, key=key.upper())
-                if result is False:
-                    await interaction.followup.send(f"{key.name} could not be found in database")
-                await interaction.followup.send(f"{key.name} has been removed from the database")
-            case _:
-                raise NotImplementedError
+    # @app_commands.command()
+    # @app_commands.choices(action=[Choice(name=x, value=x) for x in ["add", "remove"]])
+    # @app_commands.checks.has_permissions(manage_guild=True)
+    # async def banmessages(self, interaction: discord.Interaction, action: Choice[str], name: str):
+    #     """Adds an option to the /ban command."""
+    #
+    #     if len(name) > 10:
+    #         await interaction.followup.send("Please keep the name under 10 characters")
+    #         return
+    #     key = f"BAN-{name}"
+    #     match action.value.lower():
+    #         case 'add':
+    #             await interaction.response.send_modal(ConfigInputUnique(key=key))
+    #         case 'remove':
+    #             await interaction.response.defer(ephemeral=True)
+    #             result = ConfigTransactions.config_unique_remove(guildid=interaction.guild.id, key=key.upper())
+    #             if result is False:
+    #                 await interaction.followup.send(f"{key.name} could not be found in database")
+    #             await interaction.followup.send(f"{key.name} has been removed from the database")
+    #         case _:
+    #             raise NotImplementedError
 
     @app_commands.command()
     @app_commands.checks.has_permissions(manage_guild=True)

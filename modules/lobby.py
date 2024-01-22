@@ -8,171 +8,36 @@ from discord.app_commands import Choice
 from discord.ext import commands
 
 import classes.permissions as permissions
-import databases.current
 from classes.AgeCalculations import AgeCalculations
 from classes.databaseController import UserTransactions, ConfigData, VerificationTransactions
 from classes.lobbyprocess import LobbyProcess
+from views.buttons.agebuttons import AgeButtons
 from views.buttons.confirmButtons import confirmAction
+from views.buttons.verifybutton import VerifyButton
 
 
 class Lobby(commands.GroupCog):
     def __init__(self, bot):
         self.bot = bot
         self.index = 0
-        self.bot.add_view(self.VerifyButton())
-        self.bot.add_view(self.AgeButtons())
-
-    class VerifyModal(discord.ui.Modal):
-        # Our modal classes MUST subclass `discord.ui.Modal`,
-        # but the title can be whatever you want.
-        title = "Verify your age"
-        custom_id = "verify"
-        # This will be a short input, where the user can enter their name
-        # It will also have a placeholder, as denoted by the `placeholder` kwarg.
-        # By default, it is required and is a short-style input which is exactly
-        # what we want.
-        age = discord.ui.TextInput(
-                label='age',
-                placeholder='99',
-                max_length=3,
-
-        )
-
-        # This is a longer, paragraph style input, where user can submit feedback
-        # Unlike the name, it is not required. If filled out, however, it will
-        # only accept a maximum of 300 characters, as denoted by the
-        # `max_length=300` kwarg.
-        dateofbirth = discord.ui.TextInput(
-                label='Date of Birth (mm/dd/yyyy)',
-                placeholder='mm/dd/yyyy',
-                max_length=10
-        )
-
-        # Requires age checks, and then needs to send a message to the lobby channel; also make the lobby channel a config item.
-        # Add in all the checks before it even gets to the lobby; age matches dob, dob already exists but diff?
-
-        async def on_submit(self, interaction: discord.Interaction):
-            userdata: databases.current.Users = UserTransactions.get_user(interaction.user.id)
-            modlobby = ConfigData().get_key_int(interaction.guild.id, "lobbymod")
-            idlog = ConfigData().get_key_int(interaction.guild.id, "idlog")
-            admin = ConfigData().get_key(interaction.guild.id, "admin")
-            channel = interaction.guild.get_channel(modlobby)
-            idchannel = interaction.guild.get_channel(idlog)
-            age = self.age.value
-            # validates inputs with regex
-            if await AgeCalculations.infocheck(interaction, age, self.dateofbirth.value, channel) is False:
-                return
-            dob = self.dateofbirth.value.replace("-", "/").replace(".", "/")
-
-            print(dob)
-            # Checks if date of birth and age match
-            if int(age) < 18:
-                await channel.send(
-                        f"[Info] User {interaction.user.mention}\'s gave an age below 18 and was added to the ID list.\n"
-                        f"[Lobby Debug] Age: {age} dob {dob}")
-                await interaction.response.send_message(
-                        f'Unfortunately you are too young for our server. If you are 17 you may wait in the lobby.',
-                        ephemeral=True)
-                VerificationTransactions.set_idcheck_to_true(interaction.user.id,
-                                                             f"{datetime.datetime.now(datetime.timezone.utc).strftime('%m/%d/%Y')}: User is under the age of 18")
-                return
-            # Checks if user is underaged
-            agechecked, years = AgeCalculations.agechecker(age, dob)
-            if agechecked != 0:
-                await idchannel.send(
-                        f"[Info] <@&{admin[0]}> User {interaction.user.mention}\'s age does not match and has been timed out. User gave {age} but dob indicates {years}\n"
-                        f"[Lobby Debug] Age: {age} dob {dob}")
-                await interaction.response.send_message(
-                        f'A staff member will contact you within 24 hours, please wait patiently.',
-                        ephemeral=True)
-                return
-            # Checks if user has a date of birth in the database, and if the date of births match.
-            if AgeCalculations.check_date_of_birth(userdata, dob) is False:
-                await idchannel.send(
-                        f"[Info] <@&{admin[0]}> User {interaction.user.mention}\'s date of birth does not match. Given: {dob} Recorded: {userdata.dob.strftime('%m/%d/%Y')}\n"
-                        f"[Lobby Debug] Age: {age} dob {dob}")
-                await interaction.response.send_message(
-                        f'A staff member will contact you within 24 hours, please wait patiently.',
-                        ephemeral=True)
-                return
-
-            # Check if user needs to ID or has previously ID'd
-            if await AgeCalculations.id_check_or_id_verified(interaction.user, interaction.guild, channel):
-                await interaction.response.send_message(
-                        f'A staff member will contact you within 24 hours, please wait patiently.', ephemeral=True)
-                return
-            # Check the age and send the right command/button based upon that.
-            # command_prefix = AgeCalculations.prefix(age)
-            # Check Chat History
-            # await AgeCalculations.check_history(interaction.user, channel)
-            # Sends the buttons and information to lobby channel
-            await channel.send(
-                    f"\n{interaction.user.mention} has given {age} {dob}. You can let them through with the buttons below"
-                    f"\n"
-                    f"[LOBBY DEBUG] `?approve {interaction.user.mention} {age} {dob}`",
-                    view=Lobby.AgeButtons(age=age, dob=dob, user=interaction.user))
-
-            await interaction.response.send_message(
-                    f'Thank you for submitting your age and dob! We will let you through within 24 hours.',
-                    ephemeral=True)
-
-        async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
-            print(error)
-            await interaction.response.send_message('Oops! Something went wrong.\n'
-                                                    f'{error}')
-            raise error
-
-    class VerifyButton(discord.ui.View):
-        def __init__(self):
-            super().__init__(timeout=None)
-
-        @discord.ui.button(label="Verify Here!", style=discord.ButtonStyle.red, custom_id="verify")
-        async def test(self, interaction: discord.Interaction, button: discord.ui.Button):
-            await interaction.response.send_modal(Lobby.VerifyModal())
-
-    class AgeButtons(discord.ui.View):
-        def __init__(self, age: int = None, dob: str = None, user: discord.Member = None):
-            self.age = age
-            self.dob = dob
-            self.user = user
-            super().__init__(timeout=None)
-
-        @discord.ui.button(label="Allow", style=discord.ButtonStyle.green, custom_id="allow")
-        async def allow(self, interaction: discord.Interaction, button: discord.ui.Button):
-            """starts approving process"""
-            if self.age is None or self.dob is None or self.user is None:
-                await interaction.response.send_message('Missing data, please use the command.', ephemeral=True)
-                return
-            button.disabled = True
-            # Share this with the age commands
-            await LobbyProcess.approve_user(interaction.guild, self.user, self.dob, self.age, interaction.user.name)
-
-        @discord.ui.button(label="Manual ID Check", style=discord.ButtonStyle.red, custom_id="ID")
-        async def manual_id(self, interaction: discord.Interaction, button: discord.ui.Button):
-            """Flags user for manual id."""
-            if self.user is None:
-                await interaction.response.send_message('Missing data, please manually report user to admins',
-                                                        ephemeral=True)
-            idcheck = ConfigData().get_key_int(interaction.guild.id, "idlog")
-            admin = ConfigData().get_key(interaction.guild.id, "admin")
-            idlog = interaction.guild.get_channel(idcheck)
-            VerificationTransactions.set_idcheck_to_true(self.user.id, f"manually flagged by {interaction.user.name}")
-            await idlog.send(
-                    f"<@&{admin[0]}> {interaction.user.mention} has flagged {self.user.mention} for manual ID.")
-            return
+        self.bot.add_view(VerifyButton())
+        self.bot.add_view(AgeButtons())
 
     @app_commands.command(name="button")
     @permissions.check_app_roles_admin()
     async def verify_button(self, interaction: discord.Interaction, text: str):
         """Verification button for the lobby; initiates the whole process"""
-        await interaction.channel.send(text, view=self.VerifyButton())
+        await interaction.channel.send(text, view=VerifyButton())
 
     @app_commands.command()
     @app_commands.choices(operation=[Choice(name=x, value=x) for x in
                                      ['add', 'update', 'delete', 'get']])
-    @permissions.check_app_roles_admin()
+    @permissions.check_app_roles()
     async def database(self, interaction: discord.Interaction, operation: Choice['str'], userid: str, dob: str = None):
-        """One stop shop to handle all age entry management"""
+        """One stop shop to handle all age entry management. Only add 1 date of birth per user."""
+        userid = int(userid)
+        age_log = ConfigData().get_key_int(interaction.guild.id, "lobbylog")
+        age_log_channel = interaction.guild.get_channel(age_log)
         await interaction.response.defer(ephemeral=True)
         match operation.value.upper():
             case "UPDATE":
@@ -180,7 +45,11 @@ class Lobby(commands.GroupCog):
                     return
                 UserTransactions.update_user_dob(userid, dob)
                 await interaction.followup.send(f"<@{userid}>'s dob updated to: {dob}")
+                await LobbyProcess.age_log(age_log_channel, userid, dob, interaction, "updated")
             case "DELETE":
+                if permissions.check_admin(interaction.user) is False:
+                    await interaction.followup.send("You are not an admin")
+                    return
                 if UserTransactions.user_delete(userid) is False:
                     await interaction.followup.send(f"Can't find entry: <@{userid}>")
                     return
@@ -190,6 +59,7 @@ class Lobby(commands.GroupCog):
                     return
                 UserTransactions.add_user_full(str(userid), dob)
                 await interaction.followup.send(f"<@{userid}> added to the database with dob: {dob}")
+                await LobbyProcess.age_log(age_log_channel, userid, dob, interaction)
             case "GET":
                 user = UserTransactions.get_user(userid)
                 await interaction.followup.send(f"**__USER INFO__**\n"
@@ -252,9 +122,7 @@ UID: {user.id}
         add = list(add_roles)
         rem: list = ConfigData().get_key(interaction.guild.id, "rem")
         returns: list = ConfigData().get_key(interaction.guild.id, "return")
-        add.append(ConfigData().get_key_int(interaction.guild.id, "18"))
-        add.append(ConfigData().get_key_int(interaction.guild.id, "21"))
-        add.append(ConfigData().get_key_int(interaction.guild.id, "25"))
+        print('data retrieved')
         rm = []
         ra = []
         for role in rem:
@@ -263,8 +131,10 @@ UID: {user.id}
         for role in add + returns:
             r = interaction.guild.get_role(role)
             rm.append(r)
+        print('roles retrieved')
         await user.remove_roles(*rm, reason="returning to lobby")
         await user.add_roles(*ra, reason="returning to lobby")
+        print('roles changed')
         await interaction.followup.send(
                 f"{user.mention} has been moved back to the lobby by {interaction.user.mention}")
 
@@ -307,7 +177,7 @@ UID: {user.id}
             for a in x.mentions:
                 try:
                     await a.kick()
-                    kicked.append(a.id)
+                    kicked.append(f"{a.name}({a.id})")
                 except Exception as e:
                     print(f"unable to kick {a} because {e}")
             await x.delete()
@@ -318,7 +188,55 @@ UID: {user.id}
         await interaction.channel.send(f"{interaction.user.mention} Kicked {len(kicked)}", file=discord.File(file.name, "kicked.txt"))
         os.remove("config/kicked.txt")
 
-
+    @app_commands.command()
+    @app_commands.choices(operation=[Choice(name=x, value=x) for x in
+                                     ['add', 'update', 'get', 'delete']])
+    @app_commands.choices(idcheck=[Choice(name=x, value=y) for x, y in
+                                   {"Yes": "True", "No": "False"}.items()])
+    @permissions.check_app_roles()
+    async def idcheck(self, interaction: discord.Interaction, operation: Choice['str'], idcheck: Choice['str'],
+                      userid: str, reason: str = None):
+        """adds user to id check or removes them"""
+        userid = int(userid)
+        if idcheck.value == "True":
+            idcheck = True
+        elif idcheck.value == "False":
+            idcheck = False
+        await interaction.response.defer(ephemeral=False)
+        match operation.value.upper():
+            case "UPDATE":
+                if reason is None:
+                    await interaction.followup.send(f"Please include a reason")
+                    return
+                VerificationTransactions.update_check(userid, reason, idcheck)
+                await interaction.followup.send(
+                        f"<@{userid}>'s userid entry has been updated with reason: {reason} and idcheck: {idcheck}")
+            case "ADD":
+                if reason is None:
+                    await interaction.followup.send(f"Please include a reason")
+                    return
+                VerificationTransactions.add_idcheck(userid, reason, idcheck)
+                await interaction.followup.send(
+                        f"<@{userid}>'s userid entry has been added with reason: {reason} and idcheck: {idcheck}")
+            case "GET":
+                user = VerificationTransactions.get_id_info(userid)
+                if user is None:
+                    await interaction.followup.send("Not found")
+                    return
+                await interaction.followup.send(f"**__USER INFO__**\n"
+                                                f"user: <@{user.uid}>\n"
+                                                f"Reason: {user.reason}\n"
+                                                f"idcheck: {user.idcheck}\n"
+                                                f"idverifier: {user.idverified}\n"
+                                                f"verifieddob: {user.verifieddob}\n")
+            case "DELETE":
+                if permissions.check_admin(interaction.user) is False:
+                    await interaction.followup.send("You are not an admin")
+                    return
+                if VerificationTransactions.set_idcheck_to_false(userid) is False:
+                    await interaction.followup.send(f"Can't find entry: <@{userid}>")
+                    return
+                await interaction.followup.send(f"Deleted entry: <@{userid}>")
 
     # Event
 
@@ -328,7 +246,7 @@ UID: {user.id}
         lobby = ConfigData().get_key_int(member.guild.id, "lobby")
         channel = member.guild.get_channel(lobby)
         lobbywelcome = ConfigData().get_key(member.guild.id, "lobbywelcome")
-        await channel.send(f"Welcome {member.mention}! {lobbywelcome}", view=self.VerifyButton())
+        await channel.send(f"Welcome {member.mention}! {lobbywelcome}", view=VerifyButton())
 
 
 async def setup(bot):

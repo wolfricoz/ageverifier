@@ -8,8 +8,11 @@ from sys import platform
 import discord.utils
 from discord import Interaction
 from discord.app_commands import AppCommandError, command, CheckFailure
+from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
+
+from classes.databaseController import CommitError
 
 load_dotenv('main.env')
 channels72 = os.getenv('channels72')
@@ -71,7 +74,6 @@ class Logging(commands.Cog):
         #     logging.warning(error)
         #     raise error
         else:
-            await ctx.send(error)
             logger.warning(f"\n{ctx.guild.name} {ctx.guild.id} {ctx.command.name}: {error}")
             channel = self.bot.get_channel(self.bot.DEV)
             with open('error.txt', 'w', encoding='utf-16') as file:
@@ -94,9 +96,7 @@ class Logging(commands.Cog):
     async def on_fail_message(self, interaction: Interaction, message: str):
         """sends a message to the user if the command fails."""
         try:
-            await interaction.response.send_message(message, ephemeral=True)
-        except discord.Webhook:
-            await interaction.followup.send(message)
+            await interaction.channel.send(message)
         except Exception as e:
             logging.error(e)
 
@@ -106,29 +106,38 @@ class Logging(commands.Cog):
             error: AppCommandError
     ):
         """app command error handler."""
+        try:
+            data = [f"{a['name']}: {a['value']}" for a in interaction.data['options']]
+            formatted_data = ", ".join(data)
+        except KeyError:
+            formatted_data = "KeyError/No data"
+        channel = self.bot.get_channel(self.bot.DEV)
         if isinstance(error, CheckFailure):
             await self.on_fail_message(interaction, "You do not have permission.")
+            return
         elif isinstance(error, commands.MemberNotFound):
             await self.on_fail_message(interaction, "User not found.")
-        elif isinstance(error.original, IndexError):
-            await self.on_fail_message(interaction, "Please fill in the required arguments: discord message link.")
-        await self.on_fail_message(interaction, f"Command failed: {error} \nreport this to Rico")
-        channel = self.bot.get_channel(self.bot.DEV)
+            return
+        elif isinstance(error.original, CommitError):
+            await self.on_fail_message(interaction, "Failed to commit to database; please try again later. user/key may already exist.")
+            return
+
         with open('error.txt', 'w', encoding='utf-8') as file:
             file.write(traceback.format_exc())
         try:
             await channel.send(
-                    f"{interaction.guild.name} {interaction.guild.id}: {interaction.user}: {interaction.command.name}",
+                    f"{interaction.guild.name} {interaction.guild.id}: {interaction.user}: {interaction.command.name} with arguments {formatted_data}",
                     file=discord.File(file.name, "error.txt"))
         except Exception as e:
             logging.error(e)
         logger.warning(
-                f"\n{interaction.guild.name} {interaction.guild.id} {interaction.command.name}: {traceback.format_exc()}")
+                f"\n{interaction.guild.name} {interaction.guild.id} {interaction.command.name} with arguments {formatted_data}: {traceback.format_exc()}")
 
+        await self.on_fail_message(interaction, f"Command failed: {error} \nreport this to Rico")
         # raise error
 
     @commands.Cog.listener(name='on_command')
-    async def print(self, ctx):
+    async def print(self, ctx: commands.Context):
         """logs the chat command when initiated"""
         server = ctx.guild
         user = ctx.author
@@ -136,12 +145,21 @@ class Logging(commands.Cog):
         logging.debug(f'\n{server.name}({server.id}): {user}({user.id}) issued command: {commandname}')
 
     @commands.Cog.listener(name='on_app_command_completion')
-    async def appprint(self, ctx: Interaction, commandname: command):
+    async def appprint(self, interaction: Interaction, commandname: command):
         """logs the app command when finished."""
-        server = ctx.guild
-        user = ctx.user
-        logging.debug(f'\n{server.name}({server.id}): {user}({user.id}) issued appcommand: {commandname.name}')
+        server = interaction.guild
+        user = interaction.user
+        try:
+            logging.debug(f'\n{server.name}({server.id}): {user}({user.id}) issued appcommand: `{commandname.name}` with arguments: {interaction.data["options"]}')
+        except KeyError:
+            logging.debug(f'\n{server.name}({server.id}): {user}({user.id}) issued appcommand: `{commandname.name}` with no arguments.')
 
+
+    @app_commands.command(name="getlog")
+    async def getlog(self, interaction: Interaction):
+        """gets the log file"""
+        with open(logfile, 'rb') as file:
+            await interaction.response.send_message("Here's the log file.", file=discord.File(file.name, "log.txt"))
 
 async def setup(bot):
     """Adds the cog to the bot."""
