@@ -79,8 +79,8 @@ class Logging(commands.Cog):
             with open('error.txt', 'w', encoding='utf-16') as file:
                 file.write(str(error))
             await channel.send(
-                    f"{ctx.guild.name} {ctx.guild.id}: {ctx.author}: {ctx.command.name}",
-                    file=discord.File(file.name, "error.txt"))
+                f"{ctx.guild.name} {ctx.guild.id}: {ctx.author}: {ctx.command.name}",
+                file=discord.File(file.name, "error.txt"))
             print('error logged')
             print(traceback.format_exc())
 
@@ -119,19 +119,27 @@ class Logging(commands.Cog):
             await self.on_fail_message(interaction, "User not found.")
             return
         elif isinstance(error.original, CommitError):
-            await self.on_fail_message(interaction, "Failed to commit to database; please try again later. user/key may already exist.")
+            await self.on_fail_message(interaction,
+                                       "Failed to commit to database; please try again later. user/key may already "
+                                       "exist.")
+            return
+        if isinstance(error, discord.Forbidden):
+            await self.on_fail_message(interaction,
+                                       "[permission error] I am missing permissions, please ensure that I can speak "
+                                       "and see in the channel, that I can manage messages and roles. I also need "
+                                       "permission to view invites to show you invite information.")
             return
 
         with open('error.txt', 'w', encoding='utf-8') as file:
             file.write(traceback.format_exc())
         try:
             await channel.send(
-                    f"{interaction.guild.name} {interaction.guild.id}: {interaction.user}: {interaction.command.name} with arguments {formatted_data}",
-                    file=discord.File(file.name, "error.txt"))
+                f"{interaction.guild.name} {interaction.guild.id}: {interaction.user}: {interaction.command.name} with arguments {formatted_data}",
+                file=discord.File(file.name, "error.txt"))
         except Exception as e:
             logging.error(e)
         logger.warning(
-                f"\n{interaction.guild.name} {interaction.guild.id} {interaction.command.name} with arguments {formatted_data}: {traceback.format_exc()}")
+            f"\n{interaction.guild.name} {interaction.guild.id} {interaction.command.name} with arguments {formatted_data}: {traceback.format_exc()}")
 
         await self.on_fail_message(interaction, f"Command failed: {error} \nreport this to Rico")
         # raise error
@@ -150,16 +158,18 @@ class Logging(commands.Cog):
         server = interaction.guild
         user = interaction.user
         try:
-            logging.debug(f'\n{server.name}({server.id}): {user}({user.id}) issued appcommand: `{commandname.name}` with arguments: {interaction.data["options"]}')
+            logging.debug(
+                f'\n{server.name}({server.id}): {user}({user.id}) issued appcommand: `{commandname.name}` with arguments: {interaction.data["options"]}')
         except KeyError:
-            logging.debug(f'\n{server.name}({server.id}): {user}({user.id}) issued appcommand: `{commandname.name}` with no arguments.')
-
+            logging.debug(
+                f'\n{server.name}({server.id}): {user}({user.id}) issued appcommand: `{commandname.name}` with no arguments.')
 
     @app_commands.command(name="getlog")
     async def getlog(self, interaction: Interaction):
         """gets the log file"""
         with open(logfile, 'rb') as file:
             await interaction.response.send_message("Here's the log file.", file=discord.File(file.name, "log.txt"))
+
 
 async def setup(bot):
     """Adds the cog to the bot."""
