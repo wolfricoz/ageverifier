@@ -19,7 +19,7 @@ class VerifyModal(discord.ui.Modal):
     # By default, it is required and is a short-style input which is exactly
     # what we want.
     age = discord.ui.TextInput(
-            label='age',
+            label='Current Age (Do not round up or down)',
             placeholder='99',
             max_length=3,
 
