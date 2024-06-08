@@ -105,7 +105,7 @@ async def cogreload(ctx):
 
 
 @bot.command()
-async def leave_server(self, ctx, guildid: int):
+async def leave_server(ctx, guildid: int):
     if ctx.author.id != 188647277181665280:
         return await ctx.send("You are not allowed to use this command.")
     guild = self.bot.get_guild(guildid)
