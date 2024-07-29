@@ -47,7 +47,6 @@ async def on_ready():
     # CREATES A COUNTER TO KEEP TRACK OF HOW MANY GUILDS / SERVERS THE BOT IS CONNECTED TO.
     guilds = []
     for guild in bot.guilds:
-        bot.invites[guild.id] = await guild.invites()
 
         ConfigTransactions.server_add(guild.id)
         ConfigData().load_guild(guild.id)
@@ -55,6 +54,7 @@ async def on_ready():
         try:
             bot.invites[guild.id] = await guild.invites()
         except discord.errors.Forbidden:
+            print(f"Unable to get invites for {guild.name}")
             try:
                 await guild.owner.send("I need the manage server permission to work properly.")
             except discord.errors.Forbidden:
