@@ -73,6 +73,15 @@ async def on_guild_join(guild):
     # adds user to database
     ConfigTransactions.server_add(guild.id)
     ConfigData().load_guild(guild.id)
+    try:
+        bot.invites[guild.id] = await guild.invites()
+    except discord.errors.Forbidden:
+        print(f"Unable to get invites for {guild.name}")
+        try:
+            await guild.owner.send("I need the manage server permission to work properly.")
+        except discord.errors.Forbidden:
+            print(f"Unable to send message to {guild.owner.name} in {guild.name}")
+        pass
 
 
 @bot.event

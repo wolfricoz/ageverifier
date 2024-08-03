@@ -1,5 +1,6 @@
 """this module handles the lobby."""
 import datetime
+import logging
 import os
 
 import discord
@@ -7,6 +8,7 @@ from discord import app_commands
 from discord.app_commands import Choice
 from discord.ext import commands
 
+import classes.databaseController
 import classes.permissions as permissions
 from classes.AgeCalculations import AgeCalculations
 from classes.databaseController import UserTransactions, ConfigData, VerificationTransactions
@@ -101,17 +103,7 @@ user: {user.mention}
 DOB: {dob}
 UID: {user.id} 
 **ID VERIFIED BY:** {interaction.user}""")
-            # case "GET":
-            #     user = VerificationTransactions.get_id_info(userid)
-            #     if user is None:
-            #         await interaction.followup.send("Not found")
-            #         return
-            #     await interaction.followup.send(f"**__USER INFO__**\n"
-            #                                     f"user: <@{user.uid}>\n"
-            #                                     f"Reason: {user.reason}\n"
-            #                                     f"idcheck: {user.idcheck}\n"
-            #                                     f"idverifier: {user.idverified}\n"
-            #                                     f"verifieddob: {user.verifieddob}\n")
+
 
     @app_commands.command()
     @permissions.check_app_roles()
@@ -245,7 +237,12 @@ UID: {user.id}
         """posts the button for the user to verify with."""
         lobby = ConfigData().get_key_int(member.guild.id, "lobby")
         channel = member.guild.get_channel(lobby)
-        lobbywelcome = ConfigData().get_key(member.guild.id, "lobbywelcome")
+        try:
+            lobbywelcome = ConfigData().get_key(member.guild.id, "lobbywelcome")
+        except classes.databaseController.KeyNotFound:
+            print(f"lobbywelcome not found for {member.guild.name}(id: {member.guild.id})")
+            logging.error(f"lobbywelcome not found for {member.guild.name}(id: {member.guild.id})")
+            lobbywelcome = "Lobby message not setup, please use `/config messages key:lobbywelcome action:set` to set it up. You can click the button below to verify!"
         await channel.send(f"Welcome {member.mention}! {lobbywelcome}", view=VerifyButton())
 
 

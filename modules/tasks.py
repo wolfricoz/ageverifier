@@ -34,6 +34,17 @@ class Tasks(commands.GroupCog):
             ConfigData().load_guild(guild.id)
         print("config reload")
         ConfigData().output_to_json()
+        for guild in self.bot.guilds:
+
+            try:
+                self.bot.invites[guild.id] = await guild.invites()
+            except discord.errors.Forbidden:
+                print(f"Unable to get invites for {guild.name}")
+                try:
+                    await guild.owner.send("I need the manage server permission to work properly.")
+                except discord.errors.Forbidden:
+                    print(f"Unable to send message to {guild.owner.name} in {guild.name}")
+                pass
 
     async def user_expiration_update(self, userids):
         """updates entry time, if entry is expired this also removes it."""
