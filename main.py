@@ -28,7 +28,7 @@ activity = discord.Activity(type=discord.ActivityType.watching, name="over RMR")
 bot = commands.Bot(command_prefix=PREFIX, case_insensitive=False, intents=intents, activity=activity)
 bot.DEV = int(os.getenv("DEV"))
 
-if os.getenv("key") is None:
+if os.getenv("KEY") is None:
     quit("No encryption key found in .env")
 
 # Move to devtools?
