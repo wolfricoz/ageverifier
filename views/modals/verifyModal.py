@@ -7,6 +7,7 @@ import databases.current
 from classes.AgeCalculations import AgeCalculations
 from classes.databaseController import UserTransactions, ConfigData, VerificationTransactions
 from classes.encryption import Encryption
+from classes.lobbyprocess import LobbyProcess
 from views.buttons.agebuttons import AgeButtons
 
 
@@ -107,6 +108,14 @@ class VerifyModal(discord.ui.Modal):
         # Check Chat History
         # await AgeCalculations.check_history(interaction.user, channel)
         # Sends the buttons and information to lobby channel
+        if ConfigData().get_key(interaction.guild.id, "automatic") == "enabled".upper():
+
+            await LobbyProcess.approve_user(interaction.guild, interaction.user, dob, age, interaction.user.name)
+            await interaction.response.send_message(
+                    f'Thank you for submitting your age and dob! You will be let through immediately!',
+                    ephemeral=True)
+            return
+
         await channel.send(
                 f"\n{interaction.user.mention} has given {age} {dob}. You can let them through with the buttons below"
                 f"\n"

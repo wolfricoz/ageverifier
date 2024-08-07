@@ -17,8 +17,7 @@ class ConfigInputUnique(discord.ui.Modal, title='set config message'):
     )
 
     async def on_submit(self, interaction: discord.Interaction):
-        ConfigTransactions.config_unique_add(guildid=interaction.guild.id, key=self.key, value=self.text.value,
-                                             overwrite=False)
+        ConfigTransactions.config_unique_add(guildid=interaction.guild.id, key=self.key, value=self.text.value, overwrite=True)
 
         await interaction.response.send_message(f"{self.key} has been added to the database with value:\n{self.text.value}", ephemeral=True)
 

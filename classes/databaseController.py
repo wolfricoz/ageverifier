@@ -211,7 +211,7 @@ class ConfigTransactions(ABC):
     def config_unique_add(guildid: int, key: str, value, overwrite):
         # This function should check if the item already exists, if so it will override it or throw an error.
         value = str(value)
-        if ConfigTransactions.key_exists_check(guildid, key) is True and overwrite is False:
+        if ConfigTransactions.key_exists_check(guildid, key, overwrite) is True and overwrite is False:
             return False
         item = db.Config(guild=guildid, key=key.upper(), value=value)
         session.merge(item)
@@ -224,7 +224,7 @@ class ConfigTransactions(ABC):
     def toggle_welcome(guildid: int, key: str, value):
         # This function should check if the item already exists, if so it will override it or throw an error.
         value = str(value)
-        guilddata = session.scalar(Select(Config).where(Config.guild == guildid, Config.key == key))
+        guilddata = session.scalar(Select(Config).where(Config.guild == guildid, Config.key == key.upper()))
         if guilddata is None:
             ConfigTransactions.config_unique_add(guildid, key, value, overwrite=True)
             return
@@ -287,13 +287,17 @@ class ConfigTransactions(ABC):
 
     @staticmethod
     @abstractmethod
-    def key_exists_check(guildid: int, key: str):
+    def key_exists_check(guildid: int, key: str, overwrite=False):
         exists = session.scalar(
-                Select(db.Config).where(db.Config.guild == guildid, db.Config.key == key))
-        session.close()
-        if exists is not None:
+                Select(db.Config).where(db.Config.guild == guildid, db.Config.key == key.upper()))
+        if exists is None:
+            session.close()
+            return False
+        if overwrite is False:
             return True
-        return False
+        session.delete(exists)
+        DatabaseTransactions.commit(session)
+        return True
 
     @staticmethod
     @abstractmethod
@@ -302,21 +306,36 @@ class ConfigTransactions(ABC):
         session.merge(g)
         DatabaseTransactions.commit(session)
         ConfigTransactions.welcome_add(guildid)
+        ConfigTransactions.automatic_add(guildid)
         ConfigData().load_guild(guildid)
 
     @staticmethod
     @abstractmethod
     def welcome_add(guildid):
+
+
         if ConfigTransactions.key_exists_check(guildid, "WELCOME") is True:
             return
         welcome = Config(guild=guildid, key="WELCOME", value="ENABLED")
         session.merge(welcome)
+
+        DatabaseTransactions.commit(session)
+
+    @staticmethod
+    @abstractmethod
+    def automatic_add(guildid):
+        if ConfigTransactions.key_exists_check(guildid, "AUTOMATIC") is True:
+            return
+        welcome = Config(guild=guildid, key="AUTOMATIC", value="DISABLED")
+        session.merge(welcome)
+
         DatabaseTransactions.commit(session)
 
     @staticmethod
     @abstractmethod
     def server_config_get(guildid):
         return session.scalars(Select(db.Config).where(db.Config.guild == guildid)).all()
+
 
 
 class VerificationTransactions(ABC):

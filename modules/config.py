@@ -20,6 +20,7 @@ class config(commands.GroupCog, name="config"):
     channelchoices = ['helpchannel', 'inviteinfo', 'general', "lobby", "lobbylog", "lobbymod",
                       "idlog"]
     rolechoices = {"moderator role": "mod", "administrator role": "admin", 'add to user': 'add', 'remove from user': "rem", "remove on return": "return"}
+    available_toggles = ["Welcome", "Automatic"]
 
 
     @app_commands.command(name='setup')
@@ -67,15 +68,15 @@ class config(commands.GroupCog, name="config"):
                 raise NotImplementedError
 
     @app_commands.command()
-    @app_commands.choices(action=[Choice(name=x, value=x) for x in ["enabled", "disabled"]])
+    @app_commands.choices(action=[Choice(name=x, value=x) for x in ["enabled", "disabled"]], key=[Choice(name=x, value=x) for x in available_toggles])
     @app_commands.checks.has_permissions(manage_guild=True)
-    async def welcometoggle(self, interaction: discord.Interaction, action: Choice[str]):
+    async def toggles(self, interaction: discord.Interaction, key: Choice[str], action: Choice[str]):
         """Enables/Disables the welcome message for the general channel."""
         match action.value.upper():
             case "ENABLED":
-                ConfigTransactions.toggle_welcome(interaction.guild.id, "WELCOME", action.value.upper())
+                ConfigTransactions.toggle_welcome(interaction.guild.id, key.value, action.value.upper())
             case "DISABLED":
-                ConfigTransactions.toggle_welcome(interaction.guild.id, "WELCOME", action.value.upper())
+                ConfigTransactions.toggle_welcome(interaction.guild.id, key.value, action.value.upper())
         await interaction.response.send_message(f"Welcome has been set to {action.value}", ephemeral=True)
 
     @app_commands.command()
@@ -102,27 +103,6 @@ class config(commands.GroupCog, name="config"):
             case _:
                 raise NotImplementedError
 
-    @app_commands.command()
-    @app_commands.choices(action=[Choice(name=x, value=x) for x in ['add', 'remove']])
-    @app_commands.checks.has_permissions(manage_guild=True)
-    async def forums(self, interaction: discord.Interaction, action: Choice[str],
-                     value: discord.ForumChannel = None):
-        """Adds forums to the automod for checking. You can add multiple forums!"""
-        await interaction.response.defer(ephemeral=True)
-        value = value.id
-        match action.value.lower():
-            case 'add':
-                ConfigTransactions.config_key_add(guildid=interaction.guild.id, key="FORUM", value=value,
-                                                  overwrite=True)
-                await interaction.followup.send(f"Forum has been added to the database with value:\n{value}")
-            case 'remove':
-                result = ConfigTransactions.config_key_remove(guildid=interaction.guild.id, key="FORUM", value=value)
-                if result is False:
-                    await interaction.followup.send(f"<#{value}> was not in database")
-                    return
-                await interaction.followup.send(f"<#{value}> has been removed from the database")
-            case _:
-                raise NotImplementedError
 
     @app_commands.command()
     @app_commands.choices(key=[Choice(name=ke, value=val) for ke, val in rolechoices.items()])
@@ -150,61 +130,15 @@ class config(commands.GroupCog, name="config"):
                 raise NotImplementedError
 
     @app_commands.command()
-    @app_commands.choices(action=[Choice(name=x, value=x) for x in ["add", "remove"]])
-    @app_commands.checks.has_permissions(manage_guild=True)
-    async def searchcommands(self, interaction: discord.Interaction, action: Choice[str], name: str):
-        """Adds search command to the /forum warn command"""
-
-        if len(name) > 10:
-            await interaction.followup.send("Please keep the name under 10 characters")
-            return
-        key = f"SEARCH-{name}"
-        match action.value.lower():
-            case 'add':
-
-                await interaction.response.send_modal(ConfigInputUnique(key=key))
-
-            case 'remove':
-                await interaction.response.defer(ephemeral=True)
-                result = ConfigTransactions.config_unique_remove(guildid=interaction.guild.id, key=key.upper())
-                if result is False:
-                    await interaction.followup.send(f"{key.name} could not be found in database")
-                await interaction.followup.send(f"{key.name} has been removed from the database")
-            case _:
-                raise NotImplementedError
-
-    # @app_commands.command()
-    # @app_commands.choices(action=[Choice(name=x, value=x) for x in ["add", "remove"]])
-    # @app_commands.checks.has_permissions(manage_guild=True)
-    # async def banmessages(self, interaction: discord.Interaction, action: Choice[str], name: str):
-    #     """Adds an option to the /ban command."""
-    #
-    #     if len(name) > 10:
-    #         await interaction.followup.send("Please keep the name under 10 characters")
-    #         return
-    #     key = f"BAN-{name}"
-    #     match action.value.lower():
-    #         case 'add':
-    #             await interaction.response.send_modal(ConfigInputUnique(key=key))
-    #         case 'remove':
-    #             await interaction.response.defer(ephemeral=True)
-    #             result = ConfigTransactions.config_unique_remove(guildid=interaction.guild.id, key=key.upper())
-    #             if result is False:
-    #                 await interaction.followup.send(f"{key.name} could not be found in database")
-    #             await interaction.followup.send(f"{key.name} has been removed from the database")
-    #         case _:
-    #             raise NotImplementedError
-
-    @app_commands.command()
     @app_commands.checks.has_permissions(manage_guild=True)
     async def view(self, interaction: discord.Interaction):
         """Prints all the config options"""
         # configoptions = ['welcomemessage', "lobbywelcome", "reminder", "dev", 'helpchannel', 'inviteinfo', 'general', "lobby", "lobbylog", "lobbymod",
         #                  "idlog", "advertmod", "advertlog", "removallog", "nsfwlog", "warnlog", "FORUM", "mod", "admin", "add", "rem", "18", "21", "25", "return", "nsfw", "partner", "posttimeout", "SEARCH"]
 
-        roles = [x for x in self.rolechoices.values()]
+        roles:list = [x for x in self.rolechoices.values()]
         other = ["FORUM", "SEARCH"]
-        optionsall = self.messagechoices + self.channelchoices + roles
+        optionsall = self.messagechoices + self.channelchoices + list(self.available_toggles) + roles
         await interaction.response.defer()
         with open('config.txt', 'w') as file:
             file.write(f"Config for {interaction.guild.name}: \n\n")
