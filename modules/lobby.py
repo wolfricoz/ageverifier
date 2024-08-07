@@ -45,7 +45,7 @@ class Lobby(commands.GroupCog):
             case "UPDATE":
                 if await AgeCalculations.validatedob(dob, interaction) is False:
                     return
-                UserTransactions.update_user_dob(userid, dob)
+                UserTransactions.update_user_dob(userid, dob, interaction.guild.name)
                 await interaction.followup.send(f"<@{userid}>'s dob updated to: {dob}")
                 await LobbyProcess.age_log(age_log_channel, userid, dob, interaction, "updated")
             case "DELETE":
@@ -59,7 +59,7 @@ class Lobby(commands.GroupCog):
             case "ADD":
                 if await AgeCalculations.validatedob(dob, interaction) is False:
                     return
-                UserTransactions.add_user_full(str(userid), dob)
+                UserTransactions.add_user_full(str(userid), dob, interaction.guild.name)
                 await interaction.followup.send(f"<@{userid}> added to the database with dob: {dob}")
                 await LobbyProcess.age_log(age_log_channel, userid, dob, interaction)
             case "GET":

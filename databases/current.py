@@ -29,8 +29,9 @@ class Base(DeclarativeBase):
 class Users(Base):
     __tablename__ = "users"
     uid: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=False)
-    dob: Mapped[Optional[datetime]]
     entry: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    date_of_birth: Mapped[Optional[str]]
+    server: Mapped[Optional[str]]
     warnings: Mapped[List["Warnings"]] = relationship(cascade="save-update, merge, delete, delete-orphan")
     id: Mapped["IdVerification"] = relationship(back_populates="user", cascade="save-update, merge, delete, delete-orphan")
 
@@ -63,9 +64,6 @@ class Config(Base):
     value: Mapped[str] = mapped_column(String(1980))
 
 
-
-
-
 # noinspection PyTypeChecker, PydanticTypeChecker
 
 class IdVerification(Base):
@@ -78,6 +76,7 @@ class IdVerification(Base):
     verifieddob: Mapped[Optional[datetime]]
     user: Mapped["Users"] = relationship(back_populates="id")
 
+
 class Timers(Base):
     __tablename__ = "timers"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -88,7 +87,6 @@ class Timers(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     # in hours
     removal: Mapped[int]
-
 
 
 class database:

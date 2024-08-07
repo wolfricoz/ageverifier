@@ -6,6 +6,7 @@ import discord
 import databases.current
 from classes.AgeCalculations import AgeCalculations
 from classes.databaseController import UserTransactions, ConfigData, VerificationTransactions
+from classes.encryption import Encryption
 from views.buttons.agebuttons import AgeButtons
 
 
@@ -47,9 +48,10 @@ class VerifyModal(discord.ui.Modal):
         idchannel = interaction.guild.get_channel(idlog)
         age = int(self.age.value)
         # validates inputs with regex
-        if await AgeCalculations.infocheck(interaction, self.age.value, self.dateofbirth.value, channel) is False:
+
+        dob = await AgeCalculations.infocheck(interaction, self.age.value, self.dateofbirth.value, modlobby)
+        if dob is None:
             return
-        dob = self.dateofbirth.value.replace("-", "/").replace(".", "/")
         # Checks if date of birth and age match
         if age < 18:
             await channel.send(
@@ -84,9 +86,10 @@ class VerifyModal(discord.ui.Modal):
                     ephemeral=True)
             return
         # Checks if user has a date of birth in the database, and if the date of births match.
+
         if AgeCalculations.check_date_of_birth(userdata, dob) is False:
             await idchannel.send(
-                    f"[Info] <@&{admin[0]}> User {interaction.user.mention}\'s date of birth does not match. Given: {dob} Recorded: {userdata.dob.strftime('%m/%d/%Y')}\n"
+                    f"[Info] <@&{admin[0]}> User {interaction.user.mention}\'s date of birth does not match. Given: {dob} Recorded: {Encryption().decrypt(userdata.date_of_birth)}\n"
                     f"[Lobby Debug] Age: {age} dob {dob}")
             await interaction.response.send_message(
                     f'A staff member will contact you soon, please wait patiently.',
