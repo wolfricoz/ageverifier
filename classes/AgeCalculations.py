@@ -1,3 +1,4 @@
+import logging
 import re
 
 import discord
@@ -90,7 +91,6 @@ class AgeCalculations(ABC):
             dateofbirth = await AgeCalculations.add_slashes_to_dob(dateofbirth)
         except Exception as e:
             logging.info(f"failed slashes to dob: {e}")
-
 
         redob = (r"(((0?[0-9])|(1[012]))([\/|\-|.])((0?[1-9])|([12][0-9])|(3[01]))([\/|\-|.])((20[012]\d|19\d\d)|(1\d|2[0123])))")
         dobvalid = re.match(redob, dateofbirth)
