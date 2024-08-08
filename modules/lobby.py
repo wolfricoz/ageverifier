@@ -84,7 +84,7 @@ class Lobby(commands.GroupCog):
         match process.value.upper():
             case "TRUE":
                 print("true")
-                VerificationTransactions.idverify_update(user.id, dob)
+                VerificationTransactions.idverify_update(user.id, dob, interaction.guild.name)
                 await interaction.followup.send(
                         f"{user.mention} has been ID verified with date of birth: {dob}")
                 await agelog.send(f"""**USER ID VERIFICATION**
