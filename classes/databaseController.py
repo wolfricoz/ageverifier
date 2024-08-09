@@ -390,12 +390,12 @@ class VerificationTransactions(ABC):
 
     @staticmethod
     @abstractmethod
-    def idverify_add(userid: int, dob: str, idcheck=True):
+    def idverify_add(userid: int, dob: str, guildname ,idcheck=True):
         UserTransactions.add_user_empty(userid, True)
         idcheck = IdVerification(uid=userid, verifieddob=datetime.strptime(dob, "%m/%d/%Y"), idverified=idcheck)
         session.add(idcheck)
         DatabaseTransactions.commit(session)
-        UserTransactions.update_user_dob(userid, dob)
+        UserTransactions.update_user_dob(userid, dob, guildname=guildname)
 
     @staticmethod
     @abstractmethod
