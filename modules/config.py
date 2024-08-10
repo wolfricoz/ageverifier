@@ -77,7 +77,7 @@ class config(commands.GroupCog, name="config"):
                 ConfigTransactions.toggle_welcome(interaction.guild.id, key.value, action.value.upper())
             case "DISABLED":
                 ConfigTransactions.toggle_welcome(interaction.guild.id, key.value, action.value.upper())
-        await interaction.response.send_message(f"Welcome has been set to {action.value}", ephemeral=True)
+        await interaction.response.send_message(f"{key.value} has been set to {action.value}", ephemeral=True)
 
     @app_commands.command()
     @app_commands.choices(key=[Choice(name=x, value=x) for x in channelchoices])
