@@ -66,7 +66,8 @@ class Lobby(commands.GroupCog):
                 user = UserTransactions.get_user(userid)
                 await interaction.followup.send(f"**__USER INFO__**\n"
                                                 f"user: <@{user.uid}>\n"
-                                                f"dob: {user.dob.strftime('%m/%d/%Y')}")
+                                                f"dob: {user.date_of_birth.strftime('%m/%d/%Y')}"
+                                                f"Last updated in: {user.server}")
 
     @app_commands.command()
     @app_commands.choices(process=[Choice(name=x, value=x) for x in
