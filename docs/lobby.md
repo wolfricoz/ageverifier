@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Lobby Guide
-nav_order: 3
+nav_order: 4
 ---
 
 <h1>Lobby Information</h1>
@@ -25,12 +25,12 @@ inform the staff.
 * welcome message: When a user is approved by staff, the bot will automatically send a welcome message in the general
   chat.
 
-### mod: `?18a, ?21a, ?25a user age mm/dd/yyyy`
+### mod: `?approve user age mm/dd/yyyy`
 
 this is automatically done by clicking the allow button in the lobby moderation channel
 
 The three age commands each work the same, except for the role they give.
-(example: `?21a @rico stryker#6666 23 01/01/2000`)
+(example: `?approve @rico stryker#6666 23 01/01/2000`)
 
 ### mod: `/Lobby return user`
 

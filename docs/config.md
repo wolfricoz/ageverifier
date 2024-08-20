@@ -1,7 +1,7 @@
 ---
 layout: default
-title: Lobby Guide
-nav_order: 4
+title: Setup
+nav_order: 2
 ---
 
 <h1>Config and setup</h1>
@@ -18,6 +18,10 @@ properly.
 To setup setup the welcoming messages, search options and ban options will need to be done through the config command
 independently.
 
+Please note that the setup command will not set the welcome message, search commands or ban commands. These will need to
+be set independently. You must also ensure that the bot has the correct permissions to send messages in the channels you
+have set up.
+
 ## `/config messages key:option action:(set/remove) `
 
 after entering the config messages command you will be prompted with a modal to input the message you wish to have
@@ -27,16 +31,13 @@ displayed for the option you have chosen. The options are as follows:
 * lobbymessage
 * reminder
 
-## `/config searchcommands action:(add/remove) name:(name)`
 
-after entering the config searchcommands command you will be prompted with a modal to input the warning you wish to have
-displayed by your search warning.
-The name is the name of the warning, for example: `?config searchcommands action:add name:warning1` will set the warning
-to warning1.
+## `/config toggle key:option action:(enable/disable)`
 
-## `/config welcometoggle action:(enabled/disabled)`
+Options:
 
-This command will enable or disable the welcome message.
+* welcome: This command will enable or disable the welcome message.
+* automatic: This command will enable or disable the automatic age verification.
 
 ## `/config channels key:option action:(set/remove) value:(channel)`
 
@@ -44,14 +45,14 @@ This command will set the channel for the option you have chosen. the value will
 choose from. the channel name is the name of the channel, for
 example: `/config channels key:lobby action:set value:lobby`
 
-
 ## `/config role key:option action:(set/remove) value:(role)`
 
 This command will set the role for the option you have chosen. the value will display discord.Role objects to choose
 from.
 
 ## `/config view`
-Allows you to view the current configuration of the server. This command is not required to be run, but is useful to see 
+
+Allows you to view the current configuration of the server. This command is not required to be run, but is useful to see
 what the current configuration is.
 
 

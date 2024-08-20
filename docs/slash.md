@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Slash Guide
-nav_order: 2
+nav_order: 3
 ---
 
 <h1 align="center">Slash guide</h1>

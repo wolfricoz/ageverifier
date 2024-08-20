@@ -14,13 +14,11 @@ Devs: ricostryker
 
 Ageverifier is a discord bot that is meant to be used as a tool for server owners to verify the age of their members.
 Created by Roleplay Meets Reborn to verify the age of our members, it has since been made semi-public for other servers
-to use.
-
-The bot is main purpose is to verify the age of members and will focus on that. It checks the Roleplay Meets Reborn
-database
-to see if the user has been verified before, and checks the previously given date of birth to see if the user is being
-honest about their age and date of birth.
+to use. Each server is inspected by the developers to ensure that the server is safe and secure for the bot to be used,
+and that the server is not breaking any laws.
 
 GDPR AND INFORMATION USE DISCLOSURE: By entering your birth date (MM/DD/YYYY) and age, you consent to having this
 information about you stored by Roleplay Meets Staff and used to verify that you are the age that you say you are,
 including sharing to relevant parties for age verification.
+
+Users may request to have their information removed from the database at any time by contacting a staff member, this staff member then has to reach out to the developer ricostryker on discord.
