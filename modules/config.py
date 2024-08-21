@@ -17,7 +17,7 @@ class config(commands.GroupCog, name="config"):
         self.bot = bot
 
     messagechoices = ['welcomemessage', "lobbywelcome"]
-    channelchoices = ['helpchannel', 'inviteinfo', 'general', "lobby", "lobbylog", "lobbymod",
+    channelchoices = ['inviteinfo', 'general', "lobby", "lobbylog", "lobbymod",
                       "idlog"]
     rolechoices = {"moderator role": "mod", "administrator role": "admin", 'add to user': 'add', 'remove from user': "rem", "remove on return": "return"}
     available_toggles = ["Welcome", "Automatic"]
