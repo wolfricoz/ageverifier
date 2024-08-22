@@ -12,6 +12,7 @@ import classes.databaseController
 import classes.permissions as permissions
 from classes.AgeCalculations import AgeCalculations
 from classes.databaseController import UserTransactions, ConfigData, VerificationTransactions
+from classes.helpers import has_onboarding, welcome_user, invite_info
 from classes.lobbyprocess import LobbyProcess
 from views.buttons.agebuttons import AgeButtons
 from views.buttons.confirmButtons import confirmAction
@@ -232,21 +233,26 @@ UID: {user.id}
 
     # Event
 
+    @commands.Cog.listener('on_member_join')
+    async def add_to_db(self, member):
+        UserTransactions.add_user_empty(member.id)
+
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
         """posts the button for the user to verify with."""
-        lobby = ConfigData().get_key_int(member.guild.id, "lobby")
-        channel = member.guild.get_channel(lobby)
-        try:
-            lobbywelcome = ConfigData().get_key(member.guild.id, "lobbywelcome")
-        except classes.databaseController.KeyNotFound:
-            print(f"lobbywelcome not found for {member.guild.name}(id: {member.guild.id})")
-            logging.error(f"lobbywelcome not found for {member.guild.name}(id: {member.guild.id})")
-            lobbywelcome = "Lobby message not setup, please use `/config messages key:lobbywelcome action:set` to set it up. You can click the button below to verify!"
-        await channel.send(f"Welcome {member.mention}! {lobbywelcome}"
-                           f"\n\n"
-                           f"-# GDPR AND INFORMATION USE DISCLOSURE: By entering your birth date (MM/DD/YYYY) and age, you consent to having this information about you stored by Age Verifier and used to verify that you are the age that you say you are, including sharing to relevant parties for age verification. This information will be stored for a maximum of 1 year if you are no longer in a server using Ageverifier.",
-                           view=VerifyButton())
+        if await has_onboarding(member.guild):
+            return
+        await welcome_user(member)
+
+
+
+    @commands.Cog.listener()
+    async def on_member_update(self, before: discord.Member, after: discord.Member):
+        if before.flags != after.flags:
+            # Perform the desired action when the member's flags change
+            if before.flags.completed_onboarding is False and after.flags.completed_onboarding is True:
+                await welcome_user(after)
+                await invite_info(self.bot, after)
 
 
 async def setup(bot):

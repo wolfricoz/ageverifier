@@ -1,4 +1,5 @@
 """Config options for the bot."""
+import logging
 import os
 
 import discord
@@ -33,8 +34,14 @@ class config(commands.GroupCog, name="config"):
             msg = await interaction.channel.send(f"Choose a channel for key: {item}", view=view)
             await view.wait()
             await msg.delete()
-            if view.value is None:
-                await interaction.followup.send("Setup cancelled")
+            try:
+                if view.value == "next":
+                    continue
+                if view.value is None:
+                    await interaction.followup.send("Setup cancelled")
+                    return
+            except AttributeError:
+                logging.info("No value found, message was deleted")
                 return
             ConfigTransactions.config_unique_add(interaction.guild.id, item, int(view.value[0]), overwrite=True)
         for expl,role in self.rolechoices.items():
@@ -42,11 +49,51 @@ class config(commands.GroupCog, name="config"):
             msg = await interaction.channel.send(f"{expl}: {role}\nWill add role to the config, if you wish for the old role to be deleted please use the /config role command.", view=view)
             await view.wait()
             await msg.delete()
-            if view.value is None:
-                await interaction.followup.send("Setup cancelled")
+            try:
+                if view.value == "next":
+                    continue
+                if view.value is None:
+                    await interaction.followup.send("Setup cancelled")
+                    return
+            except AttributeError:
+                logging.info("No value found, message was deleted")
                 return
             ConfigTransactions.config_key_add(interaction.guild.id, role, int(view.value[0]), overwrite=True)
-        await interaction.followup.send("Config has been set up, please setup the messages with /config messages", ephemeral=True)
+        await interaction.followup.send("Config has been set up, please setup the messages with /config messages. Permission check will start shortly.", ephemeral=True)
+        await self.check_channel_permissions(interaction)
+
+    @app_commands.command()
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def permissioncheck(self, interaction: discord.Interaction):
+        """Checks the permissions of the bot."""
+        await interaction.response.send_message(f"Starting to check permissions for all the channels!", ephemeral=True)
+        await self.check_channel_permissions(interaction)
+
+    async def check_channel_permissions(self, interaction: discord.Interaction):
+        fails = []
+        for key in self.channelchoices:
+            channel = ConfigData().get_key_or_none(interaction.guild.id, key)
+            if channel is None:
+                await interaction.channel.send(f"{key} is not set, please set it with /config channels")
+                fails.append(key)
+                continue
+            channel = interaction.guild.get_channel(int(channel))
+            if channel is None:
+                await interaction.channel.send(f"{key} is not a valid channel, please set it with /config channels")
+                fails.append(key)
+                continue
+            try:
+                msg = await channel.send("Checking permissions, if you see this I can post here!")
+                await msg.delete()
+            except discord.Forbidden:
+                await interaction.channel.send(f"I do not have permissions to post in {channel.name}")
+                fails.append(key)
+                continue
+            await interaction.channel.send(f"I have permissions to post in {channel.name}!")
+        if len(fails) > 0:
+            await interaction.followup.send(f"Failed to check permissions for: {', '.join(fails)}")
+            return
+        await interaction.followup.send("All permissions are set correctly!")
 
     @app_commands.command()
     @app_commands.choices(key=[Choice(name=x, value=x) for x in messagechoices])

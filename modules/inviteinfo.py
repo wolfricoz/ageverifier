@@ -5,51 +5,35 @@ import discord
 from discord.ext import commands
 
 from classes.databaseController import ConfigData
+from classes.helpers import has_onboarding, invite_info
 
 
 class inviteInfo(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    def find_invite_by_code(self, invite_list, code):
-        """makes an invite dictionary"""
-        for inv in invite_list:
-            if inv.code == code:
-                return inv
-
-    @commands.Cog.listener()
+    @commands.Cog.listener('on_member_join')
     async def on_member_join(self, member):
         """reads invite dictionary, and outputs user info"""
-        infochannel = ConfigData().get_key_int(member.guild.id, 'inviteinfo')
-        if infochannel is None:
+        if await has_onboarding(member.guild):
             return
-        invites_before_join = self.bot.invites[member.guild.id]
-        invites_after_join = await member.guild.invites()
+        await invite_info(self.bot, member)
 
-        for invite in invites_before_join:
-            if invite.uses < self.find_invite_by_code(invites_after_join, invite.code).uses:
-                embed = discord.Embed(description=f"""Member {member} Joined
-Invite Code: **{invite.code}**
-Code created by: {invite.inviter} ({invite.inviter.id})
-account created at: {member.created_at.strftime("%m/%d/%Y")}
-Member joined at {datetime.now().strftime("%m/%d/%Y")}
-""")
-                try:
-                    embed.set_image(url=member.avatar.url)
-                except:
-                    pass
-                embed.set_footer(text=f"USERID: {member.id}")
-                channel = self.bot.get_channel(infochannel)
-                await channel.send(embed=embed)
 
-                self.bot.invites[member.guild.id] = invites_after_join
-
-                return
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
         """removes member's invites"""
-        self.bot.invites[member.guild.id] = await member.guild.invites()
+        try:
+            self.bot.invites[member.guild.id] = await member.guild.invites()
+        except discord.NotFound:
+            pass
+
+    @commands.Cog.listener()
+    async def on_member_update(self, before: discord.Member, after: discord.Member):
+        if before.flags != after.flags:
+            # Perform the desired action when the member's flags change
+            print(f"Member {after.name}'s flags have changed from {before.flags} to {after.flags}")
 
 
 async def setup(bot):

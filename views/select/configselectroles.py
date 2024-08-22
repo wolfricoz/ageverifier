@@ -30,6 +30,12 @@ class ConfigSelectChannels(ui.View):
         self.value = None
         self.stop()
 
+    # next
+    @ui.button(label="Next", style=discord.ButtonStyle.primary)
+    async def next(self, button: discord.ui.Button, interaction: discord.Interaction):
+        self.value = "next"
+        self.stop()
+
 class ConfigSelectRoles(ui.View):
     # @ui.select(cls=type_we_want, **other_things)
     @ui.select(cls=RoleSelect, placeholder="Select a channel please!")
@@ -46,6 +52,11 @@ class ConfigSelectRoles(ui.View):
     @ui.button(label="Cancel", style=discord.ButtonStyle.danger)
     async def cancel(self, button: discord.ui.Button, interaction: discord.Interaction):
         self.value = None
+        self.stop()
+
+    @ui.button(label="Next", style=discord.ButtonStyle.primary)
+    async def next(self, button: discord.ui.Button, interaction: discord.Interaction):
+        self.value = "next"
         self.stop()
 
 

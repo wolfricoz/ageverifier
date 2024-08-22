@@ -7,8 +7,9 @@ from discord.ext import commands
 # IMPORT LOAD_DOTENV FUNCTION FROM DOTENV MODULE.
 from dotenv import load_dotenv
 
-from classes import permissions
+from classes import permissions, whitelist
 from classes.databaseController import ConfigData, ConfigTransactions, UserTransactions
+from classes.whitelist import whitelist_path
 from databases import current as db
 
 # Creating database
@@ -24,12 +25,13 @@ version = os.getenv('VERSION')
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
-activity = discord.Activity(type=discord.ActivityType.watching, name="over RMR")
+activity = discord.Activity(type=discord.ActivityType.watching, name="over the community")
 bot = commands.Bot(command_prefix=PREFIX, case_insensitive=False, intents=intents, activity=activity)
 bot.DEV = int(os.getenv("DEV"))
 
 if os.getenv("KEY") is None:
     quit("No encryption key found in .env")
+
 
 # Move to devtools?
 @bot.command()
@@ -48,8 +50,15 @@ async def on_ready():
     devroom = bot.get_channel(bot.DEV)
     # CREATES A COUNTER TO KEEP TRACK OF HOW MANY GUILDS / SERVERS THE BOT IS CONNECTED TO.
     guilds = []
+    whitelist.create_whitelist(bot.guilds)
     for guild in bot.guilds:
-
+        if whitelist.check_whitelist(guild.id) is False:
+            try:
+                await guild.owner.send("This server is not whitelisted. Please contact the bot owner: ricostryker.")
+            except discord.errors.Forbidden:
+                print(f"Unable to send message to {guild.owner.name} in {guild.name}")
+            await guild.leave()
+            continue
         ConfigTransactions.server_add(guild.id)
         ConfigData().load_guild(guild.id)
         guilds.append(guild.name)
@@ -73,6 +82,15 @@ async def on_ready():
 @bot.event
 async def on_guild_join(guild):
     # adds user to database
+    devroom = bot.get_channel(bot.DEV)
+    await devroom.send(f"Joined {guild.name}({guild.id})")
+    if whitelist.check_whitelist(guild.id) is False:
+        try:
+            await guild.owner.send("This server is not whitelisted. Please contact the bot owner: ricostryker.")
+        except discord.errors.Forbidden:
+            print(f"Unable to send message to {guild.owner.name} in {guild.name}")
+        await guild.leave()
+        return
     ConfigTransactions.server_add(guild.id)
     ConfigData().load_guild(guild.id)
     try:
@@ -85,10 +103,13 @@ async def on_guild_join(guild):
             print(f"Unable to send message to {guild.owner.name} in {guild.name}")
         pass
 
-
 @bot.event
-async def on_member_join(member):
-    UserTransactions.add_user_empty(member.id)
+async def on_guild_remove(guild):
+    devroom = bot.get_channel(bot.DEV)
+    await devroom.send(f"Left {guild.name}({guild.id})")
+
+
+
 
 
 # cogloader
