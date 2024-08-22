@@ -27,6 +27,7 @@ def check_whitelist(id):
 
 def add_to_whitelist(id):
     """Adds a guild to the whitelist"""
+    id = int(id)
     with open('whitelist.json', 'r') as f:
         whitelist = json.load(f)
     whitelist["whitelist"].append(id)
@@ -35,6 +36,7 @@ def add_to_whitelist(id):
 
 def remove_from_whitelist(id):
     """Removes a guild from the whitelist"""
+    id = int(id)
     with open('whitelist.json', 'r') as f:
         whitelist = json.load(f)
     whitelist["whitelist"].remove(id)
