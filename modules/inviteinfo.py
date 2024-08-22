@@ -29,12 +29,6 @@ class inviteInfo(commands.Cog):
         except discord.NotFound:
             pass
 
-    @commands.Cog.listener()
-    async def on_member_update(self, before: discord.Member, after: discord.Member):
-        if before.flags != after.flags:
-            # Perform the desired action when the member's flags change
-            print(f"Member {after.name}'s flags have changed from {before.flags} to {after.flags}")
-
 
 async def setup(bot):
     """Adds cog to the bot"""

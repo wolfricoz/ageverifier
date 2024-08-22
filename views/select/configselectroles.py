@@ -58,31 +58,3 @@ class ConfigSelectRoles(ui.View):
     async def next(self, button: discord.ui.Button, interaction: discord.Interaction):
         self.value = "next"
         self.stop()
-
-
-# class ConfigSelectRoles(discord.ui.RoleSelect):
-#     def __init__(self):
-#         super().__init__(placeholder="Select a role")
-#
-#
-#     async def callback(self, interaction: discord.Interaction):
-#         await interaction.response.send_message(content=f"Your choice is {self.values[0]}!", ephemeral=True)
-#
-#     async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
-#         print(error)
-#         await interaction.response.send_message('Oops! Something went wrong.\n'
-#                                                 f'{error}')
-#         raise error
-#
-# class MyView(discord.ui.View):
-#   def __init__(self, ctx):
-#         super().__init__(timeout = 300)
-#         self.ctx = ctx
-#   @discord.ui.select(cls = discord.ui.RoleSelect, custom_id="menu_dump_RoleSelect" , placeholder="Select another role here...")
-#   async def menu_dump_RoleSelect_callback(self, interaction: discord.Interaction, select: discord.ui.RoleSelect):
-#
-
-# class SelectView(discord.ui.View):
-#     def __init__(self, *, timeout=180):
-#         super().__init__(timeout=timeout)
-#         self.add_item(Select())
