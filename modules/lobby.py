@@ -12,6 +12,7 @@ import classes.databaseController
 import classes.permissions as permissions
 from classes.AgeCalculations import AgeCalculations
 from classes.databaseController import UserTransactions, ConfigData, VerificationTransactions
+from classes.encryption import Encryption
 from classes.helpers import has_onboarding, welcome_user, invite_info
 from classes.lobbyprocess import LobbyProcess
 from views.buttons.agebuttons import AgeButtons
@@ -67,7 +68,7 @@ class Lobby(commands.GroupCog):
                 user = UserTransactions.get_user(userid)
                 await interaction.followup.send(f"**__USER INFO__**\n"
                                                 f"user: <@{user.uid}>\n"
-                                                f"dob: {user.date_of_birth}"
+                                                f"dob: {Encryption().decrypt(user.date_of_birth)}"
                                                 f"Last updated in: {user.server}")
 
     @app_commands.command()
