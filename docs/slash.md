@@ -6,11 +6,11 @@ nav_order: 3
 
 <h1 align="center">Slash guide</h1>
 
-Ageverifier uses slash commands to execute commands, this is a new feature discord has added to their bot api. This allows
+Ageverifier uses slash commands to execute commands, this is a new feature discord has added to their bot api. This
+allows
 us to have a more interactive experience with the bot, and allows us to have more control over the commands.
 
 ## How to use slash commands
-
 
 1. we type in the / to signal to discord, we want to execute a command, a list of commands will pop up.<br>
    ![slash](img/slash.png)
