@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Setup
-nav_order: 2
+nav_order: 6
 ---
 
 <h1>Config and setup</h1>
