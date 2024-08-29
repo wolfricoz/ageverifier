@@ -18,7 +18,7 @@ to use. Each server is inspected by the developers to ensure that the server is 
 and that the server is not breaking any laws.
 
 GDPR AND INFORMATION USE DISCLOSURE: By entering your birth date (MM/DD/YYYY) and age, you consent to having this
-information about you stored by Roleplay Meets Staff and used to verify that you are the age that you say you are,
+information about you stored by ageverifier and used to verify that you are the age that you say you are,
 including sharing to relevant parties for age verification.
 
 Users may request to have their information removed from the database at any time by contacting a staff member, this staff member then has to reach out to the developer ricostryker on discord.

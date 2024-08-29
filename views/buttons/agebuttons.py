@@ -47,8 +47,8 @@ class AgeButtons(discord.ui.View):
             await interaction.followup.send('The bot has restarted and the data of this button is missing. Please manually report user to admins',
                                             ephemeral=True)
         await interaction.followup.send('User flagged for NSFW Warning.', ephemeral=True)
-        warning = """**NSFW Warning**\n
-Hello, this is the moderation team for Roleplay Meets: Reborn and Roleplay Meets: Network. As Discord TOS prohibits NSFW content anywhere that can be accessed without an age gate, we will have to ask that you inspect your profile and remove any NSFW content. This includes but is not limited to: 
+        warning = f"""**NSFW Warning**\n
+Hello, this is the moderation team for {interaction.guild.name}. As Discord TOS prohibits NSFW content anywhere that can be accessed without an age gate, we will have to ask that you inspect your profile and remove any NSFW content. This includes but is not limited to: 
 * NSFW profile pictures 
 * NSFW display names
 * NSFW Biographies
