@@ -12,7 +12,7 @@ from discord.app_commands import AppCommandError, command, CheckFailure
 from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
-from future.backports.datetime import timedelta
+from datetime import timedelta
 
 from classes.databaseController import CommitError
 
