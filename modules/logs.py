@@ -39,11 +39,12 @@ with open(logfile, 'a') as f:
             f"\nbot started at: {time.strftime('%c %Z')}\n"
             f"----------------------------------------------------\n\n")
 
+handlers = [logging.FileHandler(filename=logfile, encoding='utf-8', mode='a'), logging.StreamHandler()]
+logging.basicConfig(handlers=handlers, level=logging.INFO)
+
+
 logger = logging.getLogger('discord')
 logger.setLevel(logging.WARN)
-handler = logging.FileHandler(filename=logfile, encoding='utf-8', mode='a')
-handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
-logger.addHandler(handler)
 alogger = logging.getLogger('sqlalchemy')
 alogger.setLevel(logging.WARN)
 handler2 = logging.FileHandler(filename=logfile, encoding='utf-8', mode='a')

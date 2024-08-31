@@ -1,5 +1,6 @@
 # IMPORT DISCORD.PY. ALLOWS ACCESS TO DISCORD'S API.
 # IMPORT THE OS MODULE.
+import logging
 import os
 
 import discord
@@ -47,6 +48,7 @@ bot.invites = {}
 # EVENT LISTENER FOR WHEN THE BOT HAS SWITCHED FROM OFFLINE TO ONLINE.
 @bot.event
 async def on_ready():
+    logging.info("Bot starting up")
     devroom = bot.get_channel(bot.DEV)
     # CREATES A COUNTER TO KEEP TRACK OF HOW MANY GUILDS / SERVERS THE BOT IS CONNECTED TO.
     guilds = []
@@ -74,7 +76,8 @@ async def on_ready():
     formguilds = "\n".join(guilds)
     await bot.tree.sync()
     await devroom.send(f"{formguilds} \nAgeVerifier is in {len(guilds)} guilds. Ageverifier {version}")
-    print("Commands synced, start up _done_")
+    logging.info("Commands synced, start up _done_")
+
     return guilds
 
 
