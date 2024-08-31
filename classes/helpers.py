@@ -5,11 +5,13 @@ import discord
 
 from classes import databaseController
 from classes.databaseController import ConfigData
+from classes.support.discord_tools import send_message
 from views.buttons.verifybutton import VerifyButton
 
 
 async def has_onboarding(guild: discord.Guild) -> bool:
     return 'GUILD_ONBOARDING' in guild.features
+
 
 async def welcome_user(member):
     lobby = ConfigData().get_key_int(member.guild.id, "lobby")
@@ -20,7 +22,8 @@ async def welcome_user(member):
         print(f"lobbywelcome not found for {member.guild.name}(id: {member.guild.id})")
         logging.error(f"lobbywelcome not found for {member.guild.name}(id: {member.guild.id})")
         lobbywelcome = "Lobby message not setup, please use `/config messages key:lobbywelcome action:set` to set it up. You can click the button below to verify!"
-    await channel.send(f"Welcome {member.mention}! {lobbywelcome}"
+    await send_message(channel,
+                       f"Welcome {member.mention}! {lobbywelcome}"
                        f"\n"
                        f"-# GDPR AND INFORMATION USE DISCLOSURE: By entering your birth date (MM/DD/YYYY) and age, you consent to having this information about you stored by Age Verifier and used to verify that you are the age that you say you are, including sharing to relevant parties for age verification. This information will be stored for a maximum of 1 year if you are no longer in a server using Ageverifier.",
                        view=VerifyButton())
@@ -31,6 +34,7 @@ def find_invite_by_code(invite_list, code):
     for inv in invite_list:
         if inv.code == code:
             return inv
+
 
 async def invite_info(bot, member):
     infochannel = ConfigData().get_key_int(member.guild.id, 'inviteinfo')
@@ -53,7 +57,7 @@ async def invite_info(bot, member):
                 pass
             embed.set_footer(text=f"USERID: {member.id}")
             channel = bot.get_channel(infochannel)
-            await channel.send(embed=embed)
+            await send_message(channel, embed=embed)
 
             bot.invites[member.guild.id] = invites_after_join
 
