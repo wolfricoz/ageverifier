@@ -8,6 +8,7 @@ from classes.AgeCalculations import AgeCalculations
 from classes.databaseController import UserTransactions, ConfigData, VerificationTransactions
 from classes.encryption import Encryption
 from classes.lobbyprocess import LobbyProcess
+from classes.support.discord_tools import send_response, send_message
 from views.buttons.agebuttons import AgeButtons
 
 
@@ -55,12 +56,8 @@ class VerifyModal(discord.ui.Modal):
             return
         # Checks if date of birth and age match
         if age < 18:
-            await channel.send(
-                    f"[Info] User {interaction.user.mention}\'s gave an age below 18 and was added to the ID list.\n"
-                    f"[Lobby Debug] Age: {age} dob {dob}")
-            await interaction.response.send_message(
-                    f'Unfortunately you are too young for our server. If you are 17 you may wait in the lobby.',
-                    ephemeral=True)
+            await send_message(channel, f"[Info] User {interaction.user.mention}\'s gave an age below 18 and was added to the ID list.\n[Lobby Debug] Age: {age} dob {dob}")
+            await send_response(interaction, f'Unfortunately you are too young for our server. If you are 17 you may wait in the lobby.', ephemeral=True)
             VerificationTransactions.set_idcheck_to_true(interaction.user.id,
                                                          f"{datetime.datetime.now(datetime.timezone.utc).strftime('%m/%d/%Y')}: User is under the age of 18")
             logging.debug(f"userid: {interaction.user.id} gave an age below 18 and was added to the ID list. Age given: {age}. Dob is NOT logged")
@@ -69,39 +66,37 @@ class VerifyModal(discord.ui.Modal):
         agechecked, years = AgeCalculations.agechecker(age, dob)
         logging.debug(f"userid: {interaction.user.id} age: {age} dob: {dob}")
         if agechecked == 1 or agechecked == -1:
-            await channel.send(
-                    f"[Info] <@&{admin[0]}> User {interaction.user.mention}\'s age does not match. "
-                    f"User gave {age} but dob indicates {years}. User may retry.\n")
-            await interaction.response.send_message(
-                    f'It seems your age does not match the date of birth you provided. Please try again. Please use '
-                    f'your CURRENT age.',
-                    ephemeral=True)
+            await send_message(channel,
+                               f"[Info] <@&{admin[0]}> User {interaction.user.mention}\'s age does not match. "
+                               f"User gave {age} but dob indicates {years}. User may retry.\n")
+            await send_response(interaction,
+                                f'It seems your age does not match the date of birth you provided. Please try again. Please use '
+                                f'your CURRENT age.',
+                                ephemeral=True)
             return
         if agechecked > 1 or agechecked < -1:
-            await idchannel.send(
-                    f"[Info] <@&{admin[0]}> User {interaction.user.mention}\'s age does not match and has been timed "
-                    f"out. User gave {age} but dob indicates {years}\n"
-                    f"[Lobby Debug] Age: {age} dob {dob}")
-            await interaction.response.send_message(
-                    f'A staff member will contact you soon, please wait patiently.',
-                    ephemeral=True)
+            await send_message(idchannel,
+                               f"[Info] <@&{admin[0]}> User {interaction.user.mention}\'s age does not match and has been timed "
+                               f"out. User gave {age} but dob indicates {years}\n"
+                               f"[Lobby Debug] Age: {age} dob {dob}")
+            await send_response(interaction,
+                                f'A staff member will contact you soon, please wait patiently.',
+                                ephemeral=True)
             return
         # Checks if user has a date of birth in the database, and if the date of births match.
 
         if AgeCalculations.check_date_of_birth(userdata, dob) is False:
-            await idchannel.send(
-                    f"[Info] <@&{admin[0]}> User {interaction.user.mention}\'s date of birth does not match. Given: {dob} Recorded: {Encryption().decrypt(userdata.date_of_birth)}\n"
-                    f"[Lobby Debug] Age: {age} dob {dob}")
-            await interaction.response.send_message(
-                    f'A staff member will contact you soon, please wait patiently.',
-                    ephemeral=True)
+            await send_message(idchannel,
+                               f"[Info] <@&{admin[0]}> User {interaction.user.mention}\'s date of birth does not match. Given: {dob} Recorded: {Encryption().decrypt(userdata.date_of_birth)}\n"
+                               f"[Lobby Debug] Age: {age} dob {dob}")
+            await send_response(interaction,
+                                f'A staff member will contact you soon, please wait patiently.',
+                                ephemeral=True)
             return
-
         # Check if user needs to ID or has previously ID'd
         if await AgeCalculations.id_check_or_id_verified(interaction.user, interaction.guild, channel):
-            await modlobby.send(f"{interaction.user.mention} gave ages: {age} {dob}, but is on the idlist.")
-            await interaction.response.send_message(
-                    f'A staff member will contact you soon, please wait patiently.', ephemeral=True)
+            await send_message(modlobby, f"{interaction.user.mention} gave ages: {age} {dob}, but is on the idlist.")
+            await send_response(interaction, f'A staff member will contact you soon, please wait patiently.', ephemeral=True)
             return
         # Check the age and send the right command/button based upon that.
         command_prefix = AgeCalculations.prefix(age)
@@ -109,29 +104,16 @@ class VerifyModal(discord.ui.Modal):
         # await AgeCalculations.check_history(interaction.user, channel)
         # Sends the buttons and information to lobby channel
         if ConfigData().get_key(interaction.guild.id, "automatic") == "enabled".upper():
-
             await LobbyProcess.approve_user(interaction.guild, interaction.user, dob, age, interaction.user.name)
-            await interaction.response.send_message(
-                    f'Thank you for submitting your age and dob! You will be let through immediately!',
-                    ephemeral=True)
+            await send_response(interaction, f'Thank you for submitting your age and dob! You will be let through immediately!', ephemeral=True)
             return
-
-        await channel.send(
-                f"\n{interaction.user.mention} has given {age} {dob}. You can let them through with the buttons below"
-                f"\n"
-                f"[LOBBY DEBUG] `?{command_prefix} {interaction.user.mention} {age} {dob}`",
-                view=AgeButtons(age=age, dob=dob, user=interaction.user))
-        try:
-            await interaction.response.send_message(
-                    f'Thank you for submitting your age and dob! We will let you through soon!',
-                    ephemeral=True)
-        except discord.errors.NotFound:
-            await interaction.followup.send(
-                    f'Thank you for submitting your age and dob! We will let you through soon!',
-                    ephemeral=True)
+        await send_message(channel, f"\n{interaction.user.mention} has given {age} {dob}. You can let them through with the buttons below"
+                                    f"\n"
+                                    f"[LOBBY DEBUG] `?{command_prefix} {interaction.user.mention} {age} {dob}`",
+                           view=AgeButtons(age=age, dob=dob, user=interaction.user))
+        await send_response(interaction, f'Thank you for submitting your age and dob! You will be let through soon!', ephemeral=True)
 
     async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
         print(error)
-        await interaction.response.send_message('Oops! Something went wrong.\n'
-                                                f'{error}')
+        await send_response(interaction, f"An error occurred: {error}", ephemeral=True)
         raise error

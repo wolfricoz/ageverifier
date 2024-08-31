@@ -6,6 +6,7 @@ from dateutil.relativedelta import relativedelta
 
 import databases.current
 from classes.databaseController import *
+from classes.support.discord_tools import send_message
 
 
 class AgeCalculations(ABC):
@@ -72,8 +73,7 @@ class AgeCalculations(ABC):
         if userinfo is None:
             return False
         if userinfo.idcheck is True:
-            await idchannel.send(
-                    f"[Info] {user.mention} is on the ID list with reason: {userinfo.reason}. Please ID the user before letting them through.")
+            await send_message(idchannel, f"[Info] {user.mention} is on the ID list with reason: {userinfo.reason}. Please ID the user before letting them through.")
             return True
         return False
 

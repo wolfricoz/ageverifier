@@ -1,11 +1,13 @@
 import datetime
 import re
 from abc import ABC, abstractmethod
+
 import discord
 from discord.utils import get
 
 from classes.AgeCalculations import AgeCalculations
 from classes.databaseController import UserTransactions, ConfigData
+from classes.support.discord_tools import send_message
 
 
 class LobbyProcess(ABC):
@@ -61,12 +63,12 @@ class LobbyProcess(ABC):
     async def log(user, guild, age, dob, staff):
         lobbylog = ConfigData().get_key(guild.id, "lobbylog")
         channel = guild.get_channel(int(lobbylog))
-        await channel.send(f"user: {user.mention}\n"
-                           f"Age: {age} \n"
-                           f"DOB: {dob} \n"
-                           f"User info: \n"
-                           f"UID: {user.id}  joined at: {user.joined_at.strftime('%m/%d/%Y %I:%M:%S %p')} executed: {datetime.datetime.now().strftime('%m/%d/%Y %I:%M:%S %p')} \n"
-                           f"staff: {staff}")
+        await send_message(channel, f"user: {user.mention}\n"
+                                    f"Age: {age} \n"
+                                    f"DOB: {dob} \n"
+                                    f"User info: \n"
+                                    f"UID: {user.id}  joined at: {user.joined_at.strftime('%m/%d/%Y %I:%M:%S %p')} executed: {datetime.datetime.now().strftime('%m/%d/%Y %I:%M:%S %p')} \n"
+                                    f"staff: {staff}")
 
     @staticmethod
     @abstractmethod
@@ -105,13 +107,13 @@ class LobbyProcess(ABC):
         async for cmessage in channel.history(limit=20):
             if cmessage.author.bot and user in cmessage.mentions:
                 return
-        await channel.send(f"Welcome to {guild.name} {user.mention}! {message}")
+        await send_message(channel, f"Welcome to {guild.name} {user.mention}! {message}")
 
     @staticmethod
     @abstractmethod
     async def age_log(age_log_channel, userid, dob, interaction, operation="added"):
-        await age_log_channel.send(f"USER {operation.upper()}\n"
-                                   f"DOB: {dob}\n"
-                                   f"UID: {userid}\n"
-                                   f"Entry updated by: {interaction.user.name}")
-        await interaction.channel.send(f"{operation} <@{userid}>({userid}) date of birth with dob: {dob}")
+        await send_message(age_log_channel, f"USER {operation.upper()}\n"
+                                            f"DOB: {dob}\n"
+                                            f"UID: {userid}\n"
+                                            f"Entry updated by: {interaction.user.name}")
+        await send_message(interaction.channel, f"{operation} <@{userid}>({userid}) date of birth with dob: {dob}")
