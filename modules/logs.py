@@ -40,18 +40,14 @@ with open(logfile, 'a') as f:
             f"----------------------------------------------------\n\n")
 
 handlers = [logging.FileHandler(filename=logfile, encoding='utf-8', mode='a'), logging.StreamHandler()]
-logging.basicConfig(handlers=handlers, level=logging.INFO)
+logging.basicConfig(handlers=handlers, level=logging.INFO, filename=logfile, format='%(asctime)s:%(name)s: %(message)s')
 
 
 logger = logging.getLogger('discord')
 logger.setLevel(logging.WARN)
-alogger = logging.getLogger('sqlalchemy')
-alogger.setLevel(logging.WARN)
-handler2 = logging.FileHandler(filename=logfile, encoding='utf-8', mode='a')
-handler2.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
-logging.basicConfig(filename=logfile, encoding='utf-8', level=logging.DEBUG, filemode='a')
+logger2 = logging.getLogger('sqlalchemy')
+logger2.setLevel(logging.WARN)
 
-alogger.addHandler(handler2)
 
 
 class Logging(commands.Cog):
