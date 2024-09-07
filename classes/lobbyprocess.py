@@ -19,13 +19,13 @@ class LobbyProcess(ABC):
         if await AgeCalculations.id_check(guild, user):
             return
         # updates user's age if it exists, otherwise makes a new entry
-        UserTransactions.update_user_dob(user.id, dob, guild.name)
+        exists = UserTransactions.update_user_dob(user.id, dob, guild.name)
 
         # changes user's roles; adds and removes
         await LobbyProcess.change_user_roles(user, guild)
 
         # Log age and dob to lobbylog
-        await LobbyProcess.log(user, guild, age, dob, staff)
+        await LobbyProcess.log(user, guild, age, dob, staff, exists)
 
         # fetches welcoming message and welcomes them in general channel
         await LobbyProcess.welcome(user, guild)
@@ -61,7 +61,7 @@ class LobbyProcess(ABC):
 
     @staticmethod
     @abstractmethod
-    async def log(user, guild, age, dob, staff):
+    async def log(user, guild, age, dob, staff, exists):
         lobbylog = ConfigData().get_key(guild.id, "lobbylog")
         channel = guild.get_channel(int(lobbylog))
         await send_message(channel, f"user: {user.mention}\n"
@@ -72,6 +72,7 @@ class LobbyProcess(ABC):
                                     f"Joined at: {user.joined_at.strftime('%m/%d/%Y %I:%M:%S %p')} \n"
                                     f"Account created at: {user.created_at.strftime('%m/%d/%Y %I:%M:%S %p')} \n"
                                     f"Executed at: {datetime.datetime.now().strftime('%m/%d/%Y %I:%M:%S %p')} \n"
+                                    f"first time: {f'yes' if exists else 'no'}\n"
                                     f"Staff: {staff}")
 
     @staticmethod
