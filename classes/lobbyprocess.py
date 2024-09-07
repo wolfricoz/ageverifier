@@ -66,10 +66,13 @@ class LobbyProcess(ABC):
         channel = guild.get_channel(int(lobbylog))
         await send_message(channel, f"user: {user.mention}\n"
                                     f"Age: {age} \n"
+                                    f"DOB: {dob} \n"
                                     f"User info: \n"
                                     f"UID: {user.id} \n"
-                                    f"joined at: {user.joined_at.strftime('%m/%d/%Y %I:%M:%S %p')} executed: {datetime.datetime.now().strftime('%m/%d/%Y %I:%M:%S %p')} \n"
-                                    f"staff: {staff}", view=dobentry())
+                                    f"Joined at: {user.joined_at.strftime('%m/%d/%Y %I:%M:%S %p')} \n"
+                                    f"Account created at: {user.created_at.strftime('%m/%d/%Y %I:%M:%S %p')} \n"
+                                    f"Executed at: {datetime.datetime.now().strftime('%m/%d/%Y %I:%M:%S %p')} \n"
+                                    f"Staff: {staff}")
 
     @staticmethod
     @abstractmethod
