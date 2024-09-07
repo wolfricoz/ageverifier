@@ -17,6 +17,7 @@ from classes.helpers import has_onboarding, welcome_user, invite_info
 from classes.lobbyprocess import LobbyProcess
 from views.buttons.agebuttons import AgeButtons
 from views.buttons.confirmButtons import confirmAction
+from views.buttons.dobentrybutton import dobentry
 from views.buttons.verifybutton import VerifyButton
 
 
@@ -26,6 +27,7 @@ class Lobby(commands.GroupCog):
         self.index = 0
         self.bot.add_view(VerifyButton())
         self.bot.add_view(AgeButtons())
+        self.bot.add_view(dobentry())
 
     @app_commands.command(name="button")
     @permissions.check_app_roles_admin()
