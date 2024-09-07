@@ -8,6 +8,7 @@ from discord.utils import get
 from classes.AgeCalculations import AgeCalculations
 from classes.databaseController import UserTransactions, ConfigData
 from classes.support.discord_tools import send_message
+from views.buttons.dobentrybutton import dobentry
 
 
 class LobbyProcess(ABC):
@@ -65,10 +66,10 @@ class LobbyProcess(ABC):
         channel = guild.get_channel(int(lobbylog))
         await send_message(channel, f"user: {user.mention}\n"
                                     f"Age: {age} \n"
-                                    f"DOB: {dob} \n"
                                     f"User info: \n"
-                                    f"UID: {user.id}  joined at: {user.joined_at.strftime('%m/%d/%Y %I:%M:%S %p')} executed: {datetime.datetime.now().strftime('%m/%d/%Y %I:%M:%S %p')} \n"
-                                    f"staff: {staff}")
+                                    f"UID: {user.id} \n"
+                                    f"joined at: {user.joined_at.strftime('%m/%d/%Y %I:%M:%S %p')} executed: {datetime.datetime.now().strftime('%m/%d/%Y %I:%M:%S %p')} \n"
+                                    f"staff: {staff}", view=dobentry())
 
     @staticmethod
     @abstractmethod
