@@ -2,36 +2,50 @@
 import logging
 import os
 
-import discord
 from discord import app_commands
 from discord.app_commands import Choice
 from discord.ext import commands
 
-from classes import permissions
 from classes.databaseController import ConfigTransactions, ConfigData
 from views.modals.configinput import ConfigInputUnique
 from views.select.configselectroles import *
+
 
 class config(commands.GroupCog, name="config"):
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    messagechoices = ['welcomemessage', "lobbywelcome"]
-    channelchoices = ['inviteinfo', 'general', "lobby", "lobbylog", "lobbymod",
-                      "idlog"]
-    rolechoices = {"moderator role": "mod", "administrator role": "admin", 'add to user': 'add', 'remove from user': "rem", "remove on return": "return"}
+    messagechoices = {
+        'welcomemessage': 'This is the welcome message that will be posted in the general channel This starts with: `Welcome to {server name} {user}! This is where the message goes`',
+        "lobbywelcome"  : 'This is the welcome message that will be posted in the lobby channel, and be the first message new users see. This starts with: `Welcome {user}! This is where the message goes`',
+    }
+    channelchoices = {
+        'inviteinfo': 'This channel will be used to log invite information',
+        'general'   : 'This is your general channel, where the welcome message will be posted',
+        "lobby"     : 'This is your lobby channel, where the lobby welcome message will be posted. This is also where the verification process will start; this is where new users should interact with the bot.',
+        "lobbylog"  : 'This is the channel where the lobby logs will be posted, this channel has to be hidden from the users; failure to do so will result in the bot leaving.',
+        "lobbymod"  : 'This is where the verification approval happens, this channel should be hidden from the users.',
+        "idlog"     : 'This is where failed verification logs will be posted, this channel should be hidden from the users.'
+    }
+    rolechoices = {
+        "mod"   : "This is the moderator role, these users will be able to approve users",
+        "admin" : "Admin role, these users will be able to approve users and change the config, update date of births and id verifications",
+        'add'   : 'These roles will be added to the user after a successful verification',
+        "rem"   : 'These roles will be removed from the user after a successful verification',
+        "return": "These roles will be removed from the user when running the /lobby return command.",
+    }
     available_toggles = ["Welcome", "Automatic"]
-
 
     @app_commands.command(name='setup')
     @app_commands.checks.has_permissions(manage_guild=True)
     async def configsetup(self, interaction: discord.Interaction):
         """Sets up the config for the bot."""
         await interaction.response.defer(ephemeral=True)
-        for item in self.channelchoices:
+
+        for channelkey, channelvalue in self.channelchoices.items():
             view = ConfigSelectChannels()
-            msg = await interaction.channel.send(f"Choose a channel for key: {item}", view=view)
+            msg = await interaction.channel.send(f"Select a channel for {channelkey}: \n`{channelvalue}`", view=view)
             await view.wait()
             await msg.delete()
             try:
@@ -43,10 +57,12 @@ class config(commands.GroupCog, name="config"):
             except AttributeError:
                 logging.info("No value found, message was deleted")
                 return
-            ConfigTransactions.config_unique_add(interaction.guild.id, item, int(view.value[0]), overwrite=True)
-        for expl,role in self.rolechoices.items():
+            ConfigTransactions.config_unique_add(interaction.guild.id, channelkey, int(view.value[0]), overwrite=True)
+        for key, value in self.rolechoices.items():
+            if key == "return":
+                continue
             view = ConfigSelectRoles()
-            msg = await interaction.channel.send(f"{expl}: {role}\nWill add role to the config, if you wish for the old role to be deleted please use the /config role command.", view=view)
+            msg = await interaction.channel.send(f"{key}: \n{value}", view=view)
             await view.wait()
             await msg.delete()
             try:
@@ -58,8 +74,22 @@ class config(commands.GroupCog, name="config"):
             except AttributeError:
                 logging.info("No value found, message was deleted")
                 return
-            ConfigTransactions.config_key_add(interaction.guild.id, role, int(view.value[0]), overwrite=True)
-        await interaction.followup.send("Config has been set up, please setup the messages with /config messages. Permission check will start shortly.", ephemeral=True)
+            ConfigTransactions.config_unique_add(interaction.guild.id, value, int(view.value[0]), overwrite=True)
+        for messagekey, messagevalue in self.messagechoices.items():
+            msg = await interaction.channel.send(f"Please set the message for {messagekey}\n"
+                                                 f"{messagevalue}\n"
+                                                 f"Type `cancel` to cancel, or `next` to go to the next message")
+            result = await self.bot.wait_for('message', check=lambda m: m.author == interaction.user)
+            if result.content.lower() == "cancel":
+                await interaction.followup.send("Setup cancelled")
+                return
+            if result.content.lower() == "next":
+                continue
+            ConfigTransactions.config_unique_add(interaction.guild.id, messagekey, result.content, overwrite=True)
+            await result.delete()
+            await msg.delete()
+
+        await interaction.followup.send("The config has been successfully setup, if you wish to check our toggles you please do /config toggles. Permission checking will commence shortly.", ephemeral=True)
         await self.check_channel_permissions(interaction)
 
     @app_commands.command()
@@ -96,7 +126,7 @@ class config(commands.GroupCog, name="config"):
         await interaction.followup.send("All permissions are set correctly!")
 
     @app_commands.command()
-    @app_commands.choices(key=[Choice(name=x, value=x) for x in messagechoices])
+    @app_commands.choices(key=[Choice(name=x, value=x) for x, _ in messagechoices.items()])
     @app_commands.choices(action=[Choice(name=x, value=x) for x in ['set', 'Remove']])
     @app_commands.checks.has_permissions(manage_guild=True)
     async def messages(self, interaction: discord.Interaction, key: Choice[str], action: Choice[str]):
@@ -127,7 +157,7 @@ class config(commands.GroupCog, name="config"):
         await interaction.response.send_message(f"{key.value} has been set to {action.value}", ephemeral=True)
 
     @app_commands.command()
-    @app_commands.choices(key=[Choice(name=x, value=x) for x in channelchoices])
+    @app_commands.choices(key=[Choice(name=f"{x} channel", value=x) for x, _ in channelchoices.items()])
     @app_commands.choices(action=[Choice(name=x, value=x) for x in ["set", "remove"]])
     @app_commands.checks.has_permissions(manage_guild=True)
     async def channels(self, interaction: discord.Interaction, key: Choice[str], action: Choice[str],
@@ -150,9 +180,8 @@ class config(commands.GroupCog, name="config"):
             case _:
                 raise NotImplementedError
 
-
     @app_commands.command()
-    @app_commands.choices(key=[Choice(name=ke, value=val) for ke, val in rolechoices.items()])
+    @app_commands.choices(key=[Choice(name=f"{ke} role", value=ke) for ke, val in rolechoices.items()])
     @app_commands.choices(action=[Choice(name=x, value=x) for x in ['add', 'Remove']])
     @app_commands.checks.has_permissions(manage_guild=True)
     async def roles(self, interaction: discord.Interaction, key: Choice[str], action: Choice[str], value: discord.Role):
@@ -183,9 +212,9 @@ class config(commands.GroupCog, name="config"):
         # configoptions = ['welcomemessage', "lobbywelcome", "reminder", "dev", 'helpchannel', 'inviteinfo', 'general', "lobby", "lobbylog", "lobbymod",
         #                  "idlog", "advertmod", "advertlog", "removallog", "nsfwlog", "warnlog", "FORUM", "mod", "admin", "add", "rem", "18", "21", "25", "return", "nsfw", "partner", "posttimeout", "SEARCH"]
 
-        roles:list = [x for x in self.rolechoices.values()]
+        roles: list = [x for x in self.rolechoices.values()]
         other = ["FORUM", "SEARCH"]
-        optionsall = self.messagechoices + self.channelchoices + list(self.available_toggles) + roles
+        optionsall = list(self.messagechoices) + list(self.channelchoices) + list(self.available_toggles) + list(self.rolechoices)
         await interaction.response.defer()
         with open('config.txt', 'w') as file:
             file.write(f"Config for {interaction.guild.name}: \n\n")
