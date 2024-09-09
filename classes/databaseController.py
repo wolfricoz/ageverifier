@@ -12,7 +12,7 @@ import databases.current as db
 from classes.encryption import Encryption
 from databases.current import *
 
-session = Session(bind=db.engine)
+session = Session(bind=db.engine, expire_on_commit=False, )
 
 
 class ConfigNotFound(Exception):

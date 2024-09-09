@@ -15,31 +15,41 @@ for all of the commands below, the permissions guild_manage required to run them
 
 ### Message Choices
 
-- **welcomemessage**: This is the welcome message that will be posted in the general channel. This starts with: \`Welcome to {server name} {user}! This is where the message goes\`.
-- **lobbywelcome**: This is the welcome message that will be posted in the lobby channel, and be the first message new users see. This starts with: \`Welcome {user}! This is where the message goes\`.
+- **welcomemessage**: This is the welcome message that will be posted in the general channel. This starts with:
+  \`Welcome to {server name} {user}! This is where the message goes\`.
+- **lobbywelcome**: This is the welcome message that will be posted in the lobby channel, and be the first message new
+  users see. This starts with: \`Welcome {user}! This is where the message goes\`.
 
 ### Channel Choices
 
 - **inviteinfo**: This channel will be used to log invite information.
 - **general**: This is your general channel, where the welcome message will be posted.
-- **lobby**: This is your lobby channel, where the lobby welcome message will be posted. This is also where the verification process will start; this is where new users should interact with the bot.
-- **lobbylog**: This is the channel where the lobby logs will be posted. This channel has to be hidden from the users; failure to do so will result in the bot leaving.
+- **lobby**: This is your lobby channel, where the lobby welcome message will be posted. This is also where the
+  verification process will start; this is where new users should interact with the bot.
+- **lobbylog**: This is the channel where the lobby logs will be posted. This channel has to be hidden from the users;
+  failure to do so will result in the bot leaving.
 - **lobbymod**: This is where the verification approval happens. This channel should be hidden from the users.
 - **idlog**: This is where failed verification logs will be posted. This channel should be hidden from the users.
 
 ### Role Choices
 
 - **mod**: This is the moderator role. These users will be able to approve users.
-- **admin**: Admin role. These users will be able to approve users and change the config, update date of births, and ID verifications.
+- **admin**: Admin role. These users will be able to approve users and change the config, update date of births, and ID
+  verifications.
 - **add**: These roles will be added to the user after a successful verification.
 - **rem**: These roles will be removed from the user after a successful verification.
-- **return**: These roles will be removed from the user when running the `/lobby return` command.
+- **return**: These roles will be removed from the user when running the `/lobby return` command. (Not required, not in setup)
+
+### Toggle Options (Not in setup)
+
+- **welcome**: This command will enable or disable the welcome message.
+- **automatic**: This command will enable or disable the automatic age verification.
 
 
 ## `/config setup`
 
-This command will run you through the setup process of setting up the channels and roles for the bot to function properly. It will run through all the options above, except for the toggle options and the role choice 'return'.
-
+This command will run you through the setup process of setting up the channels and roles for the bot to function
+properly. It will run through all the options above, except for the toggle options and the role choice 'return'.
 
 ## `/config messages key:option action:(set/remove) `
 
@@ -49,7 +59,6 @@ displayed for the option you have chosen. The options are as follows:
 * welcomemessage
 * lobbymessage
 * reminder
-
 
 ## `/config toggle key:option action:(enable/disable)`
 
