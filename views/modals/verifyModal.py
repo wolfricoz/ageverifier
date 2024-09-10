@@ -50,16 +50,20 @@ class VerifyModal(discord.ui.Modal):
         idchannel = interaction.guild.get_channel(idlog)
         age = int(self.age.value)
         # validates inputs with regex
+        if channel is None or idchannel is None:
+            await send_response(interaction, f"An error occurred: Lobby channel or ID channel not found.", ephemeral=False)
 
-        dob = await AgeCalculations.infocheck(interaction, self.age.value, self.dateofbirth.value, modlobby)
+
+        dob = await AgeCalculations.infocheck(interaction, self.age.value, self.dateofbirth.value, channel)
         if dob is None:
             return
         # Checks if date of birth and age match
         if age < 18:
             await send_message(channel, f"[Info] User {interaction.user.mention}\'s gave an age below 18 and was added to the ID list.\n[Lobby Debug] Age: {age} dob {dob}")
             await send_response(interaction, f'Unfortunately you are too young for our server. If you are 17 you may wait in the lobby.', ephemeral=True)
-            VerificationTransactions.set_idcheck_to_true(interaction.user.id,
-                                                         f"{datetime.datetime.now(datetime.timezone.utc).strftime('%m/%d/%Y')}: User is under the age of 18")
+            VerificationTransactions.set_idcheck_to_true(
+                    interaction.user.id,
+                    f"{datetime.datetime.now(datetime.timezone.utc).strftime('%m/%d/%Y')}: User is under the age of 18")
             logging.debug(f"userid: {interaction.user.id} gave an age below 18 and was added to the ID list. Age given: {age}. Dob is NOT logged")
             return
         # Checks if user is underaged
