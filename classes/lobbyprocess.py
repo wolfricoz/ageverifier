@@ -8,7 +8,9 @@ from discord.utils import get
 from classes.AgeCalculations import AgeCalculations
 from classes.databaseController import UserTransactions, ConfigData
 from classes.support.discord_tools import send_message
+from modules.dev import whitelist
 from views.buttons.dobentrybutton import dobentry
+from classes.whitelist import check_whitelist
 
 
 class LobbyProcess(ABC):
@@ -64,9 +66,12 @@ class LobbyProcess(ABC):
     async def log(user, guild, age, dob, staff, exists):
         lobbylog = ConfigData().get_key(guild.id, "lobbylog")
         channel = guild.get_channel(int(lobbylog))
+        dobfield = ""
+        if check_whitelist(guild.id):
+           dobfield = f"DOB: {dob} \n"
         await send_message(channel, f"user: {user.mention}\n"
                                     f"Age: {age} \n"
-                                    f"DOB: {dob} \n"
+                                    f"{dobfield}"
                                     f"User info: \n"
                                     f"UID: {user.id} \n"
                                     f"Joined at: {user.joined_at.strftime('%m/%d/%Y %I:%M:%S %p')} \n"
