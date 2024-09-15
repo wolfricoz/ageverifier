@@ -8,7 +8,9 @@ from discord.utils import get
 from classes.AgeCalculations import AgeCalculations
 from classes.databaseController import UserTransactions, ConfigData
 from classes.support.discord_tools import send_message
+from modules.dev import whitelist
 from views.buttons.dobentrybutton import dobentry
+from classes.whitelist import check_whitelist
 
 
 class LobbyProcess(ABC):
@@ -19,13 +21,13 @@ class LobbyProcess(ABC):
         if await AgeCalculations.id_check(guild, user):
             return
         # updates user's age if it exists, otherwise makes a new entry
-        UserTransactions.update_user_dob(user.id, dob, guild.name)
+        exists = UserTransactions.update_user_dob(user.id, dob, guild.name)
 
         # changes user's roles; adds and removes
         await LobbyProcess.change_user_roles(user, guild)
 
         # Log age and dob to lobbylog
-        await LobbyProcess.log(user, guild, age, dob, staff)
+        await LobbyProcess.log(user, guild, age, dob, staff, exists)
 
         # fetches welcoming message and welcomes them in general channel
         await LobbyProcess.welcome(user, guild)
@@ -61,15 +63,22 @@ class LobbyProcess(ABC):
 
     @staticmethod
     @abstractmethod
-    async def log(user, guild, age, dob, staff):
+    async def log(user, guild, age, dob, staff, exists):
         lobbylog = ConfigData().get_key(guild.id, "lobbylog")
         channel = guild.get_channel(int(lobbylog))
+        dobfield = ""
+        if check_whitelist(guild.id):
+           dobfield = f"DOB: {dob} \n"
         await send_message(channel, f"user: {user.mention}\n"
                                     f"Age: {age} \n"
+                                    f"{dobfield}"
                                     f"User info: \n"
                                     f"UID: {user.id} \n"
-                                    f"joined at: {user.joined_at.strftime('%m/%d/%Y %I:%M:%S %p')} executed: {datetime.datetime.now().strftime('%m/%d/%Y %I:%M:%S %p')} \n"
-                                    f"staff: {staff}", view=dobentry())
+                                    f"Joined at: {user.joined_at.strftime('%m/%d/%Y %I:%M:%S %p')} \n"
+                                    f"Account created at: {user.created_at.strftime('%m/%d/%Y %I:%M:%S %p')} \n"
+                                    f"Executed at: {datetime.datetime.now().strftime('%m/%d/%Y %I:%M:%S %p')} \n"
+                                    f"first time: {f'yes' if exists else 'no'}\n"
+                                    f"Staff: {staff}")
 
     @staticmethod
     @abstractmethod
