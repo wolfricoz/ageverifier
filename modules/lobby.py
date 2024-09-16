@@ -81,8 +81,8 @@ class Lobby(commands.GroupCog):
             case "GET":
                 user: Users = UserTransactions.get_user(userid)
                 discord_user = self.bot.get_user(userid)
-                if discord_user not in interaction.guild.members and not permissions.check_dev(interaction.user.id) and user.server != interaction.guild.name:
-                    await interaction.followup.send("User not in server")
+                if not permissions.check_dev(interaction.user.id) and (discord_user not in interaction.guild.members or user.server != interaction.guild.name):
+                    await interaction.followup.send("The user is not in the server and the date of birth was not added in this server.")
                     return
                 await send_response(interaction,
                                     f"**__USER INFO__**\n"
