@@ -45,10 +45,13 @@ class Lobby(commands.GroupCog):
         age_log = ConfigData().get_key_int(interaction.guild.id, "lobbylog")
         age_log_channel = interaction.guild.get_channel(age_log)
         dev_channel = self.bot.get_channel(int(os.getenv('DEV')))
-        if check_whitelist(interaction.guild.id) is False:
+        if check_whitelist(interaction.guild.id) is False and not permissions.check_dev(interaction.user.id):
             await send_response(interaction, "[NOT_WHITELISTED] This command is limited to whitelisted servers.")
             return
-        await interaction.response.defer(ephemeral=True)
+        try:
+            await interaction.response.defer(ephemeral=True)
+        except discord.InteractionResponded:
+            pass
         match operation.value.upper():
             case "UPDATE":
                 if await AgeCalculations.validatedob(dob, interaction) is False:
@@ -93,10 +96,13 @@ class Lobby(commands.GroupCog):
     async def idverify(self, interaction: discord.Interaction, process: Choice['str'],
                        user: discord.Member, dob: str):
         """ID verifies user. process True will put the user through the lobby."""
-        if check_whitelist(interaction.guild.id) is False:
+        if check_whitelist(interaction.guild.id) is False and not permissions.check_dev(interaction.user.id):
             await send_response(interaction, "[NOT_WHITELISTED] This command is limited to whitelisted servers. Please contact the developer `ricostryker` to verify the user.")
             return
-        await interaction.response.defer(ephemeral=True)
+        try:
+            await interaction.response.defer(ephemeral=True)
+        except discord.InteractionResponded:
+            pass
         lobbylog = ConfigData().get_key_int(interaction.guild.id, "lobbylog")
 
         agelog = interaction.guild.get_channel(lobbylog)
