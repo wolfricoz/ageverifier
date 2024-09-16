@@ -12,7 +12,9 @@ import databases.current as db
 from classes.encryption import Encryption
 from databases.current import *
 
+import logging
 session = Session(bind=db.engine, expire_on_commit=False, )
+
 
 
 class ConfigNotFound(Exception):
@@ -83,6 +85,7 @@ class UserTransactions(ABC):
             item = db.Users(uid=userid, entry=datetime.now(tz=timezone.utc), date_of_birth=Encryption().encrypt(dob), server=guildname)
             session.merge(item)
             DatabaseTransactions.commit(session)
+            logging.info(f"User {userid} added to database with dob {dob} in {guildname}")
             return True
         except ValueError:
             return False
@@ -94,23 +97,26 @@ class UserTransactions(ABC):
         if userdata is None:
             UserTransactions.add_user_full(userid, dob, guildname)
             return False
+        old_dob = userdata.date_of_birth
         userdata.date_of_birth = Encryption().encrypt(dob)
         userdata.entry = datetime.now(tz=timezone.utc)
         userdata.server = guildname
         DatabaseTransactions.commit(session)
+        logging.info(f"Dob updated for {userid} from {old_dob} to {dob} in {guildname}")
         if userdata.date_of_birth is None:
             return False
         return True
 
     @staticmethod
     @abstractmethod
-    def user_delete(userid: int):
+    def user_delete(userid: int, guildname: str):
         try:
             userdata: Users = session.scalar(Select(Users).where(Users.uid == userid))
             if userdata is None:
                 return False
             session.delete(userdata)
             DatabaseTransactions.commit(session)
+            logging.info(f"User {userid} deleted by {guildname}")
             return True
         except sqlalchemy.exc.IntegrityError:
             session.rollback()

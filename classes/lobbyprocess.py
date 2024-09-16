@@ -8,6 +8,7 @@ from discord.utils import get
 from classes.AgeCalculations import AgeCalculations
 from classes.databaseController import UserTransactions, ConfigData
 from classes.support.discord_tools import send_message
+from classes.whitelist import check_whitelist
 from views.buttons.dobentrybutton import dobentry
 
 
@@ -64,9 +65,12 @@ class LobbyProcess(ABC):
     async def log(user, guild, age, dob, staff, exists):
         lobbylog = ConfigData().get_key(guild.id, "lobbylog")
         channel = guild.get_channel(int(lobbylog))
+        dobfield = ""
+        if check_whitelist(guild.id):
+            dobfield = f"DOB: {dob} \n"
         await send_message(channel, f"user: {user.mention}\n"
                                     f"Age: {age} \n"
-                                    f"DOB: {dob} \n"
+                                    f"{dobfield}"
                                     f"User info: \n"
                                     f"UID: {user.id} \n"
                                     f"Joined at: {user.joined_at.strftime('%m/%d/%Y %I:%M:%S %p')} \n"
@@ -117,8 +121,12 @@ class LobbyProcess(ABC):
     @staticmethod
     @abstractmethod
     async def age_log(age_log_channel, userid, dob, interaction, operation="added"):
+        dob_field = ""
+        if check_whitelist(interaction.guild.id):
+            dob_field = f"DOB: {dob}\n"
+
         await send_message(age_log_channel, f"USER {operation.upper()}\n"
-                                            f"DOB: {dob}\n"
+                                            f"{dob_field}"
                                             f"UID: {userid}\n"
                                             f"Entry updated by: {interaction.user.name}")
         await send_message(interaction.channel, f"{operation} <@{userid}>({userid}) date of birth with dob: {dob}")
