@@ -54,13 +54,7 @@ async def on_ready():
     guilds = []
     whitelist.create_whitelist(bot.guilds)
     for guild in bot.guilds:
-        if whitelist.check_whitelist(guild.id) is False:
-            try:
-                await guild.owner.send("This server is not whitelisted. Please contact the bot owner: ricostryker.")
-            except discord.errors.Forbidden:
-                print(f"Unable to send message to {guild.owner.name} in {guild.name}")
-            await guild.leave()
-            continue
+
         ConfigTransactions.server_add(guild.id)
         ConfigData().load_guild(guild.id)
         guilds.append(guild.name)
@@ -89,11 +83,9 @@ async def on_guild_join(guild):
     await devroom.send(f"Joined {guild.name}({guild.id})")
     if whitelist.check_whitelist(guild.id) is False:
         try:
-            await guild.owner.send("This server is not whitelisted. Please contact the bot owner: ricostryker.")
+            await guild.owner.send("This server is not whitelisted and the bot will run in a limited mode. Date of births will not be shown.")
         except discord.errors.Forbidden:
             print(f"Unable to send message to {guild.owner.name} in {guild.name}")
-        await guild.leave()
-        return
     ConfigTransactions.server_add(guild.id)
     ConfigData().load_guild(guild.id)
     try:

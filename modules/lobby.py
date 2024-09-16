@@ -46,7 +46,7 @@ class Lobby(commands.GroupCog):
         age_log_channel = interaction.guild.get_channel(age_log)
         dev_channel = self.bot.get_channel(int(os.getenv('DEV')))
         if check_whitelist(interaction.guild.id) is False:
-            await send_response(interaction, "This command is limited to whitelisted servers.")
+            await send_response(interaction, "[NOT_WHITELISTED] This command is limited to whitelisted servers.")
             return
         await interaction.response.defer(ephemeral=True)
         match operation.value.upper():
@@ -83,7 +83,7 @@ class Lobby(commands.GroupCog):
                 await send_response(interaction,
                                     f"**__USER INFO__**\n"
                                     f"user: <@{user.uid}>\n"
-                                    f"dob: {Encryption().decrypt(user.date_of_birth)}"
+                                    f"dob: {Encryption().decrypt(user.date_of_birth)}\n"
                                     f"Last updated in: {user.server}")
 
     @app_commands.command()
@@ -94,8 +94,8 @@ class Lobby(commands.GroupCog):
                        user: discord.Member, dob: str):
         """ID verifies user. process True will put the user through the lobby."""
         if check_whitelist(interaction.guild.id) is False:
-            await send_response(interaction, "This command is limited to whitelisted servers. Please contact the developer `ricostryker` to verify the user.")
-
+            await send_response(interaction, "[NOT_WHITELISTED] This command is limited to whitelisted servers. Please contact the developer `ricostryker` to verify the user.")
+            return
         await interaction.response.defer(ephemeral=True)
         lobbylog = ConfigData().get_key_int(interaction.guild.id, "lobbylog")
 
