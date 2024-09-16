@@ -76,6 +76,10 @@ class Lobby(commands.GroupCog):
                 await send_message(dev_channel, f"<@{userid}>'s dob added in {interaction.guild.name}.")
             case "GET":
                 user = UserTransactions.get_user(userid)
+                if user not in interaction.guild.members and not permissions.check_dev(interaction.user.id):
+                    await interaction.followup.send("User not in server")
+                    return
+                user = UserTransactions.get_user(userid)
                 await send_response(interaction,
                                     f"**__USER INFO__**\n"
                                     f"user: <@{user.uid}>\n"
