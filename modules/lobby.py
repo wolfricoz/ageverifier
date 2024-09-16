@@ -15,6 +15,7 @@ from classes.helpers import has_onboarding, welcome_user, invite_info
 from classes.lobbyprocess import LobbyProcess
 from classes.support.discord_tools import send_response, send_message
 from classes.whitelist import check_whitelist
+from databases.current import database, Users
 from views.buttons.agebuttons import AgeButtons
 from views.buttons.confirmButtons import confirmAction
 from views.buttons.dobentrybutton import dobentry
@@ -45,7 +46,7 @@ class Lobby(commands.GroupCog):
         age_log = ConfigData().get_key_int(interaction.guild.id, "lobbylog")
         age_log_channel = interaction.guild.get_channel(age_log)
         dev_channel = self.bot.get_channel(int(os.getenv('DEV')))
-        if check_whitelist(interaction.guild.id) is False and not permissions.check_dev(interaction.user.id):
+        if not check_whitelist(interaction.guild.id) and not permissions.check_dev(interaction.user.id):
             await send_response(interaction, "[NOT_WHITELISTED] This command is limited to whitelisted servers.")
             return
         try:
@@ -78,11 +79,11 @@ class Lobby(commands.GroupCog):
                 await LobbyProcess.age_log(age_log_channel, userid, dob, interaction)
                 await send_message(dev_channel, f"<@{userid}>'s dob added in {interaction.guild.name}.")
             case "GET":
-                user = UserTransactions.get_user(userid)
-                if user not in interaction.guild.members and not permissions.check_dev(interaction.user.id):
+                user: Users = UserTransactions.get_user(userid)
+                discord_user = self.bot.get_user(userid)
+                if discord_user not in interaction.guild.members and not permissions.check_dev(interaction.user.id) and user.server != interaction.guild.name:
                     await interaction.followup.send("User not in server")
                     return
-                user = UserTransactions.get_user(userid)
                 await send_response(interaction,
                                     f"**__USER INFO__**\n"
                                     f"user: <@{user.uid}>\n"
