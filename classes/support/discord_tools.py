@@ -61,3 +61,8 @@ async def send_response(interaction: discord.Interaction, response, ephemeral=Fa
                 response,
                 ephemeral=ephemeral
         )
+    except discord.InteractionResponded:
+        await interaction.followup.send(
+                response,
+                ephemeral=ephemeral
+        )
