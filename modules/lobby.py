@@ -1,6 +1,5 @@
 """this module handles the lobby."""
 import datetime
-import logging
 import os
 
 import discord
@@ -8,14 +7,13 @@ from discord import app_commands
 from discord.app_commands import Choice
 from discord.ext import commands
 
-import classes.databaseController
 import classes.permissions as permissions
 from classes.AgeCalculations import AgeCalculations
 from classes.databaseController import UserTransactions, ConfigData, VerificationTransactions
 from classes.encryption import Encryption
 from classes.helpers import has_onboarding, welcome_user, invite_info
 from classes.lobbyprocess import LobbyProcess
-from classes.support.discord_tools import send_response
+from classes.support.discord_tools import send_response, send_message
 from classes.whitelist import check_whitelist
 from views.buttons.agebuttons import AgeButtons
 from views.buttons.confirmButtons import confirmAction
@@ -24,7 +22,7 @@ from views.buttons.verifybutton import VerifyButton
 
 
 class Lobby(commands.GroupCog):
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.index = 0
         self.bot.add_view(VerifyButton())
@@ -46,39 +44,43 @@ class Lobby(commands.GroupCog):
         userid = int(userid)
         age_log = ConfigData().get_key_int(interaction.guild.id, "lobbylog")
         age_log_channel = interaction.guild.get_channel(age_log)
+        dev_channel = self.bot.get_channel(int(os.getenv('DEV')))
         if check_whitelist(interaction.guild.id) is False:
             await send_response(interaction, "This command is limited to whitelisted servers.")
             return
-
-
         await interaction.response.defer(ephemeral=True)
         match operation.value.upper():
             case "UPDATE":
                 if await AgeCalculations.validatedob(dob, interaction) is False:
                     return
                 UserTransactions.update_user_dob(userid, dob, interaction.guild.name)
-                await interaction.followup.send(f"<@{userid}>'s dob updated to: {dob}")
+                await send_response(interaction, f"Updated <@{userid}>'s dob to {dob}")
                 await LobbyProcess.age_log(age_log_channel, userid, dob, interaction, "updated")
+                await send_message(dev_channel, f"<@{userid}>'s dob updated in {interaction.guild.name}.")
+
             case "DELETE":
                 if permissions.check_admin(interaction.user) is False:
                     await interaction.followup.send("You are not an admin")
                     return
-                if UserTransactions.user_delete(userid) is False:
+                if UserTransactions.user_delete(userid, interaction.guild.name) is False:
                     await interaction.followup.send(f"Can't find entry: <@{userid}>")
                     return
-                await interaction.followup.send(f"Deleted entry: <@{userid}>")
+                await send_response(interaction, f"Deleted entry: <@{userid}>")
+                await send_message(dev_channel, f"<@{userid}>'s dob deleted in {interaction.guild.name}.")
             case "ADD":
                 if await AgeCalculations.validatedob(dob, interaction) is False:
                     return
                 UserTransactions.add_user_full(str(userid), dob, interaction.guild.name)
-                await interaction.followup.send(f"<@{userid}> added to the database with dob: {dob}")
+                await send_response(interaction, f"<@{userid}> added to the database with dob: {dob}")
                 await LobbyProcess.age_log(age_log_channel, userid, dob, interaction)
+                await send_message(dev_channel, f"<@{userid}>'s dob added in {interaction.guild.name}.")
             case "GET":
                 user = UserTransactions.get_user(userid)
-                await interaction.followup.send(f"**__USER INFO__**\n"
-                                                f"user: <@{user.uid}>\n"
-                                                f"dob: {Encryption().decrypt(user.date_of_birth)}"
-                                                f"Last updated in: {user.server}")
+                await send_response(interaction,
+                                    f"**__USER INFO__**\n"
+                                    f"user: <@{user.uid}>\n"
+                                    f"dob: {Encryption().decrypt(user.date_of_birth)}"
+                                    f"Last updated in: {user.server}")
 
     @app_commands.command()
     @app_commands.choices(process=[Choice(name=x, value=x) for x in
@@ -256,8 +258,6 @@ UID: {user.id}
         if await has_onboarding(member.guild):
             return
         await welcome_user(member)
-
-
 
     @commands.Cog.listener()
     async def on_member_update(self, before: discord.Member, after: discord.Member):
