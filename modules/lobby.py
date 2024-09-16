@@ -15,6 +15,8 @@ from classes.databaseController import UserTransactions, ConfigData, Verificatio
 from classes.encryption import Encryption
 from classes.helpers import has_onboarding, welcome_user, invite_info
 from classes.lobbyprocess import LobbyProcess
+from classes.support.discord_tools import send_response
+from classes.whitelist import check_whitelist
 from views.buttons.agebuttons import AgeButtons
 from views.buttons.confirmButtons import confirmAction
 from views.buttons.dobentrybutton import dobentry
@@ -44,6 +46,11 @@ class Lobby(commands.GroupCog):
         userid = int(userid)
         age_log = ConfigData().get_key_int(interaction.guild.id, "lobbylog")
         age_log_channel = interaction.guild.get_channel(age_log)
+        if check_whitelist(interaction.guild.id) is False:
+            await send_response(interaction, "This command is limited to whitelisted servers.")
+            return
+
+
         await interaction.response.defer(ephemeral=True)
         match operation.value.upper():
             case "UPDATE":
@@ -80,6 +87,9 @@ class Lobby(commands.GroupCog):
     async def idverify(self, interaction: discord.Interaction, process: Choice['str'],
                        user: discord.Member, dob: str):
         """ID verifies user. process True will put the user through the lobby."""
+        if check_whitelist(interaction.guild.id) is False:
+            await send_response(interaction, "This command is limited to whitelisted servers. Please contact the developer `ricostryker` to verify the user.")
+
         await interaction.response.defer(ephemeral=True)
         lobbylog = ConfigData().get_key_int(interaction.guild.id, "lobbylog")
 
