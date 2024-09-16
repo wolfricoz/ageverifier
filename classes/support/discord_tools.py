@@ -56,13 +56,14 @@ async def send_response(interaction: discord.Interaction, response, ephemeral=Fa
         logging.error(f"Missing permission to send message to {channel.name}")
         await interaction.guild.owner.send(f"Missing permission to send message to {channel.name}. Check permissions: {', '.join(missing_perms)}", )
         raise NoMessagePermission(missing_permissions=missing_perms)
-    except discord.errors.NotFound:
-        await interaction.followup.send(
-                response,
-                ephemeral=ephemeral
-        )
-    except discord.InteractionResponded:
-        await interaction.followup.send(
-                response,
-                ephemeral=ephemeral
-        )
+
+    except discord.errors.NotFound or discord.errors.InteractionResponded:
+        try:
+            await interaction.followup.send(
+                    response,
+                    ephemeral=ephemeral
+            )
+        except discord.NotFound:
+            logging.error("Channel not found")
+            await send_message(interaction.channel, response)
+

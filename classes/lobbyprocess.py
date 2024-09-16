@@ -9,6 +9,7 @@ from classes.AgeCalculations import AgeCalculations
 from classes.databaseController import UserTransactions, ConfigData
 from classes.support.discord_tools import send_message
 from classes.whitelist import check_whitelist
+from views.buttons.dobentrybutton import dobentry
 
 
 class LobbyProcess(ABC):

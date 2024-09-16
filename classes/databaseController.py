@@ -11,8 +11,10 @@ from sqlalchemy.sql import Select
 import databases.current as db
 from classes.encryption import Encryption
 from databases.current import *
+
 import logging
-session = Session(bind=db.engine)
+session = Session(bind=db.engine, expire_on_commit=False, )
+
 
 
 class ConfigNotFound(Exception):
@@ -101,6 +103,8 @@ class UserTransactions(ABC):
         userdata.server = guildname
         DatabaseTransactions.commit(session)
         logging.info(f"Dob updated for {userid} from {old_dob} to {dob} in {guildname}")
+        if userdata.date_of_birth is None:
+            return False
         return True
 
     @staticmethod
@@ -217,8 +221,12 @@ class ConfigTransactions(ABC):
         value = str(value)
         if ConfigTransactions.key_exists_check(guildid, key, overwrite) is True and overwrite is False:
             return False
+        if ConfigTransactions.key_exists_check(guildid, key, overwrite) is True:
+            exists = session.scalars(
+                    Select(db.Config).where(db.Config.guild == guildid, db.Config.key == key.upper())).all()
+            session.delete(exists)
         item = db.Config(guild=guildid, key=key.upper(), value=value)
-        session.merge(item)
+        session.add(item)
         DatabaseTransactions.commit(session)
         ConfigData().load_guild(guildid)
         return True
@@ -249,7 +257,7 @@ class ConfigTransactions(ABC):
     @abstractmethod
     def config_key_add(guildid: int, key: str, value, overwrite):
         value = str(value)
-        if ConfigTransactions.key_multiple_exists_check(guildid, key, value) is True and overwrite is False:
+        if ConfigTransactions.key_multiple_exists_check(guildid, key, value) is True:
             return False
         item = db.Config(guild=guildid, key=key.upper(), value=value)
         session.add(item)

@@ -6,7 +6,7 @@ from dateutil.relativedelta import relativedelta
 
 import databases.current
 from classes.databaseController import *
-from classes.support.discord_tools import send_message
+from classes.support.discord_tools import send_message, send_response
 
 
 class AgeCalculations(ABC):
@@ -96,10 +96,8 @@ class AgeCalculations(ABC):
         dobvalid = re.match(redob, dateofbirth)
 
         if dobvalid is None:
-            await interaction.response.send_message(
-                    'Please fill in your date of birth as with the format: mm/dd/yyyy.', ephemeral=True)
-            await channel.send(
-                    f"[{location} info] {interaction.user.mention} failed in verification at date of birth: {age} {dateofbirth}")
+            await send_response(interaction, 'Please fill in your date of birth as with the format: mm/dd/yyyy.', ephemeral=True)
+            await send_message(channel, f"[{location} info] {interaction.user.mention} failed in verification at date of birth: {age} {dateofbirth}")
             return None
         dateofbirth = AgeCalculations.regex(dateofbirth)
         return dateofbirth
