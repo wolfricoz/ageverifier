@@ -22,7 +22,6 @@ class dev(commands.GroupCog, name="dev"):
 
 
     async def create_invite(self, guild: discord.Guild):
-        print(guild.id)
         try:
             config = ConfigData().get_key_int(guild.id, "lobbymod")
             invite = await guild.get_channel(config).create_invite(max_age=604800)
