@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from datetime import timezone, timedelta
 
 import sqlalchemy.exc
+from sqlalchemy import false
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import Select
@@ -216,12 +217,15 @@ class ConfigTransactions(ABC):
 
     @staticmethod
     @abstractmethod
-    def config_unique_add(guildid: int, key: str, value, overwrite):
+    def config_unique_add(guildid: int, key: str, value, overwrite=False):
         # This function should check if the item already exists, if so it will override it or throw an error.
+
         value = str(value)
         if ConfigTransactions.key_exists_check(guildid, key, overwrite) is True and overwrite is False:
+            logging.warning(f"Attempted to add unique key with data: {guildid}, {key}, {value}, and overwrite {overwrite}, but one already existed. No changes")
             return False
         if ConfigTransactions.key_exists_check(guildid, key, overwrite) is True:
+            logging.info(f"overwriting unique key with data: {guildid}, {key}, {value}, and overwrite {overwrite}")
             exists = session.scalars(
                     Select(db.Config).where(db.Config.guild == guildid, db.Config.key == key.upper())).all()
             session.delete(exists)
@@ -229,6 +233,7 @@ class ConfigTransactions(ABC):
         session.add(item)
         DatabaseTransactions.commit(session)
         ConfigData().load_guild(guildid)
+        logging.info(f"Adding unique key with data: {guildid}, {key}, {value}, and overwrite {overwrite}")
         return True
 
     @staticmethod
