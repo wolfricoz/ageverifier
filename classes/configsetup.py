@@ -137,6 +137,7 @@ class configSetup:
                     # this channel should be open to everyone.
                     channel = await category.create_text_channel(name="lobby")
                     await self.add_roles_to_channel(channel, roles)
+                    await channel.set_permissions(interaction.guild.default_role, read_messages=True, send_messages=True)
 
                 case 'lobbylog':
                     # This is the channel where the lobby logs will be posted.
