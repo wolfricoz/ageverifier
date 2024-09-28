@@ -1,5 +1,6 @@
 import datetime
 import json
+import logging
 from abc import ABC, abstractmethod
 from datetime import timezone, timedelta
 
@@ -12,9 +13,7 @@ import databases.current as db
 from classes.encryption import Encryption
 from databases.current import *
 
-import logging
 session = Session(bind=db.engine, expire_on_commit=False, )
-
 
 
 class ConfigNotFound(Exception):
@@ -211,6 +210,7 @@ class UserTransactions(ABC):
         session.delete(warning)
         DatabaseTransactions.commit(session)
 
+
 # RULE: ALL db transactions have to go through this file. Keep to it dumbass
 class ConfigTransactions(ABC):
 
@@ -325,7 +325,6 @@ class ConfigTransactions(ABC):
     @abstractmethod
     def welcome_add(guildid):
 
-
         if ConfigTransactions.key_exists_check(guildid, "WELCOME") is True:
             return
         welcome = Config(guild=guildid, key="WELCOME", value="ENABLED")
@@ -349,12 +348,11 @@ class ConfigTransactions(ABC):
         return session.scalars(Select(db.Config).where(db.Config.guild == guildid)).all()
 
 
-
 class VerificationTransactions(ABC):
 
     @staticmethod
     @abstractmethod
-    def get_id_info(userid: int):
+    def get_id_info(userid: int) -> IdVerification | None:
         userdata = session.scalar(Select(IdVerification).where(IdVerification.uid == userid))
         session.close()
         return userdata
@@ -402,7 +400,7 @@ class VerificationTransactions(ABC):
 
     @staticmethod
     @abstractmethod
-    def idverify_add(userid: int, dob: str, guildname ,idcheck=True):
+    def idverify_add(userid: int, dob: str, guildname, idcheck=True):
         UserTransactions.add_user_empty(userid, True)
         idcheck = IdVerification(uid=userid, verifieddob=datetime.strptime(dob, "%m/%d/%Y"), idverified=idcheck)
         session.add(idcheck)
