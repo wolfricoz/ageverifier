@@ -1,9 +1,11 @@
 import datetime
 import json
+import logging
 from abc import ABC, abstractmethod
 from datetime import timezone, timedelta
 
 import sqlalchemy.exc
+from sqlalchemy import false
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import Select
@@ -83,6 +85,7 @@ class UserTransactions(ABC):
             item = db.Users(uid=userid, entry=datetime.now(tz=timezone.utc), date_of_birth=Encryption().encrypt(dob), server=guildname)
             session.merge(item)
             DatabaseTransactions.commit(session)
+            logging.info(f"User {userid} added to database with dob {dob} in {guildname}")
             return True
         except ValueError:
             return False
@@ -94,23 +97,26 @@ class UserTransactions(ABC):
         if userdata is None:
             UserTransactions.add_user_full(userid, dob, guildname)
             return False
+        old_dob = userdata.date_of_birth
         userdata.date_of_birth = Encryption().encrypt(dob)
         userdata.entry = datetime.now(tz=timezone.utc)
         userdata.server = guildname
         DatabaseTransactions.commit(session)
+        logging.info(f"Dob updated for {userid} from {old_dob} to {dob} in {guildname}")
         if userdata.date_of_birth is None:
             return False
         return True
 
     @staticmethod
     @abstractmethod
-    def user_delete(userid: int):
+    def user_delete(userid: int, guildname: str):
         try:
             userdata: Users = session.scalar(Select(Users).where(Users.uid == userid))
             if userdata is None:
                 return False
             session.delete(userdata)
             DatabaseTransactions.commit(session)
+            logging.info(f"User {userid} deleted by {guildname}")
             return True
         except sqlalchemy.exc.IntegrityError:
             session.rollback()
@@ -205,15 +211,18 @@ class UserTransactions(ABC):
         session.delete(warning)
         DatabaseTransactions.commit(session)
 
+
 # RULE: ALL db transactions have to go through this file. Keep to it dumbass
 class ConfigTransactions(ABC):
 
     @staticmethod
     @abstractmethod
-    def config_unique_add(guildid: int, key: str, value, overwrite):
+    def config_unique_add(guildid: int, key: str, value, overwrite=False):
         # This function should check if the item already exists, if so it will override it or throw an error.
+
         value = str(value)
         if ConfigTransactions.key_exists_check(guildid, key, overwrite) is True and overwrite is False:
+            logging.warning(f"Attempted to add unique key with data: {guildid}, {key}, {value}, and overwrite {overwrite}, but one already existed. No changes")
             return False
         if ConfigTransactions.key_exists_check(guildid, key, overwrite) is True:
             entries = session.scalars(
@@ -224,6 +233,7 @@ class ConfigTransactions(ABC):
         session.add(item)
         DatabaseTransactions.commit(session)
         ConfigData().load_guild(guildid)
+        logging.info(f"Adding unique key with data: {guildid}, {key}, {value}, and overwrite {overwrite}")
         return True
 
     @staticmethod
@@ -320,7 +330,6 @@ class ConfigTransactions(ABC):
     @abstractmethod
     def welcome_add(guildid):
 
-
         if ConfigTransactions.key_exists_check(guildid, "WELCOME") is True:
             return
         welcome = Config(guild=guildid, key="WELCOME", value="ENABLED")
@@ -344,12 +353,11 @@ class ConfigTransactions(ABC):
         return session.scalars(Select(db.Config).where(db.Config.guild == guildid)).all()
 
 
-
 class VerificationTransactions(ABC):
 
     @staticmethod
     @abstractmethod
-    def get_id_info(userid: int):
+    def get_id_info(userid: int) -> IdVerification | None:
         userdata = session.scalar(Select(IdVerification).where(IdVerification.uid == userid))
         session.close()
         return userdata
@@ -397,7 +405,7 @@ class VerificationTransactions(ABC):
 
     @staticmethod
     @abstractmethod
-    def idverify_add(userid: int, dob: str, guildname ,idcheck=True):
+    def idverify_add(userid: int, dob: str, guildname, idcheck=True):
         UserTransactions.add_user_empty(userid, True)
         idcheck = IdVerification(uid=userid, verifieddob=datetime.strptime(dob, "%m/%d/%Y"), idverified=idcheck)
         session.add(idcheck)

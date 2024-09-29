@@ -6,6 +6,7 @@ from discord import app_commands
 from discord.app_commands import Choice
 from discord.ext import commands
 
+from classes.configsetup import configSetup
 from classes.databaseController import ConfigTransactions, ConfigData
 from views.modals.configinput import ConfigInputUnique
 from views.select.configselectroles import *
@@ -39,55 +40,15 @@ class config(commands.GroupCog, name="config"):
 
     @app_commands.command(name='setup')
     @app_commands.checks.has_permissions(manage_guild=True)
-    async def configsetup(self, interaction: discord.Interaction):
+    @app_commands.choices(setup_type=[Choice(name=x, value=x) for x in ['manual', 'auto']])
+    async def configsetup(self, interaction: discord.Interaction, setup_type: Choice[str]):
         """Sets up the config for the bot."""
-        await interaction.response.defer(ephemeral=True)
 
-        for channelkey, channelvalue in self.channelchoices.items():
-            view = ConfigSelectChannels()
-            msg = await interaction.channel.send(f"Select a channel for {channelkey}: \n`{channelvalue}`", view=view)
-            await view.wait()
-            await msg.delete()
-            try:
-                if view.value == "next":
-                    continue
-                if view.value is None:
-                    await interaction.followup.send("Setup cancelled")
-                    return
-            except AttributeError:
-                logging.info("No value found, message was deleted")
-                return
-            ConfigTransactions.config_unique_add(interaction.guild.id, channelkey, int(view.value[0]), overwrite=True)
-        for key, value in self.rolechoices.items():
-            if key == "return":
-                continue
-            view = ConfigSelectRoles()
-            msg = await interaction.channel.send(f"{key}: \n{value}", view=view)
-            await view.wait()
-            await msg.delete()
-            try:
-                if view.value == "next":
-                    continue
-                if view.value is None:
-                    await interaction.followup.send("Setup cancelled")
-                    return
-            except AttributeError:
-                logging.info("No value found, message was deleted")
-                return
-            ConfigTransactions.config_unique_add(interaction.guild.id, value, int(view.value[0]), overwrite=True)
-        for messagekey, messagevalue in self.messagechoices.items():
-            msg = await interaction.channel.send(f"Please set the message for {messagekey}\n"
-                                                 f"{messagevalue}\n"
-                                                 f"Type `cancel` to cancel, or `next` to go to the next message")
-            result = await self.bot.wait_for('message', check=lambda m: m.author == interaction.user)
-            if result.content.lower() == "cancel":
-                await interaction.followup.send("Setup cancelled")
-                return
-            if result.content.lower() == "next":
-                continue
-            ConfigTransactions.config_unique_add(interaction.guild.id, messagekey, result.content, overwrite=True)
-            await result.delete()
-            await msg.delete()
+        match setup_type.value:
+            case 'manual':
+                await configSetup().manual(self.bot, interaction, self.channelchoices, self.rolechoices, self.messagechoices)
+            case 'auto':
+                await configSetup().auto(interaction, self.channelchoices, self.rolechoices, self.messagechoices)
 
         await interaction.followup.send("The config has been successfully setup, if you wish to check our toggles you please do /config toggles. Permission checking will commence shortly.", ephemeral=True)
         await self.check_channel_permissions(interaction)

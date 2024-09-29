@@ -1,13 +1,12 @@
 """Checks the users invite info when they join and logs it"""
-from datetime import datetime
 
 import discord
 from discord import app_commands
 from discord.ext import commands
 
-from classes.databaseController import ConfigData, UserTransactions
-from classes.helpers import has_onboarding, invite_info
+from classes.databaseController import UserTransactions, VerificationTransactions
 from classes.support.discord_tools import send_response
+from databases.current import IdVerification
 
 
 class gdpr(commands.GroupCog):
@@ -30,12 +29,16 @@ class gdpr(commands.GroupCog):
     async def data(self, interaction: discord.Interaction):
         """Returns user data"""
         dev = self.bot.get_user(188647277181665280)
-        await dev.send(f"User {interaction.user.mention}({interaction.user.id}) has requested data, please wait for them to contact.")
-        await send_response(interaction, "Please contact the developer `ricostryker` to request your data or join our [support server](https://discord.gg/5tcpArff) and open a ticket.", ephemeral=True)
+        user_data = UserTransactions.get_user(interaction.user.id)
+        id_verified = VerificationTransactions.get_id_info(interaction.user.id)
+        await interaction.user.send(f"**__User Data Request__**"
+                                    f"\nUser: {interaction.user.mention}({interaction.user.id})"
+                                    f"\ndate of birth: {user_data.date_of_birth}"
+                                    f"\nLast server: {user_data.server}"
+                                    f"\nID Verification: {'Yes' if id_verified.idverified else 'No'}"
+                                    f"\n\nNote: All personal data is encrypted and stored securely. If you have any questions or concerns please contact the developer `ricostryker` or join our [support server](https://discord.gg/5tcpArff) and open a ticket.")
 
-
-
-
+        await send_response(interaction, "Please contact the developer `ricostryker` to for help or join our [support server](https://discord.gg/5tcpArff) and open a ticket.", ephemeral=True)
 
 
 async def setup(bot):
