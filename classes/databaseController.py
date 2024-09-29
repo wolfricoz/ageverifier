@@ -216,9 +216,10 @@ class ConfigTransactions(ABC):
         if ConfigTransactions.key_exists_check(guildid, key, overwrite) is True and overwrite is False:
             return False
         if ConfigTransactions.key_exists_check(guildid, key, overwrite) is True:
-            exists = session.scalars(
+            entries = session.scalars(
                     Select(db.Config).where(db.Config.guild == guildid, db.Config.key == key.upper())).all()
-            session.delete(exists)
+            for entry in entries:
+                session.delete(entry)
         item = db.Config(guild=guildid, key=key.upper(), value=value)
         session.add(item)
         DatabaseTransactions.commit(session)
