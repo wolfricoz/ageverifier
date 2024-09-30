@@ -17,22 +17,24 @@ class LobbyProcess(ABC):
     @abstractmethod
     async def approve_user(guild, user, dob, age, staff):
         # checks if user is on the id list
-        if await AgeCalculations.id_check(guild, user):
-            return
-        # updates user's age if it exists, otherwise makes a new entry
-        exists = UserTransactions.update_user_dob(user.id, dob, guild.name)
 
-        # changes user's roles; adds and removes
-        await LobbyProcess.change_user_roles(user, guild)
+            if await AgeCalculations.id_check(guild, user):
+                return
+            # updates user's age if it exists, otherwise makes a new entry
+            exists = UserTransactions.update_user_dob(user.id, dob, guild.name)
 
-        # Log age and dob to lobbylog
-        await LobbyProcess.log(user, guild, age, dob, staff, exists)
+            # changes user's roles; adds and removes
+            await LobbyProcess.change_user_roles(user, guild)
 
-        # fetches welcoming message and welcomes them in general channel
-        await LobbyProcess.welcome(user, guild)
+            # Log age and dob to lobbylog
+            await LobbyProcess.log(user, guild, age, dob, staff, exists)
 
-        # Cleans up the messages in the lobby and where the command was executed
-        await LobbyProcess.clean_up(guild, user)
+            # fetches welcoming message and welcomes them in general channel
+            await LobbyProcess.welcome(user, guild)
+
+            # Cleans up the messages in the lobby and where the command was executed
+            await LobbyProcess.clean_up(guild, user)
+
 
     @staticmethod
     @abstractmethod

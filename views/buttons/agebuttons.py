@@ -21,7 +21,10 @@ class AgeButtons(discord.ui.View):
             return
         await interaction.followup.send("User approved.", ephemeral=True)
         # Share this with the age commands
-        await LobbyProcess.approve_user(interaction.guild, self.user, self.dob, self.age, interaction.user.name)
+        try:
+            await LobbyProcess.approve_user(interaction.guild, self.user, self.dob, self.age, interaction.user.name)
+        except discord.NotFound:
+            await interaction.followup.send("User not found, please manually add them to the database.", ephemeral=True)
 
     @discord.ui.button(label="Manual ID Check", style=discord.ButtonStyle.red, custom_id="ID")
     async def manual_id(self, interaction: discord.Interaction, button: discord.ui.Button):
