@@ -65,6 +65,9 @@ class LobbyProcess(ABC):
     async def log(user, guild, age, dob, staff, exists):
         lobbylog = ConfigData().get_key(guild.id, "lobbylog")
         channel = guild.get_channel(int(lobbylog))
+        dobfield = ""
+        if check_whitelist(guild.id):
+            dobfield = f"DOB: {dob} \n"
         await send_message(channel, f"user: {user.mention}\n"
                                     f"Age: {age} \n"
                                     f"{dobfield}"
