@@ -6,7 +6,6 @@ from discord.ext import commands
 
 from classes.databaseController import UserTransactions, VerificationTransactions
 from classes.support.discord_tools import send_response
-from databases.current import IdVerification
 
 
 class gdpr(commands.GroupCog):
@@ -31,10 +30,15 @@ class gdpr(commands.GroupCog):
         dev = self.bot.get_user(188647277181665280)
         user_data = UserTransactions.get_user(interaction.user.id)
         id_verified = VerificationTransactions.get_id_info(interaction.user.id)
+        if user_data is not None:
+            await interaction.user.send(f"**__User Data Request__**"
+                                        f"\nUser: {interaction.user.mention}({interaction.user.id})"
+                                        f"No data found for you.")
+
         await interaction.user.send(f"**__User Data Request__**"
                                     f"\nUser: {interaction.user.mention}({interaction.user.id})"
-                                    f"\ndate of birth: {user_data.date_of_birth}"
-                                    f"\nLast server: {user_data.server}"
+                                    f"\ndate of birth: {user_data.date_of_birth if user_data.date_of_birth is not None else 'Not set'}"
+                                    f"\nLast server: {user_data.server if user_data.server is not None else 'Not set'}"
                                     f"\nID Verification: {'Yes' if id_verified.idverified else 'No'}"
                                     f"\n\nNote: All personal data is encrypted and stored securely. If you have any questions or concerns please contact the developer `ricostryker` or join our [support server](https://discord.gg/5tcpArff) and open a ticket.")
 
