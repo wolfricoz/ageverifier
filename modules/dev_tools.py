@@ -59,7 +59,7 @@ class dev(commands.GroupCog, name="dev"):
                 except Exception as e:
                     await interaction.channel.send(f"Error sending to {guild}({guild.owner}): {e}")
 
-    @app_commands.command(name="announce", description="[DEV] Send an announcement to all guild owners")
+    @app_commands.command(name="servers", description="[DEV] Send an announcement to all guild owners")
     async def show_servers(self, interaction: discord.Interaction):
         if interaction.user.id != int(os.getenv('DEVELOPER')):
             await interaction.response.send_message("You are not a developer", ephemeral=True)
