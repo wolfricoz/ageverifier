@@ -34,10 +34,10 @@ class dev(commands.GroupCog, name="dev"):
 
     @app_commands.command(name="announce", description="[DEV] Send an announcement to all guild owners")
     async def announce(self, interaction: discord.Interaction):
-        message = await send_modal(interaction, "What is the announcement?", "Announcement", 1700)
         if interaction.user.id != int(os.getenv('DEVELOPER')):
             await interaction.response.send_message("You are not a developer", ephemeral=True)
             return
+        message = await send_modal(interaction, "What is the announcement?", "Announcement", 1700)
         bot = self.bot
         supportguild = bot.get_guild(int(os.getenv('SUPPORTGUILD')))
         support_invite = await self.create_invite(supportguild)
@@ -58,6 +58,16 @@ class dev(commands.GroupCog, name="dev"):
                     await guild.owner.send(announcement)
                 except Exception as e:
                     await interaction.channel.send(f"Error sending to {guild}({guild.owner}): {e}")
+
+    @app_commands.command(name="announce", description="[DEV] Send an announcement to all guild owners")
+    async def show_servers(self, interaction: discord.Interaction):
+        if interaction.user.id != int(os.getenv('DEVELOPER')):
+            await interaction.response.send_message("You are not a developer", ephemeral=True)
+            return
+        servers = []
+        for guild in self.bot.guilds:
+            guild_info = f"name: {guild.name}({guild.id}) Owner: {guild.owner}({guild.owner.id}) User count: {len(guild.members)}"
+
 
 async def setup(bot: commands.Bot):
     """Adds the cog to the bot"""
