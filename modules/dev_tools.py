@@ -10,6 +10,7 @@ from discord.ext import commands
 
 from classes import permissions
 from classes.databaseController import ConfigTransactions, ConfigData
+from classes.support.discord_tools import send_message
 from views.modals.configinput import ConfigInputUnique
 from views.modals.inputmodal import send_modal
 from views.select.configselectroles import *
@@ -67,6 +68,10 @@ class dev(commands.GroupCog, name="dev"):
         servers = []
         for guild in self.bot.guilds:
             guild_info = f"name: {guild.name}({guild.id}) Owner: {guild.owner}({guild.owner.id}) User count: {len(guild.members)}"
+            servers.append(guild_info)
+        server_message = "\n".join(servers)
+        await send_message(interaction.channel, server_message)
+
 
 
 async def setup(bot: commands.Bot):
