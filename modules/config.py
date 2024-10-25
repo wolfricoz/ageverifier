@@ -65,7 +65,7 @@ class config(commands.GroupCog, name="config"):
         for key in self.channelchoices:
             channel = ConfigData().get_key_or_none(interaction.guild.id, key)
             if channel is None or channel == "" or isinstance(channel, str):
-                await interaction.channel.send(f"{key} is not set, please set it with /config channels")
+                await interaction.channel.send(f"{key} is not set, please set it with /config channels\n[DEBUG] {key}: {channel}")
                 fails.append(key)
                 continue
             try:
