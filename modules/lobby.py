@@ -270,13 +270,13 @@ UID: {user.id}
             return
         await welcome_user(member)
 
-    @commands.Cog.listener()
-    async def on_member_update(self, before: discord.Member, after: discord.Member):
-        if before.flags != after.flags:
-            # Perform the desired action when the member's flags change
-            if before.flags.completed_onboarding is False and after.flags.completed_onboarding is True:
-                await welcome_user(after)
-                await invite_info(self.bot, after)
+    # @commands.Cog.listener()
+    # async def on_member_update(self, before: discord.Member, after: discord.Member):
+    #     if before.flags != after.flags:
+    #         # Perform the desired action when the member's flags change
+    #         if before.flags.completed_onboarding is False and after.flags.completed_onboarding is True:
+    #             await welcome_user(after)
+    #             await invite_info(self.bot, after)
 
 
 async def setup(bot):
