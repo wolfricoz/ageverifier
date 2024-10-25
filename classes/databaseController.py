@@ -482,6 +482,7 @@ class ConfigData(ABC):
             raise KeyNotFound(key.upper())
 
     def get_key_or_none(self, guildid: int, key: str):
+        print(self.conf)
         return self.conf[guildid].get(key.upper(), None)
 
     def output_to_json(self):
