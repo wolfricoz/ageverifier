@@ -8,6 +8,7 @@ from discord.ext import commands
 
 from classes.configsetup import configSetup
 from classes.databaseController import ConfigTransactions, ConfigData
+from classes.support.discord_tools import send_message
 from views.modals.configinput import ConfigInputUnique
 from views.select.configselectroles import *
 
@@ -43,7 +44,7 @@ class config(commands.GroupCog, name="config"):
     @app_commands.choices(setup_type=[Choice(name=x, value=x) for x in ['manual', 'auto']])
     async def configsetup(self, interaction: discord.Interaction, setup_type: Choice[str]):
         """Sets up the config for the bot."""
-
+        # await send_message(interaction.channel, "Known Bug: If your server has onboarding turned on but doesn't have 'members must accept rules before they can talk or DM' turned on, ageverifier will not work. We are currently working on resolving this issue. It's highly recommended to turn that option on as it can prevent bots from harassing your users!")
         match setup_type.value:
             case 'manual':
                 await configSetup().manual(self.bot, interaction, self.channelchoices, self.rolechoices, self.messagechoices)
