@@ -37,25 +37,26 @@ class LobbyProcess(ABC) :
 
 	@staticmethod
 	@abstractmethod
-	async def change_user_roles(user, guild) :
-		confaddroles = ConfigData().get_key(guild.id, "ADD")
-		add_roles = []
-		for role in confaddroles :
-			verrole = get(guild.roles, id=int(role))
-			if verrole is None :
-				ConfigTransactions.config_key_remove(guildid=guild.id, key="ADD".upper(), value=role)
-				continue
-			add_roles.append(verrole)
-		confremroles = ConfigData().get_key(guild.id, "REM")
-		rem_roles = []
-		for role in confremroles :
-			verrole = get(guild.roles, id=int(role))
-			if verrole is None :
-				ConfigTransactions.config_key_remove(guildid=guild.id, key="REM".upper(), value=role)
-				continue
-			rem_roles.append(verrole)
+	async def change_user_roles(user, guild: discord.Guild) :
+		config_add_roles = ConfigData().get_key(guild.id, "ADD")
+		add_roles = await LobbyProcess.get_roles(guild, config_add_roles, "ADD")
+		config_rem_roles = ConfigData().get_key(guild.id, "REM")
+		rem_roles = await LobbyProcess.get_roles(guild, config_rem_roles, "REM")
 		await user.remove_roles(*rem_roles)
 		await user.add_roles(*add_roles)
+
+	@staticmethod
+	@abstractmethod
+	async def get_roles(guild, roles, type:str) :
+		results = []
+		for role in roles :
+			verrole = get(guild.roles, id=int(role))
+			if verrole is None :
+				ConfigTransactions.config_key_remove(guildid=guild.id, key=type.upper(), value=role)
+				await guild.owner.send(f"Role {role} couldn't be found and has been removed from the config in {guild.name}")
+				continue
+			results.append(verrole)
+		return results
 
 	@staticmethod
 	@abstractmethod
