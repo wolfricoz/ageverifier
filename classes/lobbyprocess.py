@@ -99,7 +99,7 @@ class LobbyProcess(ABC) :
 		async for message in messages :
 			if message.author == user or user in message.mentions and count < 10 :
 				count += 1
-				await message.delete()
+				queue().add(message.delete(),priority=0)
 		channel = guild.get_channel(int(lobbymod))
 		messages = channel.history(limit=100)
 		count = 0
@@ -111,7 +111,7 @@ class LobbyProcess(ABC) :
 						pass
 					else :
 						count += 1
-						await message.delete()
+						queue().add(message.delete(),priority=0)
 
 	@staticmethod
 	@abstractmethod
