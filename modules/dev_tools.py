@@ -91,12 +91,10 @@ class dev(commands.GroupCog, name="dev") :
 				if match is None :
 					continue
 				history[str(guild.id)][str(match.group(1))] = message.id
-		print(history)
 		for user in users :
 			if user.server is not None :
 				continue
-			await self.search(user, history, interaction.channel)
-			# queue().add(self.search(user, history), priority=0)
+			queue().add(self.search(user, history, interaction.channel), priority=0)
 
 
 	async def search(self, user, history, channel):
