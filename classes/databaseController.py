@@ -111,7 +111,6 @@ class UserTransactions(ABC) :
 	@abstractmethod
 	def update_user(uid: int, entry: datetime = None, date_of_birth: str = None, server: str = None) :
 		user = UserTransactions.get_user(uid)
-		print(user)
 		data = {
 			"entry"         : entry,
 			"date_of_birth" : date_of_birth,

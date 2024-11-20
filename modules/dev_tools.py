@@ -11,6 +11,7 @@ from classes.databaseController import ConfigData, UserTransactions
 from classes.support.discord_tools import send_message, send_response
 from classes.support.queue import queue
 from databases.current import Users
+from modules.logs import logger
 from views.modals.inputmodal import send_modal
 from views.select.configselectroles import *
 
@@ -98,11 +99,10 @@ class dev(commands.GroupCog, name="dev") :
 
 
 	async def search(self, user, history, channel):
-		print(user.uid)
 		for guild in self.bot.guilds :
 			if str(guild.id) in history and str(user.uid) in history[str(guild.id)] :
 				UserTransactions.update_user(user.uid, server=guild.name)
-				await send_message(channel, f"{user.uid}'s entry found in {guild.name}, database has been updated")
+				logging.info(f"{user.uid}'s entry found in {guild.name}, database has been updated")
 
 async def setup(bot: commands.Bot) :
 	"""Adds the cog to the bot"""
