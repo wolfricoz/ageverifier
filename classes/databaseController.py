@@ -2,10 +2,9 @@ import datetime
 import json
 import logging
 from abc import ABC, abstractmethod
-from datetime import timezone, timedelta
+from datetime import timedelta, timezone
 
 import sqlalchemy.exc
-from sqlalchemy import false
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import Select
@@ -17,533 +16,560 @@ from databases.current import *
 session = Session(bind=db.engine, expire_on_commit=False, )
 
 
-class ConfigNotFound(Exception):
-    """config item was not found or has not been added yet."""
+class ConfigNotFound(Exception) :
+	"""config item was not found or has not been added yet."""
 
-    def __init__(self, message="guild config has not been loaded yet or has not been created yet."):
-        self.message = message
-        super().__init__(self.message)
-
-
-class CommitError(Exception):
-    """the commit failed."""
-
-    def __init__(self, message="Commiting the data to the database failed and has been rolled back; please try again."):
-        self.message = message
-        super().__init__(self.message)
+	def __init__(self, message="guild config has not been loaded yet or has not been created yet.") :
+		self.message = message
+		super().__init__(self.message)
 
 
-class KeyNotFound(Exception):
-    """config item was not found or has not been added yet."""
+class CommitError(Exception) :
+	"""the commit failed."""
 
-    def __init__(self, key):
-        self.key = key
-        self.message = f"`{key}` not found in config, please add it using /config"
-        super().__init__(self.message)
-
-
-class UserNotFound(Exception):
-    """config item was not found or has not been added yet."""
-
-    def __init__(self, key):
-        self.key = key
-        self.message = f"`{key}` not found in config, please add it using /config"
-        super().__init__(self.message)
+	def __init__(self, message="Commiting the data to the database failed and has been rolled back; please try again.") :
+		self.message = message
+		super().__init__(self.message)
 
 
-class DatabaseTransactions(ABC):
+class KeyNotFound(Exception) :
+	"""config item was not found or has not been added yet."""
 
-    @staticmethod
-    @abstractmethod
-    def commit(session):
-        try:
-            session.commit()
-        except SQLAlchemyError as e:
-            print(e)
-            session.rollback()
-            raise CommitError()
-        finally:
-            session.close()
+	def __init__(self, key) :
+		self.key = key
+		self.message = f"`{key}` not found in config, please add it using /config"
+		super().__init__(self.message)
 
 
-class UserTransactions(ABC):
+class UserNotFound(Exception) :
+	"""config item was not found or has not been added yet."""
 
-    @staticmethod
-    @abstractmethod
-    def add_user_empty(userid: int, overwrite=False):
-        if UserTransactions.user_exists(userid) is True and overwrite is False:
-            return False
-        item = db.Users(uid=userid)
-        session.merge(item)
-        DatabaseTransactions.commit(session)
-        return True
+	def __init__(self, key) :
+		self.key = key
+		self.message = f"`{key}` not found in config, please add it using /config"
+		super().__init__(self.message)
 
-    @staticmethod
-    @abstractmethod
-    def add_user_full(userid, dob, guildname):
-        try:
-            item = db.Users(uid=userid, entry=datetime.now(tz=timezone.utc), date_of_birth=Encryption().encrypt(dob), server=guildname)
-            session.merge(item)
-            DatabaseTransactions.commit(session)
-            logging.info(f"User {userid} added to database with dob {dob} in {guildname}")
-            return True
-        except ValueError:
-            return False
 
-    @staticmethod
-    @abstractmethod
-    def update_user_dob(userid: int, dob: str, guildname: str):
-        userdata: Users = session.scalar(Select(Users).where(Users.uid == userid))
-        if userdata is None:
-            UserTransactions.add_user_full(userid, dob, guildname)
-            return False
-        old_dob = userdata.date_of_birth
-        userdata.date_of_birth = Encryption().encrypt(dob)
-        userdata.entry = datetime.now(tz=timezone.utc)
-        userdata.server = guildname
-        DatabaseTransactions.commit(session)
-        logging.info(f"Dob updated for {userid} from {old_dob} to {dob} in {guildname}")
-        if userdata.date_of_birth is None:
-            return False
-        return True
+class DatabaseTransactions(ABC) :
 
-    @staticmethod
-    @abstractmethod
-    def user_delete(userid: int, guildname: str):
-        try:
-            userdata: Users = session.scalar(Select(Users).where(Users.uid == userid))
-            if userdata is None:
-                return False
-            session.delete(userdata)
-            DatabaseTransactions.commit(session)
-            logging.info(f"User {userid} deleted by {guildname}")
-            return True
-        except sqlalchemy.exc.IntegrityError:
-            session.rollback()
-            return False
+	@staticmethod
+	@abstractmethod
+	def commit(session) :
+		try :
+			session.commit()
+		except SQLAlchemyError as e :
+			print(e)
+			session.rollback()
+			raise CommitError()
+		finally :
+			session.close()
 
-    @staticmethod
-    @abstractmethod
-    def get_user(userid: int):
-        userdata = session.scalar(Select(Users).where(Users.uid == userid))
-        session.close()
-        return userdata
 
-    @staticmethod
-    @abstractmethod
-    def get_all_users():
-        userdata = session.scalars(Select(Users)).all()
-        session.close()
-        return userdata
+class UserTransactions(ABC) :
 
-    @staticmethod
-    @abstractmethod
-    def update_entry_date(userid):
-        try:
-            userdata = session.scalar(Select(Users).where(Users.uid == userid))
-            userdata.entry = datetime.now()
-            DatabaseTransactions.commit(session)
-        except SQLAlchemyError:
-            session.rollback()
-            session.close()
+	@staticmethod
+	@abstractmethod
+	def add_user_empty(userid: int, overwrite=False) :
+		if UserTransactions.user_exists(userid) is True and overwrite is False :
+			return False
+		item = db.Users(uid=userid)
+		session.merge(item)
+		DatabaseTransactions.commit(session)
+		return True
 
-    @staticmethod
-    @abstractmethod
-    def update():
-        raise NotImplementedError
+	@staticmethod
+	@abstractmethod
+	def add_user_full(userid, dob, guildname) :
+		try :
+			item = db.Users(uid=userid, entry=datetime.now(tz=timezone.utc), date_of_birth=Encryption().encrypt(dob),
+			                server=guildname)
+			session.merge(item)
+			DatabaseTransactions.commit(session)
+			logging.info(f"User {userid} added to database with dob {dob} in {guildname}")
+			return True
+		except ValueError :
+			return False
 
-    @staticmethod
-    @abstractmethod
-    def config_unique_remove(guildid: int, key: str):
-        if ConfigTransactions.key_exists_check(guildid, key) is False:
-            return False
-        exists = session.scalar(Select(db.Config).where(db.Config.guild == guildid, db.Config.key == key.upper()))
-        session.delete(exists)
-        DatabaseTransactions.commit(session)
-        ConfigData().load_guild(guildid)
-        return True
+	@staticmethod
+	@abstractmethod
+	def update_user_dob(userid: int, dob: str, guildname: str) :
+		userdata: Users = session.scalar(Select(Users).where(Users.uid == userid))
+		if userdata is None :
+			UserTransactions.add_user_full(userid, dob, guildname)
+			return False
+		old_dob = userdata.date_of_birth
+		userdata.date_of_birth = Encryption().encrypt(dob)
+		userdata.entry = datetime.now(tz=timezone.utc)
+		userdata.server = guildname
+		DatabaseTransactions.commit(session)
+		logging.info(f"Dob updated for {userid} from {old_dob} to {dob} in {guildname}")
+		if userdata.date_of_birth is None :
+			return False
+		return True
 
-    @staticmethod
-    @abstractmethod
-    def user_exists(userid: int):
-        exists = session.scalar(
-                Select(db.Users).where(db.Users.uid == userid))
-        session.close()
-        if exists is None:
-            return False
-        return True, exists
+	@staticmethod
+	@abstractmethod
+	def update_user(uid: int, entry: datetime = None, date_of_birth: str = None, server: str = None) :
+		user = UserTransactions.get_user(uid)
+		print(user)
+		data = {
+			"entry"         : entry,
+			"date_of_birth" : date_of_birth,
+			"server"        : server
+		}
+		for field, value in data.items() :
+			if field == 'date_of_birth' and value is not None :
+				encrypted_value = Encryption().encrypt(value)
+				setattr(user, field, encrypted_value)
+			if value is not None :
+				setattr(user, field, value)
+		session.merge(user)
+		DatabaseTransactions.commit(session)
+		logging.info(f"Updated {uid} with:")
+		logging.info(data)
 
-    # Warning related functions
-    @staticmethod
-    @abstractmethod
-    def user_add_warning(userid: int, reason: str):
-        item = db.Warnings(uid=userid, reason=reason, type="WARN")
-        session.add(item)
-        DatabaseTransactions.commit(session)
-        return True
 
-    @staticmethod
-    @abstractmethod
-    def user_add_watchlist(userid: int, reason: str):
-        item = db.Warnings(uid=userid, reason=reason, type="WATCH")
-        session.add(item)
-        DatabaseTransactions.commit(session)
-        return True
+	@staticmethod
+	@abstractmethod
+	def user_delete(userid: int, guildname: str) :
+		try :
+			userdata: Users = session.scalar(Select(Users).where(Users.uid == userid))
+			if userdata is None :
+				return False
+			session.delete(userdata)
+			DatabaseTransactions.commit(session)
+			logging.info(f"User {userid} deleted by {guildname}")
+			return True
+		except sqlalchemy.exc.IntegrityError :
+			session.rollback()
+			return False
 
-    @staticmethod
-    @abstractmethod
-    def user_get_warnings(userid: int, type):
-        warning_dict = {}
-        warning_list = []
-        warnings = session.scalars(Select(Warnings).where(Warnings.uid == userid, Warnings.type == type.upper()).order_by(Warnings.uid)).all()
-        session.close()
-        if len(warnings) == 0 or warnings is None:
-            return False
-        for warnings in warnings:
-            warning_dict[warnings.id] = warnings.reason
-            warning_list.append(warnings.id)
-        return warning_list, warning_dict
+	@staticmethod
+	@abstractmethod
+	def get_user(userid: int) :
+		userdata = session.scalar(Select(Users).where(Users.uid == userid))
+		session.close()
+		return userdata
 
-    @staticmethod
-    @abstractmethod
-    def user_remove_warning(id: int):
-        warning = session.scalar(Select(Warnings).where(Warnings.id == id))
-        session.delete(warning)
-        DatabaseTransactions.commit(session)
+	@staticmethod
+	@abstractmethod
+	def get_all_users(dob_only: bool = False) :
+		if dob_only :
+			return session.scalars(Select(Users).where(Users.date_of_birth != None)).all()
+		userdata = session.scalars(Select(Users)).all()
+		session.close()
+		return userdata
+
+	@staticmethod
+	@abstractmethod
+	def update_entry_date(userid) :
+		try :
+			userdata = session.scalar(Select(Users).where(Users.uid == userid))
+			userdata.entry = datetime.now()
+			DatabaseTransactions.commit(session)
+		except SQLAlchemyError :
+			session.rollback()
+			session.close()
+
+	@staticmethod
+	@abstractmethod
+	def update() :
+		raise NotImplementedError
+
+	@staticmethod
+	@abstractmethod
+	def config_unique_remove(guildid: int, key: str) :
+		if ConfigTransactions.key_exists_check(guildid, key) is False :
+			return False
+		exists = session.scalar(Select(db.Config).where(db.Config.guild == guildid, db.Config.key == key.upper()))
+		session.delete(exists)
+		DatabaseTransactions.commit(session)
+		ConfigData().load_guild(guildid)
+		return True
+
+	@staticmethod
+	@abstractmethod
+	def user_exists(userid: int) :
+		exists = session.scalar(
+			Select(db.Users).where(db.Users.uid == userid))
+		session.close()
+		if exists is None :
+			return False
+		return True, exists
+
+	# Warning related functions
+	@staticmethod
+	@abstractmethod
+	def user_add_warning(userid: int, reason: str) :
+		item = db.Warnings(uid=userid, reason=reason, type="WARN")
+		session.add(item)
+		DatabaseTransactions.commit(session)
+		return True
+
+	@staticmethod
+	@abstractmethod
+	def user_add_watchlist(userid: int, reason: str) :
+		item = db.Warnings(uid=userid, reason=reason, type="WATCH")
+		session.add(item)
+		DatabaseTransactions.commit(session)
+		return True
+
+	@staticmethod
+	@abstractmethod
+	def user_get_warnings(userid: int, type) :
+		warning_dict = {}
+		warning_list = []
+		warnings = session.scalars(
+			Select(Warnings).where(Warnings.uid == userid, Warnings.type == type.upper()).order_by(Warnings.uid)).all()
+		session.close()
+		if len(warnings) == 0 or warnings is None :
+			return False
+		for warnings in warnings :
+			warning_dict[warnings.id] = warnings.reason
+			warning_list.append(warnings.id)
+		return warning_list, warning_dict
+
+	@staticmethod
+	@abstractmethod
+	def user_remove_warning(id: int) :
+		warning = session.scalar(Select(Warnings).where(Warnings.id == id))
+		session.delete(warning)
+		DatabaseTransactions.commit(session)
 
 
 # RULE: ALL db transactions have to go through this file. Keep to it dumbass
-class ConfigTransactions(ABC):
+class ConfigTransactions(ABC) :
 
-    @staticmethod
-    @abstractmethod
-    def config_unique_add(guildid: int, key: str, value, overwrite=False):
-        # This function should check if the item already exists, if so it will override it or throw an error.
+	@staticmethod
+	@abstractmethod
+	def config_unique_add(guildid: int, key: str, value, overwrite=False) :
+		# This function should check if the item already exists, if so it will override it or throw an error.
 
-        value = str(value)
-        if ConfigTransactions.key_exists_check(guildid, key, overwrite) is True and overwrite is False:
-            logging.warning(f"Attempted to add unique key with data: {guildid}, {key}, {value}, and overwrite {overwrite}, but one already existed. No changes")
-            return False
-        if ConfigTransactions.key_exists_check(guildid, key, overwrite) is True:
-            entries = session.scalars(
-                    Select(db.Config).where(db.Config.guild == guildid, db.Config.key == key.upper())).all()
-            for entry in entries:
-                session.delete(entry)
-        item = db.Config(guild=guildid, key=key.upper(), value=value)
-        session.add(item)
-        DatabaseTransactions.commit(session)
-        ConfigData().load_guild(guildid)
-        logging.info(f"Adding unique key with data: {guildid}, {key}, {value}, and overwrite {overwrite}")
-        return True
+		value = str(value)
+		if ConfigTransactions.key_exists_check(guildid, key, overwrite) is True and overwrite is False :
+			logging.warning(
+				f"Attempted to add unique key with data: {guildid}, {key}, {value}, and overwrite {overwrite}, but one already existed. No changes")
+			return False
+		if ConfigTransactions.key_exists_check(guildid, key, overwrite) is True :
+			entries = session.scalars(
+				Select(db.Config).where(db.Config.guild == guildid, db.Config.key == key.upper())).all()
+			for entry in entries :
+				session.delete(entry)
+		item = db.Config(guild=guildid, key=key.upper(), value=value)
+		session.add(item)
+		DatabaseTransactions.commit(session)
+		ConfigData().load_guild(guildid)
+		logging.info(f"Adding unique key with data: {guildid}, {key}, {value}, and overwrite {overwrite}")
+		return True
 
-    @staticmethod
-    @abstractmethod
-    def toggle_welcome(guildid: int, key: str, value):
-        # This function should check if the item already exists, if so it will override it or throw an error.
-        value = str(value)
-        guilddata = session.scalar(Select(Config).where(Config.guild == guildid, Config.key == key.upper()))
-        if guilddata is None:
-            ConfigTransactions.config_unique_add(guildid, key, value, overwrite=True)
-            return
-        guilddata.value = value
-        DatabaseTransactions.commit(session)
-        ConfigData().load_guild(guildid)
-        return True
+	@staticmethod
+	@abstractmethod
+	def toggle_welcome(guildid: int, key: str, value) :
+		# This function should check if the item already exists, if so it will override it or throw an error.
+		value = str(value)
+		guilddata = session.scalar(Select(Config).where(Config.guild == guildid, Config.key == key.upper()))
+		if guilddata is None :
+			ConfigTransactions.config_unique_add(guildid, key, value, overwrite=True)
+			return
+		guilddata.value = value
+		DatabaseTransactions.commit(session)
+		ConfigData().load_guild(guildid)
+		return True
 
-    @staticmethod
-    @abstractmethod
-    def config_unique_get(guildid: int, key: str):
-        if ConfigTransactions.key_exists_check(guildid, key) is False:
-            return
-        exists = session.scalar(Select(db.Config).where(db.Config.guild == guildid, db.Config.key == key.upper()))
-        return exists
+	@staticmethod
+	@abstractmethod
+	def config_unique_get(guildid: int, key: str) :
+		if ConfigTransactions.key_exists_check(guildid, key) is False :
+			return
+		exists = session.scalar(Select(db.Config).where(db.Config.guild == guildid, db.Config.key == key.upper()))
+		return exists
 
-    @staticmethod
-    @abstractmethod
-    def config_key_add(guildid: int, key: str, value, overwrite):
-        value = str(value)
-        if ConfigTransactions.key_multiple_exists_check(guildid, key, value) is True:
-            return False
-        item = db.Config(guild=guildid, key=key.upper(), value=value)
-        session.add(item)
-        DatabaseTransactions.commit(session)
-        ConfigData().load_guild(guildid)
-        return True
+	@staticmethod
+	@abstractmethod
+	def config_key_add(guildid: int, key: str, value, overwrite) :
+		value = str(value)
+		if ConfigTransactions.key_multiple_exists_check(guildid, key, value) is True :
+			return False
+		item = db.Config(guild=guildid, key=key.upper(), value=value)
+		session.add(item)
+		DatabaseTransactions.commit(session)
+		ConfigData().load_guild(guildid)
+		return True
 
-    @staticmethod
-    @abstractmethod
-    def key_multiple_exists_check(guildid: int, key: str, value):
-        exists = session.scalar(
-                Select(db.Config).where(db.Config.guild == guildid, db.Config.key == key, db.Config.value == value))
-        session.close()
-        if exists is not None:
-            return True
-        return False
+	@staticmethod
+	@abstractmethod
+	def key_multiple_exists_check(guildid: int, key: str, value) :
+		exists = session.scalar(
+			Select(db.Config).where(db.Config.guild == guildid, db.Config.key == key, db.Config.value == value))
+		session.close()
+		if exists is not None :
+			return True
+		return False
 
-    @staticmethod
-    @abstractmethod
-    def config_key_remove(guildid: int, key: str, value):
-        if ConfigTransactions.key_multiple_exists_check(guildid, key, value) is False:
-            return False
-        exists = session.scalar(
-                Select(db.Config).where(db.Config.guild == guildid, db.Config.key == key, db.Config.value == value))
-        session.delete(exists)
-        DatabaseTransactions.commit(session)
-        ConfigData().load_guild(guildid)
+	@staticmethod
+	@abstractmethod
+	def config_key_remove(guildid: int, key: str, value) :
+		if ConfigTransactions.key_multiple_exists_check(guildid, key, value) is False :
+			return False
+		exists = session.scalar(
+			Select(db.Config).where(db.Config.guild == guildid, db.Config.key == key, db.Config.value == value))
+		session.delete(exists)
+		DatabaseTransactions.commit(session)
+		ConfigData().load_guild(guildid)
 
-    @staticmethod
-    @abstractmethod
-    def config_unique_remove(guildid: int, key: str):
-        if ConfigTransactions.key_exists_check(guildid, key) is False:
-            return False
-        exists = session.scalar(
-                Select(db.Config).where(db.Config.guild == guildid, db.Config.key == key))
-        session.delete(exists)
-        DatabaseTransactions.commit(session)
-        ConfigData().load_guild(guildid)
+	@staticmethod
+	@abstractmethod
+	def config_unique_remove(guildid: int, key: str) :
+		if ConfigTransactions.key_exists_check(guildid, key) is False :
+			return False
+		exists = session.scalar(
+			Select(db.Config).where(db.Config.guild == guildid, db.Config.key == key))
+		session.delete(exists)
+		DatabaseTransactions.commit(session)
+		ConfigData().load_guild(guildid)
 
-    @staticmethod
-    @abstractmethod
-    def key_exists_check(guildid: int, key: str, overwrite=False):
-        exists = session.scalar(
-                Select(db.Config).where(db.Config.guild == guildid, db.Config.key == key.upper()))
-        if exists is None:
-            session.close()
-            return False
-        if overwrite is False:
-            return True
-        session.delete(exists)
-        DatabaseTransactions.commit(session)
-        return True
+	@staticmethod
+	@abstractmethod
+	def key_exists_check(guildid: int, key: str, overwrite=False) :
+		exists = session.scalar(
+			Select(db.Config).where(db.Config.guild == guildid, db.Config.key == key.upper()))
+		if exists is None :
+			session.close()
+			return False
+		if overwrite is False :
+			return True
+		session.delete(exists)
+		DatabaseTransactions.commit(session)
+		return True
 
-    @staticmethod
-    @abstractmethod
-    def server_add(guildid):
-        g = db.Servers(guild=guildid)
-        session.merge(g)
-        DatabaseTransactions.commit(session)
-        ConfigTransactions.welcome_add(guildid)
-        ConfigTransactions.automatic_add(guildid)
-        ConfigData().load_guild(guildid)
+	@staticmethod
+	@abstractmethod
+	def server_add(guildid) :
+		g = db.Servers(guild=guildid)
+		session.merge(g)
+		DatabaseTransactions.commit(session)
+		ConfigTransactions.welcome_add(guildid)
+		ConfigTransactions.automatic_add(guildid)
+		ConfigData().load_guild(guildid)
 
-    @staticmethod
-    @abstractmethod
-    def welcome_add(guildid):
+	@staticmethod
+	@abstractmethod
+	def welcome_add(guildid) :
 
-        if ConfigTransactions.key_exists_check(guildid, "WELCOME") is True:
-            return
-        welcome = Config(guild=guildid, key="WELCOME", value="ENABLED")
-        session.merge(welcome)
+		if ConfigTransactions.key_exists_check(guildid, "WELCOME") is True :
+			return
+		welcome = Config(guild=guildid, key="WELCOME", value="ENABLED")
+		session.merge(welcome)
 
-        DatabaseTransactions.commit(session)
+		DatabaseTransactions.commit(session)
 
-    @staticmethod
-    @abstractmethod
-    def automatic_add(guildid):
-        if ConfigTransactions.key_exists_check(guildid, "AUTOMATIC") is True:
-            return
-        welcome = Config(guild=guildid, key="AUTOMATIC", value="DISABLED")
-        session.merge(welcome)
+	@staticmethod
+	@abstractmethod
+	def automatic_add(guildid) :
+		if ConfigTransactions.key_exists_check(guildid, "AUTOMATIC") is True :
+			return
+		welcome = Config(guild=guildid, key="AUTOMATIC", value="DISABLED")
+		session.merge(welcome)
 
-        DatabaseTransactions.commit(session)
+		DatabaseTransactions.commit(session)
 
-    @staticmethod
-    @abstractmethod
-    def server_config_get(guildid):
-        return session.scalars(Select(db.Config).where(db.Config.guild == guildid)).all()
-
-
-class VerificationTransactions(ABC):
-
-    @staticmethod
-    @abstractmethod
-    def get_id_info(userid: int) -> IdVerification | None:
-        userdata = session.scalar(Select(IdVerification).where(IdVerification.uid == userid))
-        session.close()
-        return userdata
-
-    @staticmethod
-    @abstractmethod
-    def update_check(userid, reason: str = None, idcheck=True):
-        userdata = session.scalar(Select(IdVerification).where(IdVerification.uid == userid))
-        if userdata is None:
-            VerificationTransactions.add_idcheck(userid, reason, idcheck)
-            return
-        userdata.reason = reason
-        userdata.idcheck = idcheck
-        DatabaseTransactions.commit(session)
-
-    @staticmethod
-    @abstractmethod
-    def add_idcheck(userid: int, reason: str = None, idcheck=True):
-        UserTransactions.add_user_empty(userid, True)
-        idcheck = IdVerification(uid=userid, reason=reason, idcheck=idcheck)
-        session.add(idcheck)
-        DatabaseTransactions.commit(session)
-
-    @staticmethod
-    @abstractmethod
-    def set_idcheck_to_true(userid: int, reason):
-        userdata: IdVerification = session.scalar(Select(IdVerification).where(IdVerification.uid == userid))
-        if userdata is None:
-            VerificationTransactions.add_idcheck(userid, reason)
-            return
-        userdata.idcheck = True
-        userdata.reason = reason
-        DatabaseTransactions.commit(session)
-
-    @staticmethod
-    @abstractmethod
-    def set_idcheck_to_false(userid: int, ):
-        userdata: IdVerification = session.scalar(Select(IdVerification).where(IdVerification.uid == userid))
-        if userdata is None:
-            VerificationTransactions.add_idcheck(userid, idcheck=False)
-            return
-        userdata.idcheck = False
-        userdata.reason = None
-        DatabaseTransactions.commit(session)
-
-    @staticmethod
-    @abstractmethod
-    def idverify_add(userid: int, dob: str, guildname, idcheck=True):
-        UserTransactions.add_user_empty(userid, True)
-        idcheck = IdVerification(uid=userid, verifieddob=datetime.strptime(dob, "%m/%d/%Y"), idverified=idcheck)
-        session.add(idcheck)
-        DatabaseTransactions.commit(session)
-        UserTransactions.update_user_dob(userid, dob, guildname=guildname)
-
-    @staticmethod
-    @abstractmethod
-    def idverify_update(userid, dob: str, guildname, idverified=True):
-
-        userdata = session.scalar(Select(IdVerification).where(IdVerification.uid == userid))
-        if userdata is None:
-            VerificationTransactions.add_idcheck(userid, dob, idcheck=False)
-            return
-        userdata.verifieddob = datetime.strptime(dob, "%m/%d/%Y")
-        userdata.idverified = idverified
-        userdata.idcheck = False
-        userdata.reason = "User ID Verified"
-        DatabaseTransactions.commit(session)
-        UserTransactions.update_user_dob(userid, dob, guildname=guildname)
+	@staticmethod
+	@abstractmethod
+	def server_config_get(guildid) :
+		return session.scalars(Select(db.Config).where(db.Config.guild == guildid)).all()
 
 
-class ConfigData(ABC):
-    """
-    The goal of this class is to save the config to reduce database calls for the config; especially the roles.
-    """
-    conf = {}
+class VerificationTransactions(ABC) :
 
-    def __init__(self):
-        pass
+	@staticmethod
+	@abstractmethod
+	def get_id_info(userid: int) -> IdVerification | None :
+		userdata = session.scalar(Select(IdVerification).where(IdVerification.uid == userid))
+		session.close()
+		return userdata
 
-    def load_guild(self, guildid):
-        config = ConfigTransactions.server_config_get(guildid)
+	@staticmethod
+	@abstractmethod
+	def update_check(userid, reason: str = None, idcheck=True) :
+		userdata = session.scalar(Select(IdVerification).where(IdVerification.uid == userid))
+		if userdata is None :
+			VerificationTransactions.add_idcheck(userid, reason, idcheck)
+			return
+		userdata.reason = reason
+		userdata.idcheck = idcheck
+		DatabaseTransactions.commit(session)
 
-        settings = config
-        # settings = ConfigTransactions.server_config_get(guildid)
-        self.conf[guildid] = {}
-        self.conf[guildid]["SEARCH"] = {}
-        self.conf[guildid]["BAN"] = {}
+	@staticmethod
+	@abstractmethod
+	def add_idcheck(userid: int, reason: str = None, idcheck=True) :
+		UserTransactions.add_user_empty(userid, True)
+		idcheck = IdVerification(uid=userid, reason=reason, idcheck=idcheck)
+		session.add(idcheck)
+		DatabaseTransactions.commit(session)
 
-        add_to_config = ['MOD', 'ADMIN', 'ADD', 'REM', "RETURN", "FORUM"]
-        for add in add_to_config:
-            self.conf[guildid][add] = []
+	@staticmethod
+	@abstractmethod
+	def set_idcheck_to_true(userid: int, reason) :
+		userdata: IdVerification = session.scalar(Select(IdVerification).where(IdVerification.uid == userid))
+		if userdata is None :
+			VerificationTransactions.add_idcheck(userid, reason)
+			return
+		userdata.idcheck = True
+		userdata.reason = reason
+		DatabaseTransactions.commit(session)
 
-        for x in settings:
-            if x.key in add_to_config:
-                self.conf[guildid][x.key].append(int(x.value))
-                continue
-            if x.key.upper().startswith("SEARCH"):
-                self.conf[guildid]["SEARCH"][x.key.replace('SEARCH-', '')] = x.value
-                continue
-            if x.key.upper().startswith("BAN"):
-                self.conf[guildid]["BAN"][x.key.replace('BAN-', '')] = x.value
-                continue
-            self.conf[guildid][x.key] = x.value
+	@staticmethod
+	@abstractmethod
+	def set_idcheck_to_false(userid: int, ) :
+		userdata: IdVerification = session.scalar(Select(IdVerification).where(IdVerification.uid == userid))
+		if userdata is None :
+			VerificationTransactions.add_idcheck(userid, idcheck=False)
+			return
+		userdata.idcheck = False
+		userdata.reason = None
+		DatabaseTransactions.commit(session)
 
-    def get_config(self, guildid):
-        try:
-            return self.conf[guildid]
-        except KeyError:
-            raise ConfigNotFound
+	@staticmethod
+	@abstractmethod
+	def idverify_add(userid: int, dob: str, guildname, idcheck=True) :
+		UserTransactions.add_user_empty(userid, True)
+		idcheck = IdVerification(uid=userid, verifieddob=datetime.strptime(dob, "%m/%d/%Y"), idverified=idcheck)
+		session.add(idcheck)
+		DatabaseTransactions.commit(session)
+		UserTransactions.update_user_dob(userid, dob, guildname=guildname)
 
-    def get_key_int(self, guildid: int, key: str):
-        try:
-            return int(self.conf[guildid][key.upper()])
-        except KeyError:
-            raise KeyNotFound(key.upper())
+	@staticmethod
+	@abstractmethod
+	def idverify_update(userid, dob: str, guildname, idverified=True) :
 
-    def get_key(self, guildid: int, key: str):
-        try:
-            return self.conf[guildid][key.upper()]
-
-        except KeyError:
-            raise KeyNotFound(key.upper())
-
-    def get_key_or_none(self, guildid: int, key: str):
-        return self.conf[guildid].get(key.upper(), None)
-
-    def output_to_json(self):
-        """This is for debugging only."""
-        if os.path.isdir('debug') is False:
-            os.mkdir('debug')
-        with open('debug/config.json', 'w') as f:
-            json.dump(self.conf, f, indent=4)
-
-
-class SearchWarningTransactions(ABC):
-    @staticmethod
-    @abstractmethod
-    def get_total_warnings(userid: int):
-        total = 0
-        active = 0
-        monthsago = datetime.now() - timedelta(days=120)
-        userdata = session.scalars(Select(Warnings).where(Warnings.uid == userid)).all()
-        session.close()
-        for x in userdata:
-            if x.entry > monthsago:
-                active += 1
-            total += 1
-        return total, active
-
-    @staticmethod
-    @abstractmethod
-    def add_warning(userid: int, reason: str = None):
-        UserTransactions.add_user_empty(userid)
-        search_warning = Warnings(uid=userid, reason=reason, type="SEARCH")
-        session.add(search_warning)
-        DatabaseTransactions.commit(session)
-        total_warnings, active_warnings = SearchWarningTransactions.get_total_warnings(userid)
-        return total_warnings, active_warnings
+		userdata = session.scalar(Select(IdVerification).where(IdVerification.uid == userid))
+		if userdata is None :
+			VerificationTransactions.add_idcheck(userid, dob, idcheck=False)
+			return
+		userdata.verifieddob = datetime.strptime(dob, "%m/%d/%Y")
+		userdata.idverified = idverified
+		userdata.idcheck = False
+		userdata.reason = "User ID Verified"
+		DatabaseTransactions.commit(session)
+		UserTransactions.update_user_dob(userid, dob, guildname=guildname)
 
 
-class TimersTransactions(ABC):
-    @staticmethod
-    @abstractmethod
-    def add_timer(guildid, userid, time_in_hours, roleid=None, reason=None):
-        """Adds timer to the database"""
-        entry = Timers(uid=userid, guild=guildid, removal=time_in_hours, role=roleid, reason=reason)
-        session.add(entry)
-        DatabaseTransactions.commit(session)
+class ConfigData(ABC) :
+	"""
+	The goal of this class is to save the config to reduce database calls for the config; especially the roles.
+	"""
+	conf = {}
 
-    @staticmethod
-    @abstractmethod
-    def get_timer_with_role(userid, guildid, roleid):
-        """Gets the timer from the database with userid, guild and roleid"""
-        timer = session.scalar(Select(Timers).where(Timers.uid == userid, Timers.guild == guildid, Timers.role == roleid))
-        session.close()
-        return timer
+	def __init__(self) :
+		pass
 
-    # @staticmethod
-    # @abstractmethod
-    # def get_timers(userid, guild):
-    #     """Gets all timers that a user has with userid and guild."""
-    #     timer = session.scalar(Select(Timers).where(Timers.uid == userid))
+	def load_guild(self, guildid) :
+		config = ConfigTransactions.server_config_get(guildid)
 
-    @staticmethod
-    @abstractmethod
-    def remove_timer(id):
-        timer = session.scalar(Select(Timers).where(Timers.id == id))
-        session.delete(timer)
-        DatabaseTransactions.commit(session)
+		settings = config
+		# settings = ConfigTransactions.server_config_get(guildid)
+		self.conf[guildid] = {}
+		self.conf[guildid]["SEARCH"] = {}
+		self.conf[guildid]["BAN"] = {}
+
+		add_to_config = ['MOD', 'ADMIN', 'ADD', 'REM', "RETURN", "FORUM"]
+		for add in add_to_config :
+			self.conf[guildid][add] = []
+
+		for x in settings :
+			if x.key in add_to_config :
+				self.conf[guildid][x.key].append(int(x.value))
+				continue
+			if x.key.upper().startswith("SEARCH") :
+				self.conf[guildid]["SEARCH"][x.key.replace('SEARCH-', '')] = x.value
+				continue
+			if x.key.upper().startswith("BAN") :
+				self.conf[guildid]["BAN"][x.key.replace('BAN-', '')] = x.value
+				continue
+			self.conf[guildid][x.key] = x.value
+
+	def get_config(self, guildid) :
+		try :
+			return self.conf[guildid]
+		except KeyError :
+			raise ConfigNotFound
+
+	def get_key_int(self, guildid: int, key: str) :
+		try :
+			return int(self.conf[guildid][key.upper()])
+		except KeyError :
+			raise KeyNotFound(key.upper())
+
+	def get_key(self, guildid: int, key: str) :
+		try :
+			return self.conf[guildid][key.upper()]
+
+		except KeyError :
+			raise KeyNotFound(key.upper())
+
+	def get_key_or_none(self, guildid: int, key: str) :
+		return self.conf[guildid].get(key.upper(), None)
+
+	def output_to_json(self) :
+		"""This is for debugging only."""
+		if os.path.isdir('debug') is False :
+			os.mkdir('debug')
+		with open('debug/config.json', 'w') as f :
+			json.dump(self.conf, f, indent=4)
+
+
+class SearchWarningTransactions(ABC) :
+	@staticmethod
+	@abstractmethod
+	def get_total_warnings(userid: int) :
+		total = 0
+		active = 0
+		monthsago = datetime.now() - timedelta(days=120)
+		userdata = session.scalars(Select(Warnings).where(Warnings.uid == userid)).all()
+		session.close()
+		for x in userdata :
+			if x.entry > monthsago :
+				active += 1
+			total += 1
+		return total, active
+
+	@staticmethod
+	@abstractmethod
+	def add_warning(userid: int, reason: str = None) :
+		UserTransactions.add_user_empty(userid)
+		search_warning = Warnings(uid=userid, reason=reason, type="SEARCH")
+		session.add(search_warning)
+		DatabaseTransactions.commit(session)
+		total_warnings, active_warnings = SearchWarningTransactions.get_total_warnings(userid)
+		return total_warnings, active_warnings
+
+
+class TimersTransactions(ABC) :
+	@staticmethod
+	@abstractmethod
+	def add_timer(guildid, userid, time_in_hours, roleid=None, reason=None) :
+		"""Adds timer to the database"""
+		entry = Timers(uid=userid, guild=guildid, removal=time_in_hours, role=roleid, reason=reason)
+		session.add(entry)
+		DatabaseTransactions.commit(session)
+
+	@staticmethod
+	@abstractmethod
+	def get_timer_with_role(userid, guildid, roleid) :
+		"""Gets the timer from the database with userid, guild and roleid"""
+		timer = session.scalar(Select(Timers).where(Timers.uid == userid, Timers.guild == guildid, Timers.role == roleid))
+		session.close()
+		return timer
+
+	# @staticmethod
+	# @abstractmethod
+	# def get_timers(userid, guild):
+	#     """Gets all timers that a user has with userid and guild."""
+	#     timer = session.scalar(Select(Timers).where(Timers.uid == userid))
+
+	@staticmethod
+	@abstractmethod
+	def remove_timer(id) :
+		timer = session.scalar(Select(Timers).where(Timers.id == id))
+		session.delete(timer)
+		DatabaseTransactions.commit(session)
