@@ -95,7 +95,7 @@ class Lobby(commands.GroupCog):
                                    ["True", "False"]])
     @permissions.check_app_roles_admin()
     async def idverify(self, interaction: discord.Interaction, process: Choice['str'],
-                       user: discord.Member, dob: str):
+                       user: discord.User, dob: str):
         """ID verifies user. process True will put the user through the lobby."""
         if check_whitelist(interaction.guild.id) is False and not permissions.check_dev(interaction.user.id):
             await send_response(interaction, "[NOT_WHITELISTED] This command is limited to whitelisted servers. Please contact the developer `ricostryker` to verify the user.")
