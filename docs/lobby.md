@@ -11,6 +11,29 @@ where the staff can easily approve the user. The bot will automatically check th
 database and if the user is on the ID list. If the user is on the ID list, the bot will automatically flag the user and
 inform the staff.
 
+## Lobby Buttons
+
+![lobby_buttons.png](img/lobby_buttons.png)
+
+When someone provides the correct age and date of birth, the bot will pop up with the following message (if your server is whitelisted, it will show the dob.). These buttons perform the following actions:
+* **Approve user**: The user is welcomed in the main server, their roles changed and added to the database. 
+* **Flag for ID Check**: If a user gives multiple date of births, or performs other actions that may be cause for concern, you can flag the user for an ID check for admins to handle.
+* **NSFW Profile Warning**: If a user has NSFW content in their profile which violates discord ToS, you can use this button to remind them to change it. When used it will send the following to the user:
+```**NSFW Warning**\n
+  Hello, this is the moderation team for {guild name}. As Discord TOS prohibits NSFW content anywhere that can be accessed without an age gate, we will have to ask that you inspect your profile and remove any NSFW content. This includes but is not limited to:
+* NSFW profile pictures
+* NSFW display names
+* NSFW Biographies
+* NSFW status messages
+* NSFW Banners
+* NSFW Pronouns
+* and NSFW game activity.
+
+Once you've made these changes you may resubmit your age and date of birth. Thank you for your cooperation.
+```
+* **User Left (Stores DOB)**: If a user leaves before you can approve them, you can use this button to store their information so that it can be used in the future if they return! 
+
+
 ### Lobby automod:
 
 * Invite info: When a user joins the server, the bot will automatically send a message with the invite info.
