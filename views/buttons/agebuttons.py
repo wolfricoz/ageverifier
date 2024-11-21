@@ -11,8 +11,10 @@ class AgeButtons(discord.ui.View):
         self.dob = dob
         self.user = user
         super().__init__(timeout=None)
+        button = discord.ui.Button(label='help', style=discord.ButtonStyle.url, url='https://wolfricoz.github.io/ageverifier/lobby.html', emoji="❓")
+        self.add_item(button)
 
-    @discord.ui.button(label="Allow", style=discord.ButtonStyle.green, custom_id="allow")
+    @discord.ui.button(label="Approve User", style=discord.ButtonStyle.green, custom_id="allow")
     async def allow(self, interaction: discord.Interaction, button: discord.ui.Button):
         """starts approving process"""
         await self.disable_buttons(interaction, button)
@@ -26,7 +28,7 @@ class AgeButtons(discord.ui.View):
         except discord.NotFound:
             await interaction.followup.send("User not found, please manually add them to the database.", ephemeral=True)
 
-    @discord.ui.button(label="Manual ID Check", style=discord.ButtonStyle.red, custom_id="ID")
+    @discord.ui.button(label="Flag for ID Check", style=discord.ButtonStyle.red, custom_id="ID")
     async def manual_id(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Flags user for manual id."""
         await self.disable_buttons(interaction, button)
@@ -42,7 +44,7 @@ class AgeButtons(discord.ui.View):
                 f"<@&{admin[0]}> {interaction.user.mention} has flagged {self.user.mention} for manual ID.")
         return
 
-    @discord.ui.button(label="NSFW Warning", style=discord.ButtonStyle.danger, custom_id="NSFW")
+    @discord.ui.button(label="NSFW Profile Warning", style=discord.ButtonStyle.danger, custom_id="NSFW")
     async def nsfw_warning(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Flags user for nsfw warning."""
         await self.disable_buttons(interaction, button)
@@ -65,7 +67,7 @@ Once you've made these changes you may resubmit your age and date of birth. Than
 
         return
 
-    @discord.ui.button(label="add to db", style=discord.ButtonStyle.primary, custom_id="add")
+    @discord.ui.button(label="User Left (stores DOB)", style=discord.ButtonStyle.primary, custom_id="add")
     async def add_to_db(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Adds user to db"""
         age_log = ConfigData().get_key_int(interaction.guild.id, "lobbylog")
@@ -78,6 +80,8 @@ Once you've made these changes you may resubmit your age and date of birth. Than
         await interaction.message.add_reaction("✅")
         await interaction.followup.send('User added to database.', ephemeral=True)
         return
+
+
 
     async def disable_buttons(self, interaction, button: discord.ui.Button = None):
         """disables buttons"""
@@ -92,3 +96,5 @@ Once you've made these changes you may resubmit your age and date of birth. Than
 
         button.style = discord.ButtonStyle.green
         await interaction.response.edit_message(view=self)
+
+
