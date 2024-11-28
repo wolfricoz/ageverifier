@@ -11,7 +11,7 @@ class AgeButtons(discord.ui.View):
         self.dob = dob
         self.user = user
         super().__init__(timeout=None)
-        button = discord.ui.Button(label='help', style=discord.ButtonStyle.url, url='https://wolfricoz.github.io/ageverifier/lobby.html', emoji="❓")
+        button = discord.ui.Button(label='Help', style=discord.ButtonStyle.url, url='https://wolfricoz.github.io/ageverifier/lobby.html', emoji="❓")
         self.add_item(button)
 
     @discord.ui.button(label="Approve User", style=discord.ButtonStyle.green, custom_id="allow")
