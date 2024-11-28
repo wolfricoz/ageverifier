@@ -53,7 +53,7 @@ class config(commands.GroupCog, name="config") :
 			case 'auto' :
 				await configSetup().auto(interaction, self.channelchoices, self.rolechoices, self.messagechoices)
 
-		await interaction.followup.send(
+		await send_response(interaction,
 			"The config has been successfully setup, if you wish to check our toggles you please do /config toggles. Permission checking will commence shortly.",
 			ephemeral=True)
 		await self.check_channel_permissions(interaction)

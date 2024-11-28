@@ -9,7 +9,11 @@ from discord.ext import commands
 from dotenv import load_dotenv
 
 from classes import permissions, whitelist
+from classes.blacklist import blacklist_check
 from classes.databaseController import ConfigData, ConfigTransactions, UserTransactions
+from classes.jsonmaker import Configer
+from classes.support.discord_tools import send_message
+from classes.support.queue import queue
 from classes.whitelist import whitelist_path
 from databases import current as db
 
@@ -53,8 +57,9 @@ async def on_ready():
     # CREATES A COUNTER TO KEEP TRACK OF HOW MANY GUILDS / SERVERS THE BOT IS CONNECTED TO.
     guilds = []
     whitelist.create_whitelist(bot.guilds)
+    await Configer.create_bot_config()
     for guild in bot.guilds:
-
+        queue().add(blacklist_check(guild, devroom), priority=2)
         ConfigTransactions.server_add(guild.id)
         ConfigData().load_guild(guild.id)
         guilds.append(guild.name)
@@ -81,6 +86,9 @@ async def on_guild_join(guild):
     # adds user to database
     devroom = bot.get_channel(bot.DEV)
     await devroom.send(f"Joined {guild.name}({guild.id})")
+    if await blacklist_check(guild, devroom):
+        await guild.owner.send("This server is blacklisted. If this is a mistake then please contact the developer.")
+        return
     if whitelist.check_whitelist(guild.id) is False:
         try:
             await guild.owner.send("This server is not whitelisted and the bot will run in a limited mode. Date of births will not be shown.")
@@ -97,6 +105,7 @@ async def on_guild_join(guild):
         except discord.errors.Forbidden:
             print(f"Unable to send message to {guild.owner.name} in {guild.name}")
         pass
+    queue().add(send_message(guild.owner, "Thank you for inviting Ageverifier. To help you get started, please read the documentation: https://wolfricoz.github.io/ageverifier/"))
 
 @bot.event
 async def on_guild_remove(guild):
