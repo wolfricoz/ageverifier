@@ -12,7 +12,7 @@ from discord.app_commands import AppCommandError, CheckFailure, command
 from discord.ext import commands
 from dotenv import load_dotenv
 
-from classes.support.discord_tools import NoChannelException, NoMessagePermissionException
+from classes.support.discord_tools import NoChannelException, NoMessagePermissionException, send_response
 
 load_dotenv('main.env')
 channels72 = os.getenv('channels72')
@@ -104,7 +104,7 @@ class Logging(commands.Cog) :
 	async def on_fail_message(self, interaction: Interaction, message: str) :
 		"""sends a message to the user if the command fails."""
 		try :
-			await interaction.channel.send(message)
+			await send_response(interaction, message, ephemeral=True)
 		except Exception as e :
 			logging.error(e)
 
@@ -136,6 +136,9 @@ class Logging(commands.Cog) :
 		elif isinstance(error, discord.app_commands.errors.TransformerError) :
 			return await self.on_fail_message(interaction,
 			                                  "Failed to transform given input to member, please select the user from the list, or use the user's ID.")
+		elif isinstance(error, discord.Forbidden) :
+			return await self.on_fail_message(interaction,
+			                                  f"The bot does not have sufficient permission to run this command. Please check: \n* if the bot has permission to post in the channel \n* if the bot is above the role its trying to assign")
 
 		with open('error.txt', 'w', encoding='utf-8') as file :
 			file.write(traceback.format_exc())
@@ -149,7 +152,8 @@ class Logging(commands.Cog) :
 			f"\n{interaction.guild.name} {interaction.guild.id} {interaction.command.name} with arguments {formatted_data}: {traceback.format_exc()}")
 
 		await self.on_fail_message(interaction, f"Command failed: {error} \nreport this to Rico")
-		# raise error
+
+	# raise error
 
 	@commands.Cog.listener(name='on_command')
 	async def print(self, ctx: commands.Context) :
