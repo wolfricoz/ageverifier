@@ -95,7 +95,7 @@ class Lobby(commands.GroupCog):
                                    ["True", "False"]])
     @permissions.check_app_roles_admin()
     async def idverify(self, interaction: discord.Interaction, process: Choice['str'],
-                       user: discord.Member, dob: str):
+                       user: discord.User, dob: str):
         """ID verifies user. process True will put the user through the lobby."""
         if check_whitelist(interaction.guild.id) is False and not permissions.check_dev(interaction.user.id):
             await send_response(interaction, "[NOT_WHITELISTED] This command is limited to whitelisted servers. Please contact the developer `ricostryker` to verify the user.")
@@ -270,13 +270,13 @@ UID: {user.id}
             return
         await welcome_user(member)
 
-    @commands.Cog.listener()
-    async def on_member_update(self, before: discord.Member, after: discord.Member):
-        if before.flags != after.flags:
-            # Perform the desired action when the member's flags change
-            if before.flags.completed_onboarding is False and after.flags.completed_onboarding is True:
-                await welcome_user(after)
-                await invite_info(self.bot, after)
+    # @commands.Cog.listener()
+    # async def on_member_update(self, before: discord.Member, after: discord.Member):
+    #     if before.flags != after.flags:
+    #         # Perform the desired action when the member's flags change
+    #         if before.flags.completed_onboarding is False and after.flags.completed_onboarding is True:
+    #             await welcome_user(after)
+    #             await invite_info(self.bot, after)
 
 
 async def setup(bot):
