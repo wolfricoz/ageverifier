@@ -10,7 +10,8 @@ from views.buttons.verifybutton import VerifyButton
 
 
 async def has_onboarding(guild: discord.Guild) -> bool:
-    return 'GUILD_ONBOARDING' in guild.features
+    # return 'GUILD_ONBOARDING' in guild.features
+    return False
 
 
 async def welcome_user(member):
