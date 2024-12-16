@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Homepage
+title: Privacy Policy
 nav_order: 5
 ---
 
