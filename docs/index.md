@@ -7,7 +7,7 @@ nav_order: 1
 <h1 align="center">Ageverifier</h1>
 
 Prefix: ?<br>
-Build: 2.0<br>
+Build: 2.7<br>
 Devs: ricostryker
 
 ### about
