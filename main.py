@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 from classes import permissions, whitelist
 from classes.blacklist import blacklist_check
-from classes.databaseController import ConfigData, ConfigTransactions, UserTransactions
+from classes.databaseController import ConfigData, ConfigTransactions, ServerTransactions, UserTransactions
 from classes.jsonmaker import Configer
 from classes.support.discord_tools import send_message
 from classes.support.queue import queue
@@ -60,7 +60,7 @@ async def on_ready():
     await Configer.create_bot_config()
     for guild in bot.guilds:
         queue().add(blacklist_check(guild, devroom), priority=2)
-        ConfigTransactions.server_add(guild.id)
+        ServerTransactions().add(guild.id, active=True)
         ConfigData().load_guild(guild.id)
         guilds.append(guild.name)
         try:
@@ -94,7 +94,7 @@ async def on_guild_join(guild):
             await guild.owner.send("This server is not whitelisted and the bot will run in a limited mode. Date of births will not be shown.")
         except discord.errors.Forbidden:
             print(f"Unable to send message to {guild.owner.name} in {guild.name}")
-    ConfigTransactions.server_add(guild.id)
+    ServerTransactions().add(guild.id, True)
     ConfigData().load_guild(guild.id)
     try:
         bot.invites[guild.id] = await guild.invites()
