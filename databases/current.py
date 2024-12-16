@@ -51,6 +51,7 @@ class Warnings(Base):
 class Servers(Base):
     __tablename__ = "servers"
     guild: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=False)
+    active: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
 # noinspection PyTypeChecker, PydanticTypeChecker

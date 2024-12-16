@@ -127,7 +127,6 @@ class UserTransactions(ABC) :
 		logging.info(f"Updated {uid} with:")
 		logging.info(data)
 
-
 	@staticmethod
 	@abstractmethod
 	def user_delete(userid: int, guildname: str) :
@@ -340,16 +339,6 @@ class ConfigTransactions(ABC) :
 		session.delete(exists)
 		DatabaseTransactions.commit(session)
 		return True
-
-	@staticmethod
-	@abstractmethod
-	def server_add(guildid) :
-		g = db.Servers(guild=guildid)
-		session.merge(g)
-		DatabaseTransactions.commit(session)
-		ConfigTransactions.welcome_add(guildid)
-		ConfigTransactions.automatic_add(guildid)
-		ConfigData().load_guild(guildid)
 
 	@staticmethod
 	@abstractmethod
@@ -572,3 +561,41 @@ class TimersTransactions(ABC) :
 		timer = session.scalar(Select(Timers).where(Timers.id == id))
 		session.delete(timer)
 		DatabaseTransactions.commit(session)
+
+
+class ServerTransactions() :
+
+
+	def add(self, guildid: int, active: bool = True) :
+		if self.get(guildid) is not None:
+			self.update(guildid, active)
+			return
+		g = db.Servers(guild=guildid, active=active)
+		session.merge(g)
+		DatabaseTransactions.commit(session)
+		ConfigTransactions.welcome_add(guildid)
+		ConfigTransactions.automatic_add(guildid)
+		ConfigData().load_guild(guildid)
+
+
+	def get_all(self, ):
+		return [sid[0] for sid in session.query(Servers.guild).all()]
+
+
+	def get(self, guild_id: int):
+		return session.scalar(Select(Servers).where(Servers.guild == guild_id))
+
+
+	def update(self, guild_id: int, active: bool = None):
+		guild = self.get(guild_id)
+		if not guild:
+			return False
+		updated_data = {
+			"active": active
+		}
+		for field, value in updated_data.items():
+			setattr(guild, field, value)
+			logging.info(f"Updated {guild.guild} with:")
+			logging.info(updated_data)
+			DatabaseTransactions.commit(session)
+		return
