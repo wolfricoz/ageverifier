@@ -8,9 +8,9 @@ nav_order: 5
 
 ## Introduction
 
-This privacy policy outlines how AgeVerifier (“we,” “our,” or “us”) collects, uses, and protects your personal data when
-you interact with our bot. By using AgeVerifier, you agree to the terms of this policy.
+This privacy policy outlines how AgeVerifier (“we,” “our,” or “us”) collects, uses, and protects your personal data when you interact with our bot. By using AgeVerifier, you agree to the terms of this policy.
 
+In this document, I may refer to **servers** as **guilds**, as that is the terminology used within Discord's API.
 
 
 ## Why do we store your data?
@@ -59,16 +59,16 @@ We only collect the minimum amount of data required for age verification and do 
 
 ## Automated Decision-Making
 
-AgeVerifier uses automated processes to flag discrepancies in submitted data (e.g., mismatched dates of birth). Flagged cases may require manual review by server staff. Additionally, servers can enable automated approvals for correct age and date of birth matches to reduce the strain on the guild's staff.
+AgeVerifier uses automated processes to flag discrepancies in submitted data (e.g., mismatched dates of birth). Flagged cases may require manual review by guild staff. Additionally, guilds can enable automated approvals for correct age and date of birth matches to reduce the strain on the guild's staff.
 
 
 ## How We Store and Protect Your Data
 
-Once your age has been verified by server staff, we take the following measures to store and protect your data:
+Once your age has been verified by guild staff, we take the following measures to store and protect your data:
 
 * Encryption: Your data is encrypted to prevent unauthorized access.
 * Database Storage: Your data is securely stored in our database.
-* Retention Policy: Your data is removed after one year of inactivity on servers using AgeVerifier.
+* Retention Policy: Your data is removed after one year of inactivity on guilds using AgeVerifier.
 
 ### Whitelisted Guilds and Data Access
 
@@ -86,7 +86,7 @@ carefully vetted and must adhere to the following guidelines:
 
 * Restricted Access to Management:
 *
-    * Dates of birth are accessible only to the management team of the server.
+    * Dates of birth are accessible only to the management team of the guild.
 
 ### Accountability for Whitelisted Guilds
 
@@ -126,13 +126,13 @@ When you submit a request, we will remove/edit/provide your data within 30 days,
 ### How to Make These Requests?
 
 To make a request, you can:
-- Join our [support server](https://discord.gg/Aq5FCUpR7M).
+- Join our [support guild](https://discord.gg/Aq5FCUpR7M).
 - Send an email to **rico@roleplaymeets.com**.
 - Use the commands provided:
     - `/gdpr removal`: Request the removal of your data.
     - `/gdpr data`: Obtain a copy of the personal data we hold about you.
 
-For corrections of inaccurate data, please join our [support server](https://discord.gg/Aq5FCUpR7M) and open a ticket for assistance.
+For corrections of inaccurate data, please join our [support guild](https://discord.gg/Aq5FCUpR7M) and open a ticket for assistance.
 
 **Note**: Excessive or unreasonable requests may incur a fee or be ignored, in accordance with GDPR regulations.  
 
@@ -147,4 +147,4 @@ In the event of a data breach, we will:
 
 
 ## Updates to This Policy
-We may update this policy from time to time. Any changes will be communicated through our support server or other appropriate channels. Continued use of AgeVerifier after updates constitutes acceptance of the revised policy.
+We may update this policy from time to time. Any changes will be communicated through our support guild or other appropriate channels. Continued use of AgeVerifier after updates constitutes acceptance of the revised policy.
