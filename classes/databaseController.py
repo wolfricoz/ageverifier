@@ -11,6 +11,7 @@ from sqlalchemy.sql import Select
 
 import databases.current as db
 from classes.encryption import Encryption
+from classes.singleton import singleton
 from databases.current import *
 
 session = Session(bind=db.engine, expire_on_commit=False, )
@@ -442,7 +443,7 @@ class VerificationTransactions(ABC) :
 		UserTransactions.update_user_dob(userid, dob, guildname=guildname)
 
 
-class ConfigData(ABC) :
+class ConfigData(metaclass=singleton) :
 	"""
 	The goal of this class is to save the config to reduce database calls for the config; especially the roles.
 	"""
@@ -451,11 +452,15 @@ class ConfigData(ABC) :
 	def __init__(self) :
 		pass
 
+	def reload(self):
+		logging.info("reloading config")
+		for guild_id in self.conf:
+			self.load_guild(guild_id)
+
 	def load_guild(self, guildid) :
 		config = ConfigTransactions.server_config_get(guildid)
 
 		settings = config
-		# settings = ConfigTransactions.server_config_get(guildid)
 		self.conf[guildid] = {}
 		self.conf[guildid]["SEARCH"] = {}
 		self.conf[guildid]["BAN"] = {}
@@ -506,32 +511,6 @@ class ConfigData(ABC) :
 			json.dump(self.conf, f, indent=4)
 
 
-class SearchWarningTransactions(ABC) :
-	@staticmethod
-	@abstractmethod
-	def get_total_warnings(userid: int) :
-		total = 0
-		active = 0
-		monthsago = datetime.now() - timedelta(days=120)
-		userdata = session.scalars(Select(Warnings).where(Warnings.uid == userid)).all()
-		session.close()
-		for x in userdata :
-			if x.entry > monthsago :
-				active += 1
-			total += 1
-		return total, active
-
-	@staticmethod
-	@abstractmethod
-	def add_warning(userid: int, reason: str = None) :
-		UserTransactions.add_user_empty(userid)
-		search_warning = Warnings(uid=userid, reason=reason, type="SEARCH")
-		session.add(search_warning)
-		DatabaseTransactions.commit(session)
-		total_warnings, active_warnings = SearchWarningTransactions.get_total_warnings(userid)
-		return total_warnings, active_warnings
-
-
 class TimersTransactions(ABC) :
 	@staticmethod
 	@abstractmethod
@@ -548,12 +527,6 @@ class TimersTransactions(ABC) :
 		timer = session.scalar(Select(Timers).where(Timers.uid == userid, Timers.guild == guildid, Timers.role == roleid))
 		session.close()
 		return timer
-
-	# @staticmethod
-	# @abstractmethod
-	# def get_timers(userid, guild):
-	#     """Gets all timers that a user has with userid and guild."""
-	#     timer = session.scalar(Select(Timers).where(Timers.uid == userid))
 
 	@staticmethod
 	@abstractmethod

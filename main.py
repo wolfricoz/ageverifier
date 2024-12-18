@@ -1,8 +1,11 @@
 # IMPORT DISCORD.PY. ALLOWS ACCESS TO DISCORD'S API.
 # IMPORT THE OS MODULE.
+import asyncio
 import logging
 import os
+import threading
 
+from fastapi import FastAPI
 import discord
 from discord.ext import commands
 # IMPORT LOAD_DOTENV FUNCTION FROM DOTENV MODULE.
@@ -16,6 +19,7 @@ from classes.support.discord_tools import send_message
 from classes.support.queue import queue
 from classes.whitelist import whitelist_path
 from databases import current as db
+from api import config_router
 
 # Creating database
 db.database.create()
@@ -33,6 +37,10 @@ intents.members = True
 activity = discord.Activity(type=discord.ActivityType.watching, name="over the community")
 bot = commands.Bot(command_prefix=PREFIX, case_insensitive=False, intents=intents, activity=activity)
 bot.DEV = int(os.getenv("DEV"))
+
+app = FastAPI()
+app.include_router(config_router)
+
 
 if os.getenv("KEY") is None:
     quit("No encryption key found in .env")
@@ -152,4 +160,15 @@ async def leave_server(ctx, guildid: int):
 
 
 # EXECUTES THE BOT WITH THE SPECIFIED TOKEN.
-bot.run(DISCORD_TOKEN)
+# EXECUTES THE BOT WITH THE SPECIFIED TOKEN.
+async def run() :
+    try :
+        await bot.start(DISCORD_TOKEN)
+    except KeyboardInterrupt :
+        quit(0)
+
+
+@app.on_event("startup")
+async def app_startup() :
+    # Start Discord bot in a separate thread
+    threading.Thread(target=lambda : asyncio.run(run())).start()

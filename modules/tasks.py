@@ -82,7 +82,7 @@ class Tasks(commands.GroupCog):
         await self.user_expiration_remove(userdata, removaldate)
         print("Finished checking all entries")
 
-    @tasks.loop(hours=1)
+    @tasks.loop(hours=12)
     async def check_active_servers(self):
         guild_ids = ServerTransactions().get_all()
         for guild in self.bot.guilds:
