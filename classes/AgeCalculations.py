@@ -13,10 +13,8 @@ class AgeCalculations(ABC):
 
     @staticmethod
     @abstractmethod
-    def prefix(age):
-        for n, y in {18: 21, 21: 25, 25: 1000}.items():
-            if n <= int(age) < y:
-                return f"{n}a"
+    def add_age_roles():
+        """Adds the age roles to the user"""
 
     @staticmethod
     @abstractmethod

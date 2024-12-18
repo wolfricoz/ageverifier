@@ -12,7 +12,15 @@ from classes.support.queue import queue
 from classes.whitelist import check_whitelist
 
 
+
+
+
+
 class LobbyProcess(ABC) :
+
+
+
+
 	@staticmethod
 	@abstractmethod
 	async def approve_user(guild, user, dob, age, staff) :

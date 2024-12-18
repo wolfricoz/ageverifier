@@ -510,6 +510,45 @@ class ConfigData(metaclass=singleton) :
 		with open('debug/config.json', 'w') as f :
 			json.dump(self.conf, f, indent=4)
 
+class AgeRoleTransactions() :
+	def exists(self, role_id) :
+		return session.scalar(Select(AgeRole).where(AgeRole.role_id == role_id))
+
+	def add(self, guild_id, role_id, role_type, max_age, min_age) :
+		role = db.AgeRole(guild_id=guild_id, role_id=role_id, type=role_type, maximum_age=max_age, minimum_age=min_age)
+		session.merge(role)
+		DatabaseTransactions.commit(session)
+
+	def get(self, guild_id, role_id) :
+		return session.scalar(Select(AgeRole).where(AgeRole.guild_id == guild_id, AgeRole.role_id == role_id))
+
+	def get_all(self, guild_id) :
+		return session.scalars(Select(AgeRole).where(AgeRole.guild_id == guild_id)).all()
+
+	def remove(self, role_id) :
+		role = session.scalar(Select(AgeRole).where(AgeRole.role_id == role_id))
+		session.delete(role)
+		DatabaseTransactions.commit(session)
+
+	def update(self, role_id, role_type=None, max_age=None, min_age=None) :
+		role = session.scalar(Select(AgeRole).where(AgeRole.role_id == role_id))
+		data = {
+			"type"       : role_type,
+			"maximum_age": max_age,
+			"minimum_age": min_age
+		}
+		for field, value in data.items() :
+			if value is not None :
+				setattr(role, field, value)
+		session.merge(role)
+		DatabaseTransactions.commit(session)
+		logging.info(f"Updated {role_id} with:")
+		logging.info(data)
+		return role
+
+
+
+
 
 class TimersTransactions(ABC) :
 	@staticmethod

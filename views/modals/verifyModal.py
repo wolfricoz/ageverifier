@@ -108,7 +108,7 @@ class VerifyModal(discord.ui.Modal) :
 			await send_response(interaction, f'A staff member will contact you soon, please wait patiently.', ephemeral=True)
 			return
 		# Check the age and send the right command/button based upon that.
-		command_prefix = AgeCalculations.prefix(age)
+		# command_prefix = AgeCalculations.prefix(age)
 		# Check Chat History
 		# await AgeCalculations.check_history(interaction.user, channel)
 		# Sends the buttons and information to lobby channel
