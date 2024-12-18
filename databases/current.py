@@ -89,6 +89,14 @@ class Timers(Base):
     # in hours
     removal: Mapped[int]
 
+class AgeRole(Base):
+    __tablename__ = "age_roles"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    guild_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("servers.guild", ondelete="CASCADE"))
+    role_id: Mapped[int] = mapped_column(BigInteger)
+    minimum_age: Mapped[int]
+    maximum_age: Mapped[int]
+
 
 class database:
     @staticmethod
