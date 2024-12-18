@@ -152,6 +152,8 @@ class config(commands.GroupCog, name="config") :
 			case _ :
 				raise NotImplementedError
 
+# TODO: Update this command to work with age roles, and remove the mod and admin role.
+
 	@app_commands.command()
 	@app_commands.choices(key=[Choice(name=f"{ke} role", value=ke) for ke, val in rolechoices.items()])
 	@app_commands.choices(action=[Choice(name=x, value=x) for x in ['add', 'Remove']])
@@ -196,6 +198,8 @@ class config(commands.GroupCog, name="config") :
 				file.write(f"{item}: {info}\n")
 		await interaction.followup.send(f"Config for {interaction.guild.name}", file=discord.File(file.name))
 		os.remove(file.name)
+
+
 
 
 async def setup(bot: commands.Bot) :
