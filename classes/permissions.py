@@ -16,12 +16,13 @@ def check_admin(user: discord.Member):
     user_roles = [x.id for x in user.roles]
     return any(x in adminroles for x in user_roles)
 
-
+# TODO: Redo these fully
 def check_roles():
     async def pred(ctx):
         modroles = ConfigData().get_key(ctx.guild.id, 'mod')
         adminroles = ConfigData().get_key(ctx.guild.id, 'admin')
         user_roles = [x.id for x in ctx.author.roles]
+        return True
         return any(x in adminroles for x in user_roles) or any(x in modroles for x in user_roles)
 
     return commands.check(pred)

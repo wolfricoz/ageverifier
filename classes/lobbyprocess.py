@@ -12,14 +12,7 @@ from classes.support.queue import queue
 from classes.whitelist import check_whitelist
 
 
-
-
-
-
 class LobbyProcess(ABC) :
-
-
-
 
 	@staticmethod
 	@abstractmethod
@@ -31,8 +24,11 @@ class LobbyProcess(ABC) :
 		# updates user's age if it exists, otherwise makes a new entry
 		exists = UserTransactions.update_user_dob(user.id, dob, guild.name)
 
-		# changes user's roles; adds and removes
-		queue().add(LobbyProcess.change_user_roles(user, guild), priority=2)
+		# changes user's roles; adds
+		queue().add(LobbyProcess.add_age_roles(guild, user, age), priority=2)
+
+		# changes user's roles; removes
+		queue().add(LobbyProcess.remove_user_roles(user, guild), priority=2)
 
 		# Log age and dob to lobbylog
 		queue().add(LobbyProcess.log(user, guild, age, dob, staff, exists), priority=2)
@@ -45,17 +41,15 @@ class LobbyProcess(ABC) :
 
 	@staticmethod
 	@abstractmethod
-	async def change_user_roles(user, guild: discord.Guild) :
-		config_add_roles = ConfigData().get_key(guild.id, "ADD")
-		add_roles = await LobbyProcess.get_roles(guild, config_add_roles, "ADD")
+	async def remove_user_roles(user, guild: discord.Guild) :
+
 		config_rem_roles = ConfigData().get_key(guild.id, "REM")
 		rem_roles = await LobbyProcess.get_roles(guild, config_rem_roles, "REM")
-		await user.remove_roles(*rem_roles)
-		await user.add_roles(*add_roles)
+		queue().add(user.remove_roles(*rem_roles), priority=2)
 
 	@staticmethod
 	@abstractmethod
-	async def get_roles(guild, roles, type:str) :
+	async def get_roles(guild, roles, type: str) :
 		results = []
 		for role in roles :
 			verrole = get(guild.roles, id=int(role))
@@ -107,7 +101,7 @@ class LobbyProcess(ABC) :
 		async for message in messages :
 			if message.author == user or user in message.mentions and count < 10 :
 				count += 1
-				queue().add(message.delete(),priority=0)
+				queue().add(message.delete(), priority=0)
 		channel = guild.get_channel(int(lobbymod))
 		messages = channel.history(limit=100)
 		count = 0
@@ -119,7 +113,7 @@ class LobbyProcess(ABC) :
 						pass
 					else :
 						count += 1
-						queue().add(message.delete(),priority=0)
+						queue().add(message.delete(), priority=0)
 
 	@staticmethod
 	@abstractmethod
@@ -146,3 +140,14 @@ class LobbyProcess(ABC) :
 		                                    f"UID: {userid}\n"
 		                                    f"Entry updated by: {interaction.user.name}")
 		await send_message(interaction.channel, f"{operation} <@{userid}>({userid}) date of birth with dob: {dob}")
+
+	@staticmethod
+	@abstractmethod
+	def add_age_roles(guild: discord.Guild, user: discord.Member, age) :
+		"""Adds the age roles to the user"""
+		roles = ConfigData().get_key(guild.id, "ADD")
+		add_roles = []
+		for key, value in roles.items() :
+			if value['MIN'] <= age <= value['MAX'] :
+				add_roles.append(guild.get_role(key))
+		queue().add(user.add_roles(*add_roles), priority=2)
