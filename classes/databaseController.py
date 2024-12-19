@@ -2,7 +2,8 @@ import datetime
 import json
 import logging
 from abc import ABC, abstractmethod
-from datetime import timedelta, timezone
+from datetime import timezone
+from importlib import reload
 
 import sqlalchemy.exc
 from sqlalchemy.exc import SQLAlchemyError
@@ -318,14 +319,16 @@ class ConfigTransactions(ABC) :
 
 	@staticmethod
 	@abstractmethod
-	def config_unique_remove(guildid: int, key: str) :
-		if ConfigTransactions.key_exists_check(guildid, key) is False :
+	def config_unique_remove(guild_id: int, key: str, reload=True) :
+		if ConfigTransactions.key_exists_check(guild_id, key) is False :
 			return False
 		exists = session.scalar(
-			Select(db.Config).where(db.Config.guild == guildid, db.Config.key == key))
+			Select(db.Config).where(db.Config.guild == guild_id, db.Config.key == key))
 		session.delete(exists)
 		DatabaseTransactions.commit(session)
-		ConfigData().load_guild(guildid)
+		if reload:
+			ConfigData().load_guild(guild_id)
+
 
 	@staticmethod
 	@abstractmethod
@@ -452,34 +455,46 @@ class ConfigData(metaclass=singleton) :
 	def __init__(self) :
 		pass
 
-	def reload(self):
+	def reload(self) :
 		logging.info("reloading config")
-		for guild_id in self.conf:
+		for guild_id in self.conf :
 			self.load_guild(guild_id)
 
-	def load_guild(self, guildid) :
-		config = ConfigTransactions.server_config_get(guildid)
-
+	def load_guild(self, guild_id: int) :
+		config = ConfigTransactions.server_config_get(guild_id)
 		settings = config
-		self.conf[guildid] = {}
-		self.conf[guildid]["SEARCH"] = {}
-		self.conf[guildid]["BAN"] = {}
+		add_list = ['REM', "RETURN", "FORUM"]
+		add_dict = ["SEARCH", "BAN", "ADD"]
+		self.conf[guild_id] = {}
 
-		add_to_config = ['MOD', 'ADMIN', 'ADD', 'REM', "RETURN", "FORUM"]
-		for add in add_to_config :
-			self.conf[guildid][add] = []
+		for key in add_list :
+			self.conf[guild_id][key] = []
+		role = AgeRoleTransactions().get_all(guild_id)
+		for key in add_dict :
+			self.conf[guild_id][key] = {}
 
 		for x in settings :
-			if x.key in add_to_config :
-				self.conf[guildid][x.key].append(int(x.value))
+			if x.key in ["ADD"] :
+				AgeRoleTransactions().add(guild_id, x.value, "ADD", reload=False)
+				ConfigTransactions.config_unique_remove(guild_id, x.key, reload=False)
+				continue
+			if x.key in add_list :
+				self.conf[guild_id][x.key].append(int(x.value))
 				continue
 			if x.key.upper().startswith("SEARCH") :
-				self.conf[guildid]["SEARCH"][x.key.replace('SEARCH-', '')] = x.value
+				self.conf[guild_id]["SEARCH"][x.key.replace('SEARCH-', '')] = x.value
 				continue
 			if x.key.upper().startswith("BAN") :
-				self.conf[guildid]["BAN"][x.key.replace('BAN-', '')] = x.value
+				self.conf[guild_id]["BAN"][x.key.replace('BAN-', '')] = x.value
 				continue
-			self.conf[guildid][x.key] = x.value
+			self.conf[guild_id][x.key] = x.value
+		for x in role :
+			self.conf[guild_id]['ADD'][x.role_id] = {
+				"MAX" : x.maximum_age,
+				"MIN" : x.minimum_age,
+			}
+		print(self.conf)
+		self.output_to_json()
 
 	def get_config(self, guildid) :
 		try :
@@ -510,14 +525,10 @@ class ConfigData(metaclass=singleton) :
 		with open('debug/config.json', 'w') as f :
 			json.dump(self.conf, f, indent=4)
 
+
 class AgeRoleTransactions() :
 	def exists(self, role_id) :
 		return session.scalar(Select(AgeRole).where(AgeRole.role_id == role_id))
-
-	def add(self, guild_id, role_id, role_type, max_age, min_age) :
-		role = db.AgeRole(guild_id=guild_id, role_id=role_id, type=role_type, maximum_age=max_age, minimum_age=min_age)
-		session.merge(role)
-		DatabaseTransactions.commit(session)
 
 	def get(self, guild_id, role_id) :
 		return session.scalar(Select(AgeRole).where(AgeRole.guild_id == guild_id, AgeRole.role_id == role_id))
@@ -525,17 +536,30 @@ class AgeRoleTransactions() :
 	def get_all(self, guild_id) :
 		return session.scalars(Select(AgeRole).where(AgeRole.guild_id == guild_id)).all()
 
-	def remove(self, role_id) :
+	def add(self, guild_id, role_id, role_type, maximum_age = 200, minimum_age = 18, reload = True) :
+		if self.exists(role_id) :
+			return self.update(guild_id, role_id, role_type, maximum_age, minimum_age)
+		role = db.AgeRole(guild_id=guild_id, role_id=role_id, type=role_type, maximum_age=maximum_age,
+		                  minimum_age=minimum_age)
+		session.merge(role)
+		DatabaseTransactions.commit(session)
+		if reload is True:
+			ConfigData().load_guild(guild_id)
+		return role
+
+	def remove(self, guild_id, role_id) :
 		role = session.scalar(Select(AgeRole).where(AgeRole.role_id == role_id))
 		session.delete(role)
 		DatabaseTransactions.commit(session)
+		ConfigData().load_guild(guild_id)
 
-	def update(self, role_id, role_type=None, max_age=None, min_age=None) :
+	def update(self, guild_id: int, role_id: int, role_type: str = None, maximum_age: int = None,
+	           minimum_age: int = None) :
 		role = session.scalar(Select(AgeRole).where(AgeRole.role_id == role_id))
 		data = {
-			"type"       : role_type,
-			"maximum_age": max_age,
-			"minimum_age": min_age
+			"type"        : role_type.upper(),
+			"maximum_age" : maximum_age,
+			"minimum_age" : minimum_age
 		}
 		for field, value in data.items() :
 			if value is not None :
@@ -544,10 +568,9 @@ class AgeRoleTransactions() :
 		DatabaseTransactions.commit(session)
 		logging.info(f"Updated {role_id} with:")
 		logging.info(data)
+		ConfigData().load_guild(guild_id)
+
 		return role
-
-
-
 
 
 class TimersTransactions(ABC) :
@@ -577,9 +600,8 @@ class TimersTransactions(ABC) :
 
 class ServerTransactions() :
 
-
 	def add(self, guildid: int, active: bool = True) :
-		if self.get(guildid) is not None:
+		if self.get(guildid) is not None :
 			self.update(guildid, active)
 			return
 		g = db.Servers(guild=guildid, active=active)
@@ -589,23 +611,20 @@ class ServerTransactions() :
 		ConfigTransactions.automatic_add(guildid)
 		ConfigData().load_guild(guildid)
 
-
-	def get_all(self, ):
+	def get_all(self, ) :
 		return [sid[0] for sid in session.query(Servers.guild).all()]
 
-
-	def get(self, guild_id: int):
+	def get(self, guild_id: int) :
 		return session.scalar(Select(Servers).where(Servers.guild == guild_id))
 
-
-	def update(self, guild_id: int, active: bool = None):
+	def update(self, guild_id: int, active: bool = None) :
 		guild = self.get(guild_id)
-		if not guild:
+		if not guild :
 			return False
 		updated_data = {
-			"active": active
+			"active" : active
 		}
-		for field, value in updated_data.items():
+		for field, value in updated_data.items() :
 			setattr(guild, field, value)
 			logging.info(f"Updated {guild.guild} with:")
 			logging.info(updated_data)
