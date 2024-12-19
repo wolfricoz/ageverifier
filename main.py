@@ -165,7 +165,7 @@ async def run() :
     try :
         await bot.start(DISCORD_TOKEN)
     except KeyboardInterrupt :
-        quit(0)
+        exit(0)
 
 
 @app.on_event("startup")
