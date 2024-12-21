@@ -2,7 +2,8 @@ import datetime
 import json
 import logging
 from abc import ABC, abstractmethod
-from datetime import timedelta, timezone
+from datetime import timezone
+from importlib import reload
 
 import sqlalchemy.exc
 from sqlalchemy.exc import SQLAlchemyError
@@ -11,6 +12,7 @@ from sqlalchemy.sql import Select
 
 import databases.current as db
 from classes.encryption import Encryption
+from classes.singleton import singleton
 from databases.current import *
 
 session = Session(bind=db.engine, expire_on_commit=False, )
@@ -126,7 +128,6 @@ class UserTransactions(ABC) :
 		DatabaseTransactions.commit(session)
 		logging.info(f"Updated {uid} with:")
 		logging.info(data)
-
 
 	@staticmethod
 	@abstractmethod
@@ -318,14 +319,16 @@ class ConfigTransactions(ABC) :
 
 	@staticmethod
 	@abstractmethod
-	def config_unique_remove(guildid: int, key: str) :
-		if ConfigTransactions.key_exists_check(guildid, key) is False :
+	def config_unique_remove(guild_id: int, key: str, reload=True) :
+		if ConfigTransactions.key_exists_check(guild_id, key) is False :
 			return False
 		exists = session.scalar(
-			Select(db.Config).where(db.Config.guild == guildid, db.Config.key == key))
+			Select(db.Config).where(db.Config.guild == guild_id, db.Config.key == key))
 		session.delete(exists)
 		DatabaseTransactions.commit(session)
-		ConfigData().load_guild(guildid)
+		if reload:
+			ConfigData().load_guild(guild_id)
+
 
 	@staticmethod
 	@abstractmethod
@@ -340,16 +343,6 @@ class ConfigTransactions(ABC) :
 		session.delete(exists)
 		DatabaseTransactions.commit(session)
 		return True
-
-	@staticmethod
-	@abstractmethod
-	def server_add(guildid) :
-		g = db.Servers(guild=guildid)
-		session.merge(g)
-		DatabaseTransactions.commit(session)
-		ConfigTransactions.welcome_add(guildid)
-		ConfigTransactions.automatic_add(guildid)
-		ConfigData().load_guild(guildid)
 
 	@staticmethod
 	@abstractmethod
@@ -453,7 +446,7 @@ class VerificationTransactions(ABC) :
 		UserTransactions.update_user_dob(userid, dob, guildname=guildname)
 
 
-class ConfigData(ABC) :
+class ConfigData(metaclass=singleton) :
 	"""
 	The goal of this class is to save the config to reduce database calls for the config; especially the roles.
 	"""
@@ -462,30 +455,46 @@ class ConfigData(ABC) :
 	def __init__(self) :
 		pass
 
-	def load_guild(self, guildid) :
-		config = ConfigTransactions.server_config_get(guildid)
+	def reload(self) :
+		logging.info("reloading config")
+		for guild_id in self.conf :
+			self.load_guild(guild_id)
 
+	def load_guild(self, guild_id: int) :
+		config = ConfigTransactions.server_config_get(guild_id)
 		settings = config
-		# settings = ConfigTransactions.server_config_get(guildid)
-		self.conf[guildid] = {}
-		self.conf[guildid]["SEARCH"] = {}
-		self.conf[guildid]["BAN"] = {}
+		add_list = ['REM', "RETURN", "FORUM"]
+		add_dict = ["SEARCH", "BAN", "ADD"]
+		self.conf[guild_id] = {}
 
-		add_to_config = ['MOD', 'ADMIN', 'ADD', 'REM', "RETURN", "FORUM"]
-		for add in add_to_config :
-			self.conf[guildid][add] = []
+		for key in add_list :
+			self.conf[guild_id][key] = []
+		role = AgeRoleTransactions().get_all(guild_id)
+		for key in add_dict :
+			self.conf[guild_id][key] = {}
 
 		for x in settings :
-			if x.key in add_to_config :
-				self.conf[guildid][x.key].append(int(x.value))
+			if x.key in ["ADD"] :
+				AgeRoleTransactions().add(guild_id, x.value, "ADD", reload=False)
+				ConfigTransactions.config_unique_remove(guild_id, x.key, reload=False)
+				continue
+			if x.key in add_list :
+				self.conf[guild_id][x.key].append(int(x.value))
 				continue
 			if x.key.upper().startswith("SEARCH") :
-				self.conf[guildid]["SEARCH"][x.key.replace('SEARCH-', '')] = x.value
+				self.conf[guild_id]["SEARCH"][x.key.replace('SEARCH-', '')] = x.value
 				continue
 			if x.key.upper().startswith("BAN") :
-				self.conf[guildid]["BAN"][x.key.replace('BAN-', '')] = x.value
+				self.conf[guild_id]["BAN"][x.key.replace('BAN-', '')] = x.value
 				continue
-			self.conf[guildid][x.key] = x.value
+			self.conf[guild_id][x.key] = x.value
+		for x in role :
+			self.conf[guild_id]['ADD'][x.role_id] = {
+				"MAX" : x.maximum_age,
+				"MIN" : x.minimum_age,
+			}
+		print(self.conf)
+		self.output_to_json()
 
 	def get_config(self, guildid) :
 		try :
@@ -517,30 +526,51 @@ class ConfigData(ABC) :
 			json.dump(self.conf, f, indent=4)
 
 
-class SearchWarningTransactions(ABC) :
-	@staticmethod
-	@abstractmethod
-	def get_total_warnings(userid: int) :
-		total = 0
-		active = 0
-		monthsago = datetime.now() - timedelta(days=120)
-		userdata = session.scalars(Select(Warnings).where(Warnings.uid == userid)).all()
-		session.close()
-		for x in userdata :
-			if x.entry > monthsago :
-				active += 1
-			total += 1
-		return total, active
+class AgeRoleTransactions() :
+	def exists(self, role_id) :
+		return session.scalar(Select(AgeRole).where(AgeRole.role_id == role_id))
 
-	@staticmethod
-	@abstractmethod
-	def add_warning(userid: int, reason: str = None) :
-		UserTransactions.add_user_empty(userid)
-		search_warning = Warnings(uid=userid, reason=reason, type="SEARCH")
-		session.add(search_warning)
+	def get(self, guild_id, role_id) :
+		return session.scalar(Select(AgeRole).where(AgeRole.guild_id == guild_id, AgeRole.role_id == role_id))
+
+	def get_all(self, guild_id) :
+		return session.scalars(Select(AgeRole).where(AgeRole.guild_id == guild_id)).all()
+
+	def add(self, guild_id, role_id, role_type, maximum_age = 200, minimum_age = 18, reload = True) :
+		if self.exists(role_id) :
+			return self.update(guild_id, role_id, role_type, maximum_age, minimum_age)
+		role = db.AgeRole(guild_id=guild_id, role_id=role_id, type=role_type, maximum_age=maximum_age,
+		                  minimum_age=minimum_age)
+		session.merge(role)
 		DatabaseTransactions.commit(session)
-		total_warnings, active_warnings = SearchWarningTransactions.get_total_warnings(userid)
-		return total_warnings, active_warnings
+		if reload is True:
+			ConfigData().load_guild(guild_id)
+		return role
+
+	def remove(self, guild_id, role_id) :
+		role = session.scalar(Select(AgeRole).where(AgeRole.role_id == role_id))
+		session.delete(role)
+		DatabaseTransactions.commit(session)
+		ConfigData().load_guild(guild_id)
+
+	def update(self, guild_id: int, role_id: int, role_type: str = None, maximum_age: int = None,
+	           minimum_age: int = None) :
+		role = session.scalar(Select(AgeRole).where(AgeRole.role_id == role_id))
+		data = {
+			"type"        : role_type.upper(),
+			"maximum_age" : maximum_age,
+			"minimum_age" : minimum_age
+		}
+		for field, value in data.items() :
+			if value is not None :
+				setattr(role, field, value)
+		session.merge(role)
+		DatabaseTransactions.commit(session)
+		logging.info(f"Updated {role_id} with:")
+		logging.info(data)
+		ConfigData().load_guild(guild_id)
+
+		return role
 
 
 class TimersTransactions(ABC) :
@@ -560,15 +590,43 @@ class TimersTransactions(ABC) :
 		session.close()
 		return timer
 
-	# @staticmethod
-	# @abstractmethod
-	# def get_timers(userid, guild):
-	#     """Gets all timers that a user has with userid and guild."""
-	#     timer = session.scalar(Select(Timers).where(Timers.uid == userid))
-
 	@staticmethod
 	@abstractmethod
 	def remove_timer(id) :
 		timer = session.scalar(Select(Timers).where(Timers.id == id))
 		session.delete(timer)
 		DatabaseTransactions.commit(session)
+
+
+class ServerTransactions() :
+
+	def add(self, guildid: int, active: bool = True) :
+		if self.get(guildid) is not None :
+			self.update(guildid, active)
+			return
+		g = db.Servers(guild=guildid, active=active)
+		session.merge(g)
+		DatabaseTransactions.commit(session)
+		ConfigTransactions.welcome_add(guildid)
+		ConfigTransactions.automatic_add(guildid)
+		ConfigData().load_guild(guildid)
+
+	def get_all(self, ) :
+		return [sid[0] for sid in session.query(Servers.guild).all()]
+
+	def get(self, guild_id: int) :
+		return session.scalar(Select(Servers).where(Servers.guild == guild_id))
+
+	def update(self, guild_id: int, active: bool = None) :
+		guild = self.get(guild_id)
+		if not guild :
+			return False
+		updated_data = {
+			"active" : active
+		}
+		for field, value in updated_data.items() :
+			setattr(guild, field, value)
+			logging.info(f"Updated {guild.guild} with:")
+			logging.info(updated_data)
+			DatabaseTransactions.commit(session)
+		return

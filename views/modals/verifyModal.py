@@ -107,10 +107,6 @@ class VerifyModal(discord.ui.Modal) :
 			await send_message(modlobby, f"{interaction.user.mention} gave ages: {age} {dob}, but is on the idlist.")
 			await send_response(interaction, f'A staff member will contact you soon, please wait patiently.', ephemeral=True)
 			return
-		# Check the age and send the right command/button based upon that.
-		command_prefix = AgeCalculations.prefix(age)
-		# Check Chat History
-		# await AgeCalculations.check_history(interaction.user, channel)
 		# Sends the buttons and information to lobby channel
 		if ConfigData().get_key(interaction.guild.id, "automatic") == "enabled".upper() :
 			await LobbyProcess.approve_user(interaction.guild, interaction.user, dob, age, "Automatic")

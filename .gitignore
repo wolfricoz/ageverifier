@@ -19,3 +19,6 @@
 /.env
 /debug/config.json
 /whitelist.json
+/settings/config.json
+/.idea/material_theme_project_new.xml
+/.idea/
