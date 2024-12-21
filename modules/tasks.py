@@ -9,7 +9,7 @@ from discord import app_commands
 from discord.ext import commands, tasks
 
 from classes import permissions
-from classes.databaseController import ConfigData, UserTransactions
+from classes.databaseController import ConfigData, ServerTransactions, UserTransactions
 
 OLDLOBBY = int(os.getenv("OLDLOBBY"))
 
@@ -21,11 +21,13 @@ class Tasks(commands.GroupCog):
         self.index = 0
         self.config_reload.start()
         self.check_users_expiration.start()
-
+        self.check_active_servers.start()
     def cog_unload(self):
         """unloads tasks"""
         self.config_reload.cancel()
         self.check_users_expiration.cancel()
+        self.check_active_servers.cancel()
+
 
     @tasks.loop(hours=1)
     async def config_reload(self):
@@ -80,8 +82,21 @@ class Tasks(commands.GroupCog):
         await self.user_expiration_remove(userdata, removaldate)
         print("Finished checking all entries")
 
+    @tasks.loop(hours=12)
+    async def check_active_servers(self):
+        guild_ids = ServerTransactions().get_all()
+        for guild in self.bot.guilds:
+            if guild.id in guild_ids:
+                guild_ids.remove(guild.id)
+                continue
+            ServerTransactions().add(guild.id, active=True)
+        for gid in guild_ids:
+            ServerTransactions().update(gid, active=False)
+
+
+
     @app_commands.command(name="expirecheck")
-    @permissions.check_app_roles_admin()
+    @app_commands.checks.has_permissions(administrator=True)
     async def expirecheck(self, interaction: discord.Interaction):
         """forces the automatic search ban check to start; normally runs every 30 minutes"""
         await interaction.response.send_message("[Debug]Checking all entries.")
@@ -98,6 +113,9 @@ class Tasks(commands.GroupCog):
         """stops event from starting before the bot has fully loaded"""
         await self.bot.wait_until_ready()
 
+    @check_active_servers.before_loop
+    async def before_serverhcheck(self):
+        await self.bot.wait_until_ready()
 
 async def setup(bot):
     """Adds the cog to the bot."""

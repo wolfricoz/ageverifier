@@ -65,7 +65,7 @@ class PaginationView(discord.ui.View):
             self.next_button.style = discord.ButtonStyle.primary
 
     @discord.ui.button(label="First", style=discord.ButtonStyle.green)
-    @permissions.check_app_roles()
+    @commands.has_permissions(manage_messages=True)
     async def first_page_button(self, interaction: discord.Interaction, button: discord.ui.button()):
         await interaction.response.defer()
         self.current_page = 1

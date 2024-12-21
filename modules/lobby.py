@@ -6,6 +6,7 @@ import discord
 from discord import app_commands
 from discord.app_commands import Choice
 from discord.ext import commands
+from sqlalchemy import True_
 
 import classes.permissions as permissions
 from classes.AgeCalculations import AgeCalculations
@@ -31,7 +32,7 @@ class Lobby(commands.GroupCog):
         self.bot.add_view(dobentry())
 
     @app_commands.command(name="button")
-    @permissions.check_app_roles_admin()
+    @app_commands.checks.has_permissions(administrator=True)
     async def verify_button(self, interaction: discord.Interaction, text: str):
         """Verification button for the lobby; initiates the whole process"""
         await interaction.channel.send(text, view=VerifyButton())
@@ -39,7 +40,7 @@ class Lobby(commands.GroupCog):
     @app_commands.command()
     @app_commands.choices(operation=[Choice(name=x, value=x) for x in
                                      ['add', 'update', 'delete', 'get']])
-    @permissions.check_app_roles()
+    @app_commands.checks.has_permissions(manage_messages=True)
     async def database(self, interaction: discord.Interaction, operation: Choice['str'], userid: str, dob: str = None):
         """One stop shop to handle all age entry management. Only add 1 date of birth per user."""
         userid = int(userid)
@@ -60,24 +61,24 @@ class Lobby(commands.GroupCog):
                 UserTransactions.update_user_dob(userid, dob, interaction.guild.name)
                 await send_response(interaction, f"Updated <@{userid}>'s dob to {dob}")
                 await LobbyProcess.age_log(age_log_channel, userid, dob, interaction, "updated")
-                await send_message(dev_channel, f"<@{userid}>'s dob updated in {interaction.guild.name}.")
+                await send_message(dev_channel, f"<@{userid}>'s dob updated in {interaction.guild.name} by {interaction.user.name}.")
 
             case "DELETE":
-                if permissions.check_admin(interaction.user) is False:
+                if not interaction.user.guild_permissions.administrator:
                     await interaction.followup.send("You are not an admin")
                     return
                 if UserTransactions.user_delete(userid, interaction.guild.name) is False:
                     await interaction.followup.send(f"Can't find entry: <@{userid}>")
                     return
                 await send_response(interaction, f"Deleted entry: <@{userid}>")
-                await send_message(dev_channel, f"<@{userid}>'s dob deleted in {interaction.guild.name}.")
+                await send_message(dev_channel, f"<@{userid}>'s dob deleted in {interaction.guild.name} by {interaction.user.name}.")
             case "ADD":
                 if await AgeCalculations.validatedob(dob, interaction) is False:
                     return
                 UserTransactions.add_user_full(str(userid), dob, interaction.guild.name)
                 await send_response(interaction, f"<@{userid}> added to the database with dob: {dob}")
                 await LobbyProcess.age_log(age_log_channel, userid, dob, interaction)
-                await send_message(dev_channel, f"<@{userid}>'s dob added in {interaction.guild.name}.")
+                await send_message(dev_channel, f"<@{userid}>'s dob added in {interaction.guild.name} by {interaction.user.name}.")
             case "GET":
                 user: Users = UserTransactions.get_user(userid)
                 discord_user = self.bot.get_user(userid)
@@ -93,7 +94,7 @@ class Lobby(commands.GroupCog):
     @app_commands.command()
     @app_commands.choices(process=[Choice(name=x, value=x) for x in
                                    ["True", "False"]])
-    @permissions.check_app_roles_admin()
+    @app_commands.checks.has_permissions(administrator=True)
     async def idverify(self, interaction: discord.Interaction, process: Choice['str'],
                        user: discord.User, dob: str):
         """ID verifies user. process True will put the user through the lobby."""
@@ -133,7 +134,7 @@ UID: {user.id}
 **ID VERIFIED BY:** {interaction.user}""")
 
     @app_commands.command()
-    @permissions.check_app_roles()
+    @app_commands.checks.has_permissions(manage_messages=True)
     async def returnlobby(self, interaction: discord.Interaction, user: discord.Member):
         """returns user to lobby; removes the roles."""
         await interaction.response.defer()
@@ -158,14 +159,14 @@ UID: {user.id}
                 f"{user.mention} has been moved back to the lobby by {interaction.user.mention}")
 
     @app_commands.command()
-    @permissions.check_app_roles()
+    @app_commands.checks.has_permissions(manage_messages=True)
     async def agecheck(self, interaction: discord.Interaction, dob: str):
         """Checks the age of a dob"""
         age = AgeCalculations.dob_to_age(dob)
         await interaction.response.send_message(f"As of today {dob} is {age} years old", ephemeral=True)
 
     @commands.command(name="approve")
-    @permissions.check_roles()
+    @commands.has_permissions(manage_messages=True)
     async def approve(self, ctx: commands.Context, user: discord.Member, age: int, dob: str):
         """allows user to enter"""
         dob = AgeCalculations.regex(dob)
@@ -173,7 +174,7 @@ UID: {user.id}
         await ctx.message.delete()
 
     @app_commands.command()
-    @permissions.check_app_roles_admin()
+    @app_commands.checks.has_permissions(administrator=True)
     async def purge(self, interaction: discord.Interaction, days: int = 14):
         """This command will kick all the users that have not been processed through the lobby with the given days."""
         lobby_config = ConfigData().get_key_int(interaction.guild.id, "lobby")
@@ -212,7 +213,7 @@ UID: {user.id}
                                      ['add', 'update', 'get', 'delete']])
     @app_commands.choices(idcheck=[Choice(name=x, value=y) for x, y in
                                    {"Yes": "True", "No": "False"}.items()])
-    @permissions.check_app_roles()
+    @app_commands.checks.has_permissions(manage_messages=True)
     async def idcheck(self, interaction: discord.Interaction, operation: Choice['str'], idcheck: Choice['str'],
                       userid: str, reason: str = None):
         """adds user to id check or removes them"""
@@ -249,7 +250,7 @@ UID: {user.id}
                                                 f"idverifier: {user.idverified}\n"
                                                 f"verifieddob: {user.verifieddob}\n")
             case "DELETE":
-                if permissions.check_admin(interaction.user) is False:
+                if not interaction.user.guild_permissions.administrator:
                     await interaction.followup.send("You are not an admin")
                     return
                 if VerificationTransactions.set_idcheck_to_false(userid) is False:

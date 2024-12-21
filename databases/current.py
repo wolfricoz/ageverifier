@@ -4,7 +4,7 @@ from typing import List, Optional
 
 import pymysql
 from dotenv import load_dotenv
-from sqlalchemy import create_engine, DateTime, ForeignKey, String, BigInteger, Boolean
+from sqlalchemy import Integer, create_engine, DateTime, ForeignKey, String, BigInteger, Boolean
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.pool import NullPool
 from sqlalchemy.sql import func
@@ -51,6 +51,7 @@ class Warnings(Base):
 class Servers(Base):
     __tablename__ = "servers"
     guild: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=False)
+    active: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
 # noinspection PyTypeChecker, PydanticTypeChecker
@@ -87,6 +88,15 @@ class Timers(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     # in hours
     removal: Mapped[int]
+
+class AgeRole(Base):
+    __tablename__ = "age_roles"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    type: Mapped[str] = mapped_column(String(20))
+    guild_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("servers.guild", ondelete="CASCADE"))
+    role_id: Mapped[int] = mapped_column(BigInteger)
+    minimum_age: Mapped[int] = mapped_column(Integer, default=18, nullable=True)
+    maximum_age: Mapped[int] = mapped_column(Integer, default=200, nullable=True)
 
 
 class database:

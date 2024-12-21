@@ -7,7 +7,7 @@ from discord.app_commands import Choice
 from discord.ext import commands
 
 from classes.configsetup import configSetup
-from classes.databaseController import ConfigData, ConfigTransactions
+from classes.databaseController import AgeRoleTransactions, ConfigData, ConfigTransactions
 from classes.support.discord_tools import send_message, send_response
 from views.modals.configinput import ConfigInputUnique
 from views.select.configselectroles import *
@@ -31,8 +31,6 @@ class config(commands.GroupCog, name="config") :
 		"idlog"      : 'This is where failed verification logs will be posted, this channel should be hidden from the users.'
 	}
 	rolechoices = {
-		"mod"    : "This is the moderator role, these users will be able to approve users",
-		"admin"  : "Admin role, these users will be able to approve users and change the config, update date of births and id verifications",
 		'add'    : 'These roles will be added to the user after a successful verification',
 		"rem"    : 'These roles will be removed from the user after a successful verification',
 		"return" : "These roles will be removed from the user when running the /lobby return command.",
@@ -54,8 +52,8 @@ class config(commands.GroupCog, name="config") :
 				await configSetup().auto(interaction, self.channelchoices, self.rolechoices, self.messagechoices)
 
 		await send_response(interaction,
-			"The config has been successfully setup, if you wish to check our toggles you please do /config toggles. Permission checking will commence shortly.",
-			ephemeral=True)
+		                    "The config has been successfully setup, if you wish to check our toggles you please do /config toggles. Permission checking will commence shortly.",
+		                    ephemeral=True)
 		await self.check_channel_permissions(interaction)
 
 	@app_commands.command()
@@ -107,7 +105,7 @@ class config(commands.GroupCog, name="config") :
 				await interaction.response.send_modal(ConfigInputUnique(key=key.value))
 			case 'remove' :
 				await interaction.response.defer(ephemeral=True)
-				result = ConfigTransactions.config_unique_remove(guildid=interaction.guild.id, key=key.value)
+				result = ConfigTransactions.config_unique_remove(guild_id=interaction.guild.id, key=key.value)
 				if result is False :
 					await interaction.followup.send(f"{key.value} was not in database")
 					return
@@ -144,7 +142,7 @@ class config(commands.GroupCog, name="config") :
 				                                     overwrite=True)
 				await interaction.followup.send(f"{key.value} has been added to the database with value:\n{value}")
 			case 'remove' :
-				result = ConfigTransactions.config_unique_remove(guildid=interaction.guild.id, key=key.value)
+				result = ConfigTransactions.config_unique_remove(guild_id=interaction.guild.id, key=key.value)
 				if result is False :
 					await interaction.followup.send(f"{key.value} was not in database")
 					return
@@ -152,16 +150,24 @@ class config(commands.GroupCog, name="config") :
 			case _ :
 				raise NotImplementedError
 
+
 	@app_commands.command()
 	@app_commands.choices(key=[Choice(name=f"{ke} role", value=ke) for ke, val in rolechoices.items()])
 	@app_commands.choices(action=[Choice(name=x, value=x) for x in ['add', 'Remove']])
 	@app_commands.checks.has_permissions(manage_guild=True)
-	async def roles(self, interaction: discord.Interaction, key: Choice[str], action: Choice[str], value: discord.Role) :
+	async def roles(self, interaction: discord.Interaction, key: Choice[str], action: Choice[str], value: discord.Role,
+	                minimum_age: int = 18, maximum_age: int = 200) :
 		"""Add roles to the database, for the bot to use."""
 		await interaction.response.defer(ephemeral=True)
 		value = value.id
 		match action.value.lower() :
 			case 'add' :
+				if key.value == "add" and maximum_age and minimum_age :
+					AgeRoleTransactions().add(guild_id=interaction.guild.id, role_id=value, role_type=key.value,
+					                          minimum_age=minimum_age, maximum_age=maximum_age)
+					await interaction.followup.send(f"{key.name}: <@&{value}> has been added to the database")
+					return
+
 				result = ConfigTransactions.config_key_add(guildid=interaction.guild.id, key=key.value.upper(),
 				                                           value=value, overwrite=False)
 				if result is False :
@@ -169,6 +175,11 @@ class config(commands.GroupCog, name="config") :
 					return
 				await interaction.followup.send(f"{key.name}: <@&{value}> has been added to the database")
 			case 'remove' :
+				if key.value == "add" :
+					AgeRoleTransactions().remove(interaction.guild_id, value)
+					await interaction.followup.send(f"{key.name}: <@&{value}> has been removed from the database")
+					return
+
 				result = ConfigTransactions.config_key_remove(guildid=interaction.guild.id, key=key.value.upper(),
 				                                              value=value)
 				if result is False :
