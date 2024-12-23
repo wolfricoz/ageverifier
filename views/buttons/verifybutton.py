@@ -9,6 +9,11 @@ class VerifyButton(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="Start Verification here!", style=discord.ButtonStyle.green, custom_id="verify")
-    async def test(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await send_response(interaction, f"{interaction.user.mention} To verify using AgeVerifier, you must accept our [Privacy Policy](https://wolfricoz.github.io/ageverifier/privacypolicy.html). By accepting, you consent to your date of birth being stored for verification purposes. Please review the policy and click 'Accept' to proceed.", view=TOSButton(), ephemeral=True)
+    @discord.ui.button(label=""
+                             "ID Verify", style=discord.ButtonStyle.green, custom_id="id_verify")
+    async def idverify(self, interaction: discord.Interaction, button: discord.ui.Button):
+        raise NotImplementedError
+
+    @discord.ui.button(label="Remove ID Check", style=discord.ButtonStyle.red, custom_id="remove")
+    async def remove(self, interaction: discord.Interaction, button: discord.ui.Button):
+        raise NotImplementedError
