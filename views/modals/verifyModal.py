@@ -7,6 +7,7 @@ import databases.current
 from classes.AgeCalculations import AgeCalculations
 from classes.databaseController import ConfigData, UserTransactions, VerificationTransactions
 from classes.encryption import Encryption
+from classes.idcheck import IdCheck
 from classes.lobbyprocess import LobbyProcess
 from classes.support.discord_tools import send_message, send_response
 from classes.whitelist import check_whitelist
@@ -57,43 +58,18 @@ class VerifyModal(discord.ui.Modal) :
 		dob = await AgeCalculations.infocheck(interaction, self.age.value, self.dateofbirth.value, channel)
 		if dob is None :
 			return
-		# Checks if date of birth and age match
-		if age < 18 :
-			await send_message(channel,
-			                   f"[Info] User {interaction.user.mention}\'s gave an age below 18 and was added to the ID list.\n[Lobby Debug] Age: {age} dob {dob}")
-			await send_response(interaction,
-			                    f'Unfortunately you are too young for our server. If you are 17 you may wait in the lobby.',
-			                    ephemeral=True)
-			VerificationTransactions.set_idcheck_to_true(
-				interaction.user.id,
-				f"{datetime.datetime.now(datetime.timezone.utc).strftime('%m/%d/%Y')}: User is under the age of 18")
-			logging.debug(
-				f"userid: {interaction.user.id} gave an age below 18 and was added to the ID list. Age given: {age}. Dob is NOT logged")
-			return
 		# Checks if user is underaged
-		agechecked, years = AgeCalculations.agechecker(age, dob)
-		logging.debug(f"userid: {interaction.user.id} age: {age} dob: {dob}")
-		if agechecked == 1 or agechecked == -1 :
-			await send_message(channel,
-			                   f"[Info] <@&{admin[0]}> User {interaction.user.mention}\'s age does not match. "
-			                   f"User gave {age} but dob indicates {years}. User may retry.\n"
-			                   f"[Lobby Debug] Age: {age} dob {dob}")
-			await send_response(interaction,
-			                    f'It seems your age does not match the date of birth you provided. Please try again. Please use '
-			                    f'your CURRENT age.',
-			                    ephemeral=True)
-			return
-		if agechecked > 1 or agechecked < -1 :
-			await send_message(idchannel,
-			                   f"[Info] <@&{admin[0]}> User {interaction.user.mention}\'s age does not match and has been timed "
-			                   f"out. User gave {age} but dob indicates {years}\n"
-			                   f"[Lobby Debug] Age: {age} dob {dob}")
-			await send_response(interaction,
-			                    f'A staff member will contact you soon, please wait patiently.',
-			                    ephemeral=True)
-			return
-		# Checks if user has a date of birth in the database, and if the date of births match.
 
+		agechecked, years = AgeCalculations.agechecker(age, dob)
+		if age < 18 or years < 18:
+			return await IdCheck.send_check(interaction, channel, "underage", age, dob, id_check=True)
+		logging.debug(f"userid: {interaction.user.id} age: {age} dob: {Encryption().encrypt(dob)}")
+		# Checks if the age matches the date of birth, if only off by one year the can resubmit; otherwise they are flagged
+		if agechecked == 1 or agechecked == -1 :
+			return await IdCheck.send_check(interaction, channel, "mismatch", age, dob, years=years)
+		if agechecked > 1 or agechecked < -1 :
+			return await IdCheck.send_check(interaction, channel, "nomatch", age, dob, years=years)
+		# Checks if user has a date of birth in the database, and if the date of births match.
 		if AgeCalculations.check_date_of_birth(userdata, dob) is False :
 			await send_message(idchannel,
 			                   f"[Info] <@&{admin[0]}> User {interaction.user.mention}\'s date of birth does not match. Given: {dob} Recorded: {Encryption().decrypt(userdata.date_of_birth)}\n"
