@@ -13,6 +13,7 @@ from classes.AgeCalculations import AgeCalculations
 from classes.databaseController import UserTransactions, ConfigData, VerificationTransactions
 from classes.encryption import Encryption
 from classes.helpers import has_onboarding, welcome_user, invite_info
+from classes.idverify import verify
 from classes.lobbyprocess import LobbyProcess
 from classes.support.discord_tools import send_response, send_message
 from classes.whitelist import check_whitelist
@@ -36,7 +37,7 @@ class Lobby(commands.GroupCog):
     async def verify_button(self, interaction: discord.Interaction, text: str):
         """Verification button for the lobby; initiates the whole process"""
         await interaction.channel.send(text, view=VerifyButton())
-
+    # TODO: Turn this into its own command starting with /database for ease of use.
     @app_commands.command()
     @app_commands.choices(operation=[Choice(name=x, value=x) for x in
                                      ['add', 'update', 'delete', 'get']])
@@ -92,10 +93,8 @@ class Lobby(commands.GroupCog):
                                     f"Last updated in: {user.server}")
 
     @app_commands.command()
-    @app_commands.choices(process=[Choice(name=x, value=x) for x in
-                                   ["True", "False"]])
     @app_commands.checks.has_permissions(administrator=True)
-    async def idverify(self, interaction: discord.Interaction, process: Choice['str'],
+    async def idverify(self, interaction: discord.Interaction, process: bool,
                        user: discord.User, dob: str):
         """ID verifies user. process True will put the user through the lobby."""
         if check_whitelist(interaction.guild.id) is False and not permissions.check_dev(interaction.user.id):
@@ -105,33 +104,8 @@ class Lobby(commands.GroupCog):
             await interaction.response.defer(ephemeral=True)
         except discord.InteractionResponded:
             pass
-        lobbylog = ConfigData().get_key_int(interaction.guild.id, "lobbylog")
-
-        agelog = interaction.guild.get_channel(lobbylog)
         await AgeCalculations.validatedob(dob, interaction)
-        print(f"matching time: {process.value.upper()}")
-        match process.value.upper():
-            case "TRUE":
-                print("true")
-                VerificationTransactions.idverify_update(user.id, dob, interaction.guild.name)
-                await interaction.followup.send(
-                        f"{user.mention} has been ID verified with date of birth: {dob}")
-                await agelog.send(f"""**USER ID VERIFICATION**
-user: {user.mention}
-DOB: {dob}
-UID: {user.id} 
-**ID VERIFIED BY:** {interaction.user}""")
-                age = AgeCalculations.dob_to_age(dob)
-                await LobbyProcess.approve_user(interaction.guild, user, dob, age, interaction.user.name)
-            case "FALSE":
-                VerificationTransactions.idverify_update(user.id, dob, interaction.guild.name)
-                await interaction.followup.send(
-                        f"{user.mention} has been ID verified with date of birth: {dob}")
-                await agelog.send(f"""**USER ID VERIFICATION**
-user: {user.mention}
-DOB: {dob}
-UID: {user.id} 
-**ID VERIFIED BY:** {interaction.user}""")
+        await verify(user, interaction, dob, process)
 
     @app_commands.command()
     @app_commands.checks.has_permissions(manage_messages=True)
@@ -215,6 +189,7 @@ UID: {user.id}
     @app_commands.choices(idcheck=[Choice(name=x, value=y) for x, y in
                                    {"Yes": "True", "No": "False"}.items()])
     @app_commands.checks.has_permissions(manage_messages=True)
+    # TODO: Turn this into its own cog
     async def idcheck(self, interaction: discord.Interaction, operation: Choice['str'], idcheck: Choice['str'],
                       user: discord.User, reason: str = None):
         """adds user to id check or removes them"""
