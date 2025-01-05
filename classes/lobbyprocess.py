@@ -72,13 +72,14 @@ class LobbyProcess(ABC) :
 
 	@staticmethod
 	@abstractmethod
-	async def log(user, guild, age, dob, staff, exists) :
+	async def log(user, guild, age, dob, staff, exists, id_verify = None) :
 		lobbylog = ConfigData().get_key(guild.id, "lobbylog")
 		channel = guild.get_channel(int(lobbylog))
 		dob_field = ""
 		if check_whitelist(guild.id) :
 			dob_field = f"DOB: {dob} \n"
-		await send_message(channel, f"user: {user.mention}\n"
+		await send_message(channel, f"{id_verify}"
+		                            f"user: {user.mention}\n"
 		                            f"Age: {age} \n"
 		                            f"{dob_field}"
 		                            f"User info: \n"

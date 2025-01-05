@@ -80,16 +80,10 @@ class AgeCalculations(ABC) :
 			await channel.send(
 				f"{interaction.user.mention} failed in verification at age: {age} {dateofbirth}")
 			return False
-		try :
-			dateofbirth = await AgeCalculations.add_slashes_to_dob(dateofbirth)
-		except Exception as e :
-			logging.info(f"failed slashes to dob: {e}")
 
-		redob = (
-			r"(((0?[0-9])|(1[012]))([\/|\-|.])((0?[1-9])|([12][0-9])|(3[01]))([\/|\-|.])((20[012]\d|19\d\d)|(1\d|2[0123])))")
-		dobvalid = re.match(redob, dateofbirth)
+		validated_dob = AgeCalculations.validate_dob(dateofbirth)
 
-		if dobvalid is None :
+		if validated_dob is None :
 			await send_response(interaction, 'Please fill in your date of birth as with the format: mm/dd/yyyy.',
 			                    ephemeral=True)
 			await send_message(channel,
@@ -98,9 +92,22 @@ class AgeCalculations(ABC) :
 		dateofbirth = AgeCalculations.regex(dateofbirth)
 		return dateofbirth
 
+
 	@staticmethod
 	@abstractmethod
-	async def add_slashes_to_dob(dateofbirth) :
+	def validate_dob(date_of_birth: str) :
+		try :
+			date_of_birth = AgeCalculations.add_slashes_to_dob(date_of_birth)
+		except Exception as e :
+			pass
+
+		dob_pattern = (
+			r"(((0?[0-9])|(1[012]))([\/|\-|.])((0?[1-9])|([12][0-9])|(3[01]))([\/|\-|.])((20[012]\d|19\d\d)|(1\d|2[0123])))")
+		return re.match(dob_pattern, date_of_birth)
+
+	@staticmethod
+	@abstractmethod
+	def add_slashes_to_dob(dateofbirth) :
 		if "/" not in dateofbirth or "-" not in dateofbirth or "." not in dateofbirth :
 			deconstruct = re.search(
 				r"(((0[0-9])|(1[012])|(0?[0-9]))((0[1-9])|([12][0-9])|(3[01])|(0?[1-9]))((20[012]\d|19\d\d)|(1\d|2[0123])))",
