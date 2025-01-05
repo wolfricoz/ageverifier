@@ -16,7 +16,7 @@ class LobbyProcess(ABC) :
 
 	@staticmethod
 	@abstractmethod
-	async def approve_user(guild, user, dob, age, staff) :
+	async def approve_user(guild, user, dob, age, staff, idverify = False) :
 		# checks if user is on the id list
 
 		if await AgeCalculations.id_check(guild, user) :
@@ -31,7 +31,8 @@ class LobbyProcess(ABC) :
 		queue().add(LobbyProcess.remove_user_roles(user, guild), priority=2)
 
 		# Log age and dob to lobbylog
-		queue().add(LobbyProcess.log(user, guild, age, dob, staff, exists), priority=2)
+		if not idverify:
+			queue().add(LobbyProcess.log(user, guild, age, dob, staff, exists), priority=2)
 
 		# fetches welcoming message and welcomes them in general channel
 		queue().add(LobbyProcess.welcome(user, guild), priority=2)
@@ -72,7 +73,7 @@ class LobbyProcess(ABC) :
 
 	@staticmethod
 	@abstractmethod
-	async def log(user, guild, age, dob, staff, exists, id_verify = None) :
+	async def log(user, guild, age, dob, staff, exists, id_verify = "") :
 		lobbylog = ConfigData().get_key(guild.id, "lobbylog")
 		channel = guild.get_channel(int(lobbylog))
 		dob_field = ""
