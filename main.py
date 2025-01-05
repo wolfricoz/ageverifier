@@ -20,6 +20,7 @@ from classes.jsonmaker import Configer
 from classes.support.discord_tools import send_message
 from classes.support.queue import queue
 from databases import current as db
+from views.buttons.idverifybutton import IdVerifyButton
 
 # Creating database
 db.database.create()
@@ -91,7 +92,7 @@ async def on_ready() :
 	await bot.tree.sync()
 	await devroom.send(f"{formguilds} \nAgeVerifier is in {len(guilds)} guilds. Ageverifier {version}")
 	logging.info(f"Commands synced, start up done! Connected to {len(guilds)} guilds and {bot.shard_count} shards.")
-
+	bot.add_view(IdVerifyButton())
 	return guilds
 
 
