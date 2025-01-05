@@ -41,9 +41,9 @@ class Lobby(commands.GroupCog):
     @app_commands.choices(operation=[Choice(name=x, value=x) for x in
                                      ['add', 'update', 'delete', 'get']])
     @app_commands.checks.has_permissions(manage_messages=True)
-    async def database(self, interaction: discord.Interaction, operation: Choice['str'], userid: str, dob: str = None):
+    async def database(self, interaction: discord.Interaction, operation: Choice['str'], user: discord.User, dob: str = None):
         """One stop shop to handle all age entry management. Only add 1 date of birth per user."""
-        userid = int(userid)
+        userid = int(user.id)
         age_log = ConfigData().get_key_int(interaction.guild.id, "lobbylog")
         age_log_channel = interaction.guild.get_channel(age_log)
         dev_channel = self.bot.get_channel(int(os.getenv('DEV')))
@@ -158,6 +158,7 @@ UID: {user.id}
         await interaction.followup.send(
                 f"{user.mention} has been moved back to the lobby by {interaction.user.mention}")
 
+
     @app_commands.command()
     @app_commands.checks.has_permissions(manage_messages=True)
     async def agecheck(self, interaction: discord.Interaction, dob: str):
@@ -215,9 +216,9 @@ UID: {user.id}
                                    {"Yes": "True", "No": "False"}.items()])
     @app_commands.checks.has_permissions(manage_messages=True)
     async def idcheck(self, interaction: discord.Interaction, operation: Choice['str'], idcheck: Choice['str'],
-                      userid: str, reason: str = None):
+                      user: discord.User, reason: str = None):
         """adds user to id check or removes them"""
-        userid = int(userid)
+        userid = int(user.id)
         if idcheck.value == "True":
             idcheck = True
         elif idcheck.value == "False":

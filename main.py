@@ -35,7 +35,7 @@ intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 activity = discord.Activity(type=discord.ActivityType.watching, name="over the community")
-bot = commands.Bot(command_prefix=PREFIX, case_insensitive=False, intents=intents, activity=activity)
+bot = commands.AutoShardedBot(command_prefix=PREFIX, case_insensitive=False, intents=intents, activity=activity)
 bot.DEV = int(os.getenv("DEV"))
 
 
@@ -90,7 +90,7 @@ async def on_ready() :
 	formguilds = "\n".join(guilds)
 	await bot.tree.sync()
 	await devroom.send(f"{formguilds} \nAgeVerifier is in {len(guilds)} guilds. Ageverifier {version}")
-	logging.info("Commands synced, start up _done_")
+	logging.info(f"Commands synced, start up done! Connected to {len(guilds)} guilds and {bot.shard_count} shards.")
 
 	return guilds
 
