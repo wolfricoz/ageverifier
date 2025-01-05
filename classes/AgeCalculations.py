@@ -49,13 +49,10 @@ class AgeCalculations(ABC) :
 			return False
 		if userinfo.idverified is True and userinfo.verifieddob is not None and send_message is True :
 			await channel.send(
-				f"[Info] {user.mention} has previously ID verified: {userinfo.verifieddob.strftime('%m/%d/%Y')}")
+				f"[ID VERIFIED] {user.mention} has previously ID verified: {userinfo.verifieddob.strftime('%m/%d/%Y')}")
 			return False
 		if userinfo.idcheck is True :
-			await idchannel.send(
-				f"[Info] {user.mention} is on the ID list with reason: {userinfo.reason}. Please ID the user before letting them through.")
-
-			return True
+			return userinfo
 		return False
 
 	@staticmethod

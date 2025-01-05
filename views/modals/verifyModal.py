@@ -1,5 +1,6 @@
 import datetime
 import logging
+from inspect import mod_dict
 
 import discord
 
@@ -45,44 +46,37 @@ class VerifyModal(discord.ui.Modal) :
 
 	async def on_submit(self, interaction: discord.Interaction) :
 		userdata: databases.current.Users = UserTransactions.get_user(interaction.user.id)
-		modlobby = ConfigData().get_key_int(interaction.guild.id, "lobbymod")
-		idlog = ConfigData().get_key_int(interaction.guild.id, "idlog")
+		mod_lobby = ConfigData().get_key_int(interaction.guild.id, "lobbymod")
+		id_log = ConfigData().get_key_int(interaction.guild.id, "idlog")
 		admin = ConfigData().get_key(interaction.guild.id, "admin")
-		channel = interaction.guild.get_channel(modlobby)
-		idchannel = interaction.guild.get_channel(idlog)
+		mod_channel = interaction.guild.get_channel(mod_lobby)
+		id_channel = interaction.guild.get_channel(id_log)
 		age = int(self.age.value)
 		# validates inputs with regex
-		if channel is None or idchannel is None :
+		if mod_channel is None or id_channel is None :
 			await send_response(interaction, f"An error occurred: Lobby channel or ID channel not found.", ephemeral=False)
 
-		dob = await AgeCalculations.infocheck(interaction, self.age.value, self.dateofbirth.value, channel)
+		dob = await AgeCalculations.infocheck(interaction, self.age.value, self.dateofbirth.value, mod_channel)
 		if dob is None :
 			return
 		# Checks if user is underaged
-
 		agechecked, years = AgeCalculations.agechecker(age, dob)
-		if age < 18 or years < 18:
-			return await IdCheck.send_check(interaction, channel, "underage", age, dob, id_check=True)
+		if age < 18 or years < 18 :
+			return await IdCheck.send_check(interaction, mod_channel, "underage", age, dob, id_check=True,
+			                                verify_button=False)
 		logging.debug(f"userid: {interaction.user.id} age: {age} dob: {Encryption().encrypt(dob)}")
 		# Checks if the age matches the date of birth, if only off by one year the can resubmit; otherwise they are flagged
 		if agechecked == 1 or agechecked == -1 :
-			return await IdCheck.send_check(interaction, channel, "mismatch", age, dob, years=years)
+			return await IdCheck.send_check(interaction, mod_channel, "mismatch", age, dob, years=years, verify_button=False)
 		if agechecked > 1 or agechecked < -1 :
-			return await IdCheck.send_check(interaction, channel, "nomatch", age, dob, years=years)
+			return await IdCheck.send_check(interaction, id_channel, "nomatch", age, dob, years=years, id_check=True)
 		# Checks if user has a date of birth in the database, and if the date of births match.
 		if AgeCalculations.check_date_of_birth(userdata, dob) is False :
-			await send_message(idchannel,
-			                   f"[Info] <@&{admin[0]}> User {interaction.user.mention}\'s date of birth does not match. Given: {dob} Recorded: {Encryption().decrypt(userdata.date_of_birth)}\n"
-			                   f"[Lobby Debug] Age: {age} dob {dob}")
-			await send_response(interaction,
-			                    f'A staff member will contact you soon, please wait patiently.',
-			                    ephemeral=True)
-			return
+			return await IdCheck.send_check(interaction, id_channel, "dobmismatch", age, dob,
+			                                date_of_birth=Encryption().decrypt(userdata.date_of_birth), id_check=True)
 		# Check if user needs to ID or has previously ID'd
-		if await AgeCalculations.id_check_or_id_verified(interaction.user, interaction.guild, channel) :
-			await send_message(modlobby, f"{interaction.user.mention} gave ages: {age} {dob}, but is on the idlist.")
-			await send_response(interaction, f'A staff member will contact you soon, please wait patiently.', ephemeral=True)
-			return
+		if idcheckinfo := await AgeCalculations.id_check_or_id_verified(interaction.user, interaction.guild, mod_channel) :
+			return await IdCheck.send_check(interaction, mod_channel, "idcheck", age, dob, id_check_reason=idcheckinfo.reason)
 		# Sends the buttons and information to lobby channel
 		if ConfigData().get_key(interaction.guild.id, "automatic") == "enabled".upper() :
 			await LobbyProcess.approve_user(interaction.guild, interaction.user, dob, age, "Automatic")
@@ -91,14 +85,14 @@ class VerifyModal(discord.ui.Modal) :
 			                    ephemeral=True)
 			return
 		if check_whitelist(interaction.guild.id) :
-			await send_message(channel,
+			await send_message(mod_channel,
 			                   f"\n{interaction.user.mention} has given {age} {dob}. You can let them through with the buttons below."
 			                   f"\n-# [LOBBY DEBUG] To manually process: `?approve {interaction.user.mention} {age} {dob}`",
 			                   view=AgeButtons(age=age, dob=dob, user=interaction.user))
 			await send_response(interaction, f'Thank you for submitting your age and dob! You will be let through soon!',
 			                    ephemeral=True)
 			return
-		await send_message(channel,
+		await send_message(mod_channel,
 		                   f"\n{interaction.user.mention} has given {age} and dob matches. You can let them through with the buttons below."
 		                   f"\n-# [LOBBY DEBUG] Server not whitelisted: Personal Information (PI) hidden",
 		                   view=AgeButtons(age=age, dob=dob, user=interaction.user))

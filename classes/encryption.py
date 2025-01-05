@@ -15,7 +15,7 @@ class Encryption:
         """Encrypts the text"""
         return self.fernet.encrypt(text.encode())
 
-    def decrypt(self, text: bytes) -> str:
+    def decrypt(self, text: bytes | str) -> str:
         """Decrypts the text"""
         if text is None:
             return "No Dob Stored"

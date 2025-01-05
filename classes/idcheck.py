@@ -3,33 +3,44 @@ import logging
 from abc import ABC, abstractmethod
 
 from classes.databaseController import VerificationTransactions
+from classes.encryption import Encryption
 from classes.support.discord_tools import send_message, send_response
+from views.buttons.idverifybutton import IdVerifyButton
 
 
 class IdCheck(ABC) :
 
 	@staticmethod
 	@abstractmethod
-	async def send_check(interaction, channel, message, age, dob, years = None, id_check=False) :
+	async def send_check(interaction, channel, message, age, dob, date_of_birth=None, years = None, id_check=False, verify_button=True, id_check_reason=None) :
 		messages = {
 			"underage" : {
-				"user-message"    : f"[ID CHECK: underage] User {interaction.user.mention}\'s gave an age below 18 and was added to the ID list.",
-				"channel-message" : f"Unfortunately you are too young for our server. If you are 17 you may wait in the lobby."
+				"user-message" : f"Unfortunately, you are too young to join our server. If you are 17, you may wait in the lobby until you are old enough to join.",
+				"channel-message"    : f"[ID CHECK: underage] User {interaction.user.mention}\'s gave an age below 18 and was added to the ID list.",
 			},
 			"mismatch": {
-				"user-message" : f"It seems your age does not match the date of birth you provided. Please try again. Please use your CURRENT age.",
+				"user-message" : f"It seems that the age you've given does not match the date of birth you've provided. Please try again. As a reminder, you must use your CURRENT age.",
 				"channel-message" : f"[INFO: Age Mismatch] [Info] User {interaction.user.mention}\'s age does not match. User gave {age} but dob indicates {years}. User may retry."
 			},
 			"nomatch" : {
-				"user-message"    : f"It seems your age does not match the date of birth you provided. A staff member will reach out to you.",
-				"channel-message" : f"[INFO: Age Mismatch] [Info] User {interaction.user.mention}\'s age does not match, please reach out to the user. User gave {age} but dob indicates {years}"
+				"user-message"    : f"It seems that the age you've given does not match the date of birth you've provided. A staff member will reach out to you shortly.",
+				"channel-message" : f"[ID CHECK: Age Mismatch] User {interaction.user.mention}\'s age does not match, please reach out to the user. User gave {age} but dob indicates {years}"
 			},
-
-
+			"dobmismatch" : {
+				"user-message"    : f"It seems that the date of birth you've provided does not match a previously given date of birth. A staff member will reach out to you shortly.",
+				"channel-message" : f"[ID CHECK: Age Mismatch] User {interaction.user.mention}\'s date of birth does not match. Given: {dob} Recorded: {date_of_birth}"
+			},
+			"idcheck":{
+				"channel-message" : f"{interaction.user.mention} is on the ID list with the reason: {id_check_reason}"
+			}
 		}
 		message = messages.get(message, message)
+		view = None
+		if verify_button:
+			view = IdVerifyButton()
+
 		await send_message(channel,
-	                   f"{message.get("channel-message", f"No message set for {message}")}\n[Lobby Debug] Age: {age} dob {dob} userid: {interaction.user.id}")
+	                   f"{message.get('channel-message', f'No message set for {message}')}\n[Lobby Debug] Age: {age} dob {dob} userid: {interaction.user.id}", view=view)
 		await send_response(interaction, message.get("user-message", "Thank you for submitting your age and date of birth, a staff member will contact you soon because of a discrepancy.")
 	                    ,
 	                    ephemeral=True)
