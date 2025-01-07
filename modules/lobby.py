@@ -129,57 +129,6 @@ class Lobby(commands.GroupCog):
         await interaction.channel.send(f"{interaction.user.mention} Kicked {len(kicked)}", file=discord.File(file.name, "kicked.txt"))
         os.remove("config/kicked.txt")
 
-    @app_commands.command()
-    @app_commands.choices(operation=[Choice(name=x, value=x) for x in
-                                     ['add', 'update', 'get', 'delete']])
-    @app_commands.choices(idcheck=[Choice(name=x, value=y) for x, y in
-                                   {"Yes": "True", "No": "False"}.items()])
-    @app_commands.checks.has_permissions(manage_messages=True)
-    # TODO: Turn this into its own cog
-    async def idcheck(self, interaction: discord.Interaction, operation: Choice['str'], idcheck: Choice['str'],
-                      user: discord.User, reason: str = None):
-        """adds user to id check or removes them"""
-        userid = int(user.id)
-        if idcheck.value == "True":
-            idcheck = True
-        elif idcheck.value == "False":
-            idcheck = False
-        await interaction.response.defer(ephemeral=False)
-        match operation.value.upper():
-            case "UPDATE":
-                if reason is None:
-                    await interaction.followup.send(f"Please include a reason")
-                    return
-                VerificationTransactions.update_check(userid, reason, idcheck)
-                await interaction.followup.send(
-                        f"<@{userid}>'s userid entry has been updated with reason: {reason} and idcheck: {idcheck}")
-            case "ADD":
-                if reason is None:
-                    await interaction.followup.send(f"Please include a reason")
-                    return
-                VerificationTransactions.add_idcheck(userid, reason, idcheck)
-                await interaction.followup.send(
-                        f"<@{userid}>'s userid entry has been added with reason: {reason} and idcheck: {idcheck}")
-            case "GET":
-                user = VerificationTransactions.get_id_info(userid)
-                if user is None:
-                    await interaction.followup.send("Not found")
-                    return
-                await interaction.followup.send(f"**__USER INFO__**\n"
-                                                f"user: <@{user.uid}>\n"
-                                                f"Reason: {user.reason}\n"
-                                                f"idcheck: {user.idcheck}\n"
-                                                f"idverifier: {user.idverified}\n"
-                                                f"verifieddob: {user.verifieddob}\n")
-            case "DELETE":
-                if not interaction.user.guild_permissions.administrator:
-                    await interaction.followup.send("You are not an admin")
-                    return
-                if VerificationTransactions.set_idcheck_to_false(userid) is False:
-                    await interaction.followup.send(f"Can't find entry: <@{userid}>")
-                    return
-                await interaction.followup.send(f"Deleted entry: <@{userid}>")
-
     # Event
 
     @commands.Cog.listener('on_member_join')
