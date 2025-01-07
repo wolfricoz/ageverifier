@@ -37,60 +37,6 @@ class Lobby(commands.GroupCog):
     async def verify_button(self, interaction: discord.Interaction, text: str):
         """Verification button for the lobby; initiates the whole process"""
         await interaction.channel.send(text, view=VerifyButton())
-    # TODO: Turn this into its own command starting with /database for ease of use.
-    @app_commands.command()
-    @app_commands.choices(operation=[Choice(name=x, value=x) for x in
-                                     ['add', 'update', 'delete', 'get']])
-    @app_commands.checks.has_permissions(manage_messages=True)
-    async def database(self, interaction: discord.Interaction, operation: Choice['str'], user: discord.User, dob: str = None):
-        """One stop shop to handle all age entry management. Only add 1 date of birth per user."""
-        userid = int(user.id)
-        age_log = ConfigData().get_key_int(interaction.guild.id, "lobbylog")
-        age_log_channel = interaction.guild.get_channel(age_log)
-        dev_channel = self.bot.get_channel(int(os.getenv('DEV')))
-        if not check_whitelist(interaction.guild.id) and not permissions.check_dev(interaction.user.id):
-            await send_response(interaction, "[NOT_WHITELISTED] This command is limited to whitelisted servers.")
-            return
-        try:
-            await interaction.response.defer(ephemeral=True)
-        except discord.InteractionResponded:
-            pass
-        match operation.value.upper():
-            case "UPDATE":
-                if await AgeCalculations.validatedob(dob, interaction) is False:
-                    return
-                UserTransactions.update_user_dob(userid, dob, interaction.guild.name)
-                await send_response(interaction, f"Updated <@{userid}>'s dob to {dob}")
-                await LobbyProcess.age_log(age_log_channel, userid, dob, interaction, "updated")
-                await send_message(dev_channel, f"<@{userid}>'s dob updated in {interaction.guild.name} by {interaction.user.name}.")
-
-            case "DELETE":
-                if not interaction.user.guild_permissions.administrator:
-                    await interaction.followup.send("You are not an admin")
-                    return
-                if UserTransactions.user_delete(userid, interaction.guild.name) is False:
-                    await interaction.followup.send(f"Can't find entry: <@{userid}>")
-                    return
-                await send_response(interaction, f"Deleted entry: <@{userid}>")
-                await send_message(dev_channel, f"<@{userid}>'s dob deleted in {interaction.guild.name} by {interaction.user.name}.")
-            case "ADD":
-                if await AgeCalculations.validatedob(dob, interaction) is False:
-                    return
-                UserTransactions.add_user_full(str(userid), dob, interaction.guild.name)
-                await send_response(interaction, f"<@{userid}> added to the database with dob: {dob}")
-                await LobbyProcess.age_log(age_log_channel, userid, dob, interaction)
-                await send_message(dev_channel, f"<@{userid}>'s dob added in {interaction.guild.name} by {interaction.user.name}.")
-            case "GET":
-                user: Users = UserTransactions.get_user(userid)
-                discord_user = self.bot.get_user(userid)
-                if not permissions.check_dev(interaction.user.id) and (discord_user not in interaction.guild.members or user.server != interaction.guild.name):
-                    await interaction.followup.send("The user is not in the server and the date of birth was not added in this server.")
-                    return
-                await send_response(interaction,
-                                    f"**__USER INFO__**\n"
-                                    f"user: <@{user.uid}>\n"
-                                    f"dob: {Encryption().decrypt(user.date_of_birth)}\n"
-                                    f"Last updated in: {user.server}")
 
     @app_commands.command()
     @app_commands.checks.has_permissions(administrator=True)

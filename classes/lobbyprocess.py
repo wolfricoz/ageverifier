@@ -1,4 +1,5 @@
 import datetime
+import os
 import re
 from abc import ABC, abstractmethod
 
@@ -132,16 +133,20 @@ class LobbyProcess(ABC) :
 
 	@staticmethod
 	@abstractmethod
-	async def age_log(age_log_channel, userid, dob, interaction, operation="added") :
+	async def age_log(userid, dob, interaction, operation="added", log=True) :
+		age_log = interaction.guild.get_channel(ConfigData().get_key_int(interaction.guild.id, "lobbylog"))
+		dev_channel = interaction.client.get_channel(int(os.getenv('DEV')))
 		dob_field = ""
 		if check_whitelist(interaction.guild.id) :
 			dob_field = f"DOB: {dob}\n"
-
-		await send_message(age_log_channel, f"USER {operation.upper()}\n"
+		queue().add(send_message(dev_channel,
+		                   f"<@{userid}>'s dob {operation} in {interaction.guild.name} by {interaction.user.name}."), 0)
+		await send_message(age_log, f"USER {operation.upper()}\n"
 		                                    f"{dob_field}"
 		                                    f"UID: {userid}\n"
 		                                    f"Entry updated by: {interaction.user.name}")
-		await send_message(interaction.channel, f"{operation} <@{userid}>({userid}) date of birth with dob: {dob}")
+		queue().add(send_message(interaction.channel, f"{operation} <@{userid}>({userid}) date of birth with dob: {dob}"))
+
 
 	@staticmethod
 	@abstractmethod
