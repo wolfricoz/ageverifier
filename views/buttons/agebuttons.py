@@ -76,7 +76,7 @@ Once you've made these changes you may resubmit your age and date of birth. Than
         if self.user is None:
             await interaction.followup.send('The bot has restarted and the data of this button is missing. Please add the user manually.',
                                             ephemeral=True)
-        await LobbyProcess.age_log(age_log_channel, self.user.id, self.dob, interaction)
+        await LobbyProcess.age_log(self.user.id, self.dob, interaction)
         await interaction.message.add_reaction("✅")
         await interaction.followup.send('User added to database.', ephemeral=True)
         return
