@@ -37,7 +37,6 @@ class Tasks(commands.GroupCog):
         print("config reload")
         ConfigData().output_to_json()
         for guild in self.bot.guilds:
-
             try:
                 self.bot.invites[guild.id] = await guild.invites()
             except discord.errors.Forbidden:
@@ -89,9 +88,11 @@ class Tasks(commands.GroupCog):
             if guild.id in guild_ids:
                 guild_ids.remove(guild.id)
                 continue
-            ServerTransactions().add(guild.id, active=True)
+            ServerTransactions().add(guild.id, active=True, reload=False)
+
         for gid in guild_ids:
-            ServerTransactions().update(gid, active=False)
+            ServerTransactions().update(gid, active=False, reload=False)
+        ConfigData().reload()
 
 
 

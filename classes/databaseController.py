@@ -599,7 +599,7 @@ class TimersTransactions(ABC) :
 
 class ServerTransactions() :
 
-	def add(self, guildid: int, active: bool = True) :
+	def add(self, guildid: int, active: bool = True, reload=True) :
 		if self.get(guildid) is not None :
 			self.update(guildid, active)
 			return
@@ -608,7 +608,8 @@ class ServerTransactions() :
 		DatabaseTransactions.commit(session)
 		ConfigTransactions.welcome_add(guildid)
 		ConfigTransactions.automatic_add(guildid)
-		ConfigData().load_guild(guildid)
+		if reload:
+			ConfigData().load_guild(guildid)
 
 	def get_all(self, ) :
 		return [sid[0] for sid in session.query(Servers.guild).all()]
@@ -616,7 +617,7 @@ class ServerTransactions() :
 	def get(self, guild_id: int) :
 		return session.scalar(Select(Servers).where(Servers.guild == guild_id))
 
-	def update(self, guild_id: int, active: bool = None) :
+	def update(self, guild_id: int, active: bool = None, reload = True) :
 		guild = self.get(guild_id)
 		if not guild :
 			return False
@@ -628,4 +629,6 @@ class ServerTransactions() :
 			logging.info(f"Updated {guild.guild} with:")
 			logging.info(updated_data)
 			DatabaseTransactions.commit(session)
+			if reload:
+				ConfigData().load_guild(guild_id)
 		return
