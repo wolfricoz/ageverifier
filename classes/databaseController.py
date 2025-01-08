@@ -444,7 +444,7 @@ class VerificationTransactions(ABC) :
 		UserTransactions.update_user_dob(userid, dob, guildname=guildname)
 
 
-class ConfigData(ABC, metaclass=singleton) :
+class ConfigData(metaclass=singleton) :
 	"""
 	The goal of this class is to save the config to reduce database calls for the config; especially the roles.
 	"""
