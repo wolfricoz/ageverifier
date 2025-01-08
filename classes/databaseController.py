@@ -319,15 +319,13 @@ class ConfigTransactions(ABC) :
 
 	@staticmethod
 	@abstractmethod
-	def config_unique_remove(guild_id: int, key: str, reload=True) :
+	def config_unique_remove(guild_id: int, key: str) :
 		if ConfigTransactions.key_exists_check(guild_id, key) is False :
 			return False
 		exists = session.scalar(
 			Select(db.Config).where(db.Config.guild == guild_id, db.Config.key == key))
 		session.delete(exists)
 		DatabaseTransactions.commit(session)
-		if reload:
-			ConfigData().load_guild(guild_id)
 
 
 	@staticmethod
@@ -466,6 +464,7 @@ class ConfigData(metaclass=singleton) :
 		add_list = ['REM', "RETURN", "FORUM"]
 		add_dict = ["SEARCH", "BAN", "ADD"]
 		self.conf[guild_id] = {}
+		reload = False
 
 		for key in add_list :
 			self.conf[guild_id][key] = []
@@ -475,8 +474,9 @@ class ConfigData(metaclass=singleton) :
 
 		for x in settings :
 			if x.key in ["ADD"] :
-				AgeRoleTransactions().add(guild_id, x.value, "ADD", reload=False)
-				ConfigTransactions.config_unique_remove(guild_id, x.key, reload=False)
+				AgeRoleTransactions().add(guild_id, x.value, "ADD")
+				ConfigTransactions.config_unique_remove(guild_id, x.key)
+				reload = True
 				continue
 			if x.key in add_list :
 				self.conf[guild_id][x.key].append(int(x.value))
@@ -493,7 +493,8 @@ class ConfigData(metaclass=singleton) :
 				"MAX" : x.maximum_age,
 				"MIN" : x.minimum_age,
 			}
-		print(self.conf)
+		if reload:
+			self.load_guild(guild_id)
 		self.output_to_json()
 
 	def get_config(self, guildid) :
@@ -536,15 +537,13 @@ class AgeRoleTransactions() :
 	def get_all(self, guild_id) :
 		return session.scalars(Select(AgeRole).where(AgeRole.guild_id == guild_id)).all()
 
-	def add(self, guild_id, role_id, role_type, maximum_age = 200, minimum_age = 18, reload = True) :
+	def add(self, guild_id, role_id, role_type, maximum_age = 200, minimum_age = 18, **kwargs) :
 		if self.exists(role_id) :
 			return self.update(guild_id, role_id, role_type, maximum_age, minimum_age)
 		role = db.AgeRole(guild_id=guild_id, role_id=role_id, type=role_type, maximum_age=maximum_age,
 		                  minimum_age=minimum_age)
 		session.merge(role)
 		DatabaseTransactions.commit(session)
-		if reload is True:
-			ConfigData().load_guild(guild_id)
 		return role
 
 	def remove(self, guild_id, role_id) :
