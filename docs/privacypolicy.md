@@ -38,6 +38,8 @@ In the event of an age discrepancy, we reserve the right to request additional i
 - We will **not store** the legal documentation you provide. Only your date of birth and a boolean flag indicating that your age has been verified via ID will be retained.
 - This process ensures that your privacy is respected while maintaining the integrity of our age verification system.
 
+DISCLAIMER: Server owners using age verifier may use different methods of verification, the methods described here only apply to
+official ageverifier staff members.
 
 ### Age Restrictions
 
