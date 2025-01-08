@@ -4,7 +4,7 @@ def call_refresh_config():
     headers = {
         'token': "bebebad3ddb9d50d433e487a8bf3ae48"
     }
-    response = requests.post(f"https://ageverifier.roleplaymeets.com/config/refresh", headers=headers)
+    response = requests.post(f" ", headers=headers)
     return response.status_code
 
     if response.status_code == 200:

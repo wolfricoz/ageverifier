@@ -26,6 +26,7 @@ class idcheck(commands.GroupCog) :
 	async def get(self, interaction: discord.Interaction,
 	              user: discord.User) :
 		"""[manage_messages] Get the ID check status of the specified user"""
+		await send_response(interaction, f"⌛ checking if {user.mention} is on the ID list", ephemeral=True)
 		user = VerificationTransactions.get_id_info(user.id)
 		if user is None :
 			await interaction.followup.send("Not found")
@@ -49,6 +50,8 @@ class idcheck(commands.GroupCog) :
 	async def update(self, interaction: discord.Interaction, idcheck: bool,
 	                 user: discord.User, reason: str = None) :
 		"""[administrator] Update the id check status and reason of the specified user."""
+		await send_response(interaction, f"⌛ updating {user.mention}'s ID check entry'", ephemeral=True)
+
 		if reason is None :
 			await interaction.followup.send(f"Please include a reason")
 			return
@@ -61,6 +64,7 @@ class idcheck(commands.GroupCog) :
 	async def delete(self, interaction: discord.Interaction,
 	                 user: discord.User) :
 		"""[Administrator] Delete the ID check entry of a specified user."""
+		await send_response(interaction, f"⌛ deleting {user.mention}'s ID check entry'", ephemeral=True)
 		dev_channel = interaction.client.get_channel(int(os.getenv('DEV')))
 		if VerificationTransactions.set_idcheck_to_false(user.id) is False :
 			await interaction.followup.send(f"Can't find entry: <@{user.id}>")
@@ -75,6 +79,7 @@ class idcheck(commands.GroupCog) :
 	async def create(self, interaction: discord.Interaction, user: discord.User,
 	                 reason: str = None) :
 		"""[manage_messages] Adds specified user to the ID list"""
+		await send_response(interaction, f"⌛ creating {user.mention}'s ID check entry'", ephemeral=True)
 		if reason is None :
 			await interaction.followup.send(f"Please include a reason")
 			return

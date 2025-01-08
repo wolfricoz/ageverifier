@@ -45,6 +45,7 @@ class Database(commands.GroupCog) :
 	@app_commands.checks.has_permissions(manage_messages=True)
 	async def get(self, interaction: discord.Interaction, user: discord.User) :
 		"""[manage_messages] Gets the date of birth of the specified user."""
+		await send_response(interaction, f"⌛ Looking up {user.mention}", ephemeral=True)
 		if await self.whitelist(interaction):
 			return
 		userdata: Users = UserTransactions.get_user(user.id)
@@ -69,6 +70,7 @@ class Database(commands.GroupCog) :
 	@app_commands.checks.has_permissions(manage_messages=True)
 	async def create(self, interaction: discord.Interaction, user: discord.User, dob: str) :
 		"""[manage_messages] Add the date of birth of the specified user to the database"""
+		await send_response(interaction, f"⌛ adding {user.mention} to the database", ephemeral=True)
 		if await self.whitelist(interaction):
 			return
 		if await AgeCalculations.validatedob(dob, interaction) is False :
@@ -81,9 +83,10 @@ class Database(commands.GroupCog) :
 	@app_commands.command()
 	@app_commands.checks.has_permissions(manage_messages=True)
 	async def update(self, interaction: discord.Interaction, user: discord.User, dob: str) :
+		"""[manage_messages] updates the date of birth of a specified user."""
+		await send_response(interaction, f"⌛ updating {user.mention}'s entry", ephemeral=True)
 		if await self.whitelist(interaction):
 			return
-		"""[manage_messages] updates the date of birth of a specified user."""
 		if await AgeCalculations.validatedob(dob, interaction) is False :
 			return
 		UserTransactions.update_user_dob(user.id, dob, interaction.guild.name)
@@ -94,9 +97,11 @@ class Database(commands.GroupCog) :
 	@app_commands.command()
 	@app_commands.checks.has_permissions(administrator=True)
 	async def delete(self, interaction: discord.Interaction, user: discord.User) :
+		"""[administrator] Deletes the date of birth of a specified user. Only use this to correct mistakes."""
+
+		await send_response(interaction, f"⌛ deleting {user.mention} from the database", ephemeral=True)
 		if await self.whitelist(interaction):
 			return
-		"""[administrator] Deletes the date of birth of a specified user. Only use this to correct mistakes."""
 		if UserTransactions.user_delete(user.id, interaction.guild.name) is False :
 			await interaction.followup.send(f"Can't find entry: <@{user.id}>")
 			return
