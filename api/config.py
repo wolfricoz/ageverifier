@@ -19,6 +19,7 @@ async def example_route() :
 
 @router.post("/config/refresh")
 async def refresh_config(request: Request):
+	print("Api Call received: Reload")
 	token = request.headers.get('token')
 	if token != os.getenv("API_KEY"):
 		return
