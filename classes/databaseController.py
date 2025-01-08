@@ -444,7 +444,7 @@ class VerificationTransactions(ABC) :
 		UserTransactions.update_user_dob(userid, dob, guildname=guildname)
 
 
-class ConfigData(metaclass=singleton) :
+class ConfigData(ABC) :
 	"""
 	The goal of this class is to save the config to reduce database calls for the config; especially the roles.
 	"""
@@ -493,8 +493,8 @@ class ConfigData(metaclass=singleton) :
 				"MAX" : x.maximum_age,
 				"MIN" : x.minimum_age,
 			}
-		if reload:
-			self.load_guild(guild_id)
+		# if reload:
+		# 	self.load_guild(guild_id)
 		self.output_to_json()
 
 	def get_config(self, guildid) :
