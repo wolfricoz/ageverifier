@@ -444,7 +444,7 @@ class VerificationTransactions(ABC) :
 		UserTransactions.update_user_dob(userid, dob, guildname=guildname)
 
 
-class ConfigData(ABC) :
+class ConfigData(ABC, metaclass=singleton) :
 	"""
 	The goal of this class is to save the config to reduce database calls for the config; especially the roles.
 	"""
@@ -474,7 +474,7 @@ class ConfigData(ABC) :
 
 		for x in settings :
 			if x.key in ["ADD"] :
-				AgeRoleTransactions().add(guild_id, x.value, "ADD")
+				AgeRoleTransactions().add(guild_id, x.value, "ADD", reload=False)
 				ConfigTransactions.config_unique_remove(guild_id, x.key)
 				reload = True
 				continue
@@ -493,8 +493,8 @@ class ConfigData(ABC) :
 				"MAX" : x.maximum_age,
 				"MIN" : x.minimum_age,
 			}
-		# if reload:
-		# 	self.load_guild(guild_id)
+		if reload:
+			self.load_guild(guild_id)
 		self.output_to_json()
 
 	def get_config(self, guildid) :
@@ -537,13 +537,15 @@ class AgeRoleTransactions() :
 	def get_all(self, guild_id) :
 		return session.scalars(Select(AgeRole).where(AgeRole.guild_id == guild_id)).all()
 
-	def add(self, guild_id, role_id, role_type, maximum_age = 200, minimum_age = 18, **kwargs) :
+	def add(self, guild_id, role_id, role_type, maximum_age = 200, minimum_age = 18, reload = True) :
 		if self.exists(role_id) :
-			return self.update(guild_id, role_id, role_type, maximum_age, minimum_age)
+			return self.update(guild_id, role_id, role_type, maximum_age, minimum_age, reload=reload)
 		role = db.AgeRole(guild_id=guild_id, role_id=role_id, type=role_type, maximum_age=maximum_age,
 		                  minimum_age=minimum_age)
 		session.merge(role)
 		DatabaseTransactions.commit(session)
+		if reload:
+			ConfigData().load_guild(guild_id)
 		return role
 
 	def remove(self, guild_id, role_id) :
@@ -553,7 +555,7 @@ class AgeRoleTransactions() :
 		ConfigData().load_guild(guild_id)
 
 	def update(self, guild_id: int, role_id: int, role_type: str = None, maximum_age: int = None,
-	           minimum_age: int = None) :
+	           minimum_age: int = None, reload = True) :
 		role = session.scalar(Select(AgeRole).where(AgeRole.role_id == role_id))
 		data = {
 			"type"        : role_type.upper(),
@@ -567,7 +569,8 @@ class AgeRoleTransactions() :
 		DatabaseTransactions.commit(session)
 		logging.info(f"Updated {role_id} with:")
 		logging.info(data)
-		ConfigData().load_guild(guild_id)
+		if reload:
+			ConfigData().load_guild(guild_id)
 
 		return role
 
