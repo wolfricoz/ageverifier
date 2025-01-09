@@ -39,13 +39,15 @@ class config(commands.GroupCog, name="config") :
 
 	@app_commands.command(name='setup')
 	@app_commands.checks.has_permissions(manage_guild=True)
-	@app_commands.choices(setup_type=[Choice(name=x, value=x) for x in ['manual', 'auto']])
+	@app_commands.choices(setup_type=[Choice(name=x, value=x) for x in ['dashboard', 'manual', 'auto']])
 	async def configsetup(self, interaction: discord.Interaction, setup_type: Choice[str]) :
 		"""Sets up the config for the bot."""
 		await send_message(interaction.channel,
 		                   "For more information about setting up the bot, visit our [Documentation](<https://wolfricoz.github.io/ageverifier/config.html>)")
 		logging.info(f"{interaction.guild.name} started {setup_type.value}")
 		match setup_type.value.lower() :
+			case 'dashboard':
+				await send_response(interaction, f"You can access the dashboard here: https://bots.roleplaymeets.com/")
 			case 'manual' :
 				await configSetup().manual(self.bot, interaction, self.channelchoices, self.rolechoices, self.messagechoices)
 			case 'auto' :
