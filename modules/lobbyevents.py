@@ -33,7 +33,6 @@ class LobbyEvents(commands.Cog):
         self.bot.add_view(dobentry())
 
 
-    # Event
 
     @commands.Cog.listener('on_member_join')
     async def add_to_db(self, member):

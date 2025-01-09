@@ -129,26 +129,7 @@ class Lobby(commands.GroupCog):
         await interaction.channel.send(f"{interaction.user.mention} Kicked {len(kicked)}", file=discord.File(file.name, "kicked.txt"))
         os.remove("config/kicked.txt")
 
-    # Event
 
-    @commands.Cog.listener('on_member_join')
-    async def add_to_db(self, member):
-        UserTransactions.add_user_empty(member.id)
-
-    @commands.Cog.listener()
-    async def on_member_join(self, member: discord.Member):
-        """posts the button for the user to verify with."""
-        if await has_onboarding(member.guild):
-            return
-        await welcome_user(member)
-
-    # @commands.Cog.listener()
-    # async def on_member_update(self, before: discord.Member, after: discord.Member):
-    #     if before.flags != after.flags:
-    #         # Perform the desired action when the member's flags change
-    #         if before.flags.completed_onboarding is False and after.flags.completed_onboarding is True:
-    #             await welcome_user(after)
-    #             await invite_info(self.bot, after)
 
 
 async def setup(bot):
