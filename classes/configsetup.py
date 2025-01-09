@@ -94,15 +94,10 @@ class configSetup:
                 logging.info("No value found, message was deleted")
             ConfigTransactions.config_unique_add(interaction.guild.id, key, int(view.value[0]), overwrite=True)
 
-        roles = []
-        for r in ['admin', 'mod']:
-            roles.append(interaction.guild.get_role(ConfigData().get_key(interaction.guild.id, r)[0]))
-
         category: discord.CategoryChannel = await interaction.guild.create_category(name="Lobby", overwrites={
             interaction.guild.default_role: discord.PermissionOverwrite(read_messages=False),
             interaction.guild.me          : discord.PermissionOverwrite(read_messages=True)
         })
-        await self.add_roles_to_channel(category, roles)
 
         for channelkey, channelvalue in channelchoices.items():
             channel = None
@@ -111,7 +106,6 @@ class configSetup:
                 case 'inviteinfo':
                     print("setting up invite info")
                     channel = await category.create_text_channel(name="invite-info")
-                    await self.add_roles_to_channel(channel, roles)
 
                 case 'general':
                     view = ConfigSelectChannels()
