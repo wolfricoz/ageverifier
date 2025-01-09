@@ -38,7 +38,7 @@ def find_invite_by_code(invite_list, code) :
 
 
 async def invite_info(bot, member) :
-	infochannel = int(ConfigData().get_key_or_none(member.guild.id, 'inviteinfo'))
+	infochannel = ConfigData().get_key_or_none(member.guild.id, 'inviteinfo')
 	if infochannel is None :
 		return
 	invites_before_join = bot.invites[member.guild.id]
@@ -57,7 +57,7 @@ async def invite_info(bot, member) :
 			except :
 				pass
 			embed.set_footer(text=f"USERID: {member.id}")
-			channel = bot.get_channel(infochannel)
+			channel = bot.get_channel(int(infochannel))
 			await send_message(channel, embed=embed)
 
 			bot.invites[member.guild.id] = invites_after_join
