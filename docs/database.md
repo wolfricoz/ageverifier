@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Lobby Guide
+title: Database Management
 nav_order: 5
 ---
 
@@ -49,3 +49,4 @@ This module handles the lobby-related commands for the bot.
 
 - The commands are limited to whitelisted servers. If your server is not whitelisted, please join the support server and open a ticket.
 - The data retrieved or modified by these commands is only allowed to be shared with relevant parties.
+- All changes are logged and may be reviewed in cases of abuse.

@@ -1,4 +1,3 @@
-"""this module handles the lobby."""
 import os
 
 import discord
