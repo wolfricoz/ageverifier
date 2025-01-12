@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Privacy Policy
-nav_order: 5
+nav_order: 7
 ---
 
 <h1 style="text-align: center">Privacy Policy</h1>

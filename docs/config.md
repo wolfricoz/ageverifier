@@ -11,6 +11,8 @@ designed for two servers: RMR and RMN. A lot of the setup can be done through th
 
 for all of the commands below, the permissions guild_manage required to run them.
 
+# USE OUR NEW DASHBOARD FOR EASY SETUP: https://bots.roleplaymeets.com/
+
 ## Configuration Options
 
 ### Message Choices
@@ -33,9 +35,6 @@ for all of the commands below, the permissions guild_manage required to run them
 
 ### Role Choices
 
-- **mod**: This is the moderator role. These users will be able to approve users.
-- **admin**: Admin role. These users will be able to approve users and change the config, update date of births, and ID
-  verifications.
 - **add**: These roles will be added to the user after a successful verification.
 - **rem**: These roles will be removed from the user after a successful verification.
 - **return**: These roles will be removed from the user when running the `/lobby return` command. (Not required, not in setup)
