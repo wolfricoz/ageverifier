@@ -48,49 +48,65 @@ Once you've made these changes you may resubmit your age and date of birth. Than
 * welcome message: When a user is approved by staff, the bot will automatically send a welcome message in the general
   chat.
 
-### mod: `?approve user age mm/dd/yyyy`
+### `/button`
 
-this is automatically done by clicking the allow button in the lobby moderation channel
+**Description:** Creates a permanent verification button for the lobby; initiates the whole process.
 
-The three age commands each work the same, except for the role they give.
-(example: `?approve @rico stryker#6666 23 01/01/2000`)
+**Permissions:** `administrator`
 
-### mod: `/Lobby return user`
+**Usage:** /button text:<text>
 
-This command is used to return a user to the lobby, this is used when a user has been approved but needs to be returned
-to the lobby for whatever reason. This will automatically remove the roles from the user specified in the config.
-it is affected by the options: 18+ role, 21+, 25+ role, add, rem, return to lobby. Rem will be added to the user.
 
-### mod: `/lobby agecheck dob:mm/dd/yyyy`
+### `/idverify`
 
-this command is used to quickly check what age the user is supposed to be, it will calculate the current age using the
-date of birth.
+**Description:** ID verifies user. Process `True` will put the user through the lobby.
 
-## mod: `/verification idcheck operation:(add, update, get) toggle:(True, False) userid:required reason:optional`
+**Permissions:** `administrator`
 
-This command is used to add, update or get an entry in the ID list. The ID list is used to prevent users from being
-approved with the age commands.
+**Usage:** /idverify process:<bool> user:<user> dob:<date_of_birth>
 
-### admin: `/Lobby button text:string`
+### `/returnlobby`
 
-This will create a button with the text given, this is used to create the age verification button, the age verification
-button
-is also automatically created when a user joins the server.
+**Description:** Returns user to lobby; removes the roles added roles, as well as the 'rem' roles.
 
-### admin: `/Lobby database operation:option userid:required dob:optional`
+**Permissions:** `manage_messages`
 
-This command is used to add, remove or edit an entry in the database. The database is used to check if a user has been
-verified before and to add date of births to the database. This command does not affect the ID list.
+**Usage:** /returnlobby user:<user>
 
-### admin: `/Lobby idverify process:option user dob:mm/dd/yyyy`
+### `/agecheck`
 
-This command is used to verify a user's age, this command is used when the user is on the ID list. This command will
-update
-the user's info in the age info channel, database and clears the ID flag from the user so they can be let through with
-the age commands. This command does _not_ let users through unless process:True is used.
+**Description:** Checks the age of a date of birth. The date of birth must be in mm/dd/yyyy format.
 
-## NSFW age gate
-just like the lobby, the NSFW age gate is used to verify the user's age. This is done by the bot automatically when the
-user clicks the button. The bot will automatically check the user's age and date of birth against the database and if
-the user is on the ID list. If the user is on the ID list, the bot will automatically flag the user and inform the
-staff.
+**Permissions:** `manage_messages`
+
+**Usage:** /agecheck dob:<date_of_birth>
+
+### `?approve`
+
+**Description:** Allows user to enter. This command should be used only if the buttons don't work.
+
+**Permissions:** `manage_messages`
+
+**Usage:** ?approve <user> <age> <date_of_birth>
+
+
+### `/purge`
+
+**Description:** This command will kick all the users that have not been processed through the lobby within the given days. The maximum is 14 days due to a discord limitation; bots cant remove messages after 14 days.
+
+This command is ideal to deal with raids.
+
+**Permissions:** `administrator`
+
+**Usage:** /purge days:<max 14 days>
+
+[//]: # ()
+[//]: # (## NSFW age gate)
+
+[//]: # (just like the lobby, the NSFW age gate is used to verify the user's age. This is done by the bot automatically when the)
+
+[//]: # (user clicks the button. The bot will automatically check the user's age and date of birth against the database and if)
+
+[//]: # (the user is on the ID list. If the user is on the ID list, the bot will automatically flag the user and inform the)
+
+[//]: # (staff.)
