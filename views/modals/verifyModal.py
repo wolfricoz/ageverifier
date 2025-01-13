@@ -1,12 +1,10 @@
-import datetime
 import logging
-from inspect import mod_dict
 
 import discord
 
 import databases.current
 from classes.AgeCalculations import AgeCalculations
-from classes.databaseController import ConfigData, UserTransactions, VerificationTransactions
+from classes.databaseController import ConfigData, UserTransactions
 from classes.encryption import Encryption
 from classes.idcheck import IdCheck
 from classes.lobbyprocess import LobbyProcess
@@ -20,29 +18,56 @@ class VerifyModal(discord.ui.Modal) :
 	# but the title can be whatever you want.
 	title = "Verify your age"
 	custom_id = "verify"
+
 	# This will be a short input, where the user can enter their name
 	# It will also have a placeholder, as denoted by the `placeholder` kwarg.
 	# By default, it is required and is a short-style input which is exactly
 	# what we want.
-	age = discord.ui.TextInput(
-		label='Current Age (Do not round up or down)',
-		placeholder='99',
-		max_length=3,
 
-	)
+	def __init__(self, month=2, day=3, year=4) :
+		super().__init__()
+		self.age = discord.ui.TextInput(
+			label='Current Age (Do not round up or down)',
+			placeholder='99',
+			max_length=3,
+			style=discord.TextStyle.short,
+			required=True
 
-	# This is a longer, paragraph style input, where user can submit feedback
-	# Unlike the name, it is not required. If filled out, however, it will
-	# only accept a maximum of 300 characters, as denoted by the
-	# `max_length=300` kwarg.
-	dateofbirth = discord.ui.TextInput(
-		label='Date of Birth (mm/dd/yyyy)',
-		placeholder='mm/dd/yyyy',
-		max_length=10
-	)
+		)
+		self.month = discord.ui.TextInput(
+			label='month',
+			placeholder='01',
+			max_length=2,
+			style=discord.TextStyle.short,
+			row=month,
+			required=True
 
-	# Requires age checks, and then needs to send a message to the lobby channel; also make the lobby channel a config item.
-	# Add in all the checks before it even gets to the lobby; age matches dob, dob already exists but diff?
+		)
+
+		self.day = discord.ui.TextInput(
+			label='day',
+			placeholder='01',
+			max_length=2,
+			style=discord.TextStyle.short,
+			row=day,
+			required=True
+
+		)
+
+		self.year = discord.ui.TextInput(
+			label='year',
+			placeholder='2000',
+			max_length=4,
+			style=discord.TextStyle.short,
+			row=year,
+			required=True
+		)
+		self.add_item(self.age)
+		self.add_item(self.day)
+		self.add_item(self.month)
+		self.add_item(self.year)
+
+
 
 	async def on_submit(self, interaction: discord.Interaction) :
 		userdata: databases.current.Users = UserTransactions.get_user(interaction.user.id)
@@ -56,7 +81,7 @@ class VerifyModal(discord.ui.Modal) :
 		if mod_channel is None or id_channel is None :
 			await send_response(interaction, f"An error occurred: Lobby channel or ID channel not found.", ephemeral=False)
 
-		dob = await AgeCalculations.infocheck(interaction, self.age.value, self.dateofbirth.value, mod_channel)
+		dob = await AgeCalculations.infocheck(interaction, self.age.value, f"{self.month}/{self.day}/{self.year}", mod_channel)
 		if dob is None :
 			return
 		# Checks if user is underaged

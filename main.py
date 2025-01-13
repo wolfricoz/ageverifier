@@ -123,7 +123,8 @@ async def on_guild_join(guild) :
 			print(f"Unable to send message to {guild.owner.name} in {guild.name}")
 		pass
 	queue().add(send_message(guild.owner,
-	                         "Thank you for inviting Ageverifier. To help you get started, please read the documentation: https://wolfricoz.github.io/ageverifier/"))
+	                         "Thank you for inviting Ageverifier. To help you get started, please read the documentation: https://wolfricoz.github.io/ageverifier/ and visit our [dashboard](https://bots.roleplaymeets.com/) to setup the bot with ease!\n\n"
+	                         "Please make sure the bot has permission to post in the channels where you try to run the commands!"))
 
 
 @bot.event

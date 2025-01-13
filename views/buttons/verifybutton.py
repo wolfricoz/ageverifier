@@ -14,4 +14,4 @@ class VerifyButton(discord.ui.View):
 
     @discord.ui.button(label="Start Verification here!", style=discord.ButtonStyle.green, custom_id="verify")
     async def verify(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await send_response(interaction, f"{interaction.user.mention} To verify using AgeVerifier, you must accept our [Privacy Policy](https://wolfricoz.github.io/ageverifier/privacypolicy.html). By accepting, you consent to your date of birth being stored for verification purposes. Please review the policy and click 'Accept' to proceed.", view=TOSButton(), ephemeral=True)
+        await send_response(interaction, f"{interaction.user.mention} To verify using AgeVerifier, you must accept our [Privacy Policy](https://wolfricoz.github.io/ageverifier/privacypolicy.html). By accepting, you consent to your date of birth being stored for verification purposes. Please review the policy and if you accept our privacy policy, please click 'I consent.'", view=TOSButton(), ephemeral=True)

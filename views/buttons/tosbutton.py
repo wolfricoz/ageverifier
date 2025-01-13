@@ -14,11 +14,32 @@ class TOSButton(discord.ui.View) :
 	def __init__(self) :
 		super().__init__(timeout=None)
 
-	@discord.ui.button(label="I accept the privacy policy", style=discord.ButtonStyle.green, custom_id="accept")
-	async def test(self, interaction: discord.Interaction, button: discord.ui.Button) :
+	@discord.ui.button(label="I accept the privacy policy (MM/DD/YYYY)",
+	                   style=discord.ButtonStyle.green,
+	                   custom_id="usa_accept",
+	                   row=1)
+	async def american(self, interaction: discord.Interaction, button: discord.ui.Button) :
 		await interaction.response.send_modal(VerifyModal())
 
-	@discord.ui.button(label="I decline the privacy policy", style=discord.ButtonStyle.danger, custom_id="decline")
+
+	@discord.ui.button(label="I accept the privacy policy (DD/MM/YYYY)",
+	                   style=discord.ButtonStyle.green,
+	                   custom_id="eu_accept",
+	                   row=2)
+	async def european(self, interaction: discord.Interaction, button: discord.ui.Button) :
+		await interaction.response.send_modal(VerifyModal(day=2, month=3))
+
+	@discord.ui.button(label="I accept the privacy policy (YYYY/MM/DD)",
+	                   style=discord.ButtonStyle.green,
+	                   custom_id="universal_accept",
+	                   row=3)
+	async def universal(self, interaction: discord.Interaction, button: discord.ui.Button) :
+		await interaction.response.send_modal(VerifyModal(day=4, month=3, year=2))
+
+	@discord.ui.button(label="I decline the privacy policy",
+	                   style=discord.ButtonStyle.danger,
+	                   custom_id="decline",
+	                   row=4)
 	async def button(self, interaction: discord.Interaction, button: discord.ui.Button) :
 		modlobby = interaction.guild.get_channel(ConfigData().get_key_int(interaction.guild.id, 'lobbymod'))
 		if modlobby is None :
