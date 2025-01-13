@@ -12,6 +12,7 @@ from discord.app_commands import AppCommandError, CheckFailure, command
 from discord.ext import commands
 from dotenv import load_dotenv
 
+from classes.databaseController import KeyNotFound
 from classes.support.discord_tools import NoChannelException, NoMessagePermissionException, send_response
 
 load_dotenv('main.env')
@@ -125,6 +126,9 @@ class Logging(commands.Cog) :
 		if isinstance(error.original, discord.Forbidden) :
 			return await self.on_fail_message(interaction,
 			                                  f"The bot does not have sufficient permission to run this command. Please check: \n* if the bot has permission to post in the channel \n* if the bot is above the role its trying to assign\n* If trying to ban, ensure the bot has the ban permission")
+		if isinstance(error.original, KeyNotFound) :
+			return await self.on_fail_message(interaction,
+			                                  f"It seems the configuration has not been setup and is missing: {error.original}")
 		if isinstance(error.original, NoMessagePermissionException) :
 			return
 		if isinstance(error.original, NoChannelException) :
