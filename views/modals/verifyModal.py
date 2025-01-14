@@ -73,7 +73,6 @@ class VerifyModal(discord.ui.Modal) :
 		userdata: databases.current.Users = UserTransactions.get_user(interaction.user.id)
 		mod_lobby = ConfigData().get_key_int(interaction.guild.id, "lobbymod")
 		id_log = ConfigData().get_key_int(interaction.guild.id, "idlog")
-		admin = ConfigData().get_key(interaction.guild.id, "admin")
 		mod_channel = interaction.guild.get_channel(mod_lobby)
 		id_channel = interaction.guild.get_channel(id_log)
 		age = int(self.age.value)
