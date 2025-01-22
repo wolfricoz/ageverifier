@@ -12,7 +12,7 @@ from discord.ext import commands
 from dotenv import load_dotenv
 from fastapi import FastAPI
 
-from api import config_router
+from api import config_router, age_router
 from classes import whitelist
 from classes.blacklist import blacklist_check
 from classes.databaseController import ConfigData, ServerTransactions
@@ -49,6 +49,7 @@ async def lifespan(app: FastAPI) :
 
 app = FastAPI(lifespan=lifespan)
 app.include_router(config_router)
+app.include_router(age_router)
 
 if os.getenv("KEY") is None :
 	quit("No encryption key found in .env")

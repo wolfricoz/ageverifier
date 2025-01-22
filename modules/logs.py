@@ -13,7 +13,7 @@ from discord.ext import commands
 from dotenv import load_dotenv
 
 from classes.databaseController import KeyNotFound
-from classes.support.discord_tools import NoChannelException, NoMessagePermissionException, send_response
+from classes.support.discord_tools import NoChannelException, NoMessagePermissionException, send_message, send_response
 
 load_dotenv('main.env')
 channels72 = os.getenv('channels72')
@@ -102,9 +102,11 @@ class Logging(commands.Cog) :
 		tree = self.bot.tree
 		tree.on_error = self._old_tree_error
 
-	async def on_fail_message(self, interaction: Interaction, message: str) :
+	async def on_fail_message(self, interaction: Interaction, message: str, owner = False) :
 		"""sends a message to the user if the command fails."""
 		try :
+			if owner:
+				await send_message(interaction.guild.owner, message)
 			await send_response(interaction, message, ephemeral=True)
 		except Exception as e :
 			logging.error(e)
@@ -123,14 +125,16 @@ class Logging(commands.Cog) :
 		channel = self.bot.get_channel(self.bot.DEV)
 		if isinstance(error, CheckFailure) :
 			return await self.on_fail_message(interaction, "You do not have permission.")
+		if isinstance(error.original, NoMessagePermissionException) :
+			return await self.on_fail_message(interaction,
+			                                  f"Missing permission to send message to {interaction.channel.mention} in {interaction.guild.name}. Check permissions: {', '.join(error.original.message)}")
 		if isinstance(error.original, discord.Forbidden) :
 			return await self.on_fail_message(interaction,
-			                                  f"The bot does not have sufficient permission to run this command. Please check: \n* if the bot has permission to post in the channel \n* if the bot is above the role its trying to assign\n* If trying to ban, ensure the bot has the ban permission")
+			                                  f"The bot does not have sufficient permission to run this command. Please check: \n* if the bot has permission to post in the channel \n* if the bot is above the role its trying to assign\n* If trying to ban, ensure the bot has the ban permission", owner=True)
 		if isinstance(error.original, KeyNotFound) :
 			return await self.on_fail_message(interaction,
 			                                  f"It seems the configuration has not been setup and is missing: {error.original}")
-		if isinstance(error.original, NoMessagePermissionException) :
-			return
+
 		if isinstance(error.original, NoChannelException) :
 			return await self.on_fail_message(interaction,
 			                                  "No channel set or does not exist, check the config or fill in the required arguments.")
