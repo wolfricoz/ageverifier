@@ -130,26 +130,26 @@ class configSetup:
                     # This is also where the verification process will start; this is where new users should interact with the bot.
                     # this channel should be open to everyone.
                     channel = await category.create_text_channel(name="lobby")
-                    await self.add_roles_to_channel(channel, roles)
+                    # await self.add_roles_to_channel(channel, roles)
                     await channel.set_permissions(interaction.guild.default_role, read_messages=True, send_messages=True)
 
                 case 'lobbylog':
                     # This is the channel where the lobby logs will be posted.
                     # This channel has to be hidden from the users; failure to do so will result in the bot leaving.
                     channel = await category.create_text_channel(name="lobby-log")
-                    await self.add_roles_to_channel(channel, roles)
+                    # await self.add_roles_to_channel(channel, roles)
 
                 case 'lobbymod':
                     # This is where the verification approval happens.
                     # This channel should be hidden from the users.
                     channel = await category.create_text_channel(name="lobby-mod")
-                    await self.add_roles_to_channel(channel, roles)
+                    # await self.add_roles_to_channel(channel, roles)
 
                 case 'idlog':
                     # This is where failed verification logs will be posted.
                     # This channel should be hidden from the users.
                     channel = await category.create_text_channel(name="id-log")
-                    await self.add_roles_to_channel(channel, roles)
+                    # await self.add_roles_to_channel(channel, roles)
 
                 case _:
                     continue

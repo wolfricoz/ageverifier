@@ -4,6 +4,8 @@ from discord import Interaction, ui
 # Only roles?
 from discord.ui import ChannelSelect, RoleSelect, UserSelect
 
+from classes.support.discord_tools import send_response
+
 
 # Members and roles in one?
 
@@ -20,13 +22,15 @@ class ConfigSelectChannels(ui.View) :
 
 	# @ui.select(cls=type_we_want, **other_things)
 	@ui.select(cls=ChannelSelect, placeholder="Select a channel please!")
-	async def my_user_select(self, interaction: Interaction, select: UserSelect) :
+	async def my_channel_select(self, interaction: Interaction, select: UserSelect) :
 		# handle the selected users here
 		# select.values is a list of User or Member objects here
 		# it will be a list of Role if you used RoleSelect
 		# it will be a list of both Role and Member/User if you used MentionableSelect
 
-		self.value = [user.id for user in select.values]
+		self.value = [channel.id for channel in select.values if isinstance(channel, discord.TextChannel)]
+		if not self.value :
+			return await send_response(interaction, "Please select a channel, not a category!", ephemeral=True)
 		await interaction.response.edit_message()
 		self.stop()
 
