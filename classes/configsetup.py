@@ -1,6 +1,7 @@
 import logging
 
 import discord
+from discord.utils import get
 
 from classes.databaseController import ConfigTransactions, ConfigData
 from views.buttons.confirmButtons import confirmAction
@@ -72,13 +73,84 @@ class configSetup :
 		if confirmation.confirmed is False :
 			await interaction.followup.send("Setup Cancelled")
 			return
+		category = get(interaction.guild.categories, name="Lobby")
+		if not category :
+			category: discord.CategoryChannel = await interaction.guild.create_category(name="Lobby", overwrites={
+				interaction.guild.default_role : discord.PermissionOverwrite(read_messages=False),
+				interaction.guild.me           : discord.PermissionOverwrite(read_messages=True)
+			})
+
+		for channelkey, channelvalue in channelchoices.items() :
+			channel = None
+			logging.info("setting up channel: " + channelkey)
+			match channelkey :
+				case 'inviteinfo' :
+					print("setting up invite info")
+					channel = get(interaction.guild.text_channels, name="lobby-log")
+					if not channel :
+						channel = await category.create_text_channel(name="invite-info")
+
+				case 'general' :
+					view = ConfigSelectChannels()
+					msg = await interaction.channel.send(f"Select a channel for {channelkey}: \n`{channelvalue}`", view=view)
+					await view.wait()
+					await msg.delete()
+					try :
+						if view.value == "next" :
+							continue
+						if view.value is None :
+							await interaction.followup.send("Setup cancelled")
+							return False
+					except AttributeError :
+						logging.info("No value found, message was deleted")
+						return False
+					ConfigTransactions.config_unique_add(interaction.guild.id, channelkey, int(view.value[0]), overwrite=True)
+					continue
+				# This is your general channel, where the welcome message will be posted
+				case 'lobby' :
+					# This is your lobby channel, where the lobby welcome message will be posted.
+					# This is also where the verification process will start; this is where new users should interact with the bot.
+					# this channel should be open to everyone.
+					channel = get(interaction.guild.text_channels, name="lobby")
+					if not channel :
+						channel = await category.create_text_channel(name="lobby")
+					# await self.add_roles_to_channel(channel, roles)
+					await channel.set_permissions(interaction.guild.default_role, read_messages=True, send_messages=True)
+
+				case 'lobbylog' :
+					# This is the channel where the lobby logs will be posted.
+					# This channel has to be hidden from the users; failure to do so will result in the bot leaving.
+					channel = get(interaction.guild.text_channels, name="lobby-log")
+					if not channel :
+						channel = await category.create_text_channel(name="lobby-log")
+				# await self.add_roles_to_channel(channel, roles)
+
+				case 'lobbymod' :
+					# This is where the verification approval happens.
+					# This channel should be hidden from the users.
+					channel = get(interaction.guild.text_channels, name="lobby-mod")
+					if not channel :
+						channel = await category.create_text_channel(name="lobby-mod")
+				# await self.add_roles_to_channel(channel, roles)
+
+				case 'idlog' :
+					# This is where failed verification logs will be posted.
+					# This channel should be hidden from the users.
+					channel = get(interaction.guild.text_channels, name="id-log")
+					if not channel :
+						channel = await category.create_text_channel(name="id-log")
+				# await self.add_roles_to_channel(channel, roles)
+
+				case _ :
+					continue
+			ConfigTransactions.config_unique_add(interaction.guild.id, channelkey, channel.id, overwrite=True)
 
 		for key, value in rolechoices.items() :
 			if key == "return" :
 				continue
 			if key in skip_roles :
 				if key == "add" :
-					if verified := [r for r in interaction.guild.roles if r.name.lower() == "verified"]:
+					if verified := [r for r in interaction.guild.roles if r.name.lower() == "verified"] :
 						ConfigTransactions.config_unique_add(interaction.guild.id, "add", verified[0].id, overwrite=True)
 						continue
 					verified = await interaction.guild.create_role(name="Verified", reason="Setup")
@@ -99,68 +171,6 @@ class configSetup :
 			except AttributeError :
 				logging.info("No value found, message was deleted")
 			ConfigTransactions.config_unique_add(interaction.guild.id, key, int(view.value[0]), overwrite=True)
-
-		category: discord.CategoryChannel = await interaction.guild.create_category(name="Lobby", overwrites={
-			interaction.guild.default_role : discord.PermissionOverwrite(read_messages=False),
-			interaction.guild.me           : discord.PermissionOverwrite(read_messages=True)
-		})
-
-		for channelkey, channelvalue in channelchoices.items() :
-			channel = None
-			logging.info("setting up channel: " + channelkey)
-			match channelkey :
-				case 'inviteinfo' :
-					print("setting up invite info")
-					channel = await category.create_text_channel(name="invite-info")
-
-				case 'general' :
-					view = ConfigSelectChannels()
-					msg = await interaction.channel.send(f"Select a channel for {channelkey}: \n`{channelvalue}`", view=view)
-					await view.wait()
-					await msg.delete()
-					try :
-						if view.value == "next" :
-							continue
-						if view.value is None :
-							await interaction.followup.send("Setup cancelled")
-							return False
-					except AttributeError :
-						logging.info("No value found, message was deleted")
-						return False
-					ConfigTransactions.config_unique_add(interaction.guild.id, channelkey, int(view.value[0]), overwrite=True)
-					continue
-				# This is your general channel, where the welcome message will be posted
-				case 'lobby' :
-
-					# This is your lobby channel, where the lobby welcome message will be posted.
-					# This is also where the verification process will start; this is where new users should interact with the bot.
-					# this channel should be open to everyone.
-					channel = await category.create_text_channel(name="lobby")
-					# await self.add_roles_to_channel(channel, roles)
-					await channel.set_permissions(interaction.guild.default_role, read_messages=True, send_messages=True)
-
-				case 'lobbylog' :
-					# This is the channel where the lobby logs will be posted.
-					# This channel has to be hidden from the users; failure to do so will result in the bot leaving.
-					channel = await category.create_text_channel(name="lobby-log")
-					# await self.add_roles_to_channel(channel, roles)
-
-				case 'lobbymod' :
-					# This is where the verification approval happens.
-					# This channel should be hidden from the users.
-					channel = await category.create_text_channel(name="lobby-mod")
-					# await self.add_roles_to_channel(channel, roles)
-
-				case 'idlog' :
-					# This is where failed verification logs will be posted.
-					# This channel should be hidden from the users.
-					channel = await category.create_text_channel(name="id-log")
-					# await self.add_roles_to_channel(channel, roles)
-
-				case _ :
-					continue
-			ConfigTransactions.config_unique_add(interaction.guild.id, channelkey, channel.id, overwrite=True)
-
 		for messagekey, messagevalue in messagechoices.items() :
 			message_dict = {
 				'lobbywelcome'   : f"Please read the rules in the rules channel and click the verify button below to get started.",
