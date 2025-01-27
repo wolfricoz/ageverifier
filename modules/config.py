@@ -72,29 +72,33 @@ class config(commands.GroupCog, name="config") :
 	async def check_channel_permissions(self, interaction: discord.Interaction) :
 		fails = []
 		for key in self.channelchoices :
-			channel = ConfigData().get_key_or_none(interaction.guild.id, key)
-			if channel is None or channel == "" :
-				await send_message(interaction.channel,
-				                   f"{key} is not set, please set it with /config channels\n[DEBUG] {key}: {channel}")
-				fails.append(key)
-				continue
-			try :
-				channel = interaction.guild.get_channel(int(channel))
-			except AttributeError :
-				continue
+			try:
+				channel = ConfigData().get_key_or_none(interaction.guild.id, key)
+				if channel is None or channel == "" :
+					await send_message(interaction.channel,
+					                   f"{key} is not set, please set it with /config channels\n[DEBUG] {key}: {channel}")
+					fails.append(key)
+					continue
+				try :
+					channel = interaction.guild.get_channel(int(channel))
+				except AttributeError :
+					continue
 
-			if channel is None :
-				await send_message(interaction.channel, f"{key} is not a valid channel, please set it with /config channels")
+				if channel is None :
+					await send_message(interaction.channel, f"{key} is not a valid channel, please set it with /config channels")
+					fails.append(key)
+					continue
+				try :
+					msg = await send_message(channel, "Checking permissions, if you see this I can post here!")
+					await msg.delete()
+				except discord.Forbidden :
+					await send_message(interaction.channel, f"I do not have permissions to post in {channel.name}")
+					fails.append(key)
+					continue
+				await interaction.channel.send(f"I have permissions to post in {channel.name}!")
+			except Exception as e :
+				logging.error(e)
 				fails.append(key)
-				continue
-			try :
-				msg = await send_message(channel, "Checking permissions, if you see this I can post here!")
-				await msg.delete()
-			except discord.Forbidden :
-				await send_message(interaction.channel, f"I do not have permissions to post in {channel.name}")
-				fails.append(key)
-				continue
-			await interaction.channel.send(f"I have permissions to post in {channel.name}!")
 		if len(fails) > 0 :
 			await interaction.followup.send(f"Failed to check permissions for: {', '.join(fails)}")
 			return

@@ -127,7 +127,7 @@ class Logging(commands.Cog) :
 			return await self.on_fail_message(interaction, "You do not have permission.")
 		if isinstance(error.original, NoMessagePermissionException) :
 			return await self.on_fail_message(interaction,
-			                                  f"Missing permission to send message to {interaction.channel.mention} in {interaction.guild.name}. Check permissions: {', '.join(error.original.message)}")
+			                                  f"Missing permission to send message to {interaction.channel.mention} in {interaction.guild.name}. Check permissions: {error.original.message}")
 		if isinstance(error.original, discord.Forbidden) :
 			return await self.on_fail_message(interaction,
 			                                  f"The bot does not have sufficient permission to run this command. Please check: \n* if the bot has permission to post in the channel \n* if the bot is above the role its trying to assign\n* If trying to ban, ensure the bot has the ban permission", owner=True)
