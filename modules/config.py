@@ -45,18 +45,21 @@ class config(commands.GroupCog, name="config") :
 		await send_message(interaction.channel,
 		                   "For more information about setting up the bot, visit our [Documentation](<https://wolfricoz.github.io/ageverifier/config.html>)")
 		logging.info(f"{interaction.guild.name} started {setup_type.value}")
+		status: bool = True
 		match setup_type.value.lower() :
 			case 'dashboard':
-				await send_response(interaction, f"You can access the dashboard here: https://bots.roleplaymeets.com/")
+				return await send_response(interaction, f"You can access the dashboard here: https://bots.roleplaymeets.com/")
 			case 'manual' :
 				await send_message(interaction.channel, f"You can access the dashboard here for easier setup! https://bots.roleplaymeets.com/")
-				await configSetup().manual(self.bot, interaction, self.channelchoices, self.rolechoices, self.messagechoices)
+				status = await configSetup().manual(self.bot, interaction, self.channelchoices, self.rolechoices, self.messagechoices)
 			case 'auto' :
-				await configSetup().auto(interaction, self.channelchoices, self.rolechoices, self.messagechoices)
+				status = await configSetup().auto(interaction, self.channelchoices, self.rolechoices, self.messagechoices)
 
 		await send_response(interaction,
 		                    "The config has been successfully setup, if you wish to check our toggles you please do /config toggles. Permission checking will commence shortly.",
 		                    ephemeral=True)
+		if status is False:
+			return
 		await self.check_channel_permissions(interaction)
 
 	@app_commands.command()

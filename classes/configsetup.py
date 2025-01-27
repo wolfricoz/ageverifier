@@ -67,7 +67,7 @@ class configSetup:
 
         skip_roles = ['return', 'add']
         if confirmation.confirmed is False:
-            await interaction.followup.send("Purge cancelled")
+            await interaction.followup.send("Setup Cancelled")
             return
 
         for key, value in rolechoices.items():
@@ -89,7 +89,7 @@ class configSetup:
                     continue
                 if view.value is None:
                     await interaction.followup.send("Setup cancelled")
-                    return
+                    return False
             except AttributeError:
                 logging.info("No value found, message was deleted")
             ConfigTransactions.config_unique_add(interaction.guild.id, key, int(view.value[0]), overwrite=True)
@@ -117,10 +117,10 @@ class configSetup:
                             continue
                         if view.value is None:
                             await interaction.followup.send("Setup cancelled")
-                            return
+                            return False
                     except AttributeError:
                         logging.info("No value found, message was deleted")
-                        return
+                        return False
                     ConfigTransactions.config_unique_add(interaction.guild.id, channelkey, int(view.value[0]), overwrite=True)
                     continue
                 # This is your general channel, where the welcome message will be posted
@@ -163,7 +163,7 @@ class configSetup:
             }
 
             ConfigTransactions.config_unique_add(interaction.guild.id, messagekey, message_dict[messagekey], overwrite=True)
-
+        return True
     async def add_roles_to_channel(self, channel, roles):
         for r in roles:
             await channel.set_permissions(r, read_messages=True, send_messages=True)
