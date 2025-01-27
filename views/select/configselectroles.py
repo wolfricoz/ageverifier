@@ -21,14 +21,14 @@ class ConfigSelectChannels(ui.View) :
 		self.add_item(button)
 
 	# @ui.select(cls=type_we_want, **other_things)
-	@ui.select(cls=ChannelSelect, placeholder="Select a channel please!")
+	@ui.select(cls=ChannelSelect, channel_types=[discord.ChannelType.text], placeholder="Select a channel please!")
 	async def my_channel_select(self, interaction: Interaction, select: UserSelect) :
 		# handle the selected users here
 		# select.values is a list of User or Member objects here
 		# it will be a list of Role if you used RoleSelect
 		# it will be a list of both Role and Member/User if you used MentionableSelect
 
-		self.value = [channel.id for channel in select.values if isinstance(channel, discord.TextChannel)]
+		self.value = [channel.id for channel in select.values]
 		if not self.value :
 			return await send_response(interaction, "Please select a channel, not a category!", ephemeral=True)
 		await interaction.response.edit_message()

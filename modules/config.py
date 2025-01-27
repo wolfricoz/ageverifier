@@ -49,6 +49,7 @@ class config(commands.GroupCog, name="config") :
 			case 'dashboard':
 				await send_response(interaction, f"You can access the dashboard here: https://bots.roleplaymeets.com/")
 			case 'manual' :
+				await send_message(interaction.channel, f"You can access the dashboard here for easier setup! https://bots.roleplaymeets.com/")
 				await configSetup().manual(self.bot, interaction, self.channelchoices, self.rolechoices, self.messagechoices)
 			case 'auto' :
 				await configSetup().auto(interaction, self.channelchoices, self.rolechoices, self.messagechoices)
