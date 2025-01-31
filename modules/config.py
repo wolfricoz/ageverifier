@@ -1,4 +1,7 @@
 """Config options for the bot."""
+import asyncio
+import datetime
+import json
 import logging
 import os
 
@@ -218,6 +221,33 @@ class config(commands.GroupCog, name="config") :
 		await interaction.followup.send(f"Config for {interaction.guild.name}", file=discord.File(file.name))
 		os.remove(file.name)
 
+
+	@commands.command()
+	@commands.is_owner()
+	async def cache(self, ctx: commands.Context) :
+		if ctx.author.id != 188647277181665280:
+			return await ctx.send("This is a DEV command; you do not have permission to use it.")
+		count = 0
+		historydict = {}
+		channel = self.bot.get_channel(454425835064262657)
+		await ctx.send('creating cache...')
+		time = datetime.datetime.now()
+		async for h in channel.history(limit=None, oldest_first=True, before=time) :
+			await asyncio.sleep(0.001)
+			historydict[h.id] = {}
+			historydict[h.id]["author"] = h.author.id
+			historydict[h.id]["created"] = h.created_at.strftime('%m/%d/%Y')
+			historydict[h.id]["content"] = h.content
+			count += 1
+		else :
+			await ctx.send(f'Cached {count} message(s).')
+			print(historydict)
+		try :
+			os.mkdir('config')
+		except :
+			pass
+		with open('config/history.json', 'w') as f :
+			json.dump(historydict, f, indent=4)
 
 async def setup(bot: commands.Bot) :
 	"""Adds the cog to the bot"""
