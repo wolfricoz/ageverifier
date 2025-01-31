@@ -36,7 +36,7 @@ class VerifyModal(discord.ui.Modal) :
 		)
 		self.month = discord.ui.TextInput(
 			label='month',
-			placeholder='01',
+			placeholder='mm',
 			max_length=2,
 			style=discord.TextStyle.short,
 			row=month,
@@ -46,7 +46,7 @@ class VerifyModal(discord.ui.Modal) :
 
 		self.day = discord.ui.TextInput(
 			label='day',
-			placeholder='01',
+			placeholder='dd',
 			max_length=2,
 			style=discord.TextStyle.short,
 			row=day,
@@ -56,7 +56,7 @@ class VerifyModal(discord.ui.Modal) :
 
 		self.year = discord.ui.TextInput(
 			label='year',
-			placeholder='2000',
+			placeholder='yyyy',
 			max_length=4,
 			style=discord.TextStyle.short,
 			row=year,
