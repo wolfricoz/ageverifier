@@ -22,7 +22,9 @@ class AgeCalculations(ABC) :
 
 	@staticmethod
 	@abstractmethod
-	async def check_history(user, channel) :
+	async def check_history(guild_id, user, channel) :
+		if guild_id != int(os.getenv("RMR_ID")):
+			return
 		count = 0
 		hf = []
 		with open('config/history.json', 'r') as f :

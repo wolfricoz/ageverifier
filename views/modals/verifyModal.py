@@ -108,6 +108,8 @@ class VerifyModal(discord.ui.Modal) :
 			                    f'Thank you for submitting your age and dob! You will be let through immediately!',
 			                    ephemeral=True)
 			return
+		await AgeCalculations.check_history(interaction.guild.id, interaction.user, mod_lobby)
+
 		if check_whitelist(interaction.guild.id) :
 			await send_message(mod_channel,
 			                   f"\n{interaction.user.mention} has given {age} {dob}. You can let them through with the buttons below."
