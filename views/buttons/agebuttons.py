@@ -41,7 +41,7 @@ class AgeButtons(discord.ui.View):
         idlog = interaction.guild.get_channel(idcheck)
         VerificationTransactions.set_idcheck_to_true(self.user.id, f"manually flagged by {interaction.user.name}")
         await idlog.send(
-                f"<@&{admin[0]}> {interaction.user.mention} has flagged {self.user.mention} for manual ID.")
+                f"{interaction.user.mention} has flagged {self.user.mention} for manual ID.")
         return
 
     @discord.ui.button(label="NSFW Profile Warning", style=discord.ButtonStyle.danger, custom_id="NSFW")
