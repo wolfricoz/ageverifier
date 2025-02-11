@@ -36,13 +36,16 @@ intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 activity = discord.Activity(type=discord.ActivityType.watching, name="over the community")
+
 bot = commands.AutoShardedBot(command_prefix=PREFIX, case_insensitive=False, intents=intents, activity=activity)
+
 bot.DEV = int(os.getenv("DEV"))
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) :
 	threading.Thread(target=lambda : asyncio.run(run())).start()
+	app.state.bot = bot
 	yield
 	await bot.close()
 
@@ -50,6 +53,7 @@ async def lifespan(app: FastAPI) :
 app = FastAPI(lifespan=lifespan)
 app.include_router(config_router)
 app.include_router(age_router)
+
 
 if os.getenv("KEY") is None :
 	quit("No encryption key found in .env")

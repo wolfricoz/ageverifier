@@ -14,6 +14,7 @@ from classes.databaseController import AgeRoleTransactions, ConfigData, ConfigTr
 from classes.support.discord_tools import send_message, send_response
 from views.modals.configinput import ConfigInputUnique
 from views.select.configselectroles import *
+from resources.data.config_variables import rolechoices, channelchoices, messagechoices
 
 
 class config(commands.GroupCog, name="config") :
@@ -21,23 +22,10 @@ class config(commands.GroupCog, name="config") :
 	def __init__(self, bot: commands.Bot) :
 		self.bot = bot
 
-	messagechoices = {
-		'welcomemessage' : 'This is the welcome message that will be posted in the general channel This starts with: `Welcome to {server name} {user}! This is where the message goes`',
-		"lobbywelcome"   : 'This is the welcome message that will be posted in the lobby channel, and be the first message new users see. This starts with: `Welcome {user}! This is where the message goes`',
-	}
-	channelchoices = {
-		'inviteinfo' : 'This channel will be used to log invite information',
-		'general'    : 'This is your general channel, where the welcome message will be posted',
-		"lobby"      : 'This is your lobby channel, where the lobby welcome message will be posted. This is also where the verification process will start; this is where new users should interact with the bot.',
-		"lobbylog"   : 'This is the channel where the lobby logs will be posted, this channel has to be hidden from the users; failure to do so will result in the bot leaving.',
-		"lobbymod"   : 'This is where the verification approval happens, this channel should be hidden from the users.',
-		"idlog"      : 'This is where failed verification logs will be posted, this channel should be hidden from the users.'
-	}
-	rolechoices = {
-		'add'    : 'These roles will be added to the user after a successful verification',
-		"rem"    : 'These roles will be removed from the user after a successful verification',
-		"return" : "These roles will be removed from the user when running the /lobby return command.",
-	}
+	rolechoices = rolechoices
+	channelchoices = channelchoices
+	messagechoices = messagechoices
+
 	available_toggles = ["Welcome", "Automatic"]
 
 	@app_commands.command(name='setup')
@@ -50,18 +38,20 @@ class config(commands.GroupCog, name="config") :
 		logging.info(f"{interaction.guild.name} started {setup_type.value}")
 		status: bool = True
 		match setup_type.value.lower() :
-			case 'dashboard':
+			case 'dashboard' :
 				return await send_response(interaction, f"You can access the dashboard here: https://bots.roleplaymeets.com/")
 			case 'manual' :
-				await send_message(interaction.channel, f"You can access the dashboard here for easier setup! https://bots.roleplaymeets.com/")
-				status = await configSetup().manual(self.bot, interaction, self.channelchoices, self.rolechoices, self.messagechoices)
+				await send_message(interaction.channel,
+				                   f"You can access the dashboard here for easier setup! https://bots.roleplaymeets.com/")
+				status = await configSetup().manual(self.bot, interaction, self.channelchoices, self.rolechoices,
+				                                    self.messagechoices)
 			case 'auto' :
 				status = await configSetup().auto(interaction, self.channelchoices, self.rolechoices, self.messagechoices)
 
 		await send_response(interaction,
 		                    "The config has been successfully setup, if you wish to check our toggles you please do /config toggles. Permission checking will commence shortly.",
 		                    ephemeral=True)
-		if status is False:
+		if status is False :
 			return
 		await self.check_channel_permissions(interaction)
 
@@ -75,7 +65,7 @@ class config(commands.GroupCog, name="config") :
 	async def check_channel_permissions(self, interaction: discord.Interaction) :
 		fails = []
 		for key in self.channelchoices :
-			try:
+			try :
 				channel = ConfigData().get_key_or_none(interaction.guild.id, key)
 				if channel is None or channel == "" :
 					await send_message(interaction.channel,
@@ -163,7 +153,6 @@ class config(commands.GroupCog, name="config") :
 			case _ :
 				raise NotImplementedError
 
-
 	@app_commands.command()
 	@app_commands.choices(key=[Choice(name=f"{ke} role", value=ke) for ke, val in rolechoices.items()])
 	@app_commands.choices(action=[Choice(name=x, value=x) for x in ['add', 'Remove']])
@@ -205,9 +194,6 @@ class config(commands.GroupCog, name="config") :
 	@app_commands.checks.has_permissions(manage_guild=True)
 	async def view(self, interaction: discord.Interaction) :
 		"""Prints all the config options"""
-		# configoptions = ['welcomemessage', "lobbywelcome", "reminder", "dev", 'helpchannel', 'inviteinfo', 'general', "lobby", "lobbylog", "lobbymod",
-		#                  "idlog", "advertmod", "advertlog", "removallog", "nsfwlog", "warnlog", "FORUM", "mod", "admin", "add", "rem", "18", "21", "25", "return", "nsfw", "partner", "posttimeout", "SEARCH"]
-
 		roles: list = [x for x in self.rolechoices.values()]
 		other = ["FORUM", "SEARCH"]
 		optionsall = list(self.messagechoices) + list(self.channelchoices) + list(self.available_toggles) + list(
@@ -221,11 +207,10 @@ class config(commands.GroupCog, name="config") :
 		await interaction.followup.send(f"Config for {interaction.guild.name}", file=discord.File(file.name))
 		os.remove(file.name)
 
-
 	@commands.command()
 	@commands.is_owner()
 	async def cache(self, ctx: commands.Context) :
-		if ctx.author.id != 188647277181665280:
+		if ctx.author.id != 188647277181665280 :
 			return await ctx.send("This is a DEV command; you do not have permission to use it.")
 		count = 0
 		historydict = {}
@@ -248,6 +233,7 @@ class config(commands.GroupCog, name="config") :
 			pass
 		with open('config/history.json', 'w') as f :
 			json.dump(historydict, f, indent=4)
+
 
 async def setup(bot: commands.Bot) :
 	"""Adds the cog to the bot"""
