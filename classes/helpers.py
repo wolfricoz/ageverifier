@@ -18,7 +18,7 @@ async def welcome_user(member) :
 	lobby = ConfigData().get_key_int(member.guild.id, "lobby")
 	channel = member.guild.get_channel(lobby)
 
-
+	await add_join_roles(member)
 	try :
 		lobbywelcome = ConfigData().get_key(member.guild.id, "lobbywelcome")
 	except databaseController.KeyNotFound :
@@ -40,6 +40,7 @@ async def add_join_roles(member) -> bool :
 		return True
 	except Exception as e :
 		print(e)
+		return False
 
 
 def find_invite_by_code(invite_list, code) :
