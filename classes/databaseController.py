@@ -461,7 +461,7 @@ class ConfigData(metaclass=singleton) :
 	def load_guild(self, guild_id: int) :
 		config = ConfigTransactions.server_config_get(guild_id)
 		settings = config
-		add_list = ['REM', "RETURN", "FORUM"]
+		add_list = ['REM', "RETURN", "JOIN"]
 		add_dict = ["SEARCH", "BAN", "ADD"]
 		self.conf[guild_id] = {}
 		reload = False

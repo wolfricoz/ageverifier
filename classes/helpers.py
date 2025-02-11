@@ -17,6 +17,8 @@ async def has_onboarding(guild: discord.Guild) -> bool :
 async def welcome_user(member) :
 	lobby = ConfigData().get_key_int(member.guild.id, "lobby")
 	channel = member.guild.get_channel(lobby)
+
+
 	try :
 		lobbywelcome = ConfigData().get_key(member.guild.id, "lobbywelcome")
 	except databaseController.KeyNotFound :
@@ -28,6 +30,16 @@ async def welcome_user(member) :
 	                   f"\n"
 	                   f"-# GDPR AND INFORMATION USE DISCLOSURE: By entering your birth date (MM/DD/YYYY) and age, you consent to having this information about you stored by Age Verifier and used to verify that you are the age that you say you are, including sharing to relevant parties for age verification. This information will be stored for a maximum of 1 year if you are no longer in a server using Ageverifier.",
 	                   view=VerifyButton())
+
+async def add_join_roles(member) -> bool :
+	try :
+		roles = [member.guild.get_role(int(role)) for role in ConfigData().get_key_or_none(member.guild.id, "join")]
+		if roles is None or len(roles) <= 0 :
+			return False
+		await member.add_roles(*roles)
+		return True
+	except Exception as e :
+		print(e)
 
 
 def find_invite_by_code(invite_list, code) :
