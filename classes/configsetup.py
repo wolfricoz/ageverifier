@@ -167,7 +167,9 @@ class configSetup :
 					if verified := [r for r in guild.roles if r.name.lower() == "verified"] :
 						ConfigTransactions.config_unique_add(guild.id, "add", verified[0].id, overwrite=True)
 						continue
-					verified = await guild.create_role(name="Verified", reason="Setup")
+					verified = get(guild.roles, name="Verified")
+					if verified is None:
+						verified = await guild.create_role(name="Verified", reason="Setup")
 					ConfigTransactions.config_unique_add(guild.id, "add", verified.id, overwrite=True)
 					continue
 
