@@ -76,7 +76,7 @@ class Database(commands.GroupCog) :
 		if await AgeCalculations.validatedob(dob, interaction) is False :
 			return
 		UserTransactions.add_user_full(str(user.id), dob, interaction.guild.name)
-		await send_response(interaction, f"<@{user.id}> added to the database with dob: {dob}")
+		await send_response(interaction, f"({user.name}){user.id} added to the database with dob: {dob}")
 		await LobbyProcess.age_log(user.id, dob, interaction)
 
 
@@ -90,22 +90,22 @@ class Database(commands.GroupCog) :
 		if await AgeCalculations.validatedob(dob, interaction) is False :
 			return
 		UserTransactions.update_user_dob(user.id, dob, interaction.guild.name)
-		await send_response(interaction, f"Updated <@{user.id}>'s dob to {dob}")
+		await send_response(interaction, f"Updated ({user.name}){user.id}'s dob to {dob}")
 		await LobbyProcess.age_log(user.id, dob, interaction, "updated")
 
 
 	@app_commands.command()
 	@app_commands.checks.has_permissions(administrator=True)
-	async def delete(self, interaction: discord.Interaction, user: discord.User) :
+	async def delete(self, interaction: discord.Interaction, user: discord.User, reason: str) :
 		"""[administrator] Deletes the date of birth of a specified user. Only use this to correct mistakes."""
 
 		await send_response(interaction, f"⌛ deleting {user.mention} from the database", ephemeral=True)
 		if await self.whitelist(interaction):
 			return
 		if UserTransactions.user_delete(user.id, interaction.guild.name) is False :
-			await interaction.followup.send(f"Can't find entry: <@{user.id}>")
+			await interaction.followup.send(f"Can't find entry: ({user.name}){user.id}")
 			return
-		await send_response(interaction, f"Deleted entry: <@{user.id}>")
+		await send_response(interaction, f"Deleted entry: ({user.name}){user.id} with reason: {reason}")
 		await LobbyProcess.age_log(user.id, "", interaction, "deleted", False)
 
 
