@@ -63,16 +63,15 @@ class Tasks(commands.GroupCog):
     async def user_expiration_remove(self, userdata, removaldate):
         """removes expired entries."""
         for entry in userdata:
-            if entry.entry < removaldate:
+            if entry.entry < datetime.now() - timedelta(days=365):
                 await asyncio.sleep(0.1)
-                UserTransactions.user_delete(entry.uid)
-                logging.debug(f"Database record: {entry.uid} expired")
+                UserTransactions.user_delete(entry.uid, "Expiration Check (Entry Expired)")
+                # logging.info("DEV: EXPIRATION CHECK DISABLED")
+                logging.info(f"Database record: {entry.uid} expired with date: {entry.entry}")
 
     @tasks.loop(hours=48)
     async def check_users_expiration(self):
         """updates entry time, if entry is expired this also removes it."""
-        if self.check_users_expiration.current_loop == 0:
-            return
         print("checking user entries")
         userdata = UserTransactions.get_all_users()
         userids = [x.uid for x in userdata]
