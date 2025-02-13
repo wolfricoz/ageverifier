@@ -38,6 +38,8 @@ async def add_join_roles(member) -> bool :
 			return False
 		await member.add_roles(*roles)
 		return True
+	except discord.Forbidden:
+		await send_message(member.guild.owner, f"The bot does not have permission to apply all roles to {member.mention}, please check if the bot is above the roles it is supposed to give.")
 	except Exception as e :
 		print(e)
 		return False
