@@ -18,7 +18,7 @@ from classes.lobbyprocess import LobbyProcess
 from classes.support.discord_tools import send_response, send_message
 from classes.whitelist import check_whitelist
 from databases.current import database, Users
-from views.buttons.agebuttons import AgeButtons
+from views.buttons.approvalbuttons import ApprovalButtons
 from views.buttons.confirmButtons import confirmAction
 from views.buttons.dobentrybutton import dobentry
 from views.buttons.verifybutton import VerifyButton
@@ -29,7 +29,7 @@ class LobbyEvents(commands.Cog):
         self.bot = bot
         self.index = 0
         self.bot.add_view(VerifyButton())
-        self.bot.add_view(AgeButtons())
+        self.bot.add_view(ApprovalButtons())
         self.bot.add_view(dobentry())
 
 

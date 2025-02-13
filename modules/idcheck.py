@@ -7,7 +7,7 @@ from discord.ext import commands
 from classes.databaseController import VerificationTransactions
 from classes.support.discord_tools import send_message, send_response
 from classes.support.queue import queue
-from views.buttons.agebuttons import AgeButtons
+from views.buttons.approvalbuttons import ApprovalButtons
 from views.buttons.dobentrybutton import dobentry
 from views.buttons.verifybutton import VerifyButton
 
@@ -17,7 +17,7 @@ class idcheck(commands.GroupCog) :
 		self.bot = bot
 		self.index = 0
 		self.bot.add_view(VerifyButton())
-		self.bot.add_view(AgeButtons())
+		self.bot.add_view(ApprovalButtons())
 		self.bot.add_view(dobentry())
 
 	@app_commands.command()

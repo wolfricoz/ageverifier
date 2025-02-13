@@ -10,7 +10,7 @@ from classes.idcheck import IdCheck
 from classes.lobbyprocess import LobbyProcess
 from classes.support.discord_tools import send_message, send_response
 from classes.whitelist import check_whitelist
-from views.buttons.agebuttons import AgeButtons
+from views.buttons.approvalbuttons import ApprovalButtons
 
 
 class VerifyModal(discord.ui.Modal) :
@@ -114,14 +114,14 @@ class VerifyModal(discord.ui.Modal) :
 			await send_message(mod_channel,
 			                   f"\n{interaction.user.mention} has given {age} {dob}. You can let them through with the buttons below."
 			                   f"\n-# [LOBBY DEBUG] To manually process: `?approve {interaction.user.mention} {age} {dob}`",
-			                   view=AgeButtons(age=age, dob=dob, user=interaction.user))
+			                   view=ApprovalButtons(age=age, dob=dob, user=interaction.user))
 			await send_response(interaction, f'Thank you for submitting your age and dob! You will be let through soon!',
 			                    ephemeral=True)
 			return
 		await send_message(mod_channel,
 		                   f"\n{interaction.user.mention} has given {age} and dob matches. You can let them through with the buttons below."
 		                   f"\n-# [LOBBY DEBUG] Server not whitelisted: Personal Information (PI) hidden",
-		                   view=AgeButtons(age=age, dob=dob, user=interaction.user))
+		                   view=ApprovalButtons(age=age, dob=dob, user=interaction.user))
 		await send_response(interaction, f'Thank you for submitting your age and dob! You will be let through soon!',
 		                    ephemeral=True)
 

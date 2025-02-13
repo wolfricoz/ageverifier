@@ -13,7 +13,7 @@ from classes.idverify import verify
 from classes.lobbyprocess import LobbyProcess
 from classes.support.discord_tools import send_response
 from classes.whitelist import check_whitelist
-from views.buttons.agebuttons import AgeButtons
+from views.buttons.approvalbuttons import ApprovalButtons
 from views.buttons.confirmButtons import confirmAction
 from views.buttons.dobentrybutton import dobentry
 from views.buttons.verifybutton import VerifyButton
@@ -24,7 +24,7 @@ class Lobby(commands.GroupCog) :
 		self.bot = bot
 		self.index = 0
 		self.bot.add_view(VerifyButton())
-		self.bot.add_view(AgeButtons())
+		self.bot.add_view(ApprovalButtons())
 		self.bot.add_view(dobentry())
 
 	@app_commands.command(name="button")

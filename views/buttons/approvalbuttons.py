@@ -3,9 +3,10 @@ import discord
 
 from classes.databaseController import ConfigData, VerificationTransactions
 from classes.lobbyprocess import LobbyProcess
+from views.modals.inputmodal import InputModal, send_modal
 
 
-class AgeButtons(discord.ui.View):
+class ApprovalButtons(discord.ui.View):
     def __init__(self, age: int = None, dob: str = None, user: discord.Member = None):
         self.age = age
         self.dob = dob
@@ -31,16 +32,19 @@ class AgeButtons(discord.ui.View):
     @discord.ui.button(label="Flag for ID Check", style=discord.ButtonStyle.red, custom_id="ID")
     async def manual_id(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Flags user for manual id."""
-        await self.disable_buttons(interaction, button)
+        await self.disable_buttons(interaction, button, False)
+        reason = await send_modal(interaction, confirmation="The user has been flagged", title="Why should the user be ID Checked?", max_length=1500)
         if self.user is None:
             await interaction.followup.send('The bot has restarted and the data of this button is missing. Please manually report user to admins',
                                             ephemeral=True)
         await interaction.followup.send('User flagged for manual ID.', ephemeral=True)
         idcheck = ConfigData().get_key_int(interaction.guild.id, "idlog")
         idlog = interaction.guild.get_channel(idcheck)
-        VerificationTransactions.set_idcheck_to_true(self.user.id, f"manually flagged by {interaction.user.name}")
+        VerificationTransactions.set_idcheck_to_true(self.user.id, f"manually flagged by {interaction.user.name} with reason: {reason}")
+        await interaction.message.edit(view=self)
         await idlog.send(
-                f"{interaction.user.mention} has flagged {self.user.mention} for manual ID.")
+                f"{interaction.user.mention} has flagged {self.user.mention} for manual ID with reason:\n"
+                f"```{reason}```")
         return
 
     @discord.ui.button(label="NSFW Profile Warning", style=discord.ButtonStyle.danger, custom_id="NSFW")
@@ -82,7 +86,7 @@ Once you've made these changes you may resubmit your age and date of birth. Than
 
 
 
-    async def disable_buttons(self, interaction, button: discord.ui.Button = None):
+    async def disable_buttons(self, interaction, button: discord.ui.Button = None, update= True):
         """disables buttons"""
         self.manual_id.disabled = True
         self.manual_id.style = discord.ButtonStyle.grey
@@ -94,6 +98,8 @@ Once you've made these changes you may resubmit your age and date of birth. Than
         self.nsfw_warning.style = discord.ButtonStyle.grey
 
         button.style = discord.ButtonStyle.green
+        if update is False:
+            return
         await interaction.response.edit_message(view=self)
 
 
