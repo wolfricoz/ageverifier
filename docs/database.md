@@ -43,7 +43,7 @@ This module handles the lobby-related commands for the bot.
 
 **Permissions:** `administrator`
 
-**Usage:** /delete user:<user or userid>
+**Usage:** /delete user:<user or userid> reason:<reason>
 
 ## Notes
 
