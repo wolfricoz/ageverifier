@@ -34,7 +34,7 @@ class idcheck(commands.GroupCog) :
 			"user"        : user.uid,
 			"Reason"      : user.reason,
 			"idcheck"     : user.idcheck,
-			"idverifier"  : user.idverified,
+			"idverified"  : user.idverified,
 			"verifieddob" : user.verifieddob
 		}
 

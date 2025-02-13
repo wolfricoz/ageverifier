@@ -7,7 +7,7 @@ from importlib import reload
 
 import sqlalchemy.exc
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.sql import Select
 
 import databases.current as db
@@ -138,7 +138,7 @@ class UserTransactions(ABC) :
 				return False
 			session.delete(userdata)
 			DatabaseTransactions.commit(session)
-			logging.info(f"User {userid} deleted by {guildname}")
+			logging.info(f"User {userid} deleted by {guildname} ")
 			return True
 		except sqlalchemy.exc.IntegrityError :
 			session.rollback()
@@ -156,7 +156,7 @@ class UserTransactions(ABC) :
 	def get_all_users(dob_only: bool = False) :
 		if dob_only :
 			return session.scalars(Select(Users).where(Users.date_of_birth != None)).all()
-		userdata = session.scalars(Select(Users)).all()
+		userdata = session.scalars(Select(Users).outerjoin(IdVerification, Users.uid == IdVerification.uid)).all()
 		session.close()
 		return userdata
 
@@ -443,6 +443,10 @@ class VerificationTransactions(ABC) :
 		DatabaseTransactions.commit(session)
 		UserTransactions.update_user_dob(userid, dob, guildname=guildname)
 
+	@staticmethod
+	@abstractmethod
+	def get_all() :
+		return session.query(IdVerification).all()
 
 class ConfigData(metaclass=singleton) :
 	"""
@@ -614,7 +618,9 @@ class ServerTransactions() :
 		if reload:
 			ConfigData().load_guild(guildid)
 
-	def get_all(self, ) :
+	def get_all(self, id_only = True ) :
+		if id_only is False:
+			return session.query(Servers).all()
 		return [sid[0] for sid in session.query(Servers.guild).all()]
 
 	def get(self, guild_id: int) :

@@ -33,7 +33,7 @@ class Users(Base):
     date_of_birth: Mapped[Optional[str]]
     server: Mapped[Optional[str]]
     warnings: Mapped[List["Warnings"]] = relationship(cascade="save-update, merge, delete, delete-orphan")
-    id: Mapped["IdVerification"] = relationship(back_populates="user", cascade="save-update, merge, delete, delete-orphan")
+    id_verification: Mapped[Optional["IdVerification"]] = relationship(back_populates="user", cascade="save-update, merge, delete, delete-orphan", uselist=False)
 
 
 # noinspection PyTypeChecker, PydanticTypeChecker
@@ -67,15 +67,15 @@ class Config(Base):
 
 # noinspection PyTypeChecker, PydanticTypeChecker
 
+# noinspection PyTypeChecker, PydanticTypeChecker
 class IdVerification(Base):
     __tablename__ = "verification"
-    uid: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.uid", ondelete="CASCADE"), primary_key=True,
-                                     autoincrement=False)
+    uid: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.uid", ondelete="CASCADE"), primary_key=True, autoincrement=False)
     reason: Mapped[Optional[str]] = mapped_column(String(1024))
     idcheck: Mapped[bool] = mapped_column(Boolean, default=False)
     idverified: Mapped[bool] = mapped_column(Boolean, default=False)
     verifieddob: Mapped[Optional[datetime]]
-    user: Mapped["Users"] = relationship(back_populates="id")
+    user: Mapped["Users"] = relationship(back_populates="id_verification")
 
 
 class Timers(Base):
