@@ -1,7 +1,9 @@
 import logging
+from datetime import datetime
 
 import discord
 from discord.ext.commands.help import MISSING
+from pytz import utc
 
 max_length = 1800
 
@@ -115,3 +117,14 @@ async def await_message(interaction, message) -> discord.Message | bool:
     if m.content.lower() == "cancel":
         return False
     return m
+
+async def create_embed(title: str, description:str = None, footer: str = None, fields: dict = {}, inline: bool=False) -> discord.Embed:
+    embed = discord.Embed(
+        title=title,
+        description=description,
+        timestamp=datetime.now(tz=utc)
+    )
+    for key, field in fields.items():
+        embed.add_field(name=key, value=field, inline=inline)
+    embed.set_footer(text=footer)
+    return embed
