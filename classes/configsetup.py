@@ -155,7 +155,10 @@ class ConfigSetup :
 
 					case _ :
 						continue
-				ConfigTransactions.config_unique_add(guild.id, channelkey, channel.id, overwrite=True)
+				try:
+					ConfigTransactions.config_unique_add(guild.id, channelkey, channel.id, overwrite=True)
+				except Exception as e:
+					logging.error(e, exc_info=True)
 			except Exception as e:
 				logging.error(e, exc_info=True)
 
