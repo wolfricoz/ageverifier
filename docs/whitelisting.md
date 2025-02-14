@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Privacy Policy
+title: Whitelisting
 nav_order: 8
 ---
 
