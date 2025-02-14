@@ -8,6 +8,8 @@ nav_order: 8
 
 # Requirements
 
+_Last Updated: 14/02/2025_
+
 * Your server must at least have 1000 members
 * Your server must be 6 months old.
 * You must have a staff team consisting of at least two administrators.
@@ -117,4 +119,3 @@ If you break our guidelines, we may take the following actions based on the seve
   servers (and server owners) access to our services.
 - **Fees**: If your server is the cause of a data leak, we may request that you pay (partially) for any incurred legal fees.
 
-_Last Updated: 11/02/2025_
