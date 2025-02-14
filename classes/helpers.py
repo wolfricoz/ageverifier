@@ -57,16 +57,16 @@ def find_invite_by_code(invite_list, code) :
 async def invite_info(bot, member: discord.Member) :
 	infochannel = ConfigData().get_key_or_none(member.guild.id, 'inviteinfo')
 	if infochannel is None :
+		logging.info(f"{member.guild.name} doesn't have invite info setup")
 		return
 	invites_before_join = bot.invites[member.guild.id]
 	invites_after_join = await member.guild.invites()
 	userdata = UserTransactions.get_user(member.id)
-
 	for invite in invites_before_join :
 		if invite.uses < find_invite_by_code(invites_after_join, invite.code).uses :
 			fields = {
 				"user id"            : member.id,
-				"Invite Code"        : f"**{invite.code}**",
+				"Invite Code"        : f"{invite.code}",
 				"Code created by"    : f"{invite.inviter} ({invite.inviter.id})",
 				"Account created at" : member.created_at.strftime("%m/%d/%Y"),
 				"Member joined at"   : datetime.now().strftime("%m/%d/%Y"),

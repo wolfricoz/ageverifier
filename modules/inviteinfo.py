@@ -1,4 +1,5 @@
 """Checks the users invite info when they join and logs it"""
+import logging
 from datetime import datetime
 
 import discord
@@ -15,8 +16,6 @@ class inviteInfo(commands.Cog):
     @commands.Cog.listener('on_member_join')
     async def on_member_join(self, member):
         """reads invite dictionary, and outputs user info"""
-        if await has_onboarding(member.guild):
-            return
         await invite_info(self.bot, member)
 
 
