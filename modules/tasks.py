@@ -10,6 +10,7 @@ from discord.ext import commands, tasks
 
 from classes import permissions
 from classes.databaseController import ConfigData, ServerTransactions, UserTransactions
+from classes.support.queue import queue
 
 OLDLOBBY = int(os.getenv("OLDLOBBY"))
 
@@ -54,10 +55,10 @@ class Tasks(commands.GroupCog):
             for member in guild.members:
                 await asyncio.sleep(0.1)
                 if member.id not in userids:
-                    logging.debug(f"User {member.id} not found in database, adding.")
+                    logging.info(f"User {member.id} not found in database, adding.")
                     UserTransactions.add_user_empty(member.id)
                     continue
-                logging.debug(f"Updating entry time for {member.id}")
+                logging.info(f"Updating entry time for {member.id}")
                 UserTransactions.update_entry_date(member.id)
 
     async def user_expiration_remove(self, userdata, removaldate):
@@ -82,8 +83,8 @@ class Tasks(commands.GroupCog):
         userdata = UserTransactions.get_all_users()
         userids = [x.uid for x in userdata]
         removaldate = datetime.now() - timedelta(days=730)
-        await self.user_expiration_update(userids)
-        await self.user_expiration_remove(userdata, removaldate)
+        queue().add(self.user_expiration_update(userids), priority=0)
+        queue().add(self.user_expiration_remove(userdata, removaldate), priority=0)
         logging.info("Finished checking all entries")
 
     @tasks.loop(hours=12)
