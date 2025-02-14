@@ -75,16 +75,16 @@ class Tasks(commands.GroupCog):
                 logging.info(f"Database record: {entry.uid} GDPR deleted with date: {entry.deleted_at}")
 
 
-    @tasks.loop(hours=48)
+    @tasks.loop(hours=12)
     async def check_users_expiration(self):
         """updates entry time, if entry is expired this also removes it."""
-        print("checking user entries")
+        logging.info("Checking for expired entries.")
         userdata = UserTransactions.get_all_users()
         userids = [x.uid for x in userdata]
         removaldate = datetime.now() - timedelta(days=730)
         await self.user_expiration_update(userids)
         await self.user_expiration_remove(userdata, removaldate)
-        print("Finished checking all entries")
+        logging.info("Finished checking all entries")
 
     @tasks.loop(hours=12)
     async def check_active_servers(self):
