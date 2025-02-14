@@ -56,7 +56,7 @@ class Tasks(commands.GroupCog) :
 		for member in members :
 			queue().add(self.update_user_time(member, userids), priority=0)
 
-	async def update_user_time(self, member, userids, count, members) :
+	async def update_user_time(self, member, userids) :
 		if member.id not in userids :
 			logging.info(f"User {member.id} not found in database, adding.")
 			UserTransactions.add_user_empty(member.id)
