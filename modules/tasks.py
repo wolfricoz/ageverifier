@@ -53,7 +53,6 @@ class Tasks(commands.GroupCog):
         logging.debug(f"Checking all entries for expiration at {datetime.now()}")
         for guild in self.bot.guilds:
             for member in guild.members:
-                await asyncio.sleep(0.1)
                 if member.id not in userids:
                     logging.info(f"User {member.id} not found in database, adding.")
                     UserTransactions.add_user_empty(member.id)
@@ -65,12 +64,10 @@ class Tasks(commands.GroupCog):
         """removes expired entries."""
         for entry in userdata:
             if entry.entry < datetime.now() - timedelta(days=365):
-                await asyncio.sleep(0.1)
                 UserTransactions.permanent_delete(entry.uid, "Expiration Check (Entry Expired)")
                 # logging.info("DEV: EXPIRATION CHECK DISABLED")
                 logging.info(f"Database record: {entry.uid} expired with date: {entry.entry}")
             if entry.deleted_at and entry.deleted_at < datetime.now() - timedelta(days=30):
-                await asyncio.sleep(0.1)
                 UserTransactions.permanent_delete(entry.uid, "GDPR Removal (30 days passed)")
                 # logging.info("DEV: EXPIRATION CHECK DISABLED")
                 logging.info(f"Database record: {entry.uid} GDPR deleted with date: {entry.deleted_at}")
