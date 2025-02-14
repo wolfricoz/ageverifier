@@ -6,6 +6,7 @@ from datetime import timezone
 from importlib import reload
 
 import sqlalchemy.exc
+from sqlalchemy import and_
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.sql import Select
@@ -81,8 +82,12 @@ class UserTransactions(ABC) :
 
 	@staticmethod
 	@abstractmethod
-	def add_user_full(userid, dob, guildname) :
+	def add_user_full(userid, dob, guildname, override = False) :
 		try :
+			userdata: Users = UserTransactions.get_user(userid, deleted=override)
+			if userdata is not None :
+				UserTransactions.update_user_dob(userid, dob, guildname)
+				return False
 			item = db.Users(uid=userid, entry=datetime.now(tz=timezone.utc), date_of_birth=Encryption().encrypt(dob),
 			                server=guildname)
 			session.merge(item)
@@ -94,8 +99,8 @@ class UserTransactions(ABC) :
 
 	@staticmethod
 	@abstractmethod
-	def update_user_dob(userid: int, dob: str, guildname: str) :
-		userdata: Users = session.scalar(Select(Users).where(Users.uid == userid))
+	def update_user_dob(userid: int, dob: str, guildname: str, override = False) :
+		userdata: Users = UserTransactions.get_user(userid, deleted=override)
 		if userdata is None :
 			UserTransactions.add_user_full(userid, dob, guildname)
 			return False
@@ -103,6 +108,7 @@ class UserTransactions(ABC) :
 		userdata.date_of_birth = Encryption().encrypt(dob)
 		userdata.entry = datetime.now(tz=timezone.utc)
 		userdata.server = guildname
+		userdata.deleted_at = None
 		DatabaseTransactions.commit(session)
 		logging.info(f"Dob updated for {userid} from {old_dob} to {dob} in {guildname}")
 		if userdata.date_of_birth is None :
@@ -111,8 +117,8 @@ class UserTransactions(ABC) :
 
 	@staticmethod
 	@abstractmethod
-	def update_user(uid: int, entry: datetime = None, date_of_birth: str = None, server: str = None) :
-		user = UserTransactions.get_user(uid)
+	def update_user(uid: int, entry: datetime = None, date_of_birth: str = None, server: str = None, override = False) :
+		user = UserTransactions.get_user(uid, deleted=override)
 		data = {
 			"entry"         : entry,
 			"date_of_birth" : date_of_birth,
@@ -131,14 +137,14 @@ class UserTransactions(ABC) :
 
 	@staticmethod
 	@abstractmethod
-	def user_delete(userid: int, guildname: str) :
+	def soft_delete(userid: int, guildname: str) :
 		try :
-			userdata: Users = session.scalar(Select(Users).where(Users.uid == userid))
+			userdata: Users = UserTransactions.get_user(userid, deleted=True)
 			if userdata is None :
 				return False
-			session.delete(userdata)
+			userdata.deleted_at = datetime.now()
 			DatabaseTransactions.commit(session)
-			logging.info(f"User {userid} deleted by {guildname} ")
+			logging.info(f"User {userid} soft-deleted by {guildname} ")
 			return True
 		except sqlalchemy.exc.IntegrityError :
 			session.rollback()
@@ -146,10 +152,25 @@ class UserTransactions(ABC) :
 
 	@staticmethod
 	@abstractmethod
-	def get_user(userid: int) :
-		userdata = session.scalar(Select(Users).where(Users.uid == userid))
-		session.close()
-		return userdata
+	def permanent_delete(userid: int, guildname: str) :
+		try :
+			userdata: Users = UserTransactions.get_user(userid, deleted=True)
+			if userdata is None :
+				return False
+			session.delete(userdata)
+			DatabaseTransactions.commit(session)
+			logging.info(f"User {userid} permanently deleted by {guildname} ")
+			return True
+		except sqlalchemy.exc.IntegrityError :
+			session.rollback()
+			return False
+
+	@staticmethod
+	@abstractmethod
+	def get_user(userid: int, deleted: bool = False) :
+		if deleted:
+			return session.scalar(Select(Users).where(Users.uid == userid))
+		return session.scalar(Select(Users).where(and_(Users.uid == userid, Users.deleted_at.is_(None))))
 
 	@staticmethod
 	@abstractmethod
@@ -552,7 +573,9 @@ class AgeRoleTransactions() :
 			ConfigData().load_guild(guild_id)
 		return role
 
-	def remove(self, guild_id, role_id) :
+
+
+	def permanentdelete(self, guild_id, role_id) :
 		role = session.scalar(Select(AgeRole).where(AgeRole.role_id == role_id))
 		session.delete(role)
 		DatabaseTransactions.commit(session)

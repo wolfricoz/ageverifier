@@ -65,9 +65,15 @@ class Tasks(commands.GroupCog):
         for entry in userdata:
             if entry.entry < datetime.now() - timedelta(days=365):
                 await asyncio.sleep(0.1)
-                UserTransactions.user_delete(entry.uid, "Expiration Check (Entry Expired)")
+                UserTransactions.permanent_delete(entry.uid, "Expiration Check (Entry Expired)")
                 # logging.info("DEV: EXPIRATION CHECK DISABLED")
                 logging.info(f"Database record: {entry.uid} expired with date: {entry.entry}")
+            if entry.deleted_at and entry.deleted_at < datetime.now() - timedelta(days=30):
+                await asyncio.sleep(0.1)
+                UserTransactions.permanent_delete(entry.uid, "GDPR Removal (30 days passed)")
+                # logging.info("DEV: EXPIRATION CHECK DISABLED")
+                logging.info(f"Database record: {entry.uid} GDPR deleted with date: {entry.deleted_at}")
+
 
     @tasks.loop(hours=48)
     async def check_users_expiration(self):

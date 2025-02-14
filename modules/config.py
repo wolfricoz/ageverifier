@@ -178,7 +178,7 @@ class config(commands.GroupCog, name="config") :
 				await interaction.followup.send(f"{key.name}: <@&{value}> has been added to the database")
 			case 'remove' :
 				if key.value == "add" :
-					AgeRoleTransactions().remove(interaction.guild_id, value)
+					AgeRoleTransactions().permanentdelete(interaction.guild_id, value)
 					await interaction.followup.send(f"{key.name}: <@&{value}> has been removed from the database")
 					return
 

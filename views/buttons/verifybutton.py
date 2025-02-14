@@ -33,31 +33,35 @@ class VerifyButton(discord.ui.View) :
 		return dob, age
 
 	async def id_verified_check(self, interaction: discord.Interaction) -> bool :
-		modlobby = interaction.guild.get_channel(ConfigData().get_key_int(interaction.guild.id, 'lobbymod'))
-		print(modlobby)
-		if modlobby is None :
-			logging.info(f"{interaction.guild.name} does not have lobbymod set.")
-			return False
-		# User is ID verified, so the user does not need to input their dob and age again.
-		userinfo = VerificationTransactions.get_id_info(interaction.user.id)
-		print(userinfo.idverified)
-		if userinfo.idverified is True :
-			print("user is id verified")
-			dob, age = self.get_user_data(interaction.user.id)
-			message = f'Due to prior ID verification, you do not need to re-enter your date of birth and age. You will be granted access once the staff completes the verification process.'
-			if check_whitelist(interaction.guild.id) :
+		try:
+			modlobby = interaction.guild.get_channel(ConfigData().get_key_int(interaction.guild.id, 'lobbymod'))
+			if modlobby is None :
+				logging.info(f"{interaction.guild.name} does not have lobbymod set.")
+				return False
+			# User is ID verified, so the user does not need to input their dob and age again.
+			userinfo = VerificationTransactions.get_id_info(interaction.user.id)
+			if userinfo is None:
+				return False
+			if userinfo.idverified is True :
+				print("user is id verified")
+				dob, age = self.get_user_data(interaction.user.id)
+				message = f'Due to prior ID verification, you do not need to re-enter your date of birth and age. You will be granted access once the staff completes the verification process.'
+				if check_whitelist(interaction.guild.id) :
+					await send_message(modlobby,
+					                   f"\n{interaction.user.mention} is ID verified with: {dob}. You can let them through with the buttons below."
+					                   f"\n-# [LOBBY DEBUG] To manually process: `?approve {interaction.user.mention} {age} {dob}`",
+					                   view=ApprovalButtons(age=age, dob=dob, user=interaction.user))
+					await send_response(interaction, message,
+					                    ephemeral=True)
+					return True
 				await send_message(modlobby,
-				                   f"\n{interaction.user.mention} is ID verified with: {dob}. You can let them through with the buttons below."
-				                   f"\n-# [LOBBY DEBUG] To manually process: `?approve {interaction.user.mention} {age} {dob}`",
+				                   f"\n{interaction.user.mention} is ID verified. You can let them through with the buttons below."
+				                   f"\n-# [LOBBY DEBUG] Server not whitelisted: Personal Information (PI) hidden",
 				                   view=ApprovalButtons(age=age, dob=dob, user=interaction.user))
 				await send_response(interaction, message,
 				                    ephemeral=True)
 				return True
-			await send_message(modlobby,
-			                   f"\n{interaction.user.mention} is ID verified. You can let them through with the buttons below."
-			                   f"\n-# [LOBBY DEBUG] Server not whitelisted: Personal Information (PI) hidden",
-			                   view=ApprovalButtons(age=age, dob=dob, user=interaction.user))
-			await send_response(interaction, message,
-			                    ephemeral=True)
-			return True
-		return False
+			return False
+		except Exception as e:
+			logging.error(e, exc_info=True)
+			return False

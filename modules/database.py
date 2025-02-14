@@ -12,7 +12,7 @@ from classes.AgeCalculations import AgeCalculations
 from classes.databaseController import ServerTransactions, UserTransactions, VerificationTransactions
 from classes.encryption import Encryption
 from classes.lobbyprocess import LobbyProcess
-from classes.support.discord_tools import send_response
+from classes.support.discord_tools import send_message, send_response
 from classes.whitelist import check_whitelist
 from databases.current import Users
 from views.buttons.approvalbuttons import ApprovalButtons
@@ -69,20 +69,24 @@ class Database(commands.GroupCog) :
 			return
 		userdata: Users = UserTransactions.get_user(user.id)
 		user_status = VerificationTransactions.get_id_info(user.id)
-
+		if not userdata:
+			await interaction.followup.send(f"No entry available for {user.mention}")
+			return
 		if not permissions.check_dev(interaction.user.id) and (
 				user not in interaction.guild.members or userdata.server != interaction.guild.name) :
 			await interaction.followup.send(
 				"The user is not in the server and the date of birth was not added in this server.")
 			return
+		print(userdata.deleted_at)
 		data = {
 			"user"            : userdata.uid,
-			"date of birth"   : Encryption().decrypt(userdata.date_of_birth),
-			"Reason"          : user_status.reason,
-			"idcheck"         : user_status.idcheck,
-			"idverified"      : user_status.idverified,
-			"verifieddob"     : user_status.verifieddob,
-			"last updated in" : userdata.server
+			"date of birth"   : Encryption().decrypt(userdata.date_of_birth) if userdata.date_of_birth else None,
+			"Reason"          : user_status.reason if user_status else None,
+			"idcheck"         : user_status.idcheck if user_status else None,
+			"idverified"      : user_status.idverified if user_status else None,
+			"verifieddob"     : user_status.verifieddob if user_status else None,
+			"last updated in" : userdata.server,
+			"deleted_at"      : userdata.deleted_at if userdata.deleted_at else None
 		}
 
 		embed = discord.Embed(title="USER INFO",
@@ -101,7 +105,7 @@ class Database(commands.GroupCog) :
 		if await AgeCalculations.validatedob(dob, interaction) is False :
 			return
 		UserTransactions.add_user_full(str(user.id), dob, interaction.guild.name)
-		await send_response(interaction, f"({user.name}){user.id} added to the database with dob: {dob}")
+		await send_response(interaction, f"{user.name}({user.id}) added to the database with dob: {dob}")
 		await LobbyProcess.age_log(user.id, dob, interaction)
 
 	@app_commands.command()
@@ -109,6 +113,9 @@ class Database(commands.GroupCog) :
 	async def update(self, interaction: discord.Interaction, user: discord.User, dob: str) :
 		"""[manage_messages] updates the date of birth of a specified user."""
 		await send_response(interaction, f"⌛ updating {user.mention}'s entry", ephemeral=True)
+
+		if UserTransactions.get_user(user.id) is None:
+			return await send_response(interaction, "User not found.")
 		if await self.whitelist(interaction) :
 			return
 		if await AgeCalculations.validatedob(dob, interaction) is False :
@@ -125,7 +132,7 @@ class Database(commands.GroupCog) :
 		await send_response(interaction, f"⌛ deleting {user.mention} from the database", ephemeral=True)
 		if await self.whitelist(interaction) :
 			return
-		if UserTransactions.user_delete(user.id, interaction.guild.name) is False :
+		if UserTransactions.soft_delete(user.id, interaction.guild.name) is False :
 			await interaction.followup.send(f"Can't find entry: ({user.name}){user.id}")
 			return
 		await send_response(interaction, f"Deleted entry: ({user.name}){user.id} with reason: {reason}")

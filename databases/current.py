@@ -34,6 +34,7 @@ class Users(Base):
     server: Mapped[Optional[str]]
     warnings: Mapped[List["Warnings"]] = relationship(cascade="save-update, merge, delete, delete-orphan")
     id_verification: Mapped[Optional["IdVerification"]] = relationship(back_populates="user", cascade="save-update, merge, delete, delete-orphan", uselist=False)
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True, default=None)
 
 
 # noinspection PyTypeChecker, PydanticTypeChecker
