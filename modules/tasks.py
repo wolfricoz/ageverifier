@@ -54,7 +54,8 @@ class Tasks(commands.GroupCog) :
 		# Making a list of all members and removing duplicates.
 		members = list(set([member for guild in self.bot.guilds for member in guild.members]))
 		for member in members :
-			queue().add(self.update_user_time(member, userids), priority=0)
+			await asyncio.sleep(0.001)
+			await self.update_user_time(member, userids)
 
 	async def update_user_time(self, member, userids) :
 		if member.id not in userids :
@@ -64,10 +65,11 @@ class Tasks(commands.GroupCog) :
 		logging.info(f"Updating entry time for {member.id}")
 		UserTransactions.update_entry_date(member.id)
 
-	async def user_expiration_remove(self, userdata, removaldate) :
+	async def user_expiration_remove(self, userdata) :
 		"""removes expired entries."""
 		for entry in userdata :
-			queue().add(self.expiration_check(entry), priority=0)
+			await asyncio.sleep(0.001)
+			await self.expiration_check(entry)
 
 	async def expiration_check(self, entry) :
 		if entry.entry < datetime.now() - timedelta(days=365) :
@@ -86,8 +88,8 @@ class Tasks(commands.GroupCog) :
 		userdata = UserTransactions.get_all_users()
 		userids = [x.uid for x in userdata]
 		removaldate = datetime.now() - timedelta(days=730)
-		queue().add(self.user_expiration_update(userids), priority=0)
-		queue().add(self.user_expiration_remove(userdata, removaldate), priority=0)
+		await self.user_expiration_update(userids)
+		await self.user_expiration_remove(userdata)
 		logging.info("Finished checking all entries")
 
 	@tasks.loop(hours=12)
