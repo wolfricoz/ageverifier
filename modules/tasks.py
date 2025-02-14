@@ -79,7 +79,7 @@ class Tasks(commands.GroupCog) :
 			# logging.info("DEV: EXPIRATION CHECK DISABLED")
 			logging.info(f"Database record: {entry.uid} GDPR deleted with date: {entry.deleted_at}")
 
-	@tasks.loop(hours=12)
+	@tasks.loop(hours=24)
 	async def check_users_expiration(self) :
 		"""updates entry time, if entry is expired this also removes it."""
 		logging.info("Checking for expired entries.")
