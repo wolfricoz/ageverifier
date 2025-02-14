@@ -9,7 +9,7 @@ from discord import app_commands
 from discord.app_commands import Choice
 from discord.ext import commands
 
-from classes.configsetup import configSetup
+from classes.configsetup import ConfigSetup
 from classes.databaseController import AgeRoleTransactions, ConfigData, ConfigTransactions
 from classes.support.discord_tools import send_message, send_response
 from views.modals.configinput import ConfigInputUnique
@@ -43,59 +43,25 @@ class config(commands.GroupCog, name="config") :
 			case 'manual' :
 				await send_message(interaction.channel,
 				                   f"You can access the dashboard here for easier setup! https://bots.roleplaymeets.com/")
-				status = await configSetup().manual(self.bot, interaction, self.channelchoices, self.rolechoices,
+				status = await ConfigSetup().manual(self.bot, interaction, self.channelchoices, self.rolechoices,
 				                                    self.messagechoices)
 			case 'auto' :
-				status = await configSetup().auto(interaction, self.channelchoices, self.rolechoices, self.messagechoices)
+				status = await ConfigSetup().auto(interaction, self.channelchoices, self.rolechoices, self.messagechoices)
 
 		await send_response(interaction,
 		                    "The config has been successfully setup, if you wish to check our toggles you please do /config toggles. Permission checking will commence shortly.",
 		                    ephemeral=True)
 		if status is False :
 			return
-		await self.check_channel_permissions(interaction)
+		await ConfigSetup().check_channel_permissions(interaction.channel, interaction)
 
 	@app_commands.command()
 	@app_commands.checks.has_permissions(manage_guild=True)
 	async def permissioncheck(self, interaction: discord.Interaction) :
 		"""Checks the permissions of the bot."""
 		await send_response(interaction, f"Starting to check permissions for all the channels!", ephemeral=True)
-		await self.check_channel_permissions(interaction)
+		await ConfigSetup().check_channel_permissions(interaction.channel, interaction)
 
-	async def check_channel_permissions(self, interaction: discord.Interaction) :
-		fails = []
-		for key in self.channelchoices :
-			try :
-				channel = ConfigData().get_key_or_none(interaction.guild.id, key)
-				if channel is None or channel == "" :
-					await send_message(interaction.channel,
-					                   f"{key} is not set, please set it with /config channels\n[DEBUG] {key}: {channel}")
-					fails.append(key)
-					continue
-				try :
-					channel = interaction.guild.get_channel(int(channel))
-				except AttributeError :
-					continue
-
-				if channel is None :
-					await send_message(interaction.channel, f"{key} is not a valid channel, please set it with /config channels")
-					fails.append(key)
-					continue
-				try :
-					msg = await send_message(channel, "Checking permissions, if you see this I can post here!")
-					await msg.delete()
-				except discord.Forbidden :
-					await send_message(interaction.channel, f"I do not have permissions to post in {channel.name}")
-					fails.append(key)
-					continue
-				await interaction.channel.send(f"I have permissions to post in {channel.name}!")
-			except Exception as e :
-				logging.error(e)
-				fails.append(key)
-		if len(fails) > 0 :
-			await interaction.followup.send(f"Failed to check permissions for: {', '.join(fails)}")
-			return
-		await interaction.followup.send("All permissions are set correctly!")
 
 	@app_commands.command()
 	@app_commands.choices(key=[Choice(name=x, value=x) for x, _ in messagechoices.items()])

@@ -4,14 +4,17 @@ import discord
 from discord.utils import get
 
 from classes.databaseController import ConfigTransactions, ConfigData
+from classes.support.discord_tools import send_message
 from classes.support.queue import queue
 from views.buttons.confirmButtons import confirmAction
 from views.select.configselectroles import ConfigSelectRoles, ConfigSelectChannels
 from resources.data.config_variables import rolechoices, channelchoices, messagechoices
 
-class configSetup :
+class ConfigSetup :
 	"""This class is used to setup the configuration for the bot"""
-
+	rolechoices = rolechoices
+	channelchoices = channelchoices
+	messagechoices = messagechoices
 	async def manual(self, bot, interaction: discord.Interaction, channelchoices: dict, rolechoices: dict,
 	                 messagechoices: dict) :
 		logging.info("Manual setup started")
@@ -82,7 +85,6 @@ class configSetup :
 		await self.create_channels(interaction.guild, category, channelchoices, interaction)
 		await self.create_roles(interaction.guild, rolechoices, interaction)
 		await self.set_messages(interaction.guild, messagechoices)
-
 		return True
 
 	async def add_roles_to_channel(self, channel, roles) :
@@ -213,6 +215,49 @@ class configSetup :
 				guild.default_role : discord.PermissionOverwrite(read_messages=False),
 				guild.me           : discord.PermissionOverwrite(read_messages=True)
 			})
-		queue().add(configSetup().create_channels(guild, category, channelchoices), 2)
-		queue().add(configSetup().create_roles(guild, rolechoices), 2)
-		queue().add(configSetup().set_messages(guild, messagechoices), 2)
+		queue().add(ConfigSetup().create_channels(guild, category, channelchoices), 2)
+		queue().add(ConfigSetup().create_roles(guild, rolechoices), 2)
+		queue().add(ConfigSetup().set_messages(guild, messagechoices), 2)
+
+
+	async def check_channel_permissions(self, mod_channel: discord.TextChannel, interaction: discord.Interaction = None) :
+		fails = []
+		for key in self.channelchoices :
+			try :
+				channel = ConfigData().get_key_or_none(mod_channel.guild.id, key)
+				if channel is None or channel == "" :
+					await send_message(mod_channel,
+					                   f"{key} is not set, please set it with /config channels\n[DEBUG] {key}: {channel}")
+					fails.append(key)
+					continue
+				try :
+					channel = mod_channel.guild.get_channel(int(channel))
+				except AttributeError :
+					continue
+
+				if channel is None :
+					await send_message(mod_channel, f"{key} is not a valid channel, please set it with /config channels")
+					fails.append(key)
+					continue
+				try :
+					msg = await send_message(channel, "Checking permissions, if you see this I can post here!")
+					await msg.delete()
+				except discord.Forbidden :
+					await send_message(mod_channel, f"I do not have permissions to post in {channel.name}")
+					fails.append(key)
+					continue
+				await mod_channel.send(f"I have permissions to post in {channel.name}!")
+			except Exception as e :
+				logging.error(e, exc_info=True)
+				fails.append(key)
+		if len(fails) > 0 :
+			warning = f"Failed to check permissions for: {', '.join(fails)}"
+			if interaction is None:
+				return await send_message(mod_channel.guild.owner, warning )
+			await interaction.followup.send(warning)
+
+			return
+		success = "All permissions are set correctly!"
+		if interaction is None :
+			return await send_message(mod_channel.guild.owner, success)
+		await interaction.followup.send(success)
