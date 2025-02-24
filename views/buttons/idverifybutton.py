@@ -28,7 +28,7 @@ class IdVerifyButton(discord.ui.View) :
 		await interaction.message.delete()
 
 	@discord.ui.button(label="User Left", style=discord.ButtonStyle.red, custom_id="left")
-	async def remove(self, interaction: discord.Interaction, button: discord.ui.Button) :
+	async def left(self, interaction: discord.Interaction, button: discord.ui.Button) :
 		if not interaction.user.guild_permissions.administrator :
 			return await send_response(interaction, "You must have the administrator permission to execute this action!", ephemeral=True)
 		await interaction.message.delete()
