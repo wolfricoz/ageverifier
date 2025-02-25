@@ -49,7 +49,7 @@ If you want to continue, please confirm your request."""
                                     f"\nUser: {interaction.user.mention}({interaction.user.id})"
                                     f"\ndate of birth: {user_data.date_of_birth if user_data.date_of_birth is not None else 'Not set'}"
                                     f"\nLast server: {user_data.server if user_data.server is not None else 'Not set'}"
-                                    f"\nID Verification: {'Yes' if id_verified.idverified else 'No'}"
+                                    f"\nID Verification: {'Yes' if id_verified and id_verified.idverified else 'No'}"
                                     f"\n\nNote: All personal data is encrypted and stored securely. If you have any questions or concerns please contact the developer `ricostryker` or join our [support server](https://discord.gg/5tcpArff) and open a ticket.")
 
         await send_response(interaction, "Please contact the developer `ricostryker` to for help or join our [support server](https://discord.gg/5tcpArff) and open a ticket.", ephemeral=True)
