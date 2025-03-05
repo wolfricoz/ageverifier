@@ -4,7 +4,7 @@ from classes.databaseController import VerificationTransactions
 from classes.support.discord_tools import send_response
 from views.modals.idverify import IdVerifyModal
 
-
+#
 class IdVerifyButton(discord.ui.View) :
 	def __init__(self) :
 		super().__init__(timeout=None)
