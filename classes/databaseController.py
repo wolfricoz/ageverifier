@@ -82,7 +82,7 @@ class UserTransactions(ABC) :
 
 	@staticmethod
 	@abstractmethod
-	def add_user_full(userid, dob, guildname, override = False) :
+	def add_user_full(userid, dob, guildname, override=False) :
 		try :
 			userdata: Users = UserTransactions.get_user(userid, deleted=override)
 			if userdata is not None :
@@ -99,7 +99,7 @@ class UserTransactions(ABC) :
 
 	@staticmethod
 	@abstractmethod
-	def update_user_dob(userid: int, dob: str, guildname: str, override = False) :
+	def update_user_dob(userid: int, dob: str, guildname: str, override=False) :
 		userdata: Users = UserTransactions.get_user(userid, deleted=override)
 		if userdata is None :
 			UserTransactions.add_user_full(userid, dob, guildname)
@@ -117,7 +117,7 @@ class UserTransactions(ABC) :
 
 	@staticmethod
 	@abstractmethod
-	def update_user(uid: int, entry: datetime = None, date_of_birth: str = None, server: str = None, override = False) :
+	def update_user(uid: int, entry: datetime = None, date_of_birth: str = None, server: str = None, override=False) :
 		user = UserTransactions.get_user(uid, deleted=override)
 		data = {
 			"entry"         : entry,
@@ -168,7 +168,7 @@ class UserTransactions(ABC) :
 	@staticmethod
 	@abstractmethod
 	def get_user(userid: int, deleted: bool = False) :
-		if deleted:
+		if deleted :
 			return session.scalar(Select(Users).where(Users.uid == userid))
 		return session.scalar(Select(Users).where(and_(Users.uid == userid, Users.deleted_at.is_(None))))
 
@@ -348,7 +348,6 @@ class ConfigTransactions(ABC) :
 		session.delete(exists)
 		DatabaseTransactions.commit(session)
 
-
 	@staticmethod
 	@abstractmethod
 	def key_exists_check(guildid: int, key: str, overwrite=False) :
@@ -365,23 +364,12 @@ class ConfigTransactions(ABC) :
 
 	@staticmethod
 	@abstractmethod
-	def welcome_add(guildid) :
-
-		if ConfigTransactions.key_exists_check(guildid, "WELCOME") is True :
+	def toggle_add(guildid, key, value="DISABLED") :
+		if ConfigTransactions.key_exists_check(guildid, "AUTOKICK") is True :
 			return
-		welcome = Config(guild=guildid, key="WELCOME", value="ENABLED")
+		welcome = Config(guild=guildid, key="AUTOKICK", value="DISABLED")
 		session.merge(welcome)
-
-		DatabaseTransactions.commit(session)
-
-	@staticmethod
-	@abstractmethod
-	def automatic_add(guildid) :
-		if ConfigTransactions.key_exists_check(guildid, "AUTOMATIC") is True :
-			return
-		welcome = Config(guild=guildid, key="AUTOMATIC", value="DISABLED")
-		session.merge(welcome)
-
+		logging.info(f"Added toggle '{key}' with value '{value}' in {guildid}")
 		DatabaseTransactions.commit(session)
 
 	@staticmethod
@@ -469,6 +457,7 @@ class VerificationTransactions(ABC) :
 	def get_all() :
 		return session.query(IdVerification).all()
 
+
 class ConfigData(metaclass=singleton) :
 	"""
 	The goal of this class is to save the config to reduce database calls for the config; especially the roles.
@@ -518,7 +507,7 @@ class ConfigData(metaclass=singleton) :
 				"MAX" : x.maximum_age,
 				"MIN" : x.minimum_age,
 			}
-		if reload:
+		if reload :
 			self.load_guild(guild_id)
 		self.output_to_json()
 
@@ -562,18 +551,19 @@ class AgeRoleTransactions() :
 	def get_all(self, guild_id) :
 		return session.scalars(Select(AgeRole).where(AgeRole.guild_id == guild_id)).all()
 
-	def add(self, guild_id, role_id, role_type, maximum_age = 200, minimum_age = 18, reload = True) :
+	def get_minimum_age(self, guild_id) :
+		return session.scalars(Select(func.min(AgeRole.minimum_age)).where(AgeRole.guild_id == guild_id)).first()
+
+	def add(self, guild_id, role_id, role_type, maximum_age=200, minimum_age=18, reload=True) :
 		if self.exists(role_id) :
 			return self.update(guild_id, role_id, role_type, maximum_age, minimum_age, reload=reload)
 		role = db.AgeRole(guild_id=guild_id, role_id=role_id, type=role_type, maximum_age=maximum_age,
 		                  minimum_age=minimum_age)
 		session.merge(role)
 		DatabaseTransactions.commit(session)
-		if reload:
+		if reload :
 			ConfigData().load_guild(guild_id)
 		return role
-
-
 
 	def permanentdelete(self, guild_id, role_id) :
 		role = session.scalar(Select(AgeRole).where(AgeRole.role_id == role_id))
@@ -582,7 +572,7 @@ class AgeRoleTransactions() :
 		ConfigData().load_guild(guild_id)
 
 	def update(self, guild_id: int, role_id: int, role_type: str = None, maximum_age: int = None,
-	           minimum_age: int = None, reload = True) :
+	           minimum_age: int = None, reload=True) :
 		role = session.scalar(Select(AgeRole).where(AgeRole.role_id == role_id))
 		data = {
 			"type"        : role_type.upper(),
@@ -596,7 +586,7 @@ class AgeRoleTransactions() :
 		DatabaseTransactions.commit(session)
 		logging.info(f"Updated {role_id} with:")
 		logging.info(data)
-		if reload:
+		if reload :
 			ConfigData().load_guild(guild_id)
 
 		return role
@@ -632,24 +622,29 @@ class ServerTransactions() :
 	def add(self, guildid: int, active: bool = True, reload=True) :
 		if self.get(guildid) is not None :
 			self.update(guildid, active)
+			ConfigTransactions.toggle_add(guildid, "AUTOKICK")
+			ConfigTransactions.toggle_add(guildid, "AUTOMATIC")
+			ConfigTransactions.toggle_add(guildid, "WELCOME", "ENABLED")
 			return
 		g = db.Servers(guild=guildid, active=active)
 		session.merge(g)
 		DatabaseTransactions.commit(session)
-		ConfigTransactions.welcome_add(guildid)
-		ConfigTransactions.automatic_add(guildid)
-		if reload:
+		ConfigTransactions.toggle_add(guildid, "AUTOKICK")
+		ConfigTransactions.toggle_add(guildid, "AUTOMATIC")
+		ConfigTransactions.toggle_add(guildid, "WELCOME", "ENABLED")
+
+		if reload :
 			ConfigData().load_guild(guildid)
 
-	def get_all(self, id_only = True ) :
-		if id_only is False:
+	def get_all(self, id_only=True) :
+		if id_only is False :
 			return session.query(Servers).all()
 		return [sid[0] for sid in session.query(Servers.guild).all()]
 
 	def get(self, guild_id: int) :
 		return session.scalar(Select(Servers).where(Servers.guild == guild_id))
 
-	def update(self, guild_id: int, active: bool = None, reload = True) :
+	def update(self, guild_id: int, active: bool = None, reload=True) :
 		guild = self.get(guild_id)
 		if not guild :
 			return False
@@ -661,6 +656,6 @@ class ServerTransactions() :
 			logging.info(f"Updated {guild.guild} with:")
 			logging.info(updated_data)
 			DatabaseTransactions.commit(session)
-			if reload:
+			if reload :
 				ConfigData().load_guild(guild_id)
 		return

@@ -87,7 +87,6 @@ class Tasks(commands.GroupCog) :
 		logging.info("Checking for expired entries.")
 		userdata = UserTransactions.get_all_users()
 		userids = [x.uid for x in userdata]
-		removaldate = datetime.now() - timedelta(days=730)
 		await self.user_expiration_update(userids)
 		await self.user_expiration_remove(userdata)
 		logging.info("Finished checking all entries")

@@ -6,11 +6,9 @@ from dateutil.relativedelta import relativedelta
 import databases.current
 from classes.databaseController import *
 from classes.support.discord_tools import send_message, send_response
-from classes.support.queue import queue
 
 
 class AgeCalculations(ABC) :
-
 
 	@staticmethod
 	@abstractmethod
@@ -23,7 +21,7 @@ class AgeCalculations(ABC) :
 	@staticmethod
 	@abstractmethod
 	async def check_history(guild_id, user, channel) :
-		if guild_id != int(os.getenv("RMR_ID")):
+		if guild_id != int(os.getenv("RMR_ID")) :
 			return
 		count = 0
 		hf = []
@@ -94,7 +92,6 @@ class AgeCalculations(ABC) :
 		dateofbirth = AgeCalculations.regex(dateofbirth)
 		return dateofbirth
 
-
 	@staticmethod
 	@abstractmethod
 	def validate_dob(date_of_birth: str) :
@@ -162,3 +159,5 @@ class AgeCalculations(ABC) :
 		if dob == "ValueError" :
 			await interaction.followup.send("Please fill the dob in with the format: mm/dd/yyyy")
 			return False
+
+

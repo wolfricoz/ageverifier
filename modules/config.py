@@ -26,7 +26,7 @@ class config(commands.GroupCog, name="config") :
 	channelchoices = channelchoices
 	messagechoices = messagechoices
 
-	available_toggles = ["Welcome", "Automatic"]
+	available_toggles = ["Welcome", "Automatic", "autokick"]
 
 	@app_commands.command(name='setup')
 	@app_commands.checks.has_permissions(manage_guild=True)

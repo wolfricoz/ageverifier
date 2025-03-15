@@ -4,11 +4,11 @@ import discord
 
 import databases.current
 from classes.AgeCalculations import AgeCalculations
-from classes.databaseController import ConfigData, UserTransactions
+from classes.databaseController import AgeRoleTransactions, ConfigData, UserTransactions
 from classes.encryption import Encryption
 from classes.idcheck import IdCheck
 from classes.lobbyprocess import LobbyProcess
-from classes.support.discord_tools import send_message, send_response
+from classes.support.discord_tools import await_message, send_message, send_response
 from classes.whitelist import check_whitelist
 from views.buttons.approvalbuttons import ApprovalButtons
 
@@ -67,8 +67,6 @@ class VerifyModal(discord.ui.Modal) :
 		self.add_item(self.month)
 		self.add_item(self.year)
 
-
-
 	async def on_submit(self, interaction: discord.Interaction) :
 		userdata: databases.current.Users = UserTransactions.get_user(interaction.user.id)
 		mod_lobby = ConfigData().get_key_int(interaction.guild.id, "lobbymod")
@@ -80,14 +78,30 @@ class VerifyModal(discord.ui.Modal) :
 		if mod_channel is None or id_channel is None :
 			await send_response(interaction, f"An error occurred: Lobby channel or ID channel not found.", ephemeral=False)
 
-		dob = await AgeCalculations.infocheck(interaction, self.age.value, f"{self.month}/{self.day}/{self.year}", mod_channel)
+		dob = await AgeCalculations.infocheck(interaction, self.age.value, f"{self.month}/{self.day}/{self.year}",
+		                                      mod_channel)
 		if dob is None :
 			return
 		# Checks if user is underaged
 		agechecked, years = AgeCalculations.agechecker(age, dob)
+		minimum_age = AgeRoleTransactions().get_minimum_age(interaction.guild.id)
+		logging.info(minimum_age)
 		if age < 18 or years < 18 :
 			return await IdCheck.send_check(interaction, mod_channel, "underage", age, dob, id_check=True,
 			                                verify_button=False)
+		if minimum_age and age < minimum_age :
+			await send_response(interaction, f'Thank you for submitting your date of birth, unfortunately you are too young for this server; you must be {minimum_age} years old.',
+			                    ephemeral=True)
+			if ConfigData().get_key(interaction.guild.id, "AUTOKICK")  == "ENABLED":
+				await send_message(interaction.user, f"Thank you for submitting your date of birth, unfortunately you are too young for this server; you must be {minimum_age} years old.")
+				await send_message(mod_channel,
+				                   f"\n{interaction.user.mention} has given {age} which is below the minimum age of the age roles and has been denied entry. The user has been kicked because autokick is turned on.")
+				await interaction.user.kick(reason="user under minimum age")
+				return
+			await send_message(mod_channel,
+			                   f"\n{interaction.user.mention} has given {age} which is below the minimum age of the age roles and has been denied entry.")
+			return
+
 		logging.debug(f"userid: {interaction.user.id} age: {age} dob: {Encryption().encrypt(dob)}")
 		# Checks if the age matches the date of birth, if only off by one year the can resubmit; otherwise they are flagged
 		if agechecked == 1 or agechecked == -1 :
