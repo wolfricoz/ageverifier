@@ -133,14 +133,14 @@ class LobbyProcess(ABC) :
 
 	@staticmethod
 	@abstractmethod
-	async def age_log(userid, dob, interaction, operation="added", log=True) :
+	async def age_log(userid, dob, interaction, operation="added", log=True, reason="") :
 		age_log = interaction.guild.get_channel(ConfigData().get_key_int(interaction.guild.id, "lobbylog"))
 		dev_channel = interaction.client.get_channel(int(os.getenv('DEV')))
 		dob_field = ""
 		if check_whitelist(interaction.guild.id) :
 			dob_field = f"DOB: {dob}\n"
 		queue().add(send_message(dev_channel,
-		                   f"<@{userid}>'s dob {operation} in {interaction.guild.name} by {interaction.user.name}."), 0)
+		                   f"{userid}'s dob {operation} in {interaction.guild.name} by {interaction.user.name}. {f'Reason: {reason}' if reason else ''}"), 0)
 		await send_message(age_log, f"USER {operation.upper()}\n"
 		                                    f"{dob_field}"
 		                                    f"UID: {userid}\n"

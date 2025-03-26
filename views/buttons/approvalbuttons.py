@@ -74,7 +74,6 @@ Once you've made these changes you may resubmit your age and date of birth. Than
     async def add_to_db(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Adds user to db"""
         age_log = ConfigData().get_key_int(interaction.guild.id, "lobbylog")
-        age_log_channel = interaction.guild.get_channel(age_log)
         await self.disable_buttons(interaction, button)
         if self.user is None:
             await interaction.followup.send('The bot has restarted and the data of this button is missing. Please add the user manually.',

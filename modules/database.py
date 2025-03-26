@@ -136,7 +136,7 @@ class Database(commands.GroupCog) :
 			await interaction.followup.send(f"Can't find entry: ({user.name}){user.id}")
 			return
 		await send_response(interaction, f"Deleted entry: ({user.name}){user.id} with reason: {reason}")
-		await LobbyProcess.age_log(user.id, "", interaction, "deleted", False)
+		await LobbyProcess.age_log(user.id, "", interaction, "deleted", False, reason=reason)
 
 
 async def setup(bot) :
