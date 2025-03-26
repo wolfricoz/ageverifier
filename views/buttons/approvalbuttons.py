@@ -40,7 +40,7 @@ class ApprovalButtons(discord.ui.View):
         await interaction.followup.send('User flagged for manual ID.', ephemeral=True)
         idcheck = ConfigData().get_key_int(interaction.guild.id, "idlog")
         idlog = interaction.guild.get_channel(idcheck)
-        VerificationTransactions.set_idcheck_to_true(self.user.id, f"manually flagged by {interaction.user.name} with reason: {reason}")
+        VerificationTransactions.set_idcheck_to_true(self.user.id, f"manually flagged by {interaction.user.name} with reason: {reason}", server=interaction.guild.name)
         await interaction.message.edit(view=self)
         await idlog.send(
                 f"{interaction.user.mention} has flagged {self.user.mention} for manual ID with reason:\n"

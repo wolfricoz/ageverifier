@@ -82,7 +82,7 @@ class NsfwVerifyModal(discord.ui.Modal):
                     f'Unfortunately you are too young for our server. If you are 17 you may wait in the lobby.',
                     ephemeral=True)
             VerificationTransactions.set_idcheck_to_true(interaction.user.id,
-                                                         f"{datetime.datetime.now(datetime.timezone.utc).strftime('%m/%d/%Y')}: User is under the age of 18")
+                                                         f"{datetime.datetime.now(datetime.timezone.utc).strftime('%m/%d/%Y')}: User is under the age of 18", server=interaction.guild.name)
             return
         # Checks if user is underaged
         agechecked, years = AgeCalculations.agechecker(int(age), dob)

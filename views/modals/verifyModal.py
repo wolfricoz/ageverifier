@@ -88,7 +88,7 @@ class VerifyModal(discord.ui.Modal) :
 		logging.info(minimum_age)
 		if age < 18 or years < 18 :
 			return await IdCheck.send_check(interaction, mod_channel, "underage", age, dob, id_check=True,
-			                                verify_button=False)
+			                                verify_button=False, server=interaction.guild.name)
 		if minimum_age and age < minimum_age :
 			await send_response(interaction, f'Thank you for submitting your date of birth, unfortunately you are too young for this server; you must be {minimum_age} years old.',
 			                    ephemeral=True)
@@ -107,14 +107,14 @@ class VerifyModal(discord.ui.Modal) :
 		if agechecked == 1 or agechecked == -1 :
 			return await IdCheck.send_check(interaction, mod_channel, "mismatch", age, dob, years=years, verify_button=False)
 		if agechecked > 1 or agechecked < -1 :
-			return await IdCheck.send_check(interaction, id_channel, "nomatch", age, dob, years=years, id_check=True)
+			return await IdCheck.send_check(interaction, id_channel, "nomatch", age, dob, years=years, id_check=True, server=interaction.guild.name)
 		# Checks if user has a date of birth in the database, and if the date of births match.
 		if AgeCalculations.check_date_of_birth(userdata, dob) is False :
 			return await IdCheck.send_check(interaction, id_channel, "dobmismatch", age, dob,
-			                                date_of_birth=Encryption().decrypt(userdata.date_of_birth), id_check=True)
+			                                date_of_birth=Encryption().decrypt(userdata.date_of_birth), id_check=True, server=userdata.server)
 		# Check if user needs to ID or has previously ID'd
 		if idcheckinfo := await AgeCalculations.id_check_or_id_verified(interaction.user, interaction.guild, mod_channel) :
-			return await IdCheck.send_check(interaction, id_channel, "idcheck", age, dob, id_check_reason=idcheckinfo.reason)
+			return await IdCheck.send_check(interaction, id_channel, "idcheck", age, dob, id_check_reason=idcheckinfo.reason, server=idcheckinfo.server)
 		# Sends the buttons and information to lobby channel
 		if ConfigData().get_key(interaction.guild.id, "automatic") == "enabled".upper() :
 			await LobbyProcess.approve_user(interaction.guild, interaction.user, dob, age, "Automatic")

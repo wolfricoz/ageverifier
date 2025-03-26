@@ -389,10 +389,10 @@ class VerificationTransactions(ABC) :
 
 	@staticmethod
 	@abstractmethod
-	def update_check(userid, reason: str = None, idcheck=True) :
+	def update_check(userid, reason: str = None, idcheck=True, server=None) :
 		userdata = session.scalar(Select(IdVerification).where(IdVerification.uid == userid))
 		if userdata is None :
-			VerificationTransactions.add_idcheck(userid, reason, idcheck)
+			VerificationTransactions.add_idcheck(userid, reason, idcheck, server)
 			return
 		userdata.reason = reason
 		userdata.idcheck = idcheck
@@ -400,18 +400,18 @@ class VerificationTransactions(ABC) :
 
 	@staticmethod
 	@abstractmethod
-	def add_idcheck(userid: int, reason: str = None, idcheck=True) :
+	def add_idcheck(userid: int, reason: str = None, idcheck=True, server=None) :
 		UserTransactions.add_user_empty(userid, True)
-		idcheck = IdVerification(uid=userid, reason=reason, idcheck=idcheck)
+		idcheck = IdVerification(uid=userid, reason=reason, idcheck=idcheck, server=server)
 		session.add(idcheck)
 		DatabaseTransactions.commit(session)
 
 	@staticmethod
 	@abstractmethod
-	def set_idcheck_to_true(userid: int, reason) :
+	def set_idcheck_to_true(userid: int, reason, server =None) :
 		userdata: IdVerification = session.scalar(Select(IdVerification).where(IdVerification.uid == userid))
 		if userdata is None :
-			VerificationTransactions.add_idcheck(userid, reason)
+			VerificationTransactions.add_idcheck(userid, reason, idcheck=True, server=server)
 			return
 		userdata.idcheck = True
 		userdata.reason = reason
@@ -419,10 +419,10 @@ class VerificationTransactions(ABC) :
 
 	@staticmethod
 	@abstractmethod
-	def set_idcheck_to_false(userid: int, ) :
+	def set_idcheck_to_false(userid: int, server=None) :
 		userdata: IdVerification = session.scalar(Select(IdVerification).where(IdVerification.uid == userid))
 		if userdata is None :
-			VerificationTransactions.add_idcheck(userid, idcheck=False)
+			VerificationTransactions.add_idcheck(userid, idcheck=False, server=server)
 			return
 		userdata.idcheck = False
 		userdata.reason = None
@@ -439,11 +439,11 @@ class VerificationTransactions(ABC) :
 
 	@staticmethod
 	@abstractmethod
-	def idverify_update(userid, dob: str, guildname, idverified=True) :
+	def idverify_update(userid, dob: str, guildname, idverified=True, server=None) :
 
 		userdata = session.scalar(Select(IdVerification).where(IdVerification.uid == userid))
 		if userdata is None :
-			VerificationTransactions.add_idcheck(userid, dob, idcheck=False)
+			VerificationTransactions.add_idcheck(userid, dob, idcheck=False, server=server)
 			return
 		userdata.verifieddob = datetime.strptime(dob, "%m/%d/%Y")
 		userdata.idverified = idverified

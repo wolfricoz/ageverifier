@@ -6,7 +6,7 @@ from classes.lobbyprocess import LobbyProcess
 async def verify(user, interaction, dob, process=True):
 	if not interaction.user.guild_permissions.administrator:
 		return False
-	VerificationTransactions.idverify_update(user.id, dob, interaction.guild.name)
+	VerificationTransactions.idverify_update(user.id, dob, interaction.guild.name, server=interaction.guild.name)
 	age = AgeCalculations.dob_to_age(dob)
 	id_message = f"**USER ID VERIFICATION**\n**ID VERIFIED BY:** {interaction.user}\n"
 

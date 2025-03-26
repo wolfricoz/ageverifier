@@ -54,7 +54,7 @@ class idcheck(commands.GroupCog) :
 		if reason is None :
 			await interaction.followup.send(f"Please include a reason")
 			return
-		VerificationTransactions.update_check(user.id, reason, idcheck)
+		VerificationTransactions.update_check(user.id, reason, idcheck, server=interaction.guild.name)
 		await interaction.followup.send(
 			f"{user.mention}'s userid entry has been updated with reason: {reason} and idcheck: {idcheck}")
 
@@ -65,7 +65,7 @@ class idcheck(commands.GroupCog) :
 		"""[Administrator] Delete the ID check entry of a specified user."""
 		await send_response(interaction, f"⌛ deleting {user.mention}'s ID check entry'", ephemeral=True)
 		dev_channel = interaction.client.get_channel(int(os.getenv('DEV')))
-		if VerificationTransactions.set_idcheck_to_false(user.id) is False :
+		if VerificationTransactions.set_idcheck_to_false(user.id, server=interaction.guild.name) is False :
 			await interaction.followup.send(f"Can't find entry: <@{user.id}>")
 			return
 		await interaction.followup.send(f"Deleted entry: <@{user.id}>")
@@ -82,7 +82,7 @@ class idcheck(commands.GroupCog) :
 		if reason is None :
 			await interaction.followup.send(f"Please include a reason")
 			return
-		VerificationTransactions.add_idcheck(user.id, reason, True)
+		VerificationTransactions.add_idcheck(user.id, reason, True, server=interaction.guild.name)
 		await interaction.followup.send(
 			f"<@{user.id}>'s userid entry has been added with reason: {reason} and idcheck: {True}")
 

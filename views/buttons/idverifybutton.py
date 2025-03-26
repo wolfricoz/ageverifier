@@ -21,7 +21,7 @@ class IdVerifyButton(discord.ui.View) :
 		if not interaction.user.guild_permissions.administrator :
 			return await send_response(interaction, "You must have the administrator permission to execute this action!", ephemeral=True)
 		user = interaction.message.mentions[0]
-		if VerificationTransactions.set_idcheck_to_false(user.id) is False :
+		if VerificationTransactions.set_idcheck_to_false(user.id, server=interaction.guild.name) is False :
 			await send_response(interaction,f"Can't find entry: <@{user.id}>")
 			return
 		await send_response(interaction, f"Deleted entry: <@{user.id}>")

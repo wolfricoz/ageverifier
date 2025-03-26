@@ -76,6 +76,7 @@ class IdVerification(Base):
     idcheck: Mapped[bool] = mapped_column(Boolean, default=False)
     idverified: Mapped[bool] = mapped_column(Boolean, default=False)
     verifieddob: Mapped[Optional[datetime]]
+    server: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     user: Mapped["Users"] = relationship(back_populates="id_verification")
 
 
