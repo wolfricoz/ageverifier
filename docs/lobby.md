@@ -99,14 +99,3 @@ This command is ideal to deal with raids.
 **Permissions:** `administrator`
 
 **Usage:** /purge days:<max 14 days>
-
-[//]: # ()
-[//]: # (## NSFW age gate)
-
-[//]: # (just like the lobby, the NSFW age gate is used to verify the user's age. This is done by the bot automatically when the)
-
-[//]: # (user clicks the button. The bot will automatically check the user's age and date of birth against the database and if)
-
-[//]: # (the user is on the ID list. If the user is on the ID list, the bot will automatically flag the user and inform the)
-
-[//]: # (staff.)
