@@ -131,6 +131,7 @@ async def on_guild_join(guild) :
 	queue().add(send_message(guild.owner,
 	                         "Thank you for inviting Ageverifier. To help you get started, please read the documentation: https://wolfricoz.github.io/ageverifier/ and visit our [dashboard](https://bots.roleplaymeets.com/) to setup the bot with ease!\n\n"
 	                         "Please make sure the bot has permission to post in the channels where you try to run the commands!"))
+	ServerTransactions().add(guild.id, active=True)
 
 
 @bot.event
