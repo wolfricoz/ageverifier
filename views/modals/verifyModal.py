@@ -116,7 +116,9 @@ class VerifyModal(discord.ui.Modal) :
 		if idcheckinfo := await AgeCalculations.id_check_or_id_verified(interaction.user, interaction.guild, mod_channel) :
 			return await IdCheck.send_check(interaction, id_channel, "idcheck", age, dob, id_check_reason=idcheckinfo.reason, server=idcheckinfo.server)
 		# Sends the buttons and information to lobby channel
-		if ConfigData().get_key(interaction.guild.id, "automatic") == "enabled".upper() :
+
+		automatic_status = ConfigData().get_key_or_none(interaction.guild.id, "automatic")
+		if automatic_status and automatic_status == "enabled".upper() :
 			await LobbyProcess.approve_user(interaction.guild, interaction.user, dob, age, "Automatic")
 			await send_response(interaction,
 			                    f'Thank you for submitting your age and dob! You will be let through immediately!',

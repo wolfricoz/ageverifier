@@ -367,8 +367,8 @@ class ConfigTransactions(ABC) :
 	def toggle_add(guildid, key, value="DISABLED") :
 		if ConfigTransactions.key_exists_check(guildid, "AUTOKICK") is True :
 			return
-		welcome = Config(guild=guildid, key="AUTOKICK", value="DISABLED")
-		session.merge(welcome)
+		toggle = Config(guild=guildid, key=key, value=value)
+		session.merge(toggle)
 		logging.info(f"Added toggle '{key}' with value '{value}' in {guildid}")
 		DatabaseTransactions.commit(session)
 
