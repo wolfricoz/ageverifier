@@ -211,7 +211,7 @@ class ConfigSetup :
 		return channel
 
 
-	async def api_auto_setup(self, guild):
+	async def api_auto_setup(self, guild: discord.Guild):
 		category = get(guild.categories, name="Lobby")
 		if not category :
 			category: discord.CategoryChannel = await guild.create_category(name="Lobby", overwrites={
@@ -221,6 +221,10 @@ class ConfigSetup :
 		queue().add(ConfigSetup().create_channels(guild, category, channelchoices), 2)
 		queue().add(ConfigSetup().create_roles(guild, rolechoices), 2)
 		queue().add(ConfigSetup().set_messages(guild, messagechoices), 2)
+		lobby_mod = guild.get_channel(ConfigData().get_key_int(guild.id, "lobbymod"))
+		queue().add(send_message(lobby_mod, f"## Auto Setup for {guild.name} has been completed!"), 0)
+		queue().add(send_message(guild.owner, f"## Auto Setup for {guild.name} has been completed!"), 0)
+
 
 
 	async def check_channel_permissions(self, mod_channel: discord.TextChannel, interaction: discord.Interaction = None) :
