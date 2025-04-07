@@ -156,6 +156,14 @@ class config(commands.GroupCog, name="config") :
 			case _ :
 				raise NotImplementedError
 
+
+	@app_commands.command(name="cooldown")
+	async def cooldown(self, interaction: discord.Interaction, cooldown: int):
+		"""set the cooldown (in minutes) for the lobby verification process. 0 to disable"""
+		ConfigTransactions.config_unique_add(interaction.guild.id, "cooldown", cooldown, overwrite=True)
+		await send_response(interaction, f"The cooldown has been set to {cooldown} minutes", ephemeral=True)
+
+
 	@app_commands.command()
 	@app_commands.checks.has_permissions(manage_guild=True)
 	async def view(self, interaction: discord.Interaction) :

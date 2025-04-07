@@ -28,9 +28,11 @@ def verify_token(request: Request) :
 
 @router.post("/config/refresh")
 async def refresh_config(request: Request) :
-	print("Api Call received: Reload")
 	if verify_token(request) :
+		print("Reload request failed, invalid token")
 		return
+	print("Reload request received")
+
 	ConfigData().reload()
 	return {"message" : "Config refresh queued"}
 
@@ -48,6 +50,7 @@ async def refresh_config(request: Request, guildid: int) :
 	ConfigData().reload()
 	return {"message" : f"Auto Setup for {guild.name} queued"}
 
+
 @router.post("/config/{guildid}/permissioncheck")
 async def refresh_config(request: Request, guildid: int) :
 	if verify_token(request) :
@@ -57,11 +60,11 @@ async def refresh_config(request: Request, guildid: int) :
 	guild = bot.get_guild(guildid)
 	if not guild :
 		return {"message" : "Guild not found"}
-	try:
+	try :
 		mod_channel = bot.get_channel(ConfigData().get_key_int(guildid, "lobbymod"))
-		if mod_channel is None:
-			return {"message": "No moderation channel set"}
-	except:
-		return {"message": "No moderation channel set"}
+		if mod_channel is None :
+			return {"message" : "No moderation channel set"}
+	except :
+		return {"message" : "No moderation channel set"}
 	queue().add(ConfigSetup().check_channel_permissions(mod_channel))
 	return {"message" : f"Permission check for {guild.name} queued"}

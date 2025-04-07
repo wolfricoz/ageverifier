@@ -7,6 +7,7 @@ from classes.databaseController import ConfigData, UserTransactions, Verificatio
 from classes.encryption import Encryption
 from classes.support.discord_tools import send_message, send_response
 from classes.whitelist import check_whitelist
+from classes.lobbytimers import LobbyTimers
 from views.buttons.approvalbuttons import ApprovalButtons
 from views.buttons.tosbutton import TOSButton
 from views.modals.verifyModal import VerifyModal
@@ -18,8 +19,11 @@ class VerifyButton(discord.ui.View) :
 
 	@discord.ui.button(label="Start Verification here!", style=discord.ButtonStyle.green, custom_id="verify")
 	async def verify(self, interaction: discord.Interaction, button: discord.ui.Button) :
+		if cooldown :=LobbyTimers().check_cooldown(interaction.guild.id, interaction.user.id) :
+			await send_response(interaction, f"{interaction.user.mention} You are on cooldown for verification. Please wait {discord.utils.format_dt(cooldown, style='R')} before trying again.", ephemeral=True)
+			return
+
 		idcheck = await self.id_verified_check(interaction)
-		print(idcheck)
 		if idcheck :
 			return
 		await send_response(interaction,
@@ -43,9 +47,10 @@ class VerifyButton(discord.ui.View) :
 			if userinfo is None:
 				return False
 			if userinfo.idverified is True :
-				print("user is id verified")
+				logging.info("user is id verified")
 				dob, age = self.get_user_data(interaction.user.id)
 				message = f'Due to prior ID verification, you do not need to re-enter your date of birth and age. You will be granted access once the staff completes the verification process.'
+				LobbyTimers().add_cooldown(interaction.guild.id, interaction.user.id, ConfigData().get_key_int_or_zero(interaction.guild.id, 'COOLDOWN'))
 				if check_whitelist(interaction.guild.id) :
 					await send_message(modlobby,
 					                   f"\n{interaction.user.mention} is ID verified with: {dob}. You can let them through with the buttons below."
@@ -60,6 +65,7 @@ class VerifyButton(discord.ui.View) :
 				                   view=ApprovalButtons(age=age, dob=dob, user=interaction.user))
 				await send_response(interaction, message,
 				                    ephemeral=True)
+
 				return True
 			return False
 		except Exception as e:

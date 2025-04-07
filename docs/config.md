@@ -82,5 +82,7 @@ from.
 Allows you to view the current configuration of the server. This command is not required to be run, but is useful to see
 what the current configuration is.
 
+## `/config cooldown cooldown:(number)`
 
+This command allows you to set or remove the cooldown period for specific actions within the server. The cooldown period is specified in minutes. If the cooldown is set to 0, it is disabled.
 

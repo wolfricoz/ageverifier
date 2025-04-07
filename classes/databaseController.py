@@ -268,8 +268,6 @@ class ConfigTransactions(ABC) :
 
 		value = str(value)
 		if ConfigTransactions.key_exists_check(guildid, key, overwrite) is True and overwrite is False :
-			logging.warning(
-				f"Attempted to add unique key with data: {guildid}, {key}, {value}, and overwrite {overwrite}, but one already existed. No changes")
 			return False
 		if ConfigTransactions.key_exists_check(guildid, key, overwrite) is True :
 			entries = session.scalars(
@@ -471,6 +469,7 @@ class ConfigData(metaclass=singleton) :
 		logging.info("reloading config")
 		for guild_id in self.conf :
 			self.load_guild(guild_id)
+		logging.info(self.conf)
 
 	def load_guild(self, guild_id: int) :
 		config = ConfigTransactions.server_config_get(guild_id)
@@ -522,6 +521,10 @@ class ConfigData(metaclass=singleton) :
 			return int(self.conf[guildid][key.upper()])
 		except KeyError :
 			raise KeyNotFound(key.upper())
+
+	def get_key_int_or_zero(self, guildid: int, key: str) :
+		return int(self.conf[guildid].get(key.upper(), 0))
+
 
 	def get_key(self, guildid: int, key: str) :
 		try :
@@ -625,6 +628,7 @@ class ServerTransactions() :
 			ConfigTransactions.toggle_add(guildid, "AUTOKICK")
 			ConfigTransactions.toggle_add(guildid, "AUTOMATIC")
 			ConfigTransactions.toggle_add(guildid, "WELCOME", "ENABLED")
+			ConfigTransactions.config_unique_add(guildid, "COOLDOWN", 5)
 			return
 		g = db.Servers(guild=guildid, active=active)
 		session.merge(g)
@@ -632,6 +636,7 @@ class ServerTransactions() :
 		ConfigTransactions.toggle_add(guildid, "AUTOKICK")
 		ConfigTransactions.toggle_add(guildid, "AUTOMATIC")
 		ConfigTransactions.toggle_add(guildid, "WELCOME", "ENABLED")
+		ConfigTransactions.config_unique_add(guildid, "COOLDOWN", 5)
 
 		if reload :
 			ConfigData().load_guild(guildid)

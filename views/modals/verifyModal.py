@@ -10,6 +10,7 @@ from classes.idcheck import IdCheck
 from classes.lobbyprocess import LobbyProcess
 from classes.support.discord_tools import await_message, send_message, send_response
 from classes.whitelist import check_whitelist
+from classes.lobbytimers import LobbyTimers
 from views.buttons.approvalbuttons import ApprovalButtons
 
 
@@ -125,7 +126,7 @@ class VerifyModal(discord.ui.Modal) :
 			                    ephemeral=True)
 			return
 		await AgeCalculations.check_history(interaction.guild.id, interaction.user, mod_channel)
-
+		LobbyTimers().add_cooldown(interaction.guild.id, interaction.user.id, ConfigData().get_key_int_or_zero(interaction.guild.id, 'COOLDOWN'))
 		if check_whitelist(interaction.guild.id) :
 			await send_message(mod_channel,
 			                   f"\n{interaction.user.mention} has given {age} {dob}. You can let them through with the buttons below."

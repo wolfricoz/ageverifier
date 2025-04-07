@@ -69,7 +69,7 @@ class Database(commands.GroupCog) :
 			return
 		userdata: Users = UserTransactions.get_user(user.id)
 		user_status = VerificationTransactions.get_id_info(user.id)
-		if not userdata:
+		if not userdata :
 			await interaction.followup.send(f"No entry available for {user.mention}")
 			return
 		if not permissions.check_dev(interaction.user.id) and (
@@ -114,7 +114,7 @@ class Database(commands.GroupCog) :
 		"""[manage_messages] updates the date of birth of a specified user."""
 		await send_response(interaction, f"⌛ updating {user.mention}'s entry", ephemeral=True)
 
-		if UserTransactions.get_user(user.id) is None:
+		if UserTransactions.get_user(user.id) is None :
 			return await send_response(interaction, "User not found.")
 		if await self.whitelist(interaction) :
 			return

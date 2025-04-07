@@ -1,4 +1,6 @@
 """Allowing and denying users based on age."""
+import asyncio
+
 import discord
 
 from classes.databaseController import ConfigData, VerificationTransactions
@@ -80,7 +82,9 @@ Once you've made these changes you may resubmit your age and date of birth. Than
                                             ephemeral=True)
         await LobbyProcess.age_log(self.user.id, self.dob, interaction)
         await interaction.message.add_reaction("✅")
-        await interaction.followup.send('User added to database.', ephemeral=True)
+        await interaction.followup.send('User added to database and this message will be deleted in 3 minutes.', ephemeral=True)
+        await asyncio.sleep(180)
+        await interaction.message.delete()
         return
 
 
