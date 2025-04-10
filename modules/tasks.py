@@ -26,7 +26,7 @@ class Tasks(commands.GroupCog) :
 		self.config_reload.start()
 		self.check_users_expiration.start()
 		self.check_active_servers.start()
-		self.update_age_roles.start()
+		# self.update_age_roles.start()
 
 	def cog_unload(self) :
 		"""unloads tasks"""
