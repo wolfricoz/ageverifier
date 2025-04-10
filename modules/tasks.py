@@ -13,6 +13,7 @@ from classes.AgeCalculations import AgeCalculations
 from classes.ageroles import change_age_roles
 from classes.databaseController import ConfigData, ServerTransactions, UserTransactions
 from classes.encryption import Encryption
+from classes.support.discord_tools import send_message
 from classes.support.queue import queue
 
 OLDLOBBY = int(os.getenv("OLDLOBBY"))
@@ -114,6 +115,14 @@ class Tasks(commands.GroupCog) :
 		logging.info("Updating age roles.")
 		for guild in self.bot.guilds :
 			await asyncio.sleep(0.001)
+			rem_roles = (ConfigData().get_key_or_none(guild.id, "REM") or []) + (
+						ConfigData().get_key_or_none(guild.id, "JOIN") or [])
+			mod_lobby = guild.get_channel(ConfigData().get_key_int(guild.id, "lobbymod"))
+			if not rem_roles :
+				queue().add(send_message(mod_lobby,
+				                         f"Your server does not have any removal roles or on join roles setup, because of this automatic age role updates are disabled to prevent users in the lobby from getting age roles."),
+				            priority=0)
+				return
 			if ConfigData().get_key_or_none(guild.id, "UPDATEROLES") == "DISABLED" :
 				logging.info(f"Skipping {guild.name} age role update.")
 				continue
@@ -129,13 +138,11 @@ class Tasks(commands.GroupCog) :
 					age = AgeCalculations.dob_to_age(date_of_birth)
 					user_roles = [role.id for role in member.roles]
 
-					rem_roles = ConfigData().get_key_or_none(guild.id, "REM")
-					if rem_roles:
-						rem_roles.append(ConfigData().get_key_or_none(guild.id, "JOIN"))
-						for rem_role in rem_roles :
-							if rem_role in user_roles :
-								logging.info("User still in the lobby")
-								continue
+
+					for rem_role in rem_roles :
+						if rem_role in user_roles :
+							logging.info(f"User {member.name} still in the lobby")
+							continue
 					queue().add(change_age_roles(guild, member, age, remove=True), priority=0)
 				except Exception as e :
 					logging.error(f"Error calculating age for {member.name}: {e}", exc_info=True)
