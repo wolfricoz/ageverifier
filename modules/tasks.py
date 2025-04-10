@@ -109,28 +109,27 @@ class Tasks(commands.GroupCog) :
 			ServerTransactions().update(gid, active=False, reload=False)
 		ConfigData().reload()
 
-
-	@tasks.loop(hours=24*7)
-	async def update_age_roles(self):
+	@tasks.loop(hours=24 * 7)
+	async def update_age_roles(self) :
 		logging.info("Updating age roles.")
-		for guild in self.bot.guilds:
+		for guild in self.bot.guilds :
 			await asyncio.sleep(0.001)
-			if ConfigData().get_key_or_none(guild.id, "UPDATEROLES") == "DISABLED":
+			if ConfigData().get_key_or_none(guild.id, "UPDATEROLES") == "DISABLED" :
 				continue
-			for member in guild.members:
-				try:
+			for member in guild.members :
+				try :
 					member_data = UserTransactions.get_user(member.id)
-					if member_data is None or member_data.date_of_birth is None:
+					if member_data is None or member_data.date_of_birth is None :
 						continue
-					age = AgeCalculations.dob_to_age(Encryption().decrypt(member_data.date_of_birth))
+					date_of_birth = Encryption().decrypt(member_data.date_of_birth)
+					if "-" in date_of_birth :
+						date_of_birth = date_of_birth.replace("-", "/")
+						UserTransactions.update_user_dob(member.id, date_of_birth, guild.name)
+					age = AgeCalculations.dob_to_age(date_of_birth)
 					queue().add(change_age_roles(guild, member, age, remove=True), priority=0)
-				except Exception as e:
+				except Exception as e :
 					logging.error(f"Error calculating age for {member.name}: {e}", exc_info=True)
 					continue
-
-
-
-
 
 	@app_commands.command(name="expirecheck")
 	@app_commands.checks.has_permissions(administrator=True)
