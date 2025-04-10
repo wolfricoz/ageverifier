@@ -37,7 +37,7 @@ intents.message_content = True
 intents.members = True
 activity = discord.Activity(type=discord.ActivityType.watching, name="over the community")
 
-bot = commands.AutoShardedBot(command_prefix=PREFIX, case_insensitive=False, intents=intents, activity=activity)
+bot = commands.AutoShardedBot(command_prefix=PREFIX, case_insensitive=False, intents=intents, activity=activity, shard_count=5)
 
 bot.DEV = int(os.getenv("DEV"))
 
