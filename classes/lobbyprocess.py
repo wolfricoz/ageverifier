@@ -7,6 +7,7 @@ import discord
 from discord.utils import get
 
 from classes.AgeCalculations import AgeCalculations
+from classes.ageroles import change_age_roles
 from classes.databaseController import ConfigData, ConfigTransactions, UserTransactions
 from classes.support.discord_tools import send_message
 from classes.support.queue import queue
@@ -26,7 +27,7 @@ class LobbyProcess(ABC) :
 		exists = UserTransactions.update_user_dob(user.id, dob, guild.name, override=True)
 
 		# changes user's roles; adds
-		queue().add(LobbyProcess.add_age_roles(guild, user, age), priority=2)
+		queue().add(change_age_roles(guild, user, age), priority=2)
 
 		# changes user's roles; removes
 		queue().add(LobbyProcess.remove_user_roles(user, guild), priority=2)
@@ -148,13 +149,4 @@ class LobbyProcess(ABC) :
 		queue().add(send_message(interaction.channel, f"{operation} <@{userid}>({userid}) date of birth with dob: {dob}"))
 
 
-	@staticmethod
-	@abstractmethod
-	def add_age_roles(guild: discord.Guild, user: discord.Member, age) :
-		"""Adds the age roles to the user"""
-		roles = ConfigData().get_key(guild.id, "ADD")
-		add_roles = []
-		for key, value in roles.items() :
-			if value['MIN'] <= age <= value['MAX'] :
-				add_roles.append(guild.get_role(key))
-		queue().add(user.add_roles(*add_roles), priority=2)
+

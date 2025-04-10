@@ -9,7 +9,10 @@ from discord import app_commands
 from discord.ext import commands, tasks
 
 from classes import permissions
+from classes.AgeCalculations import AgeCalculations
+from classes.ageroles import change_age_roles
 from classes.databaseController import ConfigData, ServerTransactions, UserTransactions
+from classes.encryption import Encryption
 from classes.support.queue import queue
 
 OLDLOBBY = int(os.getenv("OLDLOBBY"))
@@ -21,14 +24,16 @@ class Tasks(commands.GroupCog) :
 		self.bot = bot
 		self.index = 0
 		self.config_reload.start()
-		self.check_users_expiration.start()
-		self.check_active_servers.start()
+		# self.check_users_expiration.start()
+		# self.check_active_servers.start()
+		self.update_age_roles.start()
 
 	def cog_unload(self) :
 		"""unloads tasks"""
 		self.config_reload.cancel()
 		self.check_users_expiration.cancel()
 		self.check_active_servers.cancel()
+		self.update_age_roles.cancel()
 
 	@tasks.loop(hours=1)
 	async def config_reload(self) :
@@ -102,6 +107,26 @@ class Tasks(commands.GroupCog) :
 			ServerTransactions().update(gid, active=False, reload=False)
 		ConfigData().reload()
 
+
+	@tasks.loop(hours=24*7)
+	async def update_age_roles(self):
+		logging.info("Updating age roles.")
+		for guild in self.bot.guilds:
+			for member in guild.members:
+				try:
+					member_data = UserTransactions.get_user(member.id)
+					if member_data is None or member_data.date_of_birth is None:
+						continue
+					age = AgeCalculations.dob_to_age(Encryption().decrypt(member_data.date_of_birth))
+					queue().add(change_age_roles(guild, member, age, remove=True), priority=0)
+				except Exception as e:
+					logging.error(f"Error calculating age for {member.name}: {e}", exc_info=True)
+					continue
+
+
+
+
+
 	@app_commands.command(name="expirecheck")
 	@app_commands.checks.has_permissions(administrator=True)
 	async def expirecheck(self, interaction: discord.Interaction) :
@@ -109,6 +134,11 @@ class Tasks(commands.GroupCog) :
 		await interaction.response.send_message("[Debug]Checking all entries.")
 		self.check_users_expiration.restart()
 		await interaction.followup.send("check-up finished.")
+
+	@update_age_roles.before_loop
+	async def before_update_age_roles(self) :
+		"""stops event from starting before the bot has fully loaded"""
+		await self.bot.wait_until_ready()
 
 	@check_users_expiration.before_loop
 	async def before_expire(self) :
