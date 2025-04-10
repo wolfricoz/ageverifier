@@ -628,6 +628,7 @@ class ServerTransactions() :
 			ConfigTransactions.toggle_add(guildid, "AUTOKICK")
 			ConfigTransactions.toggle_add(guildid, "AUTOMATIC")
 			ConfigTransactions.toggle_add(guildid, "WELCOME", "ENABLED")
+			ConfigTransactions.toggle_add(guildid, "UPDATEROLES", "ENABLED")
 			ConfigTransactions.config_unique_add(guildid, "COOLDOWN", 5)
 			return
 		g = db.Servers(guild=guildid, active=active)
@@ -636,6 +637,7 @@ class ServerTransactions() :
 		ConfigTransactions.toggle_add(guildid, "AUTOKICK")
 		ConfigTransactions.toggle_add(guildid, "AUTOMATIC")
 		ConfigTransactions.toggle_add(guildid, "WELCOME", "ENABLED")
+		ConfigTransactions.toggle_add(guildid, "UPDATEROLES", "ENABLED")
 		ConfigTransactions.config_unique_add(guildid, "COOLDOWN", 5)
 
 		if reload :

@@ -112,6 +112,8 @@ class Tasks(commands.GroupCog) :
 	async def update_age_roles(self):
 		logging.info("Updating age roles.")
 		for guild in self.bot.guilds:
+			if ConfigData().get_key_or_none(guild.id, "UPDATEROLES") == "DISABLED":
+				continue
 			for member in guild.members:
 				try:
 					member_data = UserTransactions.get_user(member.id)
