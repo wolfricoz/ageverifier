@@ -115,6 +115,7 @@ class Tasks(commands.GroupCog) :
 		for guild in self.bot.guilds :
 			await asyncio.sleep(0.001)
 			if ConfigData().get_key_or_none(guild.id, "UPDATEROLES") == "DISABLED" :
+				logging.info(f"Skipping {guild.name} age role update.")
 				continue
 			for member in guild.members :
 				try :
