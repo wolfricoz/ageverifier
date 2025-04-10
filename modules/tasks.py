@@ -127,6 +127,15 @@ class Tasks(commands.GroupCog) :
 						date_of_birth = date_of_birth.replace("-", "/")
 						UserTransactions.update_user_dob(member.id, date_of_birth, guild.name)
 					age = AgeCalculations.dob_to_age(date_of_birth)
+					user_roles = [role.id for role in member.roles]
+
+					rem_roles = ConfigData().get_key_or_none(guild.id, "REM")
+					if rem_roles:
+						rem_roles.append(ConfigData().get_key_or_none(guild.id, "JOIN"))
+						for rem_role in rem_roles :
+							if rem_role in user_roles :
+								logging.info("User still in the lobby")
+								continue
 					queue().add(change_age_roles(guild, member, age, remove=True), priority=0)
 				except Exception as e :
 					logging.error(f"Error calculating age for {member.name}: {e}", exc_info=True)
