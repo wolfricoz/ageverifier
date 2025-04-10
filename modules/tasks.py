@@ -26,7 +26,7 @@ class Tasks(commands.GroupCog) :
 		self.config_reload.start()
 		self.check_users_expiration.start()
 		self.check_active_servers.start()
-		# self.update_age_roles.start()
+		self.update_age_roles.start()
 
 	def cog_unload(self) :
 		"""unloads tasks"""
@@ -114,6 +114,7 @@ class Tasks(commands.GroupCog) :
 	async def update_age_roles(self):
 		logging.info("Updating age roles.")
 		for guild in self.bot.guilds:
+			await asyncio.sleep(0.001)
 			if ConfigData().get_key_or_none(guild.id, "UPDATEROLES") == "DISABLED":
 				continue
 			for member in guild.members:
