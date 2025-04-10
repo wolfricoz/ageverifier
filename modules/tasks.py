@@ -59,6 +59,7 @@ class Tasks(commands.GroupCog) :
 		# Making a list of all members and removing duplicates.
 		members = list(set([member for guild in self.bot.guilds for member in guild.members]))
 		for member in members :
+			await asyncio.sleep(0.001)
 			await self.update_user_time(member, userids)
 
 	async def update_user_time(self, member, userids) :
@@ -72,6 +73,7 @@ class Tasks(commands.GroupCog) :
 	async def user_expiration_remove(self, userdata) :
 		"""removes expired entries."""
 		for entry in userdata :
+			await asyncio.sleep(0.001)
 			await self.expiration_check(entry)
 
 	async def expiration_check(self, entry) :
