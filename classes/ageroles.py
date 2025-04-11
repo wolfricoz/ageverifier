@@ -1,3 +1,5 @@
+import logging
+
 import discord
 
 from classes.databaseController import ConfigData
@@ -8,6 +10,9 @@ from classes.support.queue import queue
 def change_age_roles(guild: discord.Guild, user: discord.Member, age, remove = False) :
 	"""Adds the age roles to the user and removes the age roles that are not in the range if remove is True."""
 	roles = ConfigData().get_key(guild.id, "ADD")
+	exluded_roles = ConfigData().get_key(guild.id, "EXCLUDE")
+	roles = {key: value for key, value in roles.items() if key not in exluded_roles}
+	logging.info(roles)
 	add_roles = []
 	remove_roles = []
 	for key, value in roles.items() :

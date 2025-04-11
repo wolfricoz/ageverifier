@@ -113,11 +113,17 @@ class Tasks(commands.GroupCog) :
 	@tasks.loop(hours=24 * 7)
 	async def update_age_roles(self) :
 		logging.info("Updating age roles.")
+		if self.update_age_roles.current_loop == 0 :
+			logging.info("Skipping age role update on startup.")
+			return
 		for guild in self.bot.guilds :
 			await asyncio.sleep(0.001)
 			rem_roles = (ConfigData().get_key_or_none(guild.id, "REM") or []) + (
 						ConfigData().get_key_or_none(guild.id, "JOIN") or [])
-			mod_lobby = guild.get_channel(ConfigData().get_key_int(guild.id, "lobbymod"))
+			mod_lobby = guild.get_channel(ConfigData().get_key_int_or_zero(guild.id, "lobbymod"))
+			if mod_lobby is None :
+				logging.info(f"Mod lobby not found in {guild.name}, skipping age role update.")
+				continue
 			if not rem_roles :
 				queue().add(send_message(mod_lobby,
 				                         f"Your server does not have any removal roles or on join roles setup, because of this automatic age role updates are disabled to prevent users in the lobby from getting age roles."),

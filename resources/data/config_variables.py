@@ -14,5 +14,6 @@ rolechoices = {
 	'add'    : 'These roles will be added to the user after a successful verification',
 	"rem"    : 'These roles will be removed from the user after a successful verification',
 	"return" : "These roles will be removed from the user when running the /lobby return command.",
-	"join"   : "These roles will be added to the user when they join the server and removed when they verify their age."
+	"join"   : "These roles will be added to the user when they join the server and removed when they verify their age.",
+	"exclude" : "These roles are excluded from the automated age update system, ensuring the bot does not assign unnecessary roles to users."
 }
