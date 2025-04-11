@@ -62,30 +62,30 @@ async def invite_info(bot, member: discord.Member) :
 	invites_before_join = bot.invites[member.guild.id]
 	invites_after_join = await member.guild.invites()
 	userdata = UserTransactions.get_user(member.id)
-	for invite in invites_before_join :
-		if invite.uses < find_invite_by_code(invites_after_join, invite.code).uses :
-			fields = {
-				"user id"            : member.id,
-				"Invite Code"        : f"{invite.code}",
-				"Code created by"    : f"{invite.inviter} ({invite.inviter.id})",
-				"Account created at" : member.created_at.strftime("%m/%d/%Y"),
-				"Member joined at"   : datetime.now().strftime("%m/%d/%Y"),
-				"account flags"      : ", ".join([flag[0] for flag in member.public_flags if flag[1] is True]),
-				"in database?"       : "Yes" if userdata else "No"
-			}
-			embed = await create_embed(
-				title=f"{member.global_name} joined {member.guild.name}",
-				fields=fields
-			)
-
-			try :
-				embed.set_image(url=member.avatar.url)
-			except :
-				pass
-			embed.set_footer(text=f"USERID: {member.id}")
-			channel = bot.get_channel(int(infochannel))
-			await send_message(channel, embed=embed)
-
-			bot.invites[member.guild.id] = invites_after_join
-
-			return
+	fields = {
+		"user id"            : member.id,
+		"Invite Code"        : "No invite found",
+		"Code created by"    : "No invite found",
+		"Account created at" : member.created_at.strftime("%m/%d/%Y"),
+		"Member joined at"   : datetime.now().strftime("%m/%d/%Y"),
+		"account flags"      : ", ".join([flag[0] for flag in member.public_flags if flag[1] is True]),
+		"in database?"       : "Yes" if userdata else "No"
+	}
+	try:
+		for invite in invites_before_join :
+			if invite.uses < find_invite_by_code(invites_after_join, invite.code).uses :
+				fields["Invite Code"] = invite.code
+				fields["Code created by"] = invite.inviter.name
+				bot.invites[member.guild.id] = invites_after_join
+	except Exception as e :
+		logging.error(e, exc_info=True)
+	embed = await create_embed(
+		title=f"{member.name} joined {member.guild.name}",
+		fields=fields
+	)
+	try :
+		embed.set_image(url=member.avatar.url)
+	except :
+		pass
+	channel = bot.get_channel(int(infochannel))
+	await send_message(channel, embed=embed)
