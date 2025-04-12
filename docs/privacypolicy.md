@@ -44,6 +44,7 @@ We use the user-submitted data collected for the following purposes:
 - Verifying user eligibility based on date of birth.
 - Ensuring compliance with platform, guild, or legal age requirements.
 - Improving the accuracy and/or functionality of our age verification system.
+- Assigning roles based on your age and guild requirements.
 
 ## Data Minimization
 We only collect the minimum amount of data required for age verification and do not use user data for purposes other than those explicitly stated in this policy.
