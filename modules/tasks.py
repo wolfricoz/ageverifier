@@ -129,7 +129,7 @@ class Tasks(commands.GroupCog) :
 				                         f"Your server does not have any removal roles or on join roles setup, because of this automatic age role updates are disabled to prevent users in the lobby from getting age roles."),
 				            priority=0)
 				return
-			if ConfigData().get_key_or_none(guild.id, "UPDATEROLES") == "DISABLED" :
+			if ConfigData().get_key_or_none(guild.id, "UPDATEROLES") != "ENABLED" :
 				logging.info(f"Skipping {guild.name} age role update.")
 				continue
 			for member in guild.members :

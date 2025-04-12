@@ -363,7 +363,7 @@ class ConfigTransactions(ABC) :
 	@staticmethod
 	@abstractmethod
 	def toggle_add(guildid, key, value="DISABLED") :
-		if ConfigTransactions.key_exists_check(guildid, "AUTOKICK") is True :
+		if ConfigTransactions.key_exists_check(guildid, key) is True :
 			return
 		toggle = Config(guild=guildid, key=key, value=value)
 		session.merge(toggle)
@@ -628,7 +628,7 @@ class ServerTransactions() :
 			ConfigTransactions.toggle_add(guildid, "AUTOKICK")
 			ConfigTransactions.toggle_add(guildid, "AUTOMATIC")
 			ConfigTransactions.toggle_add(guildid, "WELCOME", "ENABLED")
-			ConfigTransactions.toggle_add(guildid, "UPDATEROLES", "ENABLED")
+			ConfigTransactions.toggle_add(guildid, "UPDATEROLES")
 			ConfigTransactions.config_unique_add(guildid, "COOLDOWN", 5)
 			return
 		g = db.Servers(guild=guildid, active=active)
