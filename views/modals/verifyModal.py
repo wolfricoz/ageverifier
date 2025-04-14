@@ -88,19 +88,14 @@ class VerifyModal(discord.ui.Modal) :
 		minimum_age = AgeRoleTransactions().get_minimum_age(interaction.guild.id)
 		logging.info(minimum_age)
 		if age < 18 or years < 18 :
-			return await IdCheck.send_check(interaction, mod_channel, "underage", age, dob, id_check=True,
+			await IdCheck.send_check(interaction, mod_channel, "underage", age, dob, id_check=True,
 			                                verify_button=False, server=interaction.guild.name)
+			await self.autokick(interaction, mod_channel, age, minimum_age)
+			return
 		if minimum_age and age < minimum_age :
 			await send_response(interaction, f'Thank you for submitting your date of birth, unfortunately you are too young for this server; you must be {minimum_age} years old.',
 			                    ephemeral=True)
-			if ConfigData().get_key(interaction.guild.id, "AUTOKICK")  == "ENABLED":
-				await send_message(interaction.user, f"Thank you for submitting your date of birth, unfortunately you are too young for this server; you must be {minimum_age} years old.")
-				await send_message(mod_channel,
-				                   f"\n{interaction.user.mention} has given {age} which is below the minimum age of the age roles and has been denied entry. The user has been kicked because autokick is turned on.")
-				await interaction.user.kick(reason="user under minimum age")
-				return
-			await send_message(mod_channel,
-			                   f"\n{interaction.user.mention} has given {age} which is below the minimum age of the age roles and has been denied entry.")
+			await self.autokick(interaction, mod_channel, age, minimum_age)
 			return
 
 		logging.debug(f"userid: {interaction.user.id} age: {age} dob: {Encryption().encrypt(dob)}")
@@ -146,3 +141,16 @@ class VerifyModal(discord.ui.Modal) :
 		print(error)
 		await send_response(interaction, f"An error occurred: {error}", ephemeral=True)
 		raise error
+
+
+
+	async def autokick(self, interaction, mod_channel, age, minimum_age):
+		if ConfigData().get_key(interaction.guild.id, "AUTOKICK") == "ENABLED" :
+			await send_message(interaction.user,
+			                   f"Thank you for submitting your date of birth, unfortunately you are too young for this server; you must be {minimum_age} years old.")
+			await send_message(mod_channel,
+			                   f"\n{interaction.user.mention} has given {age} which is below the minimum age of the age roles and has been denied entry. The user has been kicked because autokick is turned on.")
+			await interaction.user.kick(reason="user under minimum age")
+			return
+		await send_message(mod_channel,
+		                   f"\n{interaction.user.mention} has given {age} which is below the minimum age of the age roles and has been denied entry.")
