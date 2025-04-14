@@ -29,7 +29,8 @@ def verify_token(request: Request) :
 @router.post("/config/refresh")
 async def refresh_config(request: Request) :
 	if verify_token(request) :
-		print("Reload request failed, invalid token")
+		logging.warning(f"Invalid token for config refresh request from ip {request.client.host}")
+
 		return
 	print("Reload request received")
 
@@ -38,8 +39,9 @@ async def refresh_config(request: Request) :
 
 
 @router.post("/config/{guildid}/autosetup")
-async def refresh_config(request: Request, guildid: int) :
+async def auto_setup(request: Request, guildid: int) :
 	if verify_token(request) :
+		logging.warning(f"Invalid token for auto setup request for {guildid} with ip {request.client.host}")
 		return
 
 	bot: commands.Bot = request.app.state.bot
@@ -52,8 +54,10 @@ async def refresh_config(request: Request, guildid: int) :
 
 
 @router.post("/config/{guildid}/permissioncheck")
-async def refresh_config(request: Request, guildid: int) :
+async def permission_check(request: Request, guildid: int) :
 	if verify_token(request) :
+		logging.warning(f"Invalid token for permission check request for {guildid} with ip {request.client.host}")
+
 		return
 
 	bot: commands.Bot = request.app.state.bot
