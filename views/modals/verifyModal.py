@@ -86,7 +86,6 @@ class VerifyModal(discord.ui.Modal) :
 		# Checks if user is underaged
 		agechecked, years = AgeCalculations.agechecker(age, dob)
 		minimum_age = AgeRoleTransactions().get_minimum_age(interaction.guild.id)
-		logging.info(minimum_age)
 		if age < 18 or years < 18 :
 			await IdCheck.send_check(interaction, mod_channel, "underage", age, dob, id_check=True,
 			                                verify_button=False, server=interaction.guild.name)

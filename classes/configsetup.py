@@ -100,7 +100,7 @@ class ConfigSetup :
 				match channelkey :
 					case 'inviteinfo' :
 						print("setting up invite info")
-						await self.create_channel(guild, category, "invite-info", "This channel shows you additional join "
+						channel = await self.create_channel(guild, category, "invite-info", "This channel shows you additional join "
 						                                                          "information about the user.")
 
 					case 'general' :
