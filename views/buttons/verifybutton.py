@@ -5,6 +5,7 @@ import discord
 from classes.AgeCalculations import AgeCalculations
 from classes.databaseController import ConfigData, UserTransactions, VerificationTransactions
 from classes.encryption import Encryption
+from classes.lobbyprocess import LobbyProcess
 from classes.support.discord_tools import send_message, send_response
 from classes.whitelist import check_whitelist
 from classes.lobbytimers import LobbyTimers
@@ -51,6 +52,14 @@ class VerifyButton(discord.ui.View) :
 				dob, age = self.get_user_data(interaction.user.id)
 				message = f'Due to prior ID verification, you do not need to re-enter your date of birth and age. You will be granted access once the staff completes the verification process.'
 				LobbyTimers().add_cooldown(interaction.guild.id, interaction.user.id, ConfigData().get_key_int_or_zero(interaction.guild.id, 'COOLDOWN'))
+				automatic_status = ConfigData().get_key_or_none(interaction.guild.id, "automatic")
+				if automatic_status and automatic_status == "enabled".upper() :
+					await LobbyProcess.approve_user(interaction.guild, interaction.user, dob, age, "Automatic")
+					await send_response(interaction,
+					                    f'Thank you for submitting your age and dob! You will be let through immediately!',
+					                    ephemeral=True)
+					return True
+
 				if check_whitelist(interaction.guild.id) :
 					await send_message(modlobby,
 					                   f"\n{interaction.user.mention} is ID verified with: {dob}. You can let them through with the buttons below."
