@@ -32,7 +32,7 @@ async def refresh_config(request: Request) :
 		logging.warning(f"Invalid token for config refresh request from ip {request.client.host}")
 
 		return
-	print("Reload request received")
+	logging.info("Website Request: Reload Config")
 
 	ConfigData().reload()
 	return {"message" : "Config refresh queued"}
