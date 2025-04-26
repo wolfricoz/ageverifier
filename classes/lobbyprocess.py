@@ -29,8 +29,6 @@ class LobbyProcess(ABC) :
 		# changes user's roles; adds
 		queue().add(change_age_roles(guild, user, age), priority=2)
 
-		# changes user's roles; removes
-		queue().add(LobbyProcess.remove_user_roles(user, guild), priority=2)
 
 		# Log age and dob to lobbylog
 		if not idverify:
@@ -38,6 +36,10 @@ class LobbyProcess(ABC) :
 
 		# fetches welcoming message and welcomes them in general channel
 		queue().add(LobbyProcess.welcome(user, guild), priority=2)
+
+		# changes user's roles; removes - Moved here to give some time between adding and removing roles (potential fixing a discord syncing bug)
+
+		queue().add(LobbyProcess.remove_user_roles(user, guild), priority=2)
 
 		# Cleans up the messages in the lobby and where the command was executed
 		queue().add(LobbyProcess.clean_up(guild, user), priority=0)
@@ -49,6 +51,9 @@ class LobbyProcess(ABC) :
 		config_rem_roles = ConfigData().get_key(guild.id, "REM")
 		rem_roles = await LobbyProcess.get_roles(guild, config_rem_roles, "REM")
 		queue().add(user.remove_roles(*rem_roles), priority=2)
+
+
+
 
 	@staticmethod
 	@abstractmethod
