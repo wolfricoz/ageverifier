@@ -5,7 +5,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from classes.databaseController import UserTransactions, VerificationTransactions
+from classes.databaseController import ServerTransactions, UserTransactions, VerificationTransactions
 from classes.support.discord_tools import send_message, send_response
 from views.buttons.gdprremoval import GDPRRemoval
 
@@ -40,6 +40,11 @@ If you want to continue, please confirm your request."""
         dev = self.bot.get_user(188647277181665280)
         user_data = UserTransactions.get_user(interaction.user.id)
         id_verified = VerificationTransactions.get_id_info(interaction.user.id)
+        server = self.bot.get_guild(int(os.getenv("SUPPORTGUILD")))
+        if server is None:
+          invite = "Failed to generate invite link, please contact the developer."
+        else:
+          invite = server.get_channel(int(os.getenv('dev'))).create_invite(max_age=3600, max_uses=1, reason="GDPR data request")
         if user_data is not None:
             await interaction.user.send(f"**__User Data Request__**"
                                         f"\nUser: {interaction.user.mention}({interaction.user.id})"
@@ -50,9 +55,9 @@ If you want to continue, please confirm your request."""
                                     f"\ndate of birth: {user_data.date_of_birth if user_data.date_of_birth is not None else 'Not set'}"
                                     f"\nLast server: {user_data.server if user_data.server is not None else 'Not set'}"
                                     f"\nID Verification: {'Yes' if id_verified and id_verified.idverified else 'No'}"
-                                    f"\n\nNote: All personal data is encrypted and stored securely. If you have any questions or concerns please contact the developer `ricostryker` or join our [support server](https://discord.gg/5tcpArff) and open a ticket.")
+                                    f"\n\nNote: All personal data is encrypted and stored securely. If you have any questions or concerns please contact the developer `ricostryker` or join our [support server]({invite}) and open a ticket.")
 
-        await send_response(interaction, "Please contact the developer `ricostryker` to for help or join our [support server](https://discord.gg/5tcpArff) and open a ticket.", ephemeral=True)
+        await send_response(interaction, "Your data will be sent to you through DM..", ephemeral=True)
 
 
 async def setup(bot):
