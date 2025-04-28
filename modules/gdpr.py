@@ -45,7 +45,7 @@ If you want to continue, please confirm your request."""
         if server is None:
           invite = "Failed to generate invite link, please contact the developer."
         else:
-          invite = server.get_channel(dev if dev else 0).create_invite(max_age=3600, max_uses=1, reason="GDPR data request")
+          invite = server.get_channel(int(dev if dev else 0)).create_invite(max_age=3600, max_uses=1, reason="GDPR data request")
         if user_data is not None:
             await interaction.user.send(f"**__User Data Request__**"
                                         f"\nUser: {interaction.user.mention}({interaction.user.id})"
