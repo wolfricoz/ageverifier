@@ -37,14 +37,15 @@ If you want to continue, please confirm your request."""
     @app_commands.command(name="data", description="Request your data")
     async def data(self, interaction: discord.Interaction):
         """Returns user data"""
-        dev = self.bot.get_user(188647277181665280)
+        dev = os.getenv('DEV')
+        supportguild = os.getenv("SUPPORTGUILD")
         user_data = UserTransactions.get_user(interaction.user.id)
         id_verified = VerificationTransactions.get_id_info(interaction.user.id)
-        server = self.bot.get_guild(int(os.getenv("SUPPORTGUILD")))
+        server = self.bot.get_guild(int(supportguild if supportguild else 0))
         if server is None:
           invite = "Failed to generate invite link, please contact the developer."
         else:
-          invite = server.get_channel(int(os.getenv('dev'))).create_invite(max_age=3600, max_uses=1, reason="GDPR data request")
+          invite = server.get_channel(dev if dev else 0).create_invite(max_age=3600, max_uses=1, reason="GDPR data request")
         if user_data is not None:
             await interaction.user.send(f"**__User Data Request__**"
                                         f"\nUser: {interaction.user.mention}({interaction.user.id})"
