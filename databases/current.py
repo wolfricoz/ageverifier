@@ -30,8 +30,8 @@ class Users(Base):
     __tablename__ = "users"
     uid: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=False)
     entry: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    date_of_birth: Mapped[Optional[str]]
-    server: Mapped[Optional[str]]
+    date_of_birth: Mapped[Optional[str]] = mapped_column(String(10))
+    server: Mapped[Optional[str]] = mapped_column(String(255))
     warnings: Mapped[List["Warnings"]] = relationship(cascade="save-update, merge, delete, delete-orphan")
     id_verification: Mapped[Optional["IdVerification"]] = relationship(back_populates="user", cascade="save-update, merge, delete, delete-orphan", uselist=False)
     deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True, default=None)
@@ -42,13 +42,12 @@ class Warnings(Base):
     __tablename__ = "warnings"
     id: Mapped[int] = mapped_column(primary_key=True)
     uid: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.uid", ondelete="CASCADE"))
-    reason: Mapped[str] = mapped_column(String(1024))
+    reason: Mapped[str] = mapped_column(String(4096))
     type: Mapped[str] = mapped_column(String(20))
     entry: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 # noinspection PyTypeChecker, PydanticTypeChecker
-
 class Servers(Base):
     __tablename__ = "servers"
     guild: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=False)
@@ -56,23 +55,19 @@ class Servers(Base):
 
 
 # noinspection PyTypeChecker, PydanticTypeChecker
-
 class Config(Base):
-    # Reminder to self you can add multiple keys in this database
     __tablename__ = "config"
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     guild: Mapped[int] = mapped_column(BigInteger, ForeignKey("servers.guild", ondelete="CASCADE"))
-    key: Mapped[str] = mapped_column(String(512), primary_key=True)
-    value: Mapped[str] = mapped_column(String(1980))
+    key: Mapped[str] = mapped_column(String(512))
+    value: Mapped[str] = mapped_column(String(10000))
 
-
-# noinspection PyTypeChecker, PydanticTypeChecker
 
 # noinspection PyTypeChecker, PydanticTypeChecker
 class IdVerification(Base):
     __tablename__ = "verification"
     uid: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.uid", ondelete="CASCADE"), primary_key=True, autoincrement=False)
-    reason: Mapped[Optional[str]] = mapped_column(String(1024))
+    reason: Mapped[Optional[str]] = mapped_column(String(2000))
     idcheck: Mapped[bool] = mapped_column(Boolean, default=False)
     idverified: Mapped[bool] = mapped_column(Boolean, default=False)
     verifieddob: Mapped[Optional[datetime]]
@@ -86,21 +81,19 @@ class Timers(Base):
     uid: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.uid", ondelete="CASCADE"))
     guild: Mapped[int] = mapped_column(BigInteger, ForeignKey("servers.guild", ondelete="CASCADE"))
     role: Mapped[Optional[int]] = mapped_column(BigInteger)
-    reason: Mapped[Optional[str]] = mapped_column(String(1024))
+    reason: Mapped[Optional[str]] = mapped_column(String(1024))  # Reason for timer
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    # in hours
-    removal: Mapped[int]
+    removal: Mapped[int]  # In hours
+
 
 class AgeRole(Base):
     __tablename__ = "age_roles"
     id: Mapped[int] = mapped_column(primary_key=True)
-    type: Mapped[str] = mapped_column(String(20))
+    type: Mapped[str] = mapped_column(String(20))  # Role type
     guild_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("servers.guild", ondelete="CASCADE"))
     role_id: Mapped[int] = mapped_column(BigInteger)
     minimum_age: Mapped[int] = mapped_column(Integer, default=18, nullable=True)
     maximum_age: Mapped[int] = mapped_column(Integer, default=200, nullable=True)
-
-
 class database:
     @staticmethod
     def create():
