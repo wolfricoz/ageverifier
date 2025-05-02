@@ -8,6 +8,7 @@ from classes.databaseController import VerificationTransactions
 from classes.support.discord_tools import send_message, send_response
 from classes.support.queue import queue
 from views.buttons.approvalbuttons import ApprovalButtons
+from views.buttons.confirm import Confirm
 from views.buttons.dobentrybutton import dobentry
 from views.buttons.verifybutton import VerifyButton
 
@@ -80,10 +81,17 @@ class idcheck(commands.GroupCog) :
 		"""[manage_messages] Adds specified user to the ID list"""
 		await send_response(interaction, f"⌛ creating {user.mention}'s ID check entry'", ephemeral=True)
 		if reason is None :
-			await interaction.followup.send(f"Please include a reason")
+			await send_response(interaction, f"Please include a reason")
 			return
-		VerificationTransactions.add_idcheck(user.id, reason, True, server=interaction.guild.name)
-		await interaction.followup.send(
+		idinfo = VerificationTransactions.add_idcheck(user.id, reason, True, server=interaction.guild.name)
+		if idinfo:
+			if await Confirm().send_confirm(interaction, f"{user.name} is on the ID list already with reason: `{idinfo.reason}`, do you want to update it?") is False:
+				return
+			VerificationTransactions.update_check(user.id, reason, True, server=interaction.guild.name)
+			await send_response(interaction, f"{user.mention}'s ID check entry has been updated with reason: {reason} and idcheck: {True}", ephemeral=True)
+			return
+
+		await send_response(interaction,
 			f"<@{user.id}>'s userid entry has been added with reason: {reason} and idcheck: {True}")
 
 

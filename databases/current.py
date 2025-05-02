@@ -13,8 +13,8 @@ from sqlalchemy_utils import database_exists, create_database
 pymysql.install_as_MySQLdb()
 load_dotenv('.env')
 DB = os.getenv('DB')
-
-engine = create_engine(f"{DB}/rmrbotnew?charset=utf8mb4", poolclass=NullPool, echo=False, isolation_level="READ COMMITTED")
+db_string = f"{DB}/rmrbotnew?charset=utf8mb4"
+engine = create_engine(db_string, poolclass=NullPool, echo=False, isolation_level="READ COMMITTED")
 if not database_exists(engine.url):
     create_database(engine.url)
 
@@ -48,6 +48,7 @@ class Warnings(Base):
 
 
 # noinspection PyTypeChecker, PydanticTypeChecker
+
 class Servers(Base):
     __tablename__ = "servers"
     guild: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=False)
@@ -55,7 +56,9 @@ class Servers(Base):
 
 
 # noinspection PyTypeChecker, PydanticTypeChecker
+
 class Config(Base):
+    # Reminder to self you can add multiple keys in this database
     __tablename__ = "config"
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     guild: Mapped[int] = mapped_column(BigInteger, ForeignKey("servers.guild", ondelete="CASCADE"))
@@ -64,10 +67,12 @@ class Config(Base):
 
 
 # noinspection PyTypeChecker, PydanticTypeChecker
+
+# noinspection PyTypeChecker, PydanticTypeChecker
 class IdVerification(Base):
     __tablename__ = "verification"
     uid: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.uid", ondelete="CASCADE"), primary_key=True, autoincrement=False)
-    reason: Mapped[Optional[str]] = mapped_column(String(2000))
+    reason: Mapped[Optional[str]] = mapped_column(String(1024))
     idcheck: Mapped[bool] = mapped_column(Boolean, default=False)
     idverified: Mapped[bool] = mapped_column(Boolean, default=False)
     verifieddob: Mapped[Optional[datetime]]
@@ -89,13 +94,22 @@ class Timers(Base):
 class AgeRole(Base):
     __tablename__ = "age_roles"
     id: Mapped[int] = mapped_column(primary_key=True)
-    type: Mapped[str] = mapped_column(String(20))  # Role type
+    type: Mapped[str] = mapped_column(String(20))
     guild_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("servers.guild", ondelete="CASCADE"))
     role_id: Mapped[int] = mapped_column(BigInteger)
     minimum_age: Mapped[int] = mapped_column(Integer, default=18, nullable=True)
     maximum_age: Mapped[int] = mapped_column(Integer, default=200, nullable=True)
+
+
 class database:
     @staticmethod
     def create():
         Base.metadata.create_all(engine)
         print("Database built")
+
+    @staticmethod
+    def restart():
+        global engine
+        engine.dispose()
+
+        engine = create_engine(db_string, poolclass=NullPool, echo=False, isolation_level="READ COMMITTED",)

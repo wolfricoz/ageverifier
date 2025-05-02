@@ -3,12 +3,11 @@ import json
 import logging
 from abc import ABC, abstractmethod
 from datetime import timezone
-from importlib import reload
 
 import sqlalchemy.exc
 from sqlalchemy import and_
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 from sqlalchemy.sql import Select
 
 import databases.current as db
@@ -66,6 +65,23 @@ class DatabaseTransactions(ABC) :
 			raise CommitError()
 		finally :
 			session.close()
+
+	@staticmethod
+	@abstractmethod
+	def ping_db() :
+		try :
+			session.connection()
+			return None
+
+		except sqlalchemy.exc.PendingRollbackError as e:
+			logging.error(f"Pending Rollback Noticed, rolling back")
+			session.rollback()
+			session.close()
+			return False
+		except Exception as e :
+			logging.warning(f"Error pinging database, forcefully restarting: {e}")
+			database.restart()
+			return None
 
 
 class UserTransactions(ABC) :
@@ -335,6 +351,7 @@ class ConfigTransactions(ABC) :
 		session.delete(exists)
 		DatabaseTransactions.commit(session)
 		ConfigData().load_guild(guildid)
+		return None
 
 	@staticmethod
 	@abstractmethod
@@ -345,6 +362,7 @@ class ConfigTransactions(ABC) :
 			Select(db.Config).where(db.Config.guild == guild_id, db.Config.key == key))
 		session.delete(exists)
 		DatabaseTransactions.commit(session)
+		return None
 
 	@staticmethod
 	@abstractmethod
@@ -380,6 +398,11 @@ class VerificationTransactions(ABC) :
 
 	@staticmethod
 	@abstractmethod
+	def id_exists(userid: int) -> bool :
+		return session.query(IdVerification).where(IdVerification.uid == userid).count() > 0
+
+	@staticmethod
+	@abstractmethod
 	def get_id_info(userid: int) -> IdVerification | None :
 		userdata = session.scalar(Select(IdVerification).where(IdVerification.uid == userid))
 		session.close()
@@ -400,13 +423,18 @@ class VerificationTransactions(ABC) :
 	@abstractmethod
 	def add_idcheck(userid: int, reason: str = None, idcheck=True, server=None) :
 		UserTransactions.add_user_empty(userid, True)
+		idinfo = VerificationTransactions.get_id_info(userid)
+		logging.info(idinfo)
+		if idinfo is not None :
+			return idinfo
 		idcheck = IdVerification(uid=userid, reason=reason, idcheck=idcheck, server=server)
 		session.add(idcheck)
 		DatabaseTransactions.commit(session)
+		return None
 
 	@staticmethod
 	@abstractmethod
-	def set_idcheck_to_true(userid: int, reason, server =None) :
+	def set_idcheck_to_true(userid: int, reason, server=None) :
 		userdata: IdVerification = session.scalar(Select(IdVerification).where(IdVerification.uid == userid))
 		if userdata is None :
 			VerificationTransactions.add_idcheck(userid, reason, idcheck=True, server=server)
@@ -524,7 +552,6 @@ class ConfigData(metaclass=singleton) :
 
 	def get_key_int_or_zero(self, guildid: int, key: str) :
 		return int(self.conf[guildid].get(key.upper(), 0))
-
 
 	def get_key(self, guildid: int, key: str) :
 		try :

@@ -11,7 +11,7 @@ from discord.ext import commands, tasks
 from classes import permissions
 from classes.AgeCalculations import AgeCalculations
 from classes.ageroles import change_age_roles
-from classes.databaseController import ConfigData, ServerTransactions, UserTransactions
+from classes.databaseController import ConfigData, DatabaseTransactions, ServerTransactions, UserTransactions
 from classes.encryption import Encryption
 from classes.support.discord_tools import send_message
 from classes.support.queue import queue
@@ -28,6 +28,7 @@ class Tasks(commands.GroupCog) :
 		self.check_users_expiration.start()
 		self.check_active_servers.start()
 		self.update_age_roles.start()
+		self.database_ping.start()
 
 	def cog_unload(self) :
 		"""unloads tasks"""
@@ -35,6 +36,7 @@ class Tasks(commands.GroupCog) :
 		self.check_users_expiration.cancel()
 		self.check_active_servers.cancel()
 		self.update_age_roles.cancel()
+		self.database_ping.cancel()
 
 	@tasks.loop(hours=1)
 	async def config_reload(self) :
@@ -154,6 +156,12 @@ class Tasks(commands.GroupCog) :
 					logging.error(f"Error calculating age for {member.name}: {e}", exc_info=True)
 					continue
 
+	@tasks.loop(minutes=1)
+	async def database_ping(self) :
+		"""pings the database to keep the connection alive"""
+		logging.debug("Pinging database.")
+		DatabaseTransactions.ping_db()
+
 	@app_commands.command(name="expirecheck")
 	@app_commands.checks.has_permissions(administrator=True)
 	async def expirecheck(self, interaction: discord.Interaction) :
@@ -181,6 +189,10 @@ class Tasks(commands.GroupCog) :
 	async def before_serverhcheck(self) :
 		await self.bot.wait_until_ready()
 
+	@database_ping.before_loop
+	async def before_ping(self) :
+		"""stops event from starting before the bot has fully loaded"""
+		await self.bot.wait_until_ready()
 
 async def setup(bot) :
 	"""Adds the cog to the bot."""
