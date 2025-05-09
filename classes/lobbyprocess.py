@@ -92,7 +92,7 @@ class LobbyProcess(ABC) :
 		                            f"{dob_field}"
 		                            f"User info: \n"
 		                            f"UID: {user.id} \n"
-		                            f"Joined at: {user.joined_at.strftime('%m/%d/%Y %I:%M:%S %p')} \n"
+		                            f"Joined at: {user.joined_at.strftime('%m/%d/%Y %I:%M:%S %p') if user.joined_at else 'None'} \n"
 		                            f"Account created at: {user.created_at.strftime('%m/%d/%Y %I:%M:%S %p')} \n"
 		                            f"Executed at: {datetime.datetime.now().strftime('%m/%d/%Y %I:%M:%S %p')} \n"
 		                            f"first time: {f'yes' if not exists else 'no'}\n"
