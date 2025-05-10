@@ -20,15 +20,15 @@ class IdCheck(ABC) :
 			},
 			"mismatch": {
 				"user-message" : f"It seems that the age you've given does not match the date of birth you've provided. Please try again. As a reminder, you must use your CURRENT age.",
-				"channel-message" : f"[INFO: Age Mismatch] [Info] User {interaction.user.mention}\'s age does not match. User gave {age} but dob indicates {years}. User may retry."
+				"channel-message" : f"[INFO: Age Mismatch] [Info] User {interaction.user.mention}\'s age does not match. User gave {age} (mm/dd/yyyy) but dob indicates {years}. User may retry."
 			},
 			"nomatch" : {
 				"user-message"    : f"It seems that the age you've given does not match the date of birth you've provided. A staff member will reach out to you shortly.",
-				"channel-message" : f"[ID CHECK: Age Mismatch] User {interaction.user.mention}\'s age does not match, please reach out to the user. User gave {age} but dob indicates {years} in {server}"
+				"channel-message" : f"[ID CHECK: Age Mismatch] User {interaction.user.mention}\'s age does not match, please reach out to the user. User gave {age} (mm/dd/yyyy) but dob indicates {years} in {server}"
 			},
 			"dobmismatch" : {
 				"user-message"    : f"It seems that the date of birth you've provided does not match a previously given date of birth. A staff member will reach out to you shortly.",
-				"channel-message" : f"[ID CHECK: Age Mismatch] User {interaction.user.mention}\'s date of birth does not match. Given: {dob} Recorded: {date_of_birth} in {server}"
+				"channel-message" : f"[ID CHECK: Age Mismatch] User {interaction.user.mention}\'s date of birth does not match. Given: {dob} (mm/dd/yyyy) Recorded: {date_of_birth} (mm/dd/yyyy) in {server}"
 			},
 			"idcheck":{
 				"channel-message" : f"{interaction.user.mention} is on the ID list added by {server} with the reason:\n{id_check_reason}"
