@@ -12,7 +12,7 @@ from discord.ext import commands
 from dotenv import load_dotenv
 from fastapi import FastAPI
 
-from api import config_router, age_router
+import api
 from classes import whitelist
 from classes.blacklist import blacklist_check
 from classes.databaseController import ConfigData, ServerTransactions
@@ -51,8 +51,13 @@ async def lifespan(app: FastAPI) :
 
 
 app = FastAPI(lifespan=lifespan)
-app.include_router(config_router)
-app.include_router(age_router)
+routers = []
+for router in api.__all__ :
+	try:
+		app.include_router(getattr(api, router))
+		routers.append(router)
+	except Exception as e:
+		logging.error(f"Failed to load {router}: {e}")
 
 
 if os.getenv("KEY") is None :
@@ -99,6 +104,7 @@ async def on_ready() :
 	logging.info(f"Commands synced, start up done! Connected to {len(guilds)} guilds and {bot.shard_count} shards.")
 	logging.info(f"Guilds: {formguilds}")
 	bot.add_view(IdVerifyButton())
+	logging.info("Loaded routers: " + ", ".join(routers))
 	return guilds
 
 
