@@ -4,6 +4,7 @@ import logging
 from abc import ABC, abstractmethod
 from datetime import timezone
 
+import pymysql.err
 import sqlalchemy.exc
 from sqlalchemy import and_
 from sqlalchemy.exc import SQLAlchemyError
@@ -59,8 +60,12 @@ class DatabaseTransactions(ABC) :
 	def commit(session) :
 		try :
 			session.commit()
+		except pymysql.err.InternalError as e:
+			logging.warning(e)
+			session.rollback()
+			raise CommitError()
 		except SQLAlchemyError as e :
-			print(e)
+			logging.warning(e)
 			session.rollback()
 			raise CommitError()
 		finally :
@@ -425,8 +430,8 @@ class VerificationTransactions(ABC) :
 		UserTransactions.add_user_empty(userid, True)
 		idinfo = VerificationTransactions.get_id_info(userid)
 		logging.info(idinfo)
-		if idinfo is not None :
-			return idinfo
+		# if idinfo is not None :
+		# 	return idinfo
 		idcheck = IdVerification(uid=userid, reason=reason, idcheck=idcheck, server=server)
 		session.add(idcheck)
 		DatabaseTransactions.commit(session)
