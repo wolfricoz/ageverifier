@@ -83,10 +83,10 @@ class DatabaseTransactions(ABC) :
 			session.rollback()
 			session.close()
 			return False
-		except Exception as e :
-			logging.warning(f"Error pinging database, forcefully restarting: {e}")
-			database.restart()
-			return None
+		# except Exception as e :
+		# 	logging.warning(f"Error pinging database, forcefully restarting: {e}")
+		# 	database.restart()
+		# 	return None
 
 
 class UserTransactions(ABC) :
