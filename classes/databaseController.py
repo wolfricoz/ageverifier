@@ -76,17 +76,13 @@ class DatabaseTransactions(ABC) :
 	def ping_db() :
 		try :
 			session.connection()
-			return None
+			return "alive"
 
-		except sqlalchemy.exc.PendingRollbackError as e:
-			logging.error(f"Pending Rollback Noticed, rolling back")
+		except Exception as e:
+			logging.error(f"Database ping failed: {e}", exc_info=True)
 			session.rollback()
 			session.close()
-			return False
-		# except Exception as e :
-		# 	logging.warning(f"Error pinging database, forcefully restarting: {e}")
-		# 	database.restart()
-		# 	return None
+			return "error"
 
 
 class UserTransactions(ABC) :
