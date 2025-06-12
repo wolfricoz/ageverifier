@@ -77,13 +77,18 @@ class DatabaseTransactions(ABC) :
 	def ping_db() :
 		try :
 			session.connection()
-			session.execute(text("SELECT 1"))  # Simple query to check if the connection is alive
+			if session._is_clean():
+				return "alive"
+			session.execute(text("SELECT 1"))
 			return "alive"
-
-		except Exception as e:
-			logging.error(f"Database ping failed: {e}", exc_info=True)
+		except sqlalchemy.exc.PendingRollbackError :
 			session.rollback()
 			session.close()
+			return "error"
+		except sqlalchemy.exc.InvalidRequestError :
+			return "alive"
+		except Exception as e:
+			logging.error(f"Database ping failed: {e}", exc_info=True)
 			return "error"
 
 
