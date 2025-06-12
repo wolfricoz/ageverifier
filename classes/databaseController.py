@@ -10,6 +10,7 @@ from sqlalchemy import and_
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import Select
+from sqlalchemy.sql.expression import text
 
 import databases.current as db
 from classes.encryption import Encryption
@@ -76,7 +77,7 @@ class DatabaseTransactions(ABC) :
 	def ping_db() :
 		try :
 			session.connection()
-			session.execute("SELECT 1")  # Simple query to check if the connection is alive
+			session.execute(text("SELECT 1"))  # Simple query to check if the connection is alive
 			return "alive"
 
 		except Exception as e:
