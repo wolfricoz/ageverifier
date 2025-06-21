@@ -42,7 +42,7 @@ class IdCheck(ABC) :
 			view = IdVerifyButton()
 
 		await send_message(channel,
-	                   f"{interaction.guild.owner.mention + '\n'if ConfigData().get_key(interaction.guild.id, 'PINGOWNER') == 'ENABLED' else ''}{message.get('channel-message', f'No message set for {message}')}\n[Lobby Debug] Age: {age} dob {dob} userid: {interaction.user.id}", view=view)
+	                   f"{f'{interaction.guild.owner.mention}' if ConfigData().get_key(interaction.guild.id, 'PINGOWNER') == 'ENABLED' else ''}{message.get('channel-message', f'No message set for {message}')}\n[Lobby Debug] Age: {age} dob {dob} userid: {interaction.user.id}", view=view)
 		await send_response(interaction, message.get("user-message", "Thank you for submitting your age and date of birth, a staff member will contact you soon because of a discrepancy.")
 	                    ,
 	                    ephemeral=True)
