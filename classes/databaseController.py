@@ -18,7 +18,7 @@ from classes.encryption import Encryption
 from classes.singleton import singleton
 from databases.current import *
 
-session = Session(bind=db.engine, expire_on_commit=False, autocommit=True)
+session = Session(bind=db.engine, expire_on_commit=False)
 
 
 class ConfigNotFound(Exception) :
@@ -115,7 +115,7 @@ class UserTransactions(ABC) :
 				return False
 			item = db.Users(uid=userid, entry=datetime.now(tz=timezone.utc), date_of_birth=Encryption().encrypt(dob),
 			                server=guildname)
-			session.merge(item)
+			session.add(item)
 			DatabaseTransactions.commit(session)
 			logging.info(f"User {userid} added to database with dob {dob} in {guildname}")
 			return True
@@ -670,6 +670,7 @@ class ServerTransactions() :
 			ConfigTransactions.toggle_add(guildid, "AUTOMATIC")
 			ConfigTransactions.toggle_add(guildid, "WELCOME", "ENABLED")
 			ConfigTransactions.toggle_add(guildid, "UPDATEROLES")
+			ConfigTransactions.toggle_add(guildid, "PINGOWNER")
 			ConfigTransactions.config_unique_add(guildid, "COOLDOWN", 5)
 			return
 		g = db.Servers(guild=guildid, active=active)
@@ -679,6 +680,8 @@ class ServerTransactions() :
 		ConfigTransactions.toggle_add(guildid, "AUTOMATIC")
 		ConfigTransactions.toggle_add(guildid, "WELCOME", "ENABLED")
 		ConfigTransactions.toggle_add(guildid, "UPDATEROLES", "ENABLED")
+		ConfigTransactions.toggle_add(guildid, "PINGOWNER")
+
 		ConfigTransactions.config_unique_add(guildid, "COOLDOWN", 5)
 
 		if reload :

@@ -88,11 +88,12 @@ class VerifyModal(discord.ui.Modal) :
 		minimum_age = AgeRoleTransactions().get_minimum_age(interaction.guild.id)
 		if age < 18 or years < 18 :
 			await IdCheck.send_check(interaction, mod_channel, "underage", age, dob, id_check=True,
-			                                verify_button=False, server=interaction.guild.name)
+			                         verify_button=False, server=interaction.guild.name)
 			await self.autokick(interaction, mod_channel, age, minimum_age)
 			return
 		if minimum_age and age < minimum_age :
-			await send_response(interaction, f'Thank you for submitting your date of birth, unfortunately you are too young for this server; you must be {minimum_age} years old.',
+			await send_response(interaction,
+			                    f'Thank you for submitting your date of birth, unfortunately you are too young for this server; you must be {minimum_age} years old.',
 			                    ephemeral=True)
 			await self.autokick(interaction, mod_channel, age, minimum_age)
 			return
@@ -102,14 +103,17 @@ class VerifyModal(discord.ui.Modal) :
 		if agechecked == 1 or agechecked == -1 :
 			return await IdCheck.send_check(interaction, mod_channel, "mismatch", age, dob, years=years, verify_button=False)
 		if agechecked > 1 or agechecked < -1 :
-			return await IdCheck.send_check(interaction, id_channel, "nomatch", age, dob, years=years, id_check=True, server=interaction.guild.name)
+			return await IdCheck.send_check(interaction, id_channel, "nomatch", age, dob, years=years, id_check=True,
+			                                server=interaction.guild.name)
 		# Checks if user has a date of birth in the database, and if the date of births match.
 		if AgeCalculations.check_date_of_birth(userdata, dob) is False :
 			return await IdCheck.send_check(interaction, id_channel, "dobmismatch", age, dob,
-			                                date_of_birth=Encryption().decrypt(userdata.date_of_birth), id_check=True, server=userdata.server)
+			                                date_of_birth=Encryption().decrypt(userdata.date_of_birth), id_check=True,
+			                                server=userdata.server)
 		# Check if user needs to ID or has previously ID'd
 		if idcheckinfo := await AgeCalculations.id_check_or_id_verified(interaction.user, interaction.guild, mod_channel) :
-			return await IdCheck.send_check(interaction, id_channel, "idcheck", age, dob, id_check_reason=idcheckinfo.reason, server=idcheckinfo.server)
+			return await IdCheck.send_check(interaction, id_channel, "idcheck", age, dob, id_check_reason=idcheckinfo.reason,
+			                                server=idcheckinfo.server)
 		# Sends the buttons and information to lobby channel
 
 		automatic_status = ConfigData().get_key_or_none(interaction.guild.id, "automatic")
@@ -120,7 +124,8 @@ class VerifyModal(discord.ui.Modal) :
 			                    ephemeral=True)
 			return
 		await AgeCalculations.check_history(interaction.guild.id, interaction.user, mod_channel)
-		LobbyTimers().add_cooldown(interaction.guild.id, interaction.user.id, ConfigData().get_key_int_or_zero(interaction.guild.id, 'COOLDOWN'))
+		LobbyTimers().add_cooldown(interaction.guild.id, interaction.user.id,
+		                           ConfigData().get_key_int_or_zero(interaction.guild.id, 'COOLDOWN'))
 		if check_whitelist(interaction.guild.id) :
 			await send_message(mod_channel,
 			                   f"\n{interaction.user.mention} has given {age} {dob}. You can let them through with the buttons below."
@@ -141,9 +146,7 @@ class VerifyModal(discord.ui.Modal) :
 		await send_response(interaction, f"An error occurred: {error}", ephemeral=True)
 		raise error
 
-
-
-	async def autokick(self, interaction, mod_channel, age, minimum_age):
+	async def autokick(self, interaction, mod_channel, age, minimum_age) :
 		if ConfigData().get_key(interaction.guild.id, "AUTOKICK") == "ENABLED" :
 			await send_message(interaction.user,
 			                   f"Thank you for submitting your date of birth, unfortunately you are too young for this server; you must be {minimum_age} years old.")
