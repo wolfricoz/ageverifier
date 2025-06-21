@@ -151,7 +151,7 @@ class AgeCalculations(ABC) :
 
 	@staticmethod
 	@abstractmethod
-	async def validatedob(arg2, interaction) :
+	async def validatedob(arg2, interaction) -> bool|str :
 		dob = AgeCalculations.regex(arg2)
 		if dob == "AttributeError" :
 			await interaction.followup.send("Please fill in the date of birth field.")
@@ -159,5 +159,6 @@ class AgeCalculations(ABC) :
 		if dob == "ValueError" :
 			await interaction.followup.send("Please fill the dob in with the format: mm/dd/yyyy")
 			return False
+		return dob
 
 

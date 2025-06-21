@@ -3,6 +3,7 @@ import json
 import logging
 from abc import ABC, abstractmethod
 from datetime import timezone
+from typing import Literal
 
 import pymysql.err
 import sqlalchemy.exc
@@ -17,7 +18,7 @@ from classes.encryption import Encryption
 from classes.singleton import singleton
 from databases.current import *
 
-session = Session(bind=db.engine, expire_on_commit=False, )
+session = Session(bind=db.engine, expire_on_commit=False, autocommit=True)
 
 
 class ConfigNotFound(Exception) :
