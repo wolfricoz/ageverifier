@@ -77,7 +77,6 @@ class Database(commands.GroupCog) :
 			await interaction.followup.send(
 				"The user is not in the server and the date of birth was not added in this server.")
 			return
-		print(userdata.deleted_at)
 		data = {
 			"user"            : userdata.uid,
 			"date of birth"   : Encryption().decrypt(userdata.date_of_birth) if userdata.date_of_birth else None,
@@ -101,9 +100,11 @@ class Database(commands.GroupCog) :
 		"""[manage_messages] Add the date of birth of the specified user to the database"""
 		await send_response(interaction, f"⌛ adding {user.mention} to the database", ephemeral=True)
 		if await self.whitelist(interaction) :
-			return
-		if await AgeCalculations.validatedob(dob, interaction) is False :
-			return
+			return send_response(interaction, f"Server not whitelisted", ephemeral=True)
+
+		dob = await AgeCalculations.validatedob(dob, interaction)
+		if dob is False :
+			return send_response(interaction, "Invalid date of birth format. Please use mm/dd/yyyy.")
 		UserTransactions.add_user_full(str(user.id), dob, interaction.guild.name)
 		await send_response(interaction, f"{user.name}({user.id}) added to the database with dob: {dob}")
 		await LobbyProcess.age_log(user.id, dob, interaction)
@@ -118,7 +119,8 @@ class Database(commands.GroupCog) :
 			return await send_response(interaction, "User not found.")
 		if await self.whitelist(interaction) :
 			return
-		if await AgeCalculations.validatedob(dob, interaction) is False :
+		dob = await AgeCalculations.validatedob(dob, interaction)
+		if dob is False :
 			return
 		UserTransactions.update_user_dob(user.id, dob, interaction.guild.name)
 		await send_response(interaction, f"Updated ({user.name}){user.id}'s dob to {dob}")

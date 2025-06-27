@@ -2,7 +2,9 @@ import datetime
 import logging
 from abc import ABC, abstractmethod
 
-from classes.databaseController import VerificationTransactions
+import discord
+
+from classes.databaseController import ConfigData, VerificationTransactions
 from classes.encryption import Encryption
 from classes.support.discord_tools import send_message, send_response
 from views.buttons.idverifybutton import IdVerifyButton
@@ -12,7 +14,7 @@ class IdCheck(ABC) :
 
 	@staticmethod
 	@abstractmethod
-	async def send_check(interaction, channel, message, age, dob, date_of_birth=None, years = None, id_check=False, verify_button=True, id_check_reason=None, server=None) :
+	async def send_check(interaction: discord.Interaction, channel, message, age, dob, date_of_birth=None, years = None, id_check=False, verify_button=True, id_check_reason=None, server=None) :
 		messages = {
 			"underage" : {
 				"user-message" : f"Unfortunately, you are too young to join our server. If you are 17, you may wait in the lobby until you are old enough to join.",
@@ -40,7 +42,7 @@ class IdCheck(ABC) :
 			view = IdVerifyButton()
 
 		await send_message(channel,
-	                   f"{message.get('channel-message', f'No message set for {message}')}\n[Lobby Debug] Age: {age} dob {dob} userid: {interaction.user.id}", view=view)
+	                   f"{f'{interaction.guild.owner.mention}' if ConfigData().get_key(interaction.guild.id, 'PINGOWNER') == 'ENABLED' else ''}{message.get('channel-message', f'No message set for {message}')}\n[Lobby Debug] Age: {age} dob {dob} userid: {interaction.user.id}", view=view)
 		await send_response(interaction, message.get("user-message", "Thank you for submitting your age and date of birth, a staff member will contact you soon because of a discrepancy.")
 	                    ,
 	                    ephemeral=True)

@@ -10,7 +10,6 @@ from sqlalchemy import and_
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import Select
-from sqlalchemy.util import to_list
 
 import databases.current as db
 from classes.encryption import Encryption
@@ -77,17 +76,19 @@ class DatabaseTransactions(ABC) :
 	def ping_db() :
 		try :
 			session.connection()
-			return None
-
-		except sqlalchemy.exc.PendingRollbackError as e:
-			logging.error(f"Pending Rollback Noticed, rolling back")
+			if session._is_clean():
+				return "alive"
+			session.execute(text("SELECT 1"))
+			return "alive"
+		except sqlalchemy.exc.PendingRollbackError :
 			session.rollback()
 			session.close()
-			return False
-		# except Exception as e :
-		# 	logging.warning(f"Error pinging database, forcefully restarting: {e}")
-		# 	database.restart()
-		# 	return None
+			return "error"
+		except sqlalchemy.exc.InvalidRequestError :
+			return "alive"
+		except Exception as e:
+			logging.error(f"Database ping failed: {e}", exc_info=True)
+			return "error"
 
 
 class UserTransactions(ABC) :
@@ -287,21 +288,26 @@ class ConfigTransactions(ABC) :
 	@abstractmethod
 	def config_unique_add(guildid: int, key: str, value, overwrite=False) :
 		# This function should check if the item already exists, if so it will override it or throw an error.
-
-		value = str(value)
-		if ConfigTransactions.key_exists_check(guildid, key, overwrite) is True and overwrite is False :
+		try:
+			value = str(value)
+			if ConfigTransactions.key_exists_check(guildid, key, overwrite) is True and overwrite is False :
+				return False
+			if ConfigTransactions.key_exists_check(guildid, key, overwrite) is True :
+				entries = session.scalars(
+					Select(db.Config).where(db.Config.guild == guildid, db.Config.key == key.upper())).all()
+				for entry in entries :
+					session.delete(entry)
+			item = db.Config(guild=guildid, key=key.upper(), value=value)
+			session.add(item)
+			DatabaseTransactions.commit(session)
+			ConfigData().load_guild(guildid)
+			logging.info(f"Adding unique key with data: {guildid}, {key}, {value}, and overwrite {overwrite}")
+			return True
+		except sqlalchemy.exc.PendingRollbackError:
+			logging.error("Pending rollback error occurred, rolling back session.")
+			session.rollback()
+			session.close()
 			return False
-		if ConfigTransactions.key_exists_check(guildid, key, overwrite) is True :
-			entries = session.scalars(
-				Select(db.Config).where(db.Config.guild == guildid, db.Config.key == key.upper())).all()
-			for entry in entries :
-				session.delete(entry)
-		item = db.Config(guild=guildid, key=key.upper(), value=value)
-		session.add(item)
-		DatabaseTransactions.commit(session)
-		ConfigData().load_guild(guildid)
-		logging.info(f"Adding unique key with data: {guildid}, {key}, {value}, and overwrite {overwrite}")
-		return True
 
 	@staticmethod
 	@abstractmethod

@@ -58,7 +58,10 @@ with open(logfile, 'a') as f :
 	        f"----------------------------------------------------\n\n")
 
 handlers = [logging.FileHandler(filename=logfile, encoding='utf-8', mode='a'), logging.StreamHandler()]
-logging.basicConfig(handlers=handlers, level=logging.INFO, format='%(asctime)s:%(name)s: %(message)s')
+logging.basicConfig(handlers=handlers, level=logging.INFO,
+                    format='(%(asctime)s) %(levelname)s: %(message)s',
+                    datefmt='%d/%m/%Y, %H:%M:%S',
+                    force=True)
 logging.getLogger().setLevel(logging.INFO)
 
 logger = logging.getLogger('discord')
@@ -102,10 +105,10 @@ class Logging(commands.Cog) :
 		tree = self.bot.tree
 		tree.on_error = self._old_tree_error
 
-	async def on_fail_message(self, interaction: Interaction, message: str, owner = False) :
+	async def on_fail_message(self, interaction: Interaction, message: str, owner=False) :
 		"""sends a message to the user if the command fails."""
 		try :
-			if owner:
+			if owner :
 				await send_message(interaction.guild.owner, message)
 			await send_response(interaction, message, ephemeral=True)
 		except Exception as e :
@@ -130,7 +133,8 @@ class Logging(commands.Cog) :
 			                                  f"Missing permission to send message to {interaction.channel.mention} in {interaction.guild.name}. Check permissions: {error.original.message}")
 		if isinstance(error.original, discord.Forbidden) :
 			return await self.on_fail_message(interaction,
-			                                  f"The bot does not have sufficient permission to run this command. Please check: \n* if the bot has permission to post in the channel \n* if the bot is above the role its trying to assign\n* If trying to ban, ensure the bot has the ban permission", owner=True)
+			                                  f"The bot does not have sufficient permission to run this command. Please check: \n* if the bot has permission to post in the channel \n* if the bot is above the role its trying to assign\n* If trying to ban, ensure the bot has the ban permission",
+			                                  owner=True)
 		if isinstance(error.original, KeyNotFound) :
 			return await self.on_fail_message(interaction,
 			                                  f"It seems the configuration has not been setup and is missing: {error.original}")
@@ -188,11 +192,11 @@ class Logging(commands.Cog) :
 		except AttributeError :
 			logging.debug(f'\n{server.name}({server.id}): {user}({user.id}) issued a command with no data or name.')
 
-	# @app_commands.command(name="getlog")
-	# async def getlog(self, interaction: Interaction) :
-	# 	"""gets the log file"""
-	# 	with open(logfile, 'rb') as file :
-	# 		await interaction.response.send_message("Here's the log file.", file=discord.File(file.name, "log.txt"))
+# @app_commands.command(name="getlog")
+# async def getlog(self, interaction: Interaction) :
+# 	"""gets the log file"""
+# 	with open(logfile, 'rb') as file :
+# 		await interaction.response.send_message("Here's the log file.", file=discord.File(file.name, "log.txt"))
 
 
 async def setup(bot) :

@@ -10,11 +10,13 @@ from views.buttons.confirmButtons import confirmAction
 from views.select.configselectroles import ConfigSelectRoles, ConfigSelectChannels
 from resources.data.config_variables import rolechoices, channelchoices, messagechoices
 
+
 class ConfigSetup :
 	"""This class is used to setup the configuration for the bot"""
 	rolechoices = rolechoices
 	channelchoices = channelchoices
 	messagechoices = messagechoices
+
 	async def manual(self, bot, interaction: discord.Interaction, channelchoices: dict, rolechoices: dict,
 	                 messagechoices: dict) :
 		logging.info("Manual setup started")
@@ -91,24 +93,24 @@ class ConfigSetup :
 		for r in roles :
 			await channel.set_permissions(r, read_messages=True, send_messages=True)
 
-
-	async def create_channels(self, guild, category, channelchoices, interaction = None) :
+	async def create_channels(self, guild, category, channelchoices, interaction=None) :
 		for channelkey, channelvalue in channelchoices.items() :
 			channel = None
 			logging.info("setting up channel: " + channelkey)
-			try:
+			try :
 				match channelkey :
 					case 'inviteinfo' :
 						print("setting up invite info")
-						channel = await self.create_channel(guild, category, "invite-info", "This channel shows you additional join "
-						                                                          "information about the user.")
+						channel = await self.create_channel(guild, category, "invite-info",
+						                                    "This channel shows you additional join "
+						                                    "information about the user.")
 
 					case 'general' :
 						general: discord.TextChannel = get(guild.text_channels, name="general")
 						if general :
 							ConfigTransactions.config_unique_add(guild.id, channelkey, general.id, overwrite=True)
 							continue
-						if interaction is None:
+						if interaction is None :
 							logging.info("Automated Setup, skipping general channel")
 							continue
 						view = ConfigSelectChannels()
@@ -131,38 +133,46 @@ class ConfigSetup :
 						# This is your lobby channel, where the lobby welcome message will be posted.
 						# This is also where the verification process will start; this is where new users should interact with the bot.
 						# this channel should be open to everyone.
-						channel = await self.create_channel(guild, category, "lobby", "This is where the users enter your server and are welcomed.")
+						channel = await self.create_channel(guild, category, "lobby",
+						                                    "This is where the users enter your server and are welcomed.")
 						# await self.add_roles_to_channel(channel, roles)
 						await channel.set_permissions(guild.default_role, read_messages=True, send_messages=True)
 
 					case 'lobbylog' :
 						# This is the channel where the lobby logs will be posted.
 						# This channel has to be hidden from the users; failure to do so will result in the bot leaving.
-						channel = await self.create_channel(guild, category, "lobby-log", "This is where the ages of the users are logged, this channel should never be public.")
+						channel = await self.create_channel(guild, category, "lobby-log",
+						                                    "This is where the ages of the users are logged, this channel should never be public.")
 					# await self.add_roles_to_channel(channel, roles)
 
 					case 'lobbymod' :
 						# This is where the verification approval happens.
 						# This channel should be hidden from the users.
-						channel = await self.create_channel(guild, category, "lobby-moderation", "This channel is where you approve your users and receive age-verifier related information. This channel should never be public.")
+						channel = await self.create_channel(guild, category, "lobby-moderation",
+						                                    "This channel is where you approve your users and receive age-verifier related information. This channel should never be public.")
 					# await self.add_roles_to_channel(channel, roles)
 
 					case 'idlog' :
 						# This is where failed verification logs will be posted.
 						# This channel should be hidden from the users.
-						channel = await self.create_channel(guild, category, "id-check", "This channel is where age discrepancies are flagged for ID verification. This channel should never be public.")
+						channel = await self.create_channel(guild, category, "id-check",
+						                                    "This channel is where age discrepancies are flagged for ID verification. This channel should never be public.")
 					# await self.add_roles_to_channel(channel, roles)
 
 					case _ :
 						continue
-				try:
+				try :
 					ConfigTransactions.config_unique_add(guild.id, channelkey, channel.id, overwrite=True)
-				except Exception as e:
+					return None
+				except Exception as e :
 					logging.error(e, exc_info=True)
-			except Exception as e:
+					return None
+			except Exception as e :
 				logging.error(e, exc_info=True)
+				return None
+		return None
 
-	async def create_roles(self, guild, rolechoices, interaction = None) :
+	async def create_roles(self, guild, rolechoices, interaction=None) :
 		skip_roles = ['return', 'add']
 		for key, value in rolechoices.items() :
 			if key == "return" :
@@ -173,7 +183,7 @@ class ConfigSetup :
 						ConfigTransactions.config_unique_add(guild.id, "add", verified[0].id, overwrite=True)
 						continue
 					verified = get(guild.roles, name="Verified")
-					if verified is None:
+					if verified is None :
 						verified = await guild.create_role(name="Verified", reason="Setup")
 					ConfigTransactions.config_unique_add(guild.id, "add", verified.id, overwrite=True)
 					continue
@@ -195,7 +205,8 @@ class ConfigSetup :
 			except AttributeError :
 				logging.info("No value found, message was deleted")
 			ConfigTransactions.config_unique_add(guild.id, key, int(view.value[0]), overwrite=True)
-	async  def set_messages(self, guild, messagechoices) :
+
+	async def set_messages(self, guild, messagechoices) :
 		for messagekey, messagevalue in messagechoices.items() :
 			message_dict = {
 				'lobbywelcome'   : f"Please read the rules in the rules channel and click the verify button below to get started.",
@@ -203,15 +214,14 @@ class ConfigSetup :
 			}
 			ConfigTransactions.config_unique_add(guild.id, messagekey, message_dict[messagekey], overwrite=True)
 
-	async def create_channel(self, guild, category, name, description = None):
+	async def create_channel(self, guild, category, name, description=None) :
 		channel = get(guild.text_channels, name=name)
 		if not channel :
 			channel = await category.create_text_channel(name=name)
 		await channel.edit(topic=description)
 		return channel
 
-
-	async def api_auto_setup(self, guild: discord.Guild):
+	async def api_auto_setup(self, guild: discord.Guild) :
 		category = get(guild.categories, name="Lobby")
 		if not category :
 			category: discord.CategoryChannel = await guild.create_category(name="Lobby", overwrites={
@@ -224,8 +234,6 @@ class ConfigSetup :
 		lobby_mod = guild.get_channel(ConfigData().get_key_int(guild.id, "lobbymod"))
 		queue().add(send_message(lobby_mod, f"## Auto Setup for {guild.name} has been completed!"), 0)
 		queue().add(send_message(guild.owner, f"## Auto Setup for {guild.name} has been completed!"), 0)
-
-
 
 	async def check_channel_permissions(self, mod_channel: discord.TextChannel, interaction: discord.Interaction = None) :
 		fails = []
@@ -259,8 +267,8 @@ class ConfigSetup :
 				fails.append(key)
 		if len(fails) > 0 :
 			warning = f"Failed to check permissions for: {', '.join(fails)}"
-			if interaction is None:
-				return await send_message(mod_channel.guild.owner, warning )
+			if interaction is None :
+				return await send_message(mod_channel.guild.owner, warning)
 			await interaction.followup.send(warning)
 
 			return
