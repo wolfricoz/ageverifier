@@ -3,12 +3,15 @@ import asyncio
 import logging
 import os
 import re
-from typing import T
+
 
 from discord import app_commands
+from discord.app_commands import Choice
 from discord.ext import commands
+from typing_extensions import T
 
-from classes.databaseController import ConfigData, UserTransactions
+from classes.access import AccessControl
+from classes.databaseController import ConfigData, StaffDbTransactions, UserTransactions
 from classes.jsonmaker import Configer
 from classes.support.discord_tools import send_message, send_response
 from classes.support.queue import queue
@@ -150,6 +153,22 @@ class dev(commands.GroupCog, name="dev") :
 		await Configer.remove_from_user_blacklist(userid)
 		await send_response(interaction, f"Unblacklisted {userid}")
 
+
+	@app_commands.command(name="add_staff", description="[DEV] Adds a staff member to the team")
+	@app_commands.choices(role=[Choice(name=x, value=x.lower()) for x in ["Dev", "Rep"]])
+	async def add_staff(self, interaction: discord.Interaction, user: discord.User, role: Choice[str]) :
+		if interaction.user.id != int(os.getenv("OWNER")) :
+			return await send_response(interaction, "You do not have permission to add staff members")
+		StaffDbTransactions().add(user.id, role.value)
+		await send_response(interaction, f"Staff member {user.mention} successfully added as a `{role.name}`!")
+		AccessControl().reload()
+
+	@app_commands.command(name="remove_staff", description="[DEV] Remove a staff member from the team")
+	@AccessControl().check_access("dev")
+	async def remove_staff(self, interaction: discord.Interaction, user: discord.User) :
+		StaffDbTransactions().delete(user.id)
+		await send_response(interaction, f"Staff member {user.mention} successfully removed!")
+		AccessControl().reload()
 
 async def setup(bot: commands.Bot) :
 	"""Adds the cog to the bot"""

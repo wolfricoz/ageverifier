@@ -24,6 +24,14 @@ conn = engine.connect()
 class Base(DeclarativeBase):
     pass
 
+class Staff(Base) :
+	__tablename__ = "staff"
+	id: Mapped[int] = mapped_column(primary_key=True)
+	uid: Mapped[int] = mapped_column(BigInteger)
+	role: Mapped[str] = mapped_column(String(128))
+
+	def __int__(self) :
+		return self.id
 
 # noinspection PyTypeChecker, PydanticTypeChecker
 class Users(Base):
