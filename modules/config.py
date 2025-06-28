@@ -26,7 +26,7 @@ class config(commands.GroupCog, name="config") :
 	channelchoices = channelchoices
 	messagechoices = messagechoices
 
-	available_toggles = ["Welcome", "Automatic", "Autokick", "Updateroles", "Pingowner"]
+	available_toggles = ["LobbyWelcome", "Welcome", "Automatic", "Autokick", "Updateroles", "Pingowner"]
 
 	@app_commands.command(name='setup')
 	@app_commands.checks.has_permissions(manage_guild=True)
@@ -91,9 +91,13 @@ class config(commands.GroupCog, name="config") :
 		match action.value.upper() :
 			case "ENABLED" :
 				ConfigTransactions.toggle_welcome(interaction.guild.id, key.value, action.value.upper())
+
+
 			case "DISABLED" :
 				ConfigTransactions.toggle_welcome(interaction.guild.id, key.value, action.value.upper())
-		await interaction.response.send_message(f"{key.value} has been set to {action.value}", ephemeral=True)
+				if key.value == "LobbyWelcome" :
+					return send_response(interaction, f"The lobby welcome message has been disabled. Users will no longer receive a welcome message or the verification button in the lobby channel. To allow users to verify, please use the /lobby command in the channel.", ephemeral=True)
+		return await send_response(interaction,f"{key.value} has been set to {action.value}", ephemeral=True)
 
 	@app_commands.command()
 	@app_commands.choices(key=[Choice(name=f"{x} channel", value=x) for x, _ in channelchoices.items()])

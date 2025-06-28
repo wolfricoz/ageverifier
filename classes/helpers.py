@@ -19,14 +19,17 @@ async def welcome_user(member) :
 	channel = member.guild.get_channel(lobby)
 
 	await add_join_roles(member)
+	welcome_enabled = ConfigData().get_key(member.guild.id, "lobbywelcome", "enabled")
+	if welcome_enabled.lower() == "disabled" :
+		return
 	try :
-		lobbywelcome = ConfigData().get_key(member.guild.id, "lobbywelcome")
+		lobby_welcome = ConfigData().get_key(member.guild.id, "lobbywelcome")
 	except databaseController.KeyNotFound :
 		print(f"lobbywelcome not found for {member.guild.name}(id: {member.guild.id})")
 		logging.error(f"lobbywelcome not found for {member.guild.name}(id: {member.guild.id})")
-		lobbywelcome = "Lobby message not setup, please use `/config messages key:lobbywelcome action:set` to set it up. You can click the button below to verify!"
+		lobby_welcome = "Lobby message not setup, please use `/config messages key:lobbywelcome action:set` to set it up. You can click the button below to verify!"
 	await send_message(channel,
-	                   f"Welcome {member.mention}! {lobbywelcome}"
+	                   f"Welcome {member.mention}! {lobby_welcome}"
 	                   f"\n"
 	                   f"-# GDPR AND INFORMATION USE DISCLOSURE: By entering your birth date (MM/DD/YYYY) and age, you consent to having this information about you stored by Age Verifier and used to verify that you are the age that you say you are, including sharing to relevant parties for age verification. This information will be stored for a maximum of 1 year if you are no longer in a server using Ageverifier.",
 	                   view=VerifyButton())

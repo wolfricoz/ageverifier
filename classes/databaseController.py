@@ -567,11 +567,13 @@ class ConfigData(metaclass=singleton) :
 	def get_key_int_or_zero(self, guildid: int, key: str) :
 		return int(self.conf[guildid].get(key.upper(), 0))
 
-	def get_key(self, guildid: int, key: str) :
+	def get_key(self, guildid: int, key: str, default=None) :
 		try :
 			return self.conf[guildid][key.upper()]
 
 		except KeyError :
+			if default:
+				return default
 			raise KeyNotFound(key.upper())
 
 	def get_key_or_none(self, guildid: int, key: str) :
@@ -669,6 +671,7 @@ class ServerTransactions() :
 			ConfigTransactions.toggle_add(guildid, "AUTOKICK")
 			ConfigTransactions.toggle_add(guildid, "AUTOMATIC")
 			ConfigTransactions.toggle_add(guildid, "WELCOME", "ENABLED")
+			ConfigTransactions.toggle_add(guildid, "LOBBYWELCOME", "ENABLED")
 			ConfigTransactions.toggle_add(guildid, "UPDATEROLES")
 			ConfigTransactions.toggle_add(guildid, "PINGOWNER")
 			ConfigTransactions.config_unique_add(guildid, "COOLDOWN", 5)
@@ -679,7 +682,8 @@ class ServerTransactions() :
 		ConfigTransactions.toggle_add(guildid, "AUTOKICK")
 		ConfigTransactions.toggle_add(guildid, "AUTOMATIC")
 		ConfigTransactions.toggle_add(guildid, "WELCOME", "ENABLED")
-		ConfigTransactions.toggle_add(guildid, "UPDATEROLES", "ENABLED")
+		ConfigTransactions.toggle_add(guildid, "LOBBYWELCOME", "ENABLED")
+		ConfigTransactions.toggle_add(guildid, "UPDATEROLES", )
 		ConfigTransactions.toggle_add(guildid, "PINGOWNER")
 
 		ConfigTransactions.config_unique_add(guildid, "COOLDOWN", 5)

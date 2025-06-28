@@ -31,7 +31,7 @@ class Lobby(commands.GroupCog) :
 	@app_commands.checks.has_permissions(administrator=True)
 	async def verify_button(self, interaction: discord.Interaction, text: str) :
 		"""Verification button for the lobby; initiates the whole process"""
-		await interaction.channel.send(text, view=VerifyButton())
+		await interaction.channel.send(f"{text}\n-# GDPR AND INFORMATION USE DISCLOSURE: By entering your birth date (MM/DD/YYYY) and age, you consent to having this information about you stored by Age Verifier and used to verify that you are the age that you say you are, including sharing to relevant parties for age verification. This information will be stored for a maximum of 1 year if you are no longer in a server using Ageverifier.", view=VerifyButton())
 
 	@app_commands.command()
 	@app_commands.checks.has_permissions(administrator=True)
