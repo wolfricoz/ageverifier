@@ -159,14 +159,14 @@ class dev(commands.GroupCog, name="dev") :
 	async def add_staff(self, interaction: discord.Interaction, user: discord.User, role: Choice[str]) :
 		if interaction.user.id != int(os.getenv("OWNER")) :
 			return await send_response(interaction, "You do not have permission to add staff members")
-		StaffDbTransactions().add(user.id, role.value)
+		StaffDbTransactions.add(user.id, role.value)
 		await send_response(interaction, f"Staff member {user.mention} successfully added as a `{role.name}`!")
 		AccessControl().reload()
 
 	@app_commands.command(name="remove_staff", description="[DEV] Remove a staff member from the team")
 	@AccessControl().check_access("dev")
 	async def remove_staff(self, interaction: discord.Interaction, user: discord.User) :
-		StaffDbTransactions().delete(user.id)
+		StaffDbTransactions.delete(user.id)
 		await send_response(interaction, f"Staff member {user.mention} successfully removed!")
 		AccessControl().reload()
 

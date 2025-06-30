@@ -6,7 +6,7 @@ from datetime import timezone
 
 import pymysql.err
 import sqlalchemy.exc
-from sqlalchemy import and_
+from sqlalchemy import and_, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import Select
