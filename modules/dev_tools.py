@@ -8,10 +8,9 @@ import re
 from discord import app_commands
 from discord.app_commands import Choice
 from discord.ext import commands
-from typing_extensions import T
 
 from classes.access import AccessControl
-from classes.databaseController import ConfigData, StaffDbTransactions, UserTransactions
+from classes.databaseController import ConfigData, UserTransactions
 from classes.jsonmaker import Configer
 from classes.support.discord_tools import send_message, send_response
 from classes.support.queue import queue
@@ -20,7 +19,7 @@ from views.modals.inputmodal import send_modal
 from views.select.configselectroles import *
 
 
-def check_access() -> T :
+def check_access() :
 	def pred(interaction: discord.Interaction) -> bool :
 		if interaction.user.id == int(os.getenv('DEVELOPER')) :
 			return True
