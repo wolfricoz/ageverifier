@@ -4,9 +4,8 @@ import os
 import discord
 from discord import app_commands
 
-
-
-from classes.databaseController import StaffDbTransactions
+from classes.jsonmaker import Configer
+# from classes.databaseController import StaffDbTransactions
 from classes.singleton import singleton
 
 
@@ -23,7 +22,8 @@ class AccessControl(metaclass=singleton) :
 
 	def add_staff_to_dict(self) :
 		self.staff = {}
-		staff_members = StaffDbTransactions().get_all()
+		# staff_members = StaffDbTransactions().get_all()
+		staff_members= []
 		for staff in staff_members :
 			role = staff.role.lower()
 			if role in self.staff :
