@@ -129,7 +129,7 @@ class Lobby(commands.GroupCog) :
 	@app_commands.command()
 	@app_commands.checks.has_permissions(administrator=True)
 	async def lobby_purge(self, interaction: discord.Interaction, days: int = 30) :
-		"""Kick users who have been in the lobby longer than the given days."""
+		"""Kick users who have been in the lobby longer than the given days (based on message age)."""
 		lobby_config = ConfigData().get_key_int(interaction.guild.id, "lobby")
 		lobby_channel = interaction.guild.get_channel(lobby_config)
 		if days > 30 :
@@ -139,7 +139,7 @@ class Lobby(commands.GroupCog) :
 		view = confirmAction()
 		await view.send_message(
 			interaction,
-			f"Are you sure you want to kick users who have been in the lobby for more than {days} days?"
+			f"Are you sure you want to kick users who have been in the lobby for more than {days} days (based on message age)?"
 		)
 		await view.wait()
 		if not view.confirmed :
@@ -147,22 +147,22 @@ class Lobby(commands.GroupCog) :
 			return
 
 		cutoff = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=days)
-		kicked = []
-		for member in lobby_channel.members :
-			if member.bot :
+		kicked = set()
+		async for msg in lobby_channel.history(limit=None, before=cutoff) :
+			if msg.author.bot :
 				continue
-			if member.joined_at and member.joined_at < cutoff :
-				try:
-					await send_message(member, f"You have been in the lobby for more than {days} days. You have been kicked from {interaction.user.name}.")
-				except:
-					print(f"Unable to send message to {member} before kicking")
+			for user in msg.mentions :
 				try :
-
-
-					await member.kick(reason=f"In lobby for more than {days} days")
-					kicked.append(f"{member.name}({member.id})")
+					await send_message(user,
+					                   f"You have been in the lobby for more than {days} days. You have been kicked from {interaction.guild.name}.")
+				except Exception :
+					print(f"Unable to send message to {user} before kicking")
+				try :
+					await user.kick(reason=f"In lobby for more than {days} days")
+					kicked.add(f"{user.name}({user.id})")
 				except Exception as e :
-					print(f"Unable to kick {member} because {e}")
+					print(f"Unable to kick {user} because {e}")
+			await msg.delete()
 
 		with open("config/kicked.txt", "w") as file :
 			str_kicked = "\n".join(kicked)
