@@ -150,8 +150,6 @@ class Lobby(commands.GroupCog) :
 		cutoff = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=days)
 		kicked = set()
 		async for msg in lobby_channel.history(limit=None, before=cutoff) :
-			if msg.author.bot :
-				continue
 			for user in msg.mentions :
 				try :
 					await send_message(user,
