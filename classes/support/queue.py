@@ -1,3 +1,4 @@
+import asyncio
 import inspect
 import logging
 
@@ -73,6 +74,8 @@ class queue(metaclass=Singleton):
                     print(self.status())
                     return
                 logging.info(f"Processing task: {task.__name__}")
+                if task.__name__.lower() in ["delete"]:
+                    await asyncio.sleep(2)
                 await task
 
             except Exception as e:
