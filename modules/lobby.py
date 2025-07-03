@@ -91,12 +91,12 @@ class Lobby(commands.GroupCog) :
 
 	@app_commands.command()
 	@app_commands.checks.has_permissions(administrator=True)
-	async def raid_purge(self, interaction: discord.Interaction, days: int = 14) :
+	async def raid_purge(self, interaction: discord.Interaction, days: int = 30) :
 		"""This command will kick all the users that have not been processed through the lobby with the given days."""
 		lobby_config = ConfigData().get_key_int(interaction.guild.id, "lobby")
 		lobby_channel = interaction.guild.get_channel(lobby_config)
-		if days > 14 :
-			days = 14
+		if days > 30 :
+			days = 30
 			await interaction.channel.send("Max days is 14, setting to 14")
 
 		view = confirmAction()
@@ -128,12 +128,12 @@ class Lobby(commands.GroupCog) :
 
 	@app_commands.command()
 	@app_commands.checks.has_permissions(administrator=True)
-	async def lobby_purge(self, interaction: discord.Interaction, days: int = 14) :
+	async def lobby_purge(self, interaction: discord.Interaction, days: int = 30) :
 		"""Kick users who have been in the lobby longer than the given days."""
 		lobby_config = ConfigData().get_key_int(interaction.guild.id, "lobby")
 		lobby_channel = interaction.guild.get_channel(lobby_config)
-		if days > 14 :
-			days = 14
+		if days > 30 :
+			days = 30
 			await interaction.channel.send("Max days is 14, setting to 14")
 
 		view = confirmAction()
@@ -152,8 +152,13 @@ class Lobby(commands.GroupCog) :
 			if member.bot :
 				continue
 			if member.joined_at and member.joined_at < cutoff :
-				try :
+				try:
 					await send_message(member, f"You have been in the lobby for more than {days} days. You have been kicked from {interaction.user.name}.")
+				except:
+					print(f"Unable to send message to {member} before kicking")
+				try :
+
+
 					await member.kick(reason=f"In lobby for more than {days} days")
 					kicked.append(f"{member.name}({member.id})")
 				except Exception as e :
