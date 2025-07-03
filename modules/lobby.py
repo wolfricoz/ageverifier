@@ -150,7 +150,12 @@ class Lobby(commands.GroupCog) :
 		cutoff = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=days)
 		kicked = set()
 		async for msg in lobby_channel.history(limit=None, before=cutoff) :
+
 			for user in msg.mentions :
+				if user.bot is True :
+					continue
+				if user.id == interaction.guild.owner_id :
+					continue
 				try :
 					await send_message(user,
 					                   f"You have been in the lobby for more than {days} days. You have been kicked from {interaction.guild.name}.")
