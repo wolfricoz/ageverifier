@@ -75,7 +75,7 @@ class queue(metaclass=Singleton):
                     return
                 logging.info(f"Processing task: {task.__name__}")
                 if task.__name__.lower() in ["delete"]:
-                    await asyncio.sleep(2)
+                    await asyncio.sleep(1)
                 await task
 
             except Exception as e:
