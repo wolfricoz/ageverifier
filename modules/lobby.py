@@ -12,6 +12,7 @@ from classes.databaseController import ConfigData
 from classes.idverify import verify
 from classes.lobbyprocess import LobbyProcess
 from classes.support.discord_tools import send_message, send_response
+from classes.support.queue import queue
 from classes.whitelist import check_whitelist
 from views.buttons.approvalbuttons import ApprovalButtons
 from views.buttons.confirmButtons import confirmAction
@@ -158,15 +159,15 @@ class Lobby(commands.GroupCog) :
 				except Exception :
 					print(f"Unable to send message to {user} before kicking")
 				try :
-					await user.kick(reason=f"In lobby for more than {days} days")
+					queue().add(user.kick(reason=f"In lobby for more than {days} days"))
 					kicked.add(f"{user.name}({user.id})")
 				except Exception as e :
 					print(f"Unable to kick {user} because {e}")
-			await msg.delete()
+			queue().add(msg.delete())
 
 		with open("config/kicked.txt", "w") as file :
 			str_kicked = "\n".join(kicked)
-			file.write("These users were removed during the purge:\n")
+			file.write("These users were queue'd for removal during the purge:\n")
 			file.write(str_kicked)
 		await interaction.channel.send(
 			f"{interaction.user.mention} Kicked {len(kicked)}",
