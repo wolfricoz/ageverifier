@@ -163,7 +163,7 @@ class Lobby(commands.GroupCog) :
 					kicked.add(f"{user.name}({user.id})")
 				except Exception as e :
 					print(f"Unable to kick {user} because {e}")
-			queue().add(msg.delete())
+			queue().add(msg.delete(), 0)
 
 		with open("config/kicked.txt", "w") as file :
 			str_kicked = "\n".join(kicked)
