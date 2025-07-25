@@ -7,6 +7,7 @@ import threading
 from contextlib import asynccontextmanager
 
 import discord
+import sentry_sdk
 from discord.ext import commands
 # IMPORT LOAD_DOTENV FUNCTION FROM DOTENV MODULE.
 from dotenv import load_dotenv
@@ -41,6 +42,13 @@ bot = commands.AutoShardedBot(command_prefix=PREFIX, case_insensitive=False, int
 
 bot.DEV = int(os.getenv("DEV"))
 
+# Sentry Integration
+sentry_sdk.init(
+    dsn=os.getenv("SENTRY_DSN"),
+    # Add data like request headers and IP for users,
+    # see https://docs.sentry.io/platforms/python/data-management/data-collected/ for more info
+    send_default_pii=True,
+)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) :
