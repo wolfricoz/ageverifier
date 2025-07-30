@@ -2,6 +2,10 @@ import asyncio
 import inspect
 import logging
 
+import discord
+
+from classes.databaseController import KeyNotFound
+
 
 class Singleton(type):
     _instances = {}
@@ -56,8 +60,10 @@ class queue(metaclass=Singleton):
     async def start(self):
         if self.task_finished and not self.empty():
             self.task_finished = False
+            task = self.process()
+
             try:
-                task = self.process()
+
 
                 if not task:
                     self.low_priority_queue = [i for i in self.low_priority_queue if i is not None]
@@ -77,7 +83,16 @@ class queue(metaclass=Singleton):
                 if task.__name__.lower() in ["delete"]:
                     await asyncio.sleep(1)
                 await task
+            except KeyNotFound as e:
+                logging.warning(f"Key not found: {task.__name__}: {e}")
 
+            except discord.Forbidden:
+                # Get the coroutine's signature
+                signature = inspect.signature(task)
+
+                # Extract parameter names and defaults
+                parameters = {name : param.default for name, param in signature.parameters.items()}
+                logging.warning(f"Discord Forbidden: {task.__name__}: {parameters}")
             except Exception as e:
                 logging.error(f"Error in queue: {e}")
             self.task_finished = True
