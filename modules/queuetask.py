@@ -1,3 +1,5 @@
+import logging
+
 import discord
 from discord.ext import commands, tasks
 
@@ -15,7 +17,10 @@ class queueTask(commands.Cog):
 
     @tasks.loop(seconds=0.3)
     async def queue(self):
-        await queue().start()
+        try:
+            await queue().start()
+        except Exception as e:
+            logging.error(e, exc_info=True)
 
     @tasks.loop(seconds=3)
     async def display_status(self):

@@ -85,14 +85,8 @@ class queue(metaclass=Singleton):
                 await task
             except KeyNotFound as e:
                 logging.warning(f"Key not found: {task.__name__}: {e}")
-
-            except discord.Forbidden:
-                # Get the coroutine's signature
-                signature = inspect.signature(task)
-
-                # Extract parameter names and defaults
-                parameters = {name : param.default for name, param in signature.parameters.items()}
-                logging.warning(f"Discord Forbidden: {task.__name__}: {parameters}")
+            except discord.Forbidden as e:
+                logging.warning(f"Discord Forbidden: {task.__name__}: {e}")
             except Exception as e:
                 logging.error(f"Error in queue: {e}")
             self.task_finished = True
