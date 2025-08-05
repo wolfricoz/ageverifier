@@ -20,10 +20,13 @@ class UserTransactions(DatabaseTransactions) :
 	def add_user_empty(self, userid: int, overwrite=False) :
 		with self.createsession() as session :
 
-			if self.user_exists(userid) is True and overwrite is False :
+			if self.user_exists(userid) and overwrite is False :
 				return False
 			item = db.Users(uid=userid)
-			session.merge(item)
+			if overwrite is True:
+				session.merge(item)
+			else:
+				session.add(item)
 			self.commit(session)
 			return True
 
@@ -48,7 +51,7 @@ class UserTransactions(DatabaseTransactions) :
 
 	def update_user_dob(self, userid: int, dob: str, guildname: str, override=False) :
 		with self.createsession() as session :
-			userdata: Users = self.get_user(userid, deleted=override)
+			userdata: Users = self.get_user(userid, deleted=override, session=session)
 			if userdata is None :
 				self.add_user_full(userid, dob, guildname)
 				return False
@@ -89,7 +92,7 @@ class UserTransactions(DatabaseTransactions) :
 		with self.createsession() as session :
 
 			try :
-				userdata: Users = self.get_user(userid, deleted=True)
+				userdata: Users = self.get_user(userid, deleted=True, session=session)
 				if userdata is None :
 					return False
 				userdata.deleted_at = datetime.now()
@@ -117,7 +120,11 @@ class UserTransactions(DatabaseTransactions) :
 				return False
 
 
-	def get_user(self, userid: int, deleted: bool = False) :
+	def get_user(self, userid: int, deleted: bool = False, session = None) :
+		if session:
+			if deleted :
+				return session.scalar(Select(Users).where(Users.uid == userid))
+			return session.scalar(Select(Users).where(and_(Users.uid == userid, Users.deleted_at.is_(None))))
 		with self.createsession() as session :
 			if deleted :
 				return session.scalar(Select(Users).where(Users.uid == userid))

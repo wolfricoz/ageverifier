@@ -13,8 +13,12 @@ from databases.current import engine
 class DatabaseTransactions(metaclass=singleton) :
 	sessionmanager = sessionmaker(bind=engine)
 
+	def reload_guild(self, guild_id: int) :
+		from databases.controllers.ConfigData import ConfigData
+		ConfigData().load_guild(guild_id)
+
 	def createsession(self) :
-		return self.sessionmanager()
+		return self.sessionmanager(expire_on_commit=False)
 
 	def commit(self, session) :
 		try :

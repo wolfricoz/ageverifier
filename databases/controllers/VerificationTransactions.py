@@ -3,6 +3,7 @@ import logging
 
 from sqlalchemy import Select
 
+from classes.encryption import Encryption
 from databases.controllers.DatabaseTransactions import DatabaseTransactions
 from databases.controllers.UserTransactions import UserTransactions
 from databases.current import IdVerification
@@ -66,7 +67,7 @@ class VerificationTransactions(DatabaseTransactions) :
 	def idverify_add(self, userid: int, dob: str, guildname, idcheck=True) :
 		with self.createsession() as session :
 			UserTransactions().add_user_empty(userid, True)
-			idcheck = IdVerification(uid=userid, verifieddob=datetime.strptime(dob, "%m/%d/%Y"), idverified=idcheck)
+			idcheck = IdVerification(uid=userid, verifieddob=Encryption().encrypt(dob), idverified=idcheck)
 			session.add(idcheck)
 			self.commit(session)
 			UserTransactions().update_user_dob(userid, dob, guildname=guildname)
@@ -78,7 +79,7 @@ class VerificationTransactions(DatabaseTransactions) :
 			if userdata is None :
 				VerificationTransactions().add_idcheck(userid, dob, idcheck=False, server=server)
 				return
-			userdata.verifieddob = datetime.strptime(dob, "%m/%d/%Y")
+			userdata.verifieddob = Encryption().encrypt(dob)
 			userdata.idverified = idverified
 			userdata.idcheck = False
 			userdata.reason = "User ID Verified"

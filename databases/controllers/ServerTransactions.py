@@ -11,8 +11,9 @@ from databases.current import Servers
 
 class ServerTransactions(DatabaseTransactions) :
 
-	def add(self, guildid: int, active: bool = True, reload=True) :
-		if self.get(guildid) is not None :
+	def add(self, guildid: int, active: bool = True, reload=True) -> Servers :
+		guild = self.get(guildid)
+		if guild is not None :
 			self.update(guildid, active)
 			ConfigTransactions().toggle_add(guildid, "AUTOKICK")
 			ConfigTransactions().toggle_add(guildid, "AUTOMATIC")
@@ -20,7 +21,7 @@ class ServerTransactions(DatabaseTransactions) :
 			ConfigTransactions().toggle_add(guildid, "UPDATEROLES")
 			ConfigTransactions().toggle_add(guildid, "PINGOWNER")
 			ConfigTransactions().config_unique_add(guildid, "COOLDOWN", 5)
-			return
+			return guild
 		with self.createsession() as session :
 			g = db.Servers(guild=guildid, active=active)
 			session.merge(g)
@@ -33,9 +34,9 @@ class ServerTransactions(DatabaseTransactions) :
 		ConfigTransactions().toggle_add(guildid, "PINGOWNER")
 
 		ConfigTransactions().config_unique_add(guildid, "COOLDOWN", 5)
-
 		if reload :
 			ConfigData().load_guild(guildid)
+		return g
 
 	def get_all(self, id_only=True) :
 		with self.createsession() as session :
@@ -43,14 +44,15 @@ class ServerTransactions(DatabaseTransactions) :
 				return session.query(Servers).all()
 			return [sid[0] for sid in session.query(Servers.guild).all()]
 
-	def get(self, guild_id: int) :
+	def get(self, guild_id: int, session=None) :
+		if session:
+			return session.scalar(Select(Servers).where(Servers.guild == guild_id))
 		with self.createsession() as session :
 			return session.scalar(Select(Servers).where(Servers.guild == guild_id))
 
 	def update(self, guild_id: int, active: bool = None, reload=True) :
 		with self.createsession() as session :
-
-			guild = self.get(guild_id)
+			guild = self.get(guild_id, session=session)
 			if not guild :
 				return False
 			updated_data = {

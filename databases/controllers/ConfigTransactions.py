@@ -4,7 +4,6 @@ import sqlalchemy.exc
 from sqlalchemy import Select
 
 from databases import current as db
-from databases.controllers.ConfigData import ConfigData
 from databases.controllers.DatabaseTransactions import DatabaseTransactions
 from databases.current import Config
 
@@ -27,7 +26,7 @@ class ConfigTransactions(DatabaseTransactions) :
 				item = db.Config(guild=guildid, key=key.upper(), value=value)
 				session.add(item)
 				self.commit(session)
-				ConfigData().load_guild(guildid)
+				self.reload_guild(guildid)
 				logging.info(f"Adding unique key with data: {guildid}, {key}, {value}, and overwrite {overwrite}")
 				return True
 			except sqlalchemy.exc.PendingRollbackError:
@@ -47,7 +46,7 @@ class ConfigTransactions(DatabaseTransactions) :
 				return False
 			guilddata.value = value
 			self.commit(session)
-			ConfigData().load_guild(guildid)
+			self.reload_guild(guildid)
 			return True
 
 
@@ -67,7 +66,7 @@ class ConfigTransactions(DatabaseTransactions) :
 			item = db.Config(guild=guildid, key=key.upper(), value=value)
 			session.add(item)
 			self.commit(session)
-			ConfigData().load_guild(guildid)
+			self.reload_guild(guildid)
 			return True
 
 
@@ -89,7 +88,7 @@ class ConfigTransactions(DatabaseTransactions) :
 				Select(db.Config).where(db.Config.guild == guildid, db.Config.key == key, db.Config.value == value))
 			session.delete(exists)
 			self.commit(session)
-			ConfigData().load_guild(guildid)
+			self.reload_guild(guildid)
 			return None
 
 
