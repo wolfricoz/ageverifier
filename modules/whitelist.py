@@ -1,6 +1,5 @@
 """Config options for the bot."""
 
-from discord_py_utilities.messages import send_response
 from discord import app_commands
 from discord.ext import commands
 

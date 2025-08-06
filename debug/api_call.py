@@ -1,6 +1,9 @@
 import requests
 
 IP = "http://127.0.0.1:8080"
+
+
+# noinspection PyUnreachableCode
 def call_refresh_config() :
 	headers = {
 		'token' : "bebebad3ddb9d50d433e487a8bf3ae48"

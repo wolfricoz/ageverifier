@@ -118,7 +118,7 @@ async def await_message(interaction, message) -> discord.Message | bool:
         return False
     return m
 
-async def create_embed(title: str, description:str = None, footer: str = None, fields: dict = {}, inline: bool=False) -> discord.Embed:
+async def create_embed(title: str, description:str = None, footer: str = None, fields: dict = None, inline: bool=False) -> discord.Embed:
     embed = discord.Embed(
         title=title,
         description=description,

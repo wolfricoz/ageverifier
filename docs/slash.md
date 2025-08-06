@@ -4,6 +4,7 @@ title: Slash Guide
 nav_order: 3
 ---
 
+<!--suppress HtmlDeprecatedAttribute -->
 <h1 align="center">Slash guide</h1>
 
 Ageverifier uses slash commands to execute commands, this is a new feature discord has added to their bot api. This

@@ -19,7 +19,7 @@ from views.modals.configinput import ConfigInputUnique
 from views.select.configselectroles import *
 
 
-class config(commands.GroupCog, name="config") :
+class Config(commands.GroupCog, name="config") :
 
 	def __init__(self, bot: commands.Bot) :
 		self.bot = bot
@@ -220,4 +220,4 @@ class config(commands.GroupCog, name="config") :
 
 async def setup(bot: commands.Bot) :
 	"""Adds the cog to the bot"""
-	await bot.add_cog(config(bot))
+	await bot.add_cog(Config(bot))
