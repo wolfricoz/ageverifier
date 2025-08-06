@@ -10,6 +10,7 @@ import discord.utils
 from discord import Interaction, app_commands
 from discord.app_commands import AppCommandError, CheckFailure, command
 from discord.ext import commands
+from discord_py_utilities.permissions import find_first_accessible_text_channel
 from dotenv import load_dotenv
 
 from classes.retired.discord_tools import NoMessagePermissionException
@@ -107,12 +108,17 @@ class Logging(commands.Cog) :
 		tree = self.bot.tree
 		tree.on_error = self._old_tree_error
 
-	async def on_fail_message(self, interaction: Interaction, message: str, owner=False) :
+	async def on_fail_message(self, interaction: Interaction, message: str, owner=False, first_channel=True) :
 		"""sends a message to the user if the command fails."""
 		try :
+			if first_channel :
+					channel = find_first_accessible_text_channel(interaction.guild)
+					await send_message(channel, message, error_mode='ignore')
+					return
 			if owner :
-				await send_message(interaction.guild.owner, message)
-			await send_response(interaction, message, ephemeral=True)
+				await send_message(interaction.guild.owner, message, error_mode='ignore')
+				return
+			await send_response(interaction, message, ephemeral=True, error_mode='ignore')
 		except Exception as e :
 			logging.error(e)
 
@@ -143,11 +149,11 @@ class Logging(commands.Cog) :
 
 		if isinstance(error.original, NoChannelException) :
 			return await self.on_fail_message(interaction,
-			                                  "No channel set or does not exist, check the config or fill in the required arguments.")
+			                                  "No channel set or does not exist, check the config or fill in the required arguments.", first_channel=False)
 
 		if isinstance(error, app_commands.TransformerError) :
 			return await self.on_fail_message(interaction,
-			                                  "Failed to transform given input to member, please select the user from the list, or use the user's ID.")
+			                                  "Failed to transform given input to member, please select the user from the list, or use the user's ID.",)
 		if isinstance(error, commands.MemberNotFound) :
 			return await self.on_fail_message(interaction, "User not found.")
 		if isinstance(error, discord.app_commands.errors.TransformerError) :
