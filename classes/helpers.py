@@ -3,9 +3,11 @@ from datetime import datetime
 
 import discord
 
-from classes import databaseController
-from classes.databaseController import ConfigData, UserTransactions
-from classes.support.discord_tools import create_embed, send_message
+import databases.exceptions.KeyNotFound
+from classes.retired.discord_tools import create_embed
+from databases.controllers.ConfigData import ConfigData
+from databases.controllers.UserTransactions import UserTransactions
+from discord_py_utilities.messages import send_message
 from views.buttons.verifybutton import VerifyButton
 
 
@@ -24,7 +26,7 @@ async def welcome_user(member) :
 		return
 	try :
 		lobby_welcome = ConfigData().get_key(member.guild.id, "lobbywelcome")
-	except databaseController.KeyNotFound :
+	except databases.exceptions.KeyNotFound.KeyNotFound :
 		print(f"lobbywelcome not found for {member.guild.name}(id: {member.guild.id})")
 		logging.error(f"lobbywelcome not found for {member.guild.name}(id: {member.guild.id})")
 		lobby_welcome = "Lobby message not setup, please use `/config messages key:lobbywelcome action:set` to set it up. You can click the button below to verify!"
@@ -35,7 +37,7 @@ async def welcome_user(member) :
 	                   view=VerifyButton())
 
 
-async def add_join_roles(member) -> bool :
+async def add_join_roles(member) -> bool:
 	try :
 		roles = [member.guild.get_role(int(role)) for role in ConfigData().get_key_or_none(member.guild.id, "join")]
 		if roles is None or len(roles) <= 0 :
@@ -45,6 +47,7 @@ async def add_join_roles(member) -> bool :
 	except discord.Forbidden :
 		await send_message(member.guild.owner,
 		                   f"The bot does not have permission to apply all roles to {member.mention}, please check if the bot is above the roles it is supposed to give.")
+		return False
 	except Exception as e :
 		print(e)
 		return False
@@ -55,7 +58,7 @@ def find_invite_by_code(invite_list, code) :
 	for inv in invite_list :
 		if inv.code == code :
 			return inv
-
+	return None
 
 async def invite_info(bot, member: discord.Member) :
 	infochannel = ConfigData().get_key_or_none(member.guild.id, 'inviteinfo')
@@ -64,7 +67,7 @@ async def invite_info(bot, member: discord.Member) :
 		return
 	invites_before_join = bot.invites[member.guild.id]
 	invites_after_join = await member.guild.invites()
-	userdata = UserTransactions.get_user(member.id)
+	userdata = UserTransactions().get_user(member.id)
 	fields = {
 		"user id"            : member.id,
 		"Invite Code"        : "No invite found",

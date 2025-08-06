@@ -16,10 +16,11 @@ from fastapi import FastAPI
 import api
 from classes import whitelist
 from classes.blacklist import blacklist_check
-from classes.databaseController import ConfigData, ServerTransactions
+from databases.controllers.ServerTransactions import ServerTransactions
+from databases.controllers.ConfigData import ConfigData
 from classes.jsonmaker import Configer
-from classes.support.discord_tools import send_message
-from classes.support.queue import queue
+from discord_py_utilities.messages import send_message
+from classes.support.queue import Queue
 from databases import current as db
 from views.buttons.idverifybutton import IdVerifyButton
 
@@ -93,7 +94,7 @@ async def on_ready() :
 	whitelist.create_whitelist(bot.guilds)
 	await Configer.create_bot_config()
 	for guild in bot.guilds :
-		queue().add(blacklist_check(guild, devroom), priority=2)
+		Queue().add(blacklist_check(guild, devroom), priority=2)
 		ServerTransactions().add(guild.id, active=True)
 		ConfigData().load_guild(guild.id)
 		guilds.append(guild.name)
@@ -142,7 +143,7 @@ async def on_guild_join(guild) :
 		except discord.errors.Forbidden :
 			print(f"Unable to send message to {guild.owner.name} in {guild.name}")
 		pass
-	queue().add(send_message(guild.owner,
+	Queue().add(send_message(guild.owner,
 	                         "Thank you for inviting Ageverifier. To help you get started, please read the documentation: https://wolfricoz.github.io/ageverifier/ and visit our [dashboard](https://bots.roleplaymeets.com/) to setup the bot with ease!\n\n"
 	                         "Please make sure the bot has permission to post in the channels where you try to run the commands!"))
 	ServerTransactions().add(guild.id, active=True)
@@ -187,6 +188,7 @@ async def leave_server(ctx, guildid: int) :
 	guild = bot.get_guild(guildid)
 	await guild.leave()
 	await ctx.send(f"Left {guild}")
+	return None
 
 
 # EXECUTES THE BOT WITH THE SPECIFIED TOKEN.

@@ -3,7 +3,7 @@ import logging
 import discord
 from discord.ext import commands, tasks
 
-from classes.support.queue import queue
+from classes.support.queue import Queue
 
 
 class queueTask(commands.Cog):
@@ -18,7 +18,7 @@ class queueTask(commands.Cog):
     @tasks.loop(seconds=0.3)
     async def queue(self):
         try:
-            await queue().start()
+            await Queue().start()
         except Exception as e:
             logging.error(e, exc_info=True)
 
@@ -26,8 +26,8 @@ class queueTask(commands.Cog):
     async def display_status(self):
         await self.bot.wait_until_ready()
         status = "Keeping the community safe!"
-        if not queue().empty():
-            status = queue().status()
+        if not Queue().empty():
+            status = Queue().status()
 
         await self.bot.change_presence(activity=discord.CustomActivity(name=status, emoji='🖥️'))
 

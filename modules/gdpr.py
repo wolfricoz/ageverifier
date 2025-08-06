@@ -4,10 +4,11 @@ import os
 import discord
 from discord import app_commands
 from discord.ext import commands
+from discord_py_utilities.messages import send_response
 
-from classes.databaseController import ServerTransactions, UserTransactions, VerificationTransactions
 from classes.encryption import Encryption
-from classes.support.discord_tools import send_message, send_response
+from databases.controllers.UserTransactions import UserTransactions
+from databases.controllers.VerificationTransactions import VerificationTransactions
 from views.buttons.gdprremoval import GDPRRemoval
 
 
@@ -18,7 +19,7 @@ class gdpr(commands.GroupCog) :
 	@app_commands.command(name="removal", description="Request removal of your data")
 	async def removal(self, interaction: discord.Interaction) :
 		"""Removes user data"""
-		user = UserTransactions.get_user(interaction.user.id)
+		user = UserTransactions().get_user(interaction.user.id)
 		if user is None or user.date_of_birth is None :
 			await send_response(interaction, "No data found for you.")
 			return
@@ -39,8 +40,8 @@ If you want to continue, please confirm your request."""
 		"""Returns user data"""
 		dev = os.getenv('DEV')
 		supportguild = os.getenv("SUPPORTGUILD")
-		user_data = UserTransactions.get_user(interaction.user.id)
-		id_verified = VerificationTransactions.get_id_info(interaction.user.id)
+		user_data = UserTransactions().get_user(interaction.user.id)
+		id_verified = VerificationTransactions().get_id_info(interaction.user.id)
 		server = self.bot.get_guild(int(supportguild if supportguild else 0))
 		if server is None :
 			invite = "Failed to generate invite link, please contact the developer."

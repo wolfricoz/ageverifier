@@ -1,18 +1,13 @@
 # my_discord_bot/routes/example_routes.py
-import json
+import logging
 import os
 
-import discord.ext.commands
-from discord.utils import get
-from fastapi import APIRouter, HTTPException, Request
-from pydantic import BaseModel
-import logging
 from discord.ext import commands
+from fastapi import APIRouter, Request
 
 from classes.configsetup import ConfigSetup
-from classes.databaseController import ConfigData
-from classes.support.queue import queue
-from resources.data.config_variables import rolechoices, channelchoices, messagechoices
+from classes.support.queue import Queue
+from databases.controllers.ConfigData import ConfigData
 
 router = APIRouter()
 
@@ -31,7 +26,7 @@ async def refresh_config(request: Request) :
 	if verify_token(request) :
 		logging.warning(f"Invalid token for config refresh request from ip {request.client.host}")
 
-		return
+		return None
 	logging.info("Website Request: Reload Config")
 
 	ConfigData().reload()
@@ -42,13 +37,13 @@ async def refresh_config(request: Request) :
 async def auto_setup(request: Request, guildid: int) :
 	if verify_token(request) :
 		logging.warning(f"Invalid token for auto setup request for {guildid} with ip {request.client.host}")
-		return
+		return None
 
 	bot: commands.Bot = request.app.state.bot
 	guild = bot.get_guild(guildid)
 	if not guild :
 		return {"message" : "Guild not found"}
-	queue().add(ConfigSetup().api_auto_setup(guild))
+	Queue().add(ConfigSetup().api_auto_setup(guild))
 	ConfigData().reload()
 	return {"message" : f"Auto Setup for {guild.name} queued"}
 
@@ -58,7 +53,7 @@ async def permission_check(request: Request, guildid: int) :
 	if verify_token(request) :
 		logging.warning(f"Invalid token for permission check request for {guildid} with ip {request.client.host}")
 
-		return
+		return None
 
 	bot: commands.Bot = request.app.state.bot
 	guild = bot.get_guild(guildid)
@@ -70,5 +65,5 @@ async def permission_check(request: Request, guildid: int) :
 			return {"message" : "No moderation channel set"}
 	except :
 		return {"message" : "No moderation channel set"}
-	queue().add(ConfigSetup().check_channel_permissions(mod_channel))
+	Queue().add(ConfigSetup().check_channel_permissions(mod_channel))
 	return {"message" : f"Permission check for {guild.name} queued"}

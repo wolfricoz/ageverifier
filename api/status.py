@@ -2,16 +2,16 @@
 
 from fastapi import APIRouter
 
-from classes.databaseController import DatabaseTransactions
-from classes.support.queue import queue
+from databases.controllers.DatabaseTransactions import DatabaseTransactions
+from classes.support.queue import Queue
 
 router = APIRouter()
 
 
 @router.post("/ping")
 async def ping() :
-	status =  DatabaseTransactions.ping_db()
-	q = queue()
+	status =  DatabaseTransactions().ping_db()
+	q = Queue()
 	return {
 		"status"                : status,
 		"high_priority_queue"   : len(q.high_priority_queue),

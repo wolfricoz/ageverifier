@@ -5,7 +5,9 @@ from datetime import datetime
 import discord
 
 from classes.AgeCalculations import AgeCalculations
-from classes.databaseController import UserTransactions, ConfigData, VerificationTransactions
+from databases.controllers.ConfigData import ConfigData
+from databases.controllers.VerificationTransactions import VerificationTransactions
+from databases.controllers.UserTransactions import UserTransactions
 
 
 class NsfwFunctions(ABC):
@@ -63,7 +65,7 @@ class NsfwVerifyModal(discord.ui.Modal):
     # Add in all the checks before it even gets to the lobby; age matches dob, dob already exists but diff?
 
     async def on_submit(self, interaction: discord.Interaction):
-        userdata = UserTransactions.get_user(interaction.user.id)
+        userdata = UserTransactions().get_user(interaction.user.id)
         modlobby = ConfigData().get_key_int(interaction.guild.id, "lobbymod")
         channel = interaction.guild.get_channel(modlobby)
         age = self.age.value
@@ -81,7 +83,7 @@ class NsfwVerifyModal(discord.ui.Modal):
             await interaction.response.send_message(
                     f'Unfortunately you are too young for our server. If you are 17 you may wait in the lobby.',
                     ephemeral=True)
-            VerificationTransactions.set_idcheck_to_true(interaction.user.id,
+            VerificationTransactions().set_idcheck_to_true(interaction.user.id,
                                                          f"{datetime.datetime.now(datetime.timezone.utc).strftime('%m/%d/%Y')}: User is under the age of 18", server=interaction.guild.name)
             return
         # Checks if user is underaged
@@ -110,7 +112,7 @@ class NsfwVerifyModal(discord.ui.Modal):
                     f'A staff member will contact you within 24 hours, please wait patiently.', ephemeral=True)
             return
         # Check Chat History
-        await AgeCalculations.check_history(interaction.user, channel)
+        await AgeCalculations.check_history(interaction.guild.id, interaction.user, channel)
         # Automatically processes users if all checks pass.
         await NsfwFunctions.add_roles_user(interaction.user, interaction.guild)
         await interaction.response.send_message(

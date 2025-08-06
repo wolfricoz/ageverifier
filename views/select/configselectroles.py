@@ -4,7 +4,7 @@ from discord import Interaction, ui
 # Only roles?
 from discord.ui import ChannelSelect, RoleSelect, UserSelect
 
-from classes.support.discord_tools import send_response
+from discord_py_utilities.messages import send_response
 
 
 # Members and roles in one?
@@ -16,6 +16,7 @@ class ConfigSelectChannels(ui.View) :
 
 	def __init__(self) :
 		super().__init__(timeout=1800)
+		self.value = None
 		button = discord.ui.Button(label='Help', style=discord.ButtonStyle.url,
 		                           url='https://wolfricoz.github.io/ageverifier/config.html', emoji="❓")
 		self.add_item(button)

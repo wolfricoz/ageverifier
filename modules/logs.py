@@ -12,8 +12,9 @@ from discord.app_commands import AppCommandError, CheckFailure, command
 from discord.ext import commands
 from dotenv import load_dotenv
 
-from classes.databaseController import KeyNotFound
-from classes.support.discord_tools import NoChannelException, NoMessagePermissionException, send_message, send_response
+from classes.retired.discord_tools import NoMessagePermissionException
+from databases.exceptions.KeyNotFound import KeyNotFound
+from discord_py_utilities.messages import NoChannelException, send_message, send_response
 
 load_dotenv('main.env')
 channels72 = os.getenv('channels72')
@@ -72,6 +73,7 @@ logger2.setLevel(logging.WARN)
 
 class Logging(commands.Cog) :
 	def __init__(self, bot) :
+		self._old_tree_error = None
 		self.bot = bot
 
 	@commands.Cog.listener("on_command_error")
@@ -167,6 +169,7 @@ class Logging(commands.Cog) :
 			f"\n{interaction.guild.name} {interaction.guild.id} {interaction.command.name} with arguments {formatted_data}: {traceback.format_exc()}")
 
 		await self.on_fail_message(interaction, f"Command failed: {error} \nreport this to Rico")
+		return None
 
 	# raise error
 

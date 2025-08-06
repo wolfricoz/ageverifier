@@ -1,6 +1,6 @@
 import discord.ui
 
-from classes.support.discord_tools import send_response
+from discord_py_utilities.messages import send_response
 
 
 class Confirm(discord.ui.View):

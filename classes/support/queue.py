@@ -4,7 +4,7 @@ import logging
 
 import discord
 
-from classes.databaseController import KeyNotFound
+from databases.exceptions.KeyNotFound import KeyNotFound
 
 
 class Singleton(type):
@@ -16,7 +16,7 @@ class Singleton(type):
         return cls._instances[cls]
 
 
-class queue(metaclass=Singleton):
+class Queue(metaclass=Singleton):
     high_priority_queue = []
     normal_priority_queue = []
     low_priority_queue = []
@@ -30,6 +30,7 @@ class queue(metaclass=Singleton):
 
     def add(self, task, priority: int = 1) -> float:
         """Adds a task to the queue with a priority of high(2), normal(1), or low(0)"""
+        # noinspection PyUnreachableCode
         match priority:
             case 2:
                 self.high_priority_queue.append(task)
@@ -56,6 +57,7 @@ class queue(metaclass=Singleton):
             return self.normal_priority_queue.pop(0)
         if len(self.low_priority_queue) > 0:
             return self.low_priority_queue.pop(0)
+        return None
 
     async def start(self):
         if self.task_finished and not self.empty():

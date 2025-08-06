@@ -1,4 +1,3 @@
-import json
 import os.path
 import re
 from abc import ABC, abstractmethod
@@ -8,7 +7,8 @@ import discord
 import pytz
 
 from classes.AutomodComponents import AutomodComponents
-from classes.databaseController import ConfigData
+from databases.controllers.ConfigData import ConfigData
+
 
 class ForumAutoMod(ABC):
     @staticmethod

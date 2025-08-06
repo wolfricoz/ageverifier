@@ -2,8 +2,8 @@ from abc import ABC, abstractmethod
 
 import discord
 
-import classes.permissions as permissions
-from classes.databaseController import UserTransactions, ConfigData
+from databases.controllers.ConfigData import ConfigData
+from databases.controllers.UserTransactions import UserTransactions
 
 
 # noinspection PyUnresolvedReferences
@@ -88,7 +88,7 @@ class PaginationView(discord.ui.View):
             return
         pgdata = self.get_current_page_data()
 
-        UserTransactions.user_remove_warning(int(pgdata[0]))
+        UserTransactions().user_remove_warning(int(pgdata[0]))
         self.data.pop(self.current_page - 1)
         self.current_page = 1
         await self.update_message(self.get_current_page_data())
@@ -110,7 +110,7 @@ class paginate(ABC):
     @staticmethod
     @abstractmethod
     async def create_pagination(interaction, user, wtype, warningtype="official"):
-        data, warndict = UserTransactions.user_get_warnings(user.id, wtype)
+        data, warndict = UserTransactions().user_get_warnings(user.id, wtype)
         pagination_view = PaginationView()
         pagination_view.data = data
         pagination_view.warndict = warndict

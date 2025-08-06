@@ -4,11 +4,13 @@ import discord
 
 import databases.current
 from classes.AgeCalculations import AgeCalculations
-from classes.databaseController import AgeRoleTransactions, ConfigData, UserTransactions
+from databases.controllers.AgeRoleTransactions import AgeRoleTransactions
+from databases.controllers.ConfigData import ConfigData
+from databases.controllers.UserTransactions import UserTransactions
 from classes.encryption import Encryption
 from classes.idcheck import IdCheck
 from classes.lobbyprocess import LobbyProcess
-from classes.support.discord_tools import await_message, send_message, send_response
+from discord_py_utilities.messages import await_message, send_message, send_response
 from classes.whitelist import check_whitelist
 from classes.lobbytimers import LobbyTimers
 from views.buttons.approvalbuttons import ApprovalButtons
@@ -69,7 +71,7 @@ class VerifyModal(discord.ui.Modal) :
 		self.add_item(self.year)
 
 	async def on_submit(self, interaction: discord.Interaction) :
-		userdata: databases.current.Users = UserTransactions.get_user(interaction.user.id)
+		userdata: databases.current.Users = UserTransactions().get_user(interaction.user.id)
 		mod_lobby = ConfigData().get_key_int(interaction.guild.id, "lobbymod")
 		id_log = ConfigData().get_key_int(interaction.guild.id, "idlog")
 		mod_channel = interaction.guild.get_channel(mod_lobby)
@@ -82,7 +84,7 @@ class VerifyModal(discord.ui.Modal) :
 		dob = await AgeCalculations.infocheck(interaction, self.age.value, f"{self.month}/{self.day}/{self.year}",
 		                                      mod_channel)
 		if dob is None :
-			return
+			return None
 		# Checks if user is underaged
 		agechecked, years = AgeCalculations.agechecker(age, dob)
 		minimum_age = AgeRoleTransactions().get_minimum_age(interaction.guild.id)
@@ -90,13 +92,13 @@ class VerifyModal(discord.ui.Modal) :
 			await IdCheck.send_check(interaction, mod_channel, "underage", age, dob, id_check=True,
 			                         verify_button=False, server=interaction.guild.name)
 			await self.autokick(interaction, mod_channel, age, minimum_age)
-			return
+			return None
 		if minimum_age and age < minimum_age :
 			await send_response(interaction,
 			                    f'Thank you for submitting your date of birth, unfortunately you are too young for this server; you must be {minimum_age} years old.',
 			                    ephemeral=True)
 			await self.autokick(interaction, mod_channel, age, minimum_age)
-			return
+			return None
 
 		logging.debug(f"userid: {interaction.user.id} age: {age} dob: {Encryption().encrypt(dob)}")
 		# Checks if the age matches the date of birth, if only off by one year the can resubmit; otherwise they are flagged
@@ -122,7 +124,7 @@ class VerifyModal(discord.ui.Modal) :
 			await send_response(interaction,
 			                    f'Thank you for submitting your age and dob! You will be let through immediately!',
 			                    ephemeral=True)
-			return
+			return None
 		await AgeCalculations.check_history(interaction.guild.id, interaction.user, mod_channel)
 		LobbyTimers().add_cooldown(interaction.guild.id, interaction.user.id,
 		                           ConfigData().get_key_int_or_zero(interaction.guild.id, 'COOLDOWN'))
@@ -133,13 +135,14 @@ class VerifyModal(discord.ui.Modal) :
 			                   view=ApprovalButtons(age=age, dob=dob, user=interaction.user))
 			await send_response(interaction, f'Thank you for submitting your age and dob! You will be let through soon!',
 			                    ephemeral=True)
-			return
+			return None
 		await send_message(mod_channel,
 		                   f"\n{interaction.user.mention} has given {age} and dob matches. You can let them through with the buttons below."
 		                   f"\n-# [LOBBY DEBUG] Server not whitelisted: Personal Information (PI) hidden",
 		                   view=ApprovalButtons(age=age, dob=dob, user=interaction.user))
 		await send_response(interaction, f'Thank you for submitting your age and dob! You will be let through soon!',
 		                    ephemeral=True)
+		return None
 
 	async def on_error(self, interaction: discord.Interaction, error: Exception) -> None :
 		print(error)

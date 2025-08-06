@@ -1,12 +1,9 @@
 """Checks the users invite info when they join and logs it"""
-import logging
-from datetime import datetime
 
 import discord
 from discord.ext import commands
 
-from classes.databaseController import ConfigData
-from classes.helpers import has_onboarding, invite_info
+from classes.helpers import invite_info
 
 
 class inviteInfo(commands.Cog):

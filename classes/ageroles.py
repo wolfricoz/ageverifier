@@ -1,10 +1,10 @@
 import logging
 
 import discord
+from discord_py_utilities.messages import send_message
 
-from classes.databaseController import ConfigData
-from classes.support.discord_tools import send_message
-from classes.support.queue import queue
+from databases.controllers.ConfigData import ConfigData
+from classes.support.queue import Queue
 
 
 def change_age_roles(guild: discord.Guild, user: discord.Member, age, remove = False) :
@@ -27,16 +27,16 @@ def change_age_roles(guild: discord.Guild, user: discord.Member, age, remove = F
 			continue
 		remove_roles.append(role)
 	if len(add_roles) > 0 :
-		queue().add(user.add_roles(*add_roles), priority=2 if not remove else 0)
+		Queue().add(user.add_roles(*add_roles), priority=2 if not remove else 0)
 	if remove is False:
 		return
 	if len(remove_roles) < 1 :
 		return
-	queue().add(user.remove_roles(*remove_roles), priority=0)
+	Queue().add(user.remove_roles(*remove_roles), priority=0)
 	mod_lobby = guild.get_channel(ConfigData().get_key_int(guild.id, "lobbymod"))
 	if mod_lobby is None:
 		return
-	queue().add(send_message(mod_lobby, f"[AGE ROLES UPDATED] {user.mention} has been given the roles: {', '.join([role.name for role in add_roles])} and removed the roles: {', '.join([role.name for role in remove_roles])}"), priority=0)
+	Queue().add(send_message(mod_lobby, f"[AGE ROLES UPDATED] {user.mention} has been given the roles: {', '.join([role.name for role in add_roles])} and removed the roles: {', '.join([role.name for role in remove_roles])}"), priority=0)
 
 
 

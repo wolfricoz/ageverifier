@@ -1,10 +1,9 @@
 import discord
+from discord_py_utilities.messages import send_response
 
 from classes.AgeCalculations import AgeCalculations
-from classes.databaseController import UserTransactions, ConfigData
 from classes.idverify import verify
-from classes.support.discord_tools import send_response
-from classes.support.queue import queue
+from classes.support.queue import Queue
 
 
 class IdVerifyModal(discord.ui.Modal) :
@@ -33,7 +32,7 @@ class IdVerifyModal(discord.ui.Modal) :
 		if AgeCalculations.validate_dob(self.dateofbirth.value) is None :
 			return await send_response(interaction, f"Please fill in the date of birth as with the format: mm/dd/yyyy.")
 		await verify(self.user, interaction, self.dateofbirth.value, True)
-		queue().add(self.message.delete())
+		Queue().add(self.message.delete())
 		await send_response(interaction, "User's ID verification entry has been updated.")
 
 	async def on_error(self, interaction: discord.Interaction, error: Exception) -> None :

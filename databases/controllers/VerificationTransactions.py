@@ -1,4 +1,3 @@
-import datetime
 import logging
 
 from sqlalchemy import Select
@@ -7,7 +6,6 @@ from classes.encryption import Encryption
 from databases.controllers.DatabaseTransactions import DatabaseTransactions
 from databases.controllers.UserTransactions import UserTransactions
 from databases.current import IdVerification
-from datetime import datetime
 
 
 class VerificationTransactions(DatabaseTransactions) :

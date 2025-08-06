@@ -8,9 +8,6 @@ from databases.current import AgeRole
 
 
 class AgeRoleTransactions(DatabaseTransactions) :
-	def reload_guild(self, guild_id: int) :
-		from databases.controllers.ConfigData import ConfigData
-		ConfigData().load_guild(guild_id)
 
 	def exists(self, role_id) :
 		with self.createsession() as session :

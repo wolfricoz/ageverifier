@@ -8,11 +8,11 @@ from discord.ext import commands
 
 import classes.permissions as permissions
 from classes.AgeCalculations import AgeCalculations
-from classes.databaseController import ConfigData
+from databases.controllers.ConfigData import ConfigData
 from classes.idverify import verify
 from classes.lobbyprocess import LobbyProcess
-from classes.support.discord_tools import send_message, send_response
-from classes.support.queue import queue
+from discord_py_utilities.messages import send_message, send_response
+from classes.support.queue import Queue
 from classes.whitelist import check_whitelist
 from views.buttons.approvalbuttons import ApprovalButtons
 from views.buttons.confirmButtons import confirmAction
@@ -162,11 +162,11 @@ class Lobby(commands.GroupCog) :
 				except Exception :
 					print(f"Unable to send message to {user} before kicking")
 				try :
-					queue().add(user.kick(reason=f"In lobby for more than {days} days"))
+					Queue().add(user.kick(reason=f"In lobby for more than {days} days"))
 					kicked.add(f"{user.name}({user.id})")
 				except Exception as e :
 					print(f"Unable to kick {user} because {e}")
-			queue().add(msg.delete(), 0)
+			Queue().add(msg.delete(), 0)
 
 		with open("config/kicked.txt", "w") as file :
 			str_kicked = "\n".join(kicked)

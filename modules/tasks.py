@@ -5,16 +5,18 @@ import os
 from datetime import datetime, timedelta
 
 import discord
+from discord_py_utilities.messages import send_message
 from discord import app_commands
 from discord.ext import commands, tasks
 
-from classes import permissions
 from classes.AgeCalculations import AgeCalculations
 from classes.ageroles import change_age_roles
-from classes.databaseController import ConfigData, DatabaseTransactions, ServerTransactions, UserTransactions
 from classes.encryption import Encryption
-from classes.support.discord_tools import send_message
-from classes.support.queue import queue
+from classes.support.queue import Queue
+from databases.controllers.ConfigData import ConfigData
+from databases.controllers.DatabaseTransactions import DatabaseTransactions
+from databases.controllers.ServerTransactions import ServerTransactions
+from databases.controllers.UserTransactions import UserTransactions
 
 OLDLOBBY = int(os.getenv("OLDLOBBY"))
 
@@ -68,10 +70,10 @@ class Tasks(commands.GroupCog) :
 	async def update_user_time(self, member, userids) :
 		if member.id not in userids :
 			logging.info(f"User {member.id} not found in database, adding.")
-			UserTransactions.add_user_empty(member.id)
+			UserTransactions().add_user_empty(member.id)
 			return
 		logging.debug(f"Updating entry time for {member.id}")
-		UserTransactions.update_entry_date(member.id)
+		UserTransactions().update_entry_date(member.id)
 
 	async def user_expiration_remove(self, userdata) :
 		"""removes expired entries."""
@@ -81,11 +83,11 @@ class Tasks(commands.GroupCog) :
 
 	async def expiration_check(self, entry) :
 		if entry.entry < datetime.now() - timedelta(days=365) :
-			UserTransactions.permanent_delete(entry.uid, "Expiration Check (Entry Expired)")
+			UserTransactions().permanent_delete(entry.uid, "Expiration Check (Entry Expired)")
 			# logging.info("DEV: EXPIRATION CHECK DISABLED")
 			logging.info(f"Database record: {entry.uid} expired with date: {entry.entry}")
 		if entry.deleted_at and entry.deleted_at < datetime.now() - timedelta(days=30) :
-			UserTransactions.permanent_delete(entry.uid, "GDPR Removal (30 days passed)")
+			UserTransactions().permanent_delete(entry.uid, "GDPR Removal (30 days passed)")
 			# logging.info("DEV: EXPIRATION CHECK DISABLED")
 			logging.info(f"Database record: {entry.uid} GDPR deleted with date: {entry.deleted_at}")
 
@@ -93,7 +95,7 @@ class Tasks(commands.GroupCog) :
 	async def check_users_expiration(self) :
 		"""updates entry time, if entry is expired this also removes it."""
 		logging.info("Checking for expired entries.")
-		userdata = UserTransactions.get_all_users()
+		userdata = UserTransactions().get_all_users()
 		userids = [x.uid for x in userdata]
 		await self.user_expiration_update(userids)
 		await self.user_expiration_remove(userdata)
@@ -127,7 +129,7 @@ class Tasks(commands.GroupCog) :
 				logging.info(f"Mod lobby not found in {guild.name}, skipping age role update.")
 				continue
 			if not rem_roles :
-				queue().add(send_message(mod_lobby,
+				Queue().add(send_message(mod_lobby,
 				                         f"Your server does not have any removal roles or on join roles setup, because of this automatic age role updates are disabled to prevent users in the lobby from getting age roles."),
 				            priority=0)
 				return
@@ -136,13 +138,13 @@ class Tasks(commands.GroupCog) :
 				continue
 			for member in guild.members :
 				try :
-					member_data = UserTransactions.get_user(member.id)
+					member_data = UserTransactions().get_user(member.id)
 					if member_data is None or member_data.date_of_birth is None :
 						continue
 					date_of_birth = Encryption().decrypt(member_data.date_of_birth)
 					if "-" in date_of_birth :
 						date_of_birth = date_of_birth.replace("-", "/")
-						UserTransactions.update_user_dob(member.id, date_of_birth, guild.name)
+						UserTransactions().update_user_dob(member.id, date_of_birth, guild.name)
 					age = AgeCalculations.dob_to_age(date_of_birth)
 					user_roles = [role.id for role in member.roles]
 
@@ -151,7 +153,7 @@ class Tasks(commands.GroupCog) :
 						if rem_role in user_roles :
 							logging.info(f"User {member.name} still in the lobby")
 							continue
-					queue().add(change_age_roles(guild, member, age, remove=True), priority=0)
+					Queue().add(change_age_roles(guild, member, age, remove=True), priority=0)
 				except Exception as e :
 					logging.error(f"Error calculating age for {member.name}: {e}", exc_info=True)
 					continue
@@ -160,7 +162,7 @@ class Tasks(commands.GroupCog) :
 	async def database_ping(self) :
 		"""pings the database to keep the connection alive"""
 		logging.debug("Pinging database.")
-		DatabaseTransactions.ping_db()
+		DatabaseTransactions().ping_db()
 
 	@app_commands.command(name="expirecheck")
 	@app_commands.checks.has_permissions(administrator=True)

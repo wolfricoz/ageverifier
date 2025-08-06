@@ -3,7 +3,7 @@ import re
 
 import discord
 
-from classes.databaseController import UserTransactions
+from databases.controllers.UserTransactions import UserTransactions
 from classes.encryption import Encryption
 
 
@@ -19,7 +19,7 @@ class dobentry(discord.ui.View):
     async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
         """get info from message thhe button is attached to"""
         match = re.search(r'UID: (\d+)', interaction.message.content)
-        user = UserTransactions.get_user(match.group(1))
+        user = UserTransactions().get_user(match.group(1))
         await interaction.response.send_message(f"Date of birth: {Encryption().decrypt(user.date_of_birth)}", ephemeral=True)
 
 

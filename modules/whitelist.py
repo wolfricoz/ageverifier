@@ -1,12 +1,10 @@
 """Config options for the bot."""
-import re
 
+from discord_py_utilities.messages import send_response
 from discord import app_commands
 from discord.ext import commands
 
 import classes.whitelist as wl
-from classes.databaseController import ConfigData, UserTransactions
-from classes.support.discord_tools import send_response
 from views.select.configselectroles import *
 
 
