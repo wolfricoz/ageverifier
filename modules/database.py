@@ -1,22 +1,24 @@
 """this module handles the lobby."""
 import datetime
+import logging
 import os
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta
 
 import discord
 from discord import app_commands
 from discord.ext import commands
+from discord_py_utilities.messages import send_response
 
 import classes.permissions as permissions
 from classes.AgeCalculations import AgeCalculations
-from databases.controllers.ServerTransactions import ServerTransactions
-from databases.controllers.VerificationTransactions import VerificationTransactions
-from databases.controllers.UserTransactions import UserTransactions
 from classes.encryption import Encryption
 from classes.lobbyprocess import LobbyProcess
-from discord_py_utilities.messages import send_message, send_response
 from classes.whitelist import check_whitelist
+from databases.controllers.ServerTransactions import ServerTransactions
+from databases.controllers.UserTransactions import UserTransactions
+from databases.controllers.VerificationTransactions import VerificationTransactions
 from databases.current import Users
+from resources.data.responses import StringStorage
 from views.buttons.approvalbuttons import ApprovalButtons
 from views.buttons.dobentrybutton import dobentry
 from views.buttons.verifybutton import VerifyButton
@@ -34,9 +36,11 @@ class Database(commands.GroupCog) :
 	#                                      ['add', 'update', 'delete', 'get']])
 	async def whitelist(self, interaction) :
 		if not check_whitelist(interaction.guild.id) and not permissions.check_dev(interaction.user.id) :
+			logging.info('not whitelisted')
 			await send_response(interaction,
 			                    f"[NOT_WHITELISTED] This command is limited to whitelisted servers. Please join our [support server]({os.getenv('INVITE')}) and open a ticket to edit or send a message to `ricostryker`")
 			return True
+		logging.info('whitelisted')
 		return False
 
 	@app_commands.command()
@@ -60,15 +64,17 @@ class Database(commands.GroupCog) :
 		                      description="Reminder: This data is only allowed to be shared with relevant parties.")
 		for title, value in data.items() :
 			embed.add_field(name=title, value=value, inline=False)
-		await send_response(interaction, f"", embed=embed, ephemeral=True)
+		await send_response(interaction, StringStorage.NO_SHARE_REMINDER, embed=embed, ephemeral=True)
 
 	@app_commands.command()
 	@app_commands.checks.has_permissions(manage_messages=True)
 	async def get(self, interaction: discord.Interaction, user: discord.User) :
 		"""[manage_messages] Gets the date of birth of the specified user."""
-		await send_response(interaction, f"⌛ Looking up {user.mention}", ephemeral=True)
 		if await self.whitelist(interaction) :
+			logging.info(f"{interaction.user.name} tried to look up {user.name} but wasn't whitelisted")
 			return
+		await send_response(interaction, f"⌛ Looking up {user.mention}", ephemeral=True)
+		logging.info(f"{interaction.user.name} to looked up {user.name}")
 		userdata: Users = UserTransactions().get_user(user.id)
 		user_status = VerificationTransactions().get_id_info(user.id)
 		if not userdata :
@@ -94,7 +100,7 @@ class Database(commands.GroupCog) :
 		                      description="Reminder: This data is only allowed to be shared with relevant parties.")
 		for title, value in data.items() :
 			embed.add_field(name=title, value=value, inline=False)
-		await send_response(interaction, f"", embed=embed, ephemeral=True)
+		await send_response(interaction, StringStorage.NO_SHARE_REMINDER, embed=embed, ephemeral=True)
 
 	@app_commands.command()
 	@app_commands.checks.has_permissions(manage_messages=True)
