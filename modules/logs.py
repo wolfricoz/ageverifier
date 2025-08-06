@@ -59,7 +59,7 @@ with open(logfile, 'a') as f :
 	        f"----------------------------------------------------\n\n")
 
 handlers = [logging.FileHandler(filename=logfile, encoding='utf-8', mode='a'), logging.StreamHandler()]
-logging.basicConfig(handlers=handlers, level=logging.INFO,
+logging.basicConfig(handlers=handlers, level=logging.DEBUG,
                     format='(%(asctime)s) %(levelname)s: %(message)s',
                     datefmt='%d/%m/%Y, %H:%M:%S',
                     force=True)
@@ -199,7 +199,7 @@ class Logging(commands.Cog) :
 # async def getlog(self, interaction: Interaction) :
 # 	"""gets the log file"""
 # 	with open(logfile, 'rb') as file :
-# 		await interaction.response.send_message("Here's the log file.", file=discord.File(file.name, "log.txt"))
+# 		await send_response(interaction, "Here's the log file.", file=discord.File(file.name, "log.txt"))
 
 
 async def setup(bot) :

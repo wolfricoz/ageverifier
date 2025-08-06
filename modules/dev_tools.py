@@ -46,7 +46,7 @@ class dev(commands.GroupCog, name="dev") :
 	@check_access()
 	async def announce(self, interaction: discord.Interaction) :
 		if interaction.user.id != int(os.getenv('DEVELOPER')) :
-			await interaction.response.send_message("You are not a developer", ephemeral=True)
+			await send_response(interaction, "You are not a developer", ephemeral=True)
 			return
 		message = await send_modal(interaction, "What is the announcement?", "Announcement", 1700)
 		bot = self.bot
@@ -74,7 +74,7 @@ class dev(commands.GroupCog, name="dev") :
 	@check_access()
 	async def show_servers(self, interaction: discord.Interaction) :
 		if interaction.user.id != int(os.getenv('DEVELOPER')) :
-			await interaction.response.send_message("You are not a developer", ephemeral=True)
+			await send_response(interaction, "You are not a developer", ephemeral=True)
 			return
 		servers = []
 		for guild in self.bot.guilds :
@@ -126,14 +126,14 @@ class dev(commands.GroupCog, name="dev") :
 			await guild.leave()
 		except :
 			pass
-		await interaction.response.send_message(f"Blacklisted {guild}")
+		await send_response(interaction, f"Blacklisted {guild}")
 
 	@app_commands.command(name="unblacklist_server", description="[DEV] Remove a server from the blacklist")
 	@check_access()
 	async def unblacklist_server(self, interaction: discord.Interaction, guildid: str) :
 		guildid = int(guildid)
 		await Configer.remove_from_blacklist(guildid)
-		await interaction.response.send_message(f"Unblacklisted {guildid}")
+		await send_response(interaction, f"Unblacklisted {guildid}")
 
 	# blacklist user goes here
 	@app_commands.command(name="blacklist_user", description="[DEV] Blacklist a user")

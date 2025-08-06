@@ -168,7 +168,7 @@ class Tasks(commands.GroupCog) :
 	@app_commands.checks.has_permissions(administrator=True)
 	async def expirecheck(self, interaction: discord.Interaction) :
 		"""forces the automatic search ban check to start; normally runs every 30 minutes"""
-		await interaction.response.send_message("[Debug]Checking all entries.")
+		await send_response(interaction, "[Debug]Checking all entries.")
 		self.check_users_expiration.restart()
 		await interaction.followup.send("check-up finished.")
 

@@ -80,7 +80,7 @@ class NsfwVerifyModal(discord.ui.Modal):
             await channel.send(
                     f"[Info] User {interaction.user.mention}\'s gave an age below 18 and was added to the ID list.\n"
                     f"[NSFW Debug] Age: {age} dob {dob}")
-            await interaction.response.send_message(
+            await send_response(interaction, 
                     f'Unfortunately you are too young for our server. If you are 17 you may wait in the lobby.',
                     ephemeral=True)
             VerificationTransactions().set_idcheck_to_true(interaction.user.id,
@@ -92,7 +92,7 @@ class NsfwVerifyModal(discord.ui.Modal):
             await channel.send(
                     f"[Info] User {interaction.user.mention}\'s age does not match and has been timed out. User gave {age} but dob indicates {years}\n"
                     f"[NSFW Debug] Age: {age} dob {dob}")
-            await interaction.response.send_message(
+            await send_response(interaction, 
                     f'A staff member will contact you within 24 hours, please wait patiently.',
                     ephemeral=True)
             return
@@ -101,21 +101,21 @@ class NsfwVerifyModal(discord.ui.Modal):
             await channel.send(
                     f"[Info] User {interaction.user.mention}\'s date of birth does not match. Given: {dob} Recorded: {userdata.dob.strftime('%m/%d/%Y')}\n"
                     f"[NSFW Debug] Age: {age} dob {dob}")
-            await interaction.response.send_message(
+            await send_response(interaction, 
                     f'A staff member will contact you within 24 hours, please wait patiently.',
                     ephemeral=True)
             return
 
         # Check if user needs to ID or has previously ID'd
         if await AgeCalculations.id_check_or_id_verified(interaction.user, interaction.guild, channel):
-            await interaction.response.send_message(
+            await send_response(interaction, 
                     f'A staff member will contact you within 24 hours, please wait patiently.', ephemeral=True)
             return
         # Check Chat History
         await AgeCalculations.check_history(interaction.guild.id, interaction.user, channel)
         # Automatically processes users if all checks pass.
         await NsfwFunctions.add_roles_user(interaction.user, interaction.guild)
-        await interaction.response.send_message(
+        await send_response(interaction, 
                 f"Thank you for submitting your age and dob! You've been granted access to the NSFW section",
                 ephemeral=True)
         # log data
@@ -123,6 +123,6 @@ class NsfwVerifyModal(discord.ui.Modal):
 
     async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
         print(error)
-        await interaction.response.send_message('Oops! Something went wrong.\n'
+        await send_response(interaction, 'Oops! Something went wrong.\n'
                                                 f'{error}')
         raise error

@@ -80,7 +80,7 @@ class Lobby(commands.GroupCog) :
 	async def agecheck(self, interaction: discord.Interaction, dob: str) :
 		"""Checks the age of a dob"""
 		age = AgeCalculations.dob_to_age(dob)
-		await interaction.response.send_message(f"As of today {dob} is {age} years old", ephemeral=True)
+		await send_response(interaction, f"As of today {dob} is {age} years old", ephemeral=True)
 
 	@commands.command(name="approve")
 	@commands.has_permissions(manage_messages=True)

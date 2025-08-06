@@ -37,6 +37,6 @@ class IdVerifyModal(discord.ui.Modal) :
 
 	async def on_error(self, interaction: discord.Interaction, error: Exception) -> None :
 		print(error)
-		await interaction.response.send_message('Oops! Something went wrong.\n'
+		await send_response(interaction, 'Oops! Something went wrong.\n'
 		                                        f'{error}')
 		raise error

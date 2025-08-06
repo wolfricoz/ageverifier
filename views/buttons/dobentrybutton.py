@@ -20,7 +20,7 @@ class dobentry(discord.ui.View):
         """get info from message thhe button is attached to"""
         match = re.search(r'UID: (\d+)', interaction.message.content)
         user = UserTransactions().get_user(match.group(1))
-        await interaction.response.send_message(f"Date of birth: {Encryption().decrypt(user.date_of_birth)}", ephemeral=True)
+        await send_response(interaction, f"Date of birth: {Encryption().decrypt(user.date_of_birth)}", ephemeral=True)
 
 
 

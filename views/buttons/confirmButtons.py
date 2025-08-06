@@ -10,7 +10,7 @@ class confirmAction(discord.ui.View):
 
     async def send_message(self, interaction, description="Are you sure you want to confirm this action?"):
         embed = await self.create_embed(description=description)
-        await interaction.response.send_message(embed=embed, view=self)
+        await send_response(interaction, embed=embed, view=self)
         self.interaction = interaction
 
     async def remove_message(self):
@@ -24,7 +24,7 @@ class confirmAction(discord.ui.View):
     @discord.ui.button(label="Confirm", style=discord.ButtonStyle.green, custom_id="confirm")
     async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Confirms the action"""
-        await interaction.response.send_message("Confirmed!", ephemeral=True)
+        await send_response(interaction, "Confirmed!", ephemeral=True)
         self.confirmed = True
         await self.remove_message()
         self.stop()
@@ -32,7 +32,7 @@ class confirmAction(discord.ui.View):
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.red, custom_id="cancel")
     async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Cancels the action"""
-        await interaction.response.send_message("Cancelled!", ephemeral=True)
+        await send_response(interaction, "Cancelled!", ephemeral=True)
         self.confirmed = False
         await self.remove_message()
         self.stop()

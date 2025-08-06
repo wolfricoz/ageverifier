@@ -20,7 +20,7 @@ class PaginationView(discord.ui.View):
     async def send(self, interaction):
         self.message = await interaction.channel.send(view=self)
         await self.update_message(self.data[:self.sep])
-        await interaction.response.send_message("Gettng user data", ephemeral=True)
+        await send_response(interaction, "Gettng user data", ephemeral=True)
 
     def create_embed(self, data):
         embed = discord.Embed(title=f"User {self.warningtype} warnings")

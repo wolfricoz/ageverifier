@@ -79,6 +79,8 @@ async def invite_info(bot, member: discord.Member) :
 	}
 	try:
 		for invite in invites_before_join :
+			if invite is None:
+				continue
 			if invite.uses < find_invite_by_code(invites_after_join, invite.code).uses :
 				fields["Invite Code"] = invite.code
 				fields["Code created by"] = invite.inviter.name

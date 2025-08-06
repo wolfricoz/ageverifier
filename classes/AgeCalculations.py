@@ -84,7 +84,7 @@ class AgeCalculations(ABC) :
 		agevalid = re.match(r'[0-9]*$', age)
 		if agevalid is None :
 			# noinspection PyUnresolvedReferences
-			await interaction.response.send_message('Please fill in your age in numbers.', ephemeral=True)
+			await send_response(interaction, 'Please fill in your age in numbers.', ephemeral=True)
 			await channel.send(
 				f"{interaction.user.mention} failed in verification at age: {age} {dateofbirth}")
 			return False

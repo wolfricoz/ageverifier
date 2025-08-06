@@ -62,7 +62,7 @@ async def send_response(interaction: discord.Interaction, response, ephemeral=Fa
     """Send a response to an interaction"""
     try:
 
-        return await interaction.response.send_message(response, ephemeral=ephemeral, view=view, embed=embed, )
+        return await send_response(interaction, response, ephemeral=ephemeral, view=view, embed=embed, )
     except discord.errors.Forbidden:
         required_perms = ['view_channel', 'send_messages', 'embed_links', 'attach_files']
         missing_perms = await check_missing_permissions(interaction.channel, required_perms)
