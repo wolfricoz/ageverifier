@@ -2,6 +2,7 @@ import logging
 from datetime import datetime
 
 import discord
+from discord_py_utilities.permissions import find_first_accessible_text_channel
 
 import databases.exceptions.KeyNotFound
 from classes.retired.discord_tools import create_embed
@@ -17,9 +18,12 @@ async def has_onboarding(guild: discord.Guild) -> bool :
 
 
 async def welcome_user(member) :
-	lobby = ConfigData().get_key_int(member.guild.id, "lobby")
+	warning = ""
+	lobby = ConfigData().get_key_int_or_zero(member.guild.id, "lobby")
 	channel = member.guild.get_channel(lobby)
-
+	if channel is None:
+		warning = "WARNING: Lobby channel not set, please configure your lobby with `/config channels`"
+		channel = find_first_accessible_text_channel(member.guild)
 	await add_join_roles(member)
 	welcome_enabled = ConfigData().get_key(member.guild.id, "lobbywelcome", "enabled")
 	if welcome_enabled.lower() == "disabled" :
@@ -31,10 +35,10 @@ async def welcome_user(member) :
 		logging.error(f"lobbywelcome not found for {member.guild.name}(id: {member.guild.id})")
 		lobby_welcome = "Lobby message not setup, please use `/config messages key:lobbywelcome action:set` to set it up. You can click the button below to verify!"
 	await send_message(channel,
-	                   f"Welcome {member.mention}! {lobby_welcome}"
+	                   f"Welcome {member.mention}! {lobby_welcome}\n{warning}"
 	                   f"\n"
 	                   f"-# GDPR AND INFORMATION USE DISCLOSURE: By entering your birth date (MM/DD/YYYY) and age, you consent to having this information about you stored by Age Verifier and used to verify that you are the age that you say you are, including sharing to relevant parties for age verification. This information will be stored for a maximum of 1 year if you are no longer in a server using Ageverifier.",
-	                   view=VerifyButton())
+	                   view=VerifyButton(), error_mode="ignore")
 
 
 async def add_join_roles(member) -> bool:

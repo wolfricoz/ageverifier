@@ -59,7 +59,7 @@ with open(logfile, 'a') as f :
 	        f"----------------------------------------------------\n\n")
 
 handlers = [logging.FileHandler(filename=logfile, encoding='utf-8', mode='a'), logging.StreamHandler()]
-logging.basicConfig(handlers=handlers, level=logging.DEBUG,
+logging.basicConfig(handlers=handlers, level=logging.INFO,
                     format='(%(asctime)s) %(levelname)s: %(message)s',
                     datefmt='%d/%m/%Y, %H:%M:%S',
                     force=True)
