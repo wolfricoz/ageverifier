@@ -5,8 +5,9 @@ from datetime import datetime
 import discord
 from discord.app_commands import AppCommandError
 
-import classes.databaseController
-from classes.databaseController import ConfigData, VerificationTransactions
+import databases.exceptions.KeyNotFound
+from databases.controllers.ConfigData import ConfigData
+from databases.controllers.VerificationTransactions import VerificationTransactions
 
 
 class ModUser(ABC):
@@ -20,7 +21,7 @@ class ModUser(ABC):
             return
         await ModUser.ban_user_from_guilds(interaction, member, bot, reason, appeal)
         if idlist.name.upper() == "YES":
-            VerificationTransactions.set_idcheck_to_true(member.id, f"BAN: {reason}", server=interaction.guild.name)
+            VerificationTransactions().set_idcheck_to_true(member.id, f"BAN: {reason}", server=interaction.guild.name)
             await interaction.channel.send(f"{member}({member.id}) added to ID list")
 
     @staticmethod
@@ -63,6 +64,6 @@ class ModUser(ABC):
                 await interaction.channel.send(embed=embed)
             count += 1
             await log.send(embed=embed)
-        except classes.databaseController.KeyNotFound as e:
+        except databases.exceptions.KeyNotFound.KeyNotFound as e:
             logging.exception(f"{guild.name}: {e}")
 

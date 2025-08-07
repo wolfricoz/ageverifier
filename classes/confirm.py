@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 
 
 class ConfirmDialogue(ABC):
+    @staticmethod
     @abstractmethod
     async def confirm(bot, discord, interaction, desc, title):
         def check(m):
@@ -20,6 +21,7 @@ class ConfirmDialogue(ABC):
                 await msg.delete()
         return msg
 
+    @staticmethod
     @abstractmethod
     async def input(bot, discord, interaction, desc, title):
         def check(m):

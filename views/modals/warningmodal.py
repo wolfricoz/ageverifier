@@ -1,6 +1,7 @@
 import discord
+from discord_py_utilities.messages import send_response
 
-from classes.databaseController import UserTransactions
+from databases.controllers.UserTransactions import UserTransactions
 
 
 class WarningModal(discord.ui.Modal, title='Official Warning'):
@@ -22,14 +23,14 @@ class WarningModal(discord.ui.Modal, title='Official Warning'):
     async def on_submit(self, interaction: discord.Interaction):
         channel = interaction.guild.get_channel(self.warnlog)
         warning = f"{interaction.guild.name} **__WARNING__**: {self.reason}"
-        UserTransactions.user_add_warning(self.user.id, self.reason.value)
+        UserTransactions().user_add_warning(self.user.id, self.reason.value)
         if self.notify.upper() == "YES":
             await self.user.send(warning)
         embed = discord.Embed(title=f"{self.user.name} has been warned", description=warning)
         embed.set_footer(text=f"Notify: {self.notify}, uid: {self.user.id}")
-        await interaction.response.send_message(self.user.mention, embed=embed)
+        await send_response(interaction, self.user.mention, embed=embed)
         await channel.send(embed=embed)
 
     async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
         print(error)
-        await interaction.response.send_message('Oops! Something went wrong.', ephemeral=True)
+        await send_response(interaction, 'Oops! Something went wrong.', ephemeral=True)

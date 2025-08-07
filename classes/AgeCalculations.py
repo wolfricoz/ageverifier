@@ -1,11 +1,18 @@
+import json
+import os
 import re
+from abc import ABC, abstractmethod
+from datetime import datetime
 
 import discord
 from dateutil.relativedelta import relativedelta
+from discord_py_utilities.messages import send_message, send_response
 
 import databases.current
-from classes.databaseController import *
-from classes.support.discord_tools import send_message, send_response
+from classes.encryption import Encryption
+
+from databases.controllers.ConfigData import ConfigData
+from databases.controllers.VerificationTransactions import VerificationTransactions
 
 
 class AgeCalculations(ABC) :
@@ -41,15 +48,15 @@ class AgeCalculations(ABC) :
 
 	@staticmethod
 	@abstractmethod
-	async def id_check_or_id_verified(user: discord.Member, guild, channel, send_message=True) :
-		userinfo: databases.current.IdVerification = VerificationTransactions.get_id_info(user.id)
+	async def id_check_or_id_verified(user: discord.Member, guild, channel, sendmessage=True) :
+		userinfo: databases.current.IdVerification = VerificationTransactions().get_id_info(user.id)
 		idlog = ConfigData().get_key_int(guild.id, "idlog")
 		idchannel = guild.get_channel(idlog)
 		if userinfo is None :
 			return False
-		if userinfo.idverified is True and userinfo.verifieddob is not None and send_message is True :
+		if userinfo.idverified is True and userinfo.verifieddob is not None and sendmessage is True :
 			await channel.send(
-				f"[ID VERIFIED] {user.mention} has previously ID verified: {userinfo.verifieddob.strftime('%m/%d/%Y')}")
+				f"[ID VERIFIED] {user.mention} has previously ID verified: {Encryption().decrypt(userinfo.verifieddob)}")
 			return False
 		if userinfo.idcheck is True :
 			return userinfo
@@ -58,7 +65,7 @@ class AgeCalculations(ABC) :
 	@staticmethod
 	@abstractmethod
 	async def id_check(guild, user: discord.Member) :
-		userinfo: databases.current.IdVerification = VerificationTransactions.get_id_info(user.id)
+		userinfo: databases.current.IdVerification = VerificationTransactions().get_id_info(user.id)
 		print(guild.id)
 		idlog = ConfigData().get_key_int(guild.id, "idlog")
 		idchannel = guild.get_channel(idlog)
@@ -76,7 +83,8 @@ class AgeCalculations(ABC) :
 	                    location="Lobby") :
 		agevalid = re.match(r'[0-9]*$', age)
 		if agevalid is None :
-			await interaction.response.send_message('Please fill in your age in numbers.', ephemeral=True)
+			# noinspection PyUnresolvedReferences
+			await send_response(interaction, 'Please fill in your age in numbers.', ephemeral=True)
 			await channel.send(
 				f"{interaction.user.mention} failed in verification at age: {age} {dateofbirth}")
 			return False

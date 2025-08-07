@@ -1,13 +1,10 @@
 # my_discord_bot/routes/example_routes.py
-import json
 import os
 
-from fastapi import APIRouter, HTTPException, Request
-from pydantic import BaseModel
-import logging
+from fastapi import APIRouter, Request
 
-from classes.databaseController import ConfigData, UserTransactions
 from classes.encryption import Encryption
+from databases.controllers.UserTransactions import UserTransactions
 from databases.current import Users
 
 router = APIRouter()
@@ -21,7 +18,7 @@ async def refresh_config(request: Request, user_id: int):
 	token = request.headers.get('token')
 	if token != os.getenv("API_KEY"):
 		return {"message": "Invalid token"}
-	userinfo: Users = UserTransactions.get_user(user_id)
+	userinfo: Users = UserTransactions().get_user(user_id)
 	if userinfo is None:
 		return {"message": "No data found for this user"}
 

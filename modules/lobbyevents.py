@@ -1,25 +1,11 @@
 """this module handles the lobby."""
-import datetime
-import os
 
 import discord
-from discord import app_commands
-from discord.app_commands import Choice
 from discord.ext import commands
-from sqlalchemy import True_
 
-import classes.permissions as permissions
-from classes.AgeCalculations import AgeCalculations
-from classes.databaseController import UserTransactions, ConfigData, VerificationTransactions
-from classes.encryption import Encryption
-from classes.helpers import has_onboarding, welcome_user, invite_info
-from classes.idverify import verify
-from classes.lobbyprocess import LobbyProcess
-from classes.support.discord_tools import send_response, send_message
-from classes.whitelist import check_whitelist
-from databases.current import database, Users
+from classes.helpers import has_onboarding, welcome_user
+from databases.controllers.UserTransactions import UserTransactions
 from views.buttons.approvalbuttons import ApprovalButtons
-from views.buttons.confirmButtons import confirmAction
 from views.buttons.dobentrybutton import dobentry
 from views.buttons.verifybutton import VerifyButton
 
@@ -36,7 +22,7 @@ class LobbyEvents(commands.Cog):
 
     @commands.Cog.listener('on_member_join')
     async def add_to_db(self, member):
-        UserTransactions.add_user_empty(member.id)
+        UserTransactions().add_user_empty(member.id)
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):

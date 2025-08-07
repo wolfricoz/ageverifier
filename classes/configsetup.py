@@ -3,9 +3,10 @@ import logging
 import discord
 from discord.utils import get
 
-from classes.databaseController import ConfigTransactions, ConfigData
-from classes.support.discord_tools import send_message
-from classes.support.queue import queue
+from databases.controllers.ConfigData import ConfigData
+from databases.controllers.ConfigTransactions import ConfigTransactions
+from discord_py_utilities.messages import send_message
+from classes.support.queue import Queue
 from views.buttons.confirmButtons import confirmAction
 from views.select.configselectroles import ConfigSelectRoles, ConfigSelectChannels
 from resources.data.config_variables import rolechoices, channelchoices, messagechoices
@@ -35,7 +36,7 @@ class ConfigSetup :
 			except AttributeError :
 				logging.info("No value found, message was deleted")
 				return
-			ConfigTransactions.config_unique_add(interaction.guild.id, channelkey, int(view.value[0]), overwrite=True)
+			ConfigTransactions().config_unique_add(interaction.guild.id, channelkey, int(view.value[0]), overwrite=True)
 		for key, value in rolechoices.items() :
 			if key == "return" :
 				continue
@@ -52,7 +53,7 @@ class ConfigSetup :
 			except AttributeError :
 				logging.info("No value found, message was deleted")
 				return
-			ConfigTransactions.config_unique_add(interaction.guild.id, value, int(view.value[0]), overwrite=True)
+			ConfigTransactions().config_unique_add(interaction.guild.id, value, int(view.value[0]), overwrite=True)
 		for messagekey, messagevalue in messagechoices.items() :
 			msg = await interaction.channel.send(f"Please set the message for {messagekey}\n"
 			                                     f"{messagevalue}\n"
@@ -63,7 +64,7 @@ class ConfigSetup :
 				return
 			if result.content.lower() == "next" :
 				continue
-			ConfigTransactions.config_unique_add(interaction.guild.id, messagekey, result.content, overwrite=True)
+			ConfigTransactions().config_unique_add(interaction.guild.id, messagekey, result.content, overwrite=True)
 			await result.delete()
 			await msg.delete()
 
@@ -77,7 +78,7 @@ class ConfigSetup :
 
 		if confirmation.confirmed is False :
 			await interaction.followup.send("Setup Cancelled")
-			return
+			return None
 		category = get(interaction.guild.categories, name="Lobby")
 		if not category :
 			category: discord.CategoryChannel = await interaction.guild.create_category(name="Lobby", overwrites={
@@ -108,7 +109,7 @@ class ConfigSetup :
 					case 'general' :
 						general: discord.TextChannel = get(guild.text_channels, name="general")
 						if general :
-							ConfigTransactions.config_unique_add(guild.id, channelkey, general.id, overwrite=True)
+							ConfigTransactions().config_unique_add(guild.id, channelkey, general.id, overwrite=True)
 							continue
 						if interaction is None :
 							logging.info("Automated Setup, skipping general channel")
@@ -126,7 +127,7 @@ class ConfigSetup :
 						except AttributeError :
 							logging.info("No value found, message was deleted")
 							return False
-						ConfigTransactions.config_unique_add(guild.id, channelkey, int(view.value[0]), overwrite=True)
+						ConfigTransactions().config_unique_add(guild.id, channelkey, int(view.value[0]), overwrite=True)
 						continue
 					# This is your general channel, where the welcome message will be posted
 					case 'lobby' :
@@ -162,7 +163,7 @@ class ConfigSetup :
 					case _ :
 						continue
 				try :
-					ConfigTransactions.config_unique_add(guild.id, channelkey, channel.id, overwrite=True)
+					ConfigTransactions().config_unique_add(guild.id, channelkey, channel.id, overwrite=True)
 					return None
 				except Exception as e :
 					logging.error(e, exc_info=True)
@@ -180,12 +181,12 @@ class ConfigSetup :
 			if key in skip_roles :
 				if key == "add" :
 					if verified := [r for r in guild.roles if r.name.lower() == "verified"] :
-						ConfigTransactions.config_unique_add(guild.id, "add", verified[0].id, overwrite=True)
+						ConfigTransactions().config_unique_add(guild.id, "add", verified[0].id, overwrite=True)
 						continue
 					verified = get(guild.roles, name="Verified")
 					if verified is None :
 						verified = await guild.create_role(name="Verified", reason="Setup")
-					ConfigTransactions.config_unique_add(guild.id, "add", verified.id, overwrite=True)
+					ConfigTransactions().config_unique_add(guild.id, "add", verified.id, overwrite=True)
 					continue
 
 				continue
@@ -204,7 +205,9 @@ class ConfigSetup :
 					return False
 			except AttributeError :
 				logging.info("No value found, message was deleted")
-			ConfigTransactions.config_unique_add(guild.id, key, int(view.value[0]), overwrite=True)
+			ConfigTransactions().config_unique_add(guild.id, key, int(view.value[0]), overwrite=True)
+			return None
+		return None
 
 	async def set_messages(self, guild, messagechoices) :
 		for messagekey, messagevalue in messagechoices.items() :
@@ -212,7 +215,7 @@ class ConfigSetup :
 				'lobbywelcome'   : f"Please read the rules in the rules channel and click the verify button below to get started.",
 				'welcomemessage' : "Be sure to get some roles in the roles channel and if you need help be sure to ask the staff!",
 			}
-			ConfigTransactions.config_unique_add(guild.id, messagekey, message_dict[messagekey], overwrite=True)
+			ConfigTransactions().config_unique_add(guild.id, messagekey, message_dict[messagekey], overwrite=True)
 
 	async def create_channel(self, guild, category, name, description=None) :
 		channel = get(guild.text_channels, name=name)
@@ -228,12 +231,12 @@ class ConfigSetup :
 				guild.default_role : discord.PermissionOverwrite(read_messages=False),
 				guild.me           : discord.PermissionOverwrite(read_messages=True)
 			})
-		queue().add(ConfigSetup().create_channels(guild, category, channelchoices), 2)
-		queue().add(ConfigSetup().create_roles(guild, rolechoices), 2)
-		queue().add(ConfigSetup().set_messages(guild, messagechoices), 2)
+		Queue().add(ConfigSetup().create_channels(guild, category, channelchoices), 2)
+		Queue().add(ConfigSetup().create_roles(guild, rolechoices), 2)
+		Queue().add(ConfigSetup().set_messages(guild, messagechoices), 2)
 		lobby_mod = guild.get_channel(ConfigData().get_key_int(guild.id, "lobbymod"))
-		queue().add(send_message(lobby_mod, f"## Auto Setup for {guild.name} has been completed!"), 0)
-		queue().add(send_message(guild.owner, f"## Auto Setup for {guild.name} has been completed!"), 0)
+		Queue().add(send_message(lobby_mod, f"## Auto Setup for {guild.name} has been completed!"), 0)
+		Queue().add(send_message(guild.owner, f"## Auto Setup for {guild.name} has been completed!"), 0)
 
 	async def check_channel_permissions(self, mod_channel: discord.TextChannel, interaction: discord.Interaction = None) :
 		fails = []
@@ -271,8 +274,9 @@ class ConfigSetup :
 				return await send_message(mod_channel.guild.owner, warning)
 			await interaction.followup.send(warning)
 
-			return
+			return None
 		success = "All permissions are set correctly!"
 		if interaction is None :
 			return await send_message(mod_channel.guild.owner, success)
 		await interaction.followup.send(success)
+		return None

@@ -1,13 +1,8 @@
 import discord
+from discord_py_utilities.messages import send_message, send_response
 
-from classes.AgeCalculations import AgeCalculations
-from classes.databaseController import ConfigData, UserTransactions, VerificationTransactions
-from classes.encryption import Encryption
 from classes.lobbytimers import LobbyTimers
-from classes.support.discord_tools import send_message, send_response
-from classes.whitelist import check_whitelist
-from modules.config import config
-from views.buttons.approvalbuttons import ApprovalButtons
+from databases.controllers.ConfigData import ConfigData
 from views.modals.verifyModal import VerifyModal
 
 

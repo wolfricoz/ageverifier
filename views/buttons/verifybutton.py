@@ -1,17 +1,18 @@
 import logging
 
 import discord
+from discord_py_utilities.messages import send_message, send_response
 
 from classes.AgeCalculations import AgeCalculations
-from classes.databaseController import ConfigData, UserTransactions, VerificationTransactions
 from classes.encryption import Encryption
 from classes.lobbyprocess import LobbyProcess
-from classes.support.discord_tools import send_message, send_response
-from classes.whitelist import check_whitelist
 from classes.lobbytimers import LobbyTimers
+from classes.whitelist import check_whitelist
+from databases.controllers.ConfigData import ConfigData
+from databases.controllers.UserTransactions import UserTransactions
+from databases.controllers.VerificationTransactions import VerificationTransactions
 from views.buttons.approvalbuttons import ApprovalButtons
 from views.buttons.tosbutton import TOSButton
-from views.modals.verifyModal import VerifyModal
 
 
 class VerifyButton(discord.ui.View) :
@@ -32,7 +33,7 @@ class VerifyButton(discord.ui.View) :
 		                    view=TOSButton(), ephemeral=True)
 
 	def get_user_data(self, user_id: int) :
-		user = UserTransactions.get_user(user_id)
+		user = UserTransactions().get_user(user_id)
 		dob = Encryption().decrypt(user.date_of_birth)
 		age = AgeCalculations.dob_to_age(dob)
 		return dob, age
@@ -44,7 +45,7 @@ class VerifyButton(discord.ui.View) :
 				logging.info(f"{interaction.guild.name} does not have lobbymod set.")
 				return False
 			# User is ID verified, so the user does not need to input their dob and age again.
-			userinfo = VerificationTransactions.get_id_info(interaction.user.id)
+			userinfo = VerificationTransactions().get_id_info(interaction.user.id)
 			if userinfo is None:
 				return False
 			if userinfo.idverified is True :

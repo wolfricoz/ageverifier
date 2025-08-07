@@ -4,9 +4,11 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from classes.databaseController import VerificationTransactions
-from classes.support.discord_tools import send_message, send_response
-from classes.support.queue import queue
+from classes.encryption import Encryption
+from databases.controllers.VerificationTransactions import VerificationTransactions
+from discord_py_utilities.messages import send_message, send_response
+from classes.support.queue import Queue
+from resources.data.responses import StringStorage
 from views.buttons.approvalbuttons import ApprovalButtons
 from views.buttons.confirm import Confirm
 from views.buttons.dobentrybutton import dobentry
@@ -27,7 +29,7 @@ class idcheck(commands.GroupCog) :
 	              user: discord.User) :
 		"""[manage_messages] Get the ID check status of the specified user"""
 		await send_response(interaction, f"⌛ checking if {user.mention} is on the ID list", ephemeral=True)
-		user = VerificationTransactions.get_id_info(user.id)
+		user = VerificationTransactions().get_id_info(user.id)
 		if user is None :
 			await interaction.followup.send("Not found")
 			return
@@ -36,14 +38,14 @@ class idcheck(commands.GroupCog) :
 			"Reason"      : user.reason,
 			"idcheck"     : user.idcheck,
 			"idverified"  : user.idverified,
-			"verifieddob" : user.verifieddob
+			"verifieddob" : Encryption().decrypt(user.verifieddob) if user.verifieddob else ""
 		}
 
 		embed = discord.Embed(title="USER INFO",
 		                      description="Reminder: This data is only allowed to be shared with relevant parties.")
 		for title, value in data.items() :
 			embed.add_field(name=title, value=value, inline=False)
-		await send_response(interaction, f"", embed=embed, ephemeral=True)
+		await send_response(interaction, StringStorage.NO_SHARE_REMINDER, embed=embed, ephemeral=True)
 
 	@app_commands.command()
 	@app_commands.checks.has_permissions(administrator=True)
@@ -55,7 +57,7 @@ class idcheck(commands.GroupCog) :
 		if reason is None :
 			await interaction.followup.send(f"Please include a reason")
 			return
-		VerificationTransactions.update_check(user.id, reason, idcheck, server=interaction.guild.name)
+		VerificationTransactions().update_check(user.id, reason, idcheck, server=interaction.guild.name)
 		await interaction.followup.send(
 			f"{user.mention}'s userid entry has been updated with reason: {reason} and idcheck: {idcheck}")
 
@@ -66,11 +68,11 @@ class idcheck(commands.GroupCog) :
 		"""[Administrator] Delete the ID check entry of a specified user."""
 		await send_response(interaction, f"⌛ deleting {user.mention}'s ID check entry'", ephemeral=True)
 		dev_channel = interaction.client.get_channel(int(os.getenv('DEV')))
-		if VerificationTransactions.set_idcheck_to_false(user.id, server=interaction.guild.name) is False :
+		if VerificationTransactions().set_idcheck_to_false(user.id, server=interaction.guild.name) is False :
 			await interaction.followup.send(f"Can't find entry: <@{user.id}>")
 			return
 		await interaction.followup.send(f"Deleted entry: <@{user.id}>")
-		queue().add(send_message(dev_channel,
+		Queue().add(send_message(dev_channel,
 		                         f"{interaction.user.name} in {interaction.guild.name} removed id check for {user.global_name}"),
 		            0)
 
@@ -83,11 +85,11 @@ class idcheck(commands.GroupCog) :
 		if reason is None :
 			await send_response(interaction, f"Please include a reason")
 			return
-		idinfo = VerificationTransactions.add_idcheck(user.id, reason, True, server=interaction.guild.name)
+		idinfo = VerificationTransactions().add_idcheck(user.id, reason, True, server=interaction.guild.name)
 		if idinfo:
 			if await Confirm().send_confirm(interaction, f"{user.name} is on the ID list already with reason: `{idinfo.reason}`, do you want to update it?") is False:
 				return
-			VerificationTransactions.update_check(user.id, reason, True, server=interaction.guild.name)
+			VerificationTransactions().update_check(user.id, reason, True, server=interaction.guild.name)
 			await send_response(interaction, f"{user.mention}'s ID check entry has been updated with reason: {reason} and idcheck: {True}", ephemeral=True)
 			return
 

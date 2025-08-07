@@ -161,7 +161,7 @@ class BanLogger :
 			print("user not banned")
 
 
-class Cooldown() :
+class Cooldown :
 	def add(self, userid, channel, time) :
 
 		with open(f'./users/{userid}.json', 'r+') as f :
@@ -331,11 +331,11 @@ class Datechecker :
 	def datecheck(input, channel, timedelt) :
 		now = datetime.now()
 		later = now + timedelta(days=timedelt)
-		Cooldown.add(None, input, channel, later)
-		Cooldown.check(None, input, channel)
+		Cooldown().add(input, channel, later)
+		Cooldown().check(input, channel, timedelt)
 		print(now)
 		print(later)
-		if now.strftime('%x %X') > str(Cooldown.check(None, input, channel)) :
+		if now.strftime('%x %X') > str(Cooldown().check(input, channel, timedelt)) :
 			print("time has passed")
 		else :
 			print("on cooldown")

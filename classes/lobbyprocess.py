@@ -8,9 +8,11 @@ from discord.utils import get
 
 from classes.AgeCalculations import AgeCalculations
 from classes.ageroles import change_age_roles
-from classes.databaseController import ConfigData, ConfigTransactions, UserTransactions
-from classes.support.discord_tools import send_message
-from classes.support.queue import queue
+from databases.controllers.ConfigData import ConfigData
+from databases.controllers.ConfigTransactions import ConfigTransactions
+from databases.controllers.UserTransactions import UserTransactions
+from discord_py_utilities.messages import send_message
+from classes.support.queue import Queue
 from classes.whitelist import check_whitelist
 
 
@@ -24,25 +26,25 @@ class LobbyProcess(ABC) :
 		if await AgeCalculations.id_check(guild, user) :
 			return
 		# updates user's age if it exists, otherwise makes a new entry
-		exists = UserTransactions.update_user_dob(user.id, dob, guild.name, override=True)
+		exists = UserTransactions().update_user_dob(user.id, dob, guild.name, override=True)
 
 		# changes user's roles; adds
-		queue().add(change_age_roles(guild, user, age), priority=2)
+		Queue().add(change_age_roles(guild, user, age), priority=2)
 
 
 		# Log age and dob to lobbylog
 		if not idverify:
-			queue().add(LobbyProcess.log(user, guild, age, dob, staff, exists), priority=2)
+			Queue().add(LobbyProcess.log(user, guild, age, dob, staff, exists), priority=2)
 
 		# fetches welcoming message and welcomes them in general channel
-		queue().add(LobbyProcess.welcome(user, guild), priority=2)
+		Queue().add(LobbyProcess.welcome(user, guild), priority=2)
 
 		# changes user's roles; removes - Moved here to give some time between adding and removing roles (potential fixing a discord syncing bug)
 
-		queue().add(LobbyProcess.remove_user_roles(user, guild), priority=2)
+		Queue().add(LobbyProcess.remove_user_roles(user, guild), priority=2)
 
 		# Cleans up the messages in the lobby and where the command was executed
-		queue().add(LobbyProcess.clean_up(guild, user), priority=0)
+		Queue().add(LobbyProcess.clean_up(guild, user), priority=0)
 
 	@staticmethod
 	@abstractmethod
@@ -50,19 +52,19 @@ class LobbyProcess(ABC) :
 
 		config_rem_roles = ConfigData().get_key(guild.id, "REM")
 		rem_roles = await LobbyProcess.get_roles(guild, config_rem_roles, "REM")
-		queue().add(user.remove_roles(*rem_roles), priority=2)
+		Queue().add(user.remove_roles(*rem_roles), priority=2)
 
 
 
 
 	@staticmethod
 	@abstractmethod
-	async def get_roles(guild, roles, type: str) :
+	async def get_roles(guild, roles, key: str) :
 		results = []
 		for role in roles :
 			verrole = get(guild.roles, id=int(role))
 			if verrole is None :
-				ConfigTransactions.config_key_remove(guildid=guild.id, key=type.upper(), value=role)
+				ConfigTransactions().config_key_remove(guildid=guild.id, key=key.upper(), value=role)
 				await guild.owner.send(f"Role {role} couldn't be found and has been removed from the config in {guild.name}")
 				continue
 			results.append(verrole)
@@ -110,7 +112,7 @@ class LobbyProcess(ABC) :
 		async for message in messages :
 			if message.author == user or user in message.mentions and count < 10 :
 				count += 1
-				queue().add(message.delete(), priority=0)
+				Queue().add(message.delete(), priority=0)
 		channel = guild.get_channel(int(lobbymod))
 		messages = channel.history(limit=100)
 		count = 0
@@ -122,7 +124,7 @@ class LobbyProcess(ABC) :
 						pass
 					else :
 						count += 1
-						queue().add(message.delete(), priority=0)
+						Queue().add(message.delete(), priority=0)
 
 	@staticmethod
 	@abstractmethod
@@ -145,13 +147,13 @@ class LobbyProcess(ABC) :
 		dob_field = ""
 		if check_whitelist(interaction.guild.id) :
 			dob_field = f"DOB: {dob}\n"
-		queue().add(send_message(dev_channel,
+		Queue().add(send_message(dev_channel,
 		                   f"{userid}'s dob {operation} in {interaction.guild.name} by {interaction.user.name}. {f'Reason: {reason}' if reason else ''}"), 0)
 		await send_message(age_log, f"USER {operation.upper()}\n"
 		                                    f"{dob_field}"
 		                                    f"UID: {userid}\n"
 		                                    f"Entry updated by: {interaction.user.name}")
-		queue().add(send_message(interaction.channel, f"{operation} <@{userid}>({userid}) date of birth with dob: {dob}"))
+		Queue().add(send_message(interaction.channel, f"{operation} <@{userid}>({userid}) date of birth with dob: {dob}"))
 
 
 

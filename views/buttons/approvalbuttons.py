@@ -3,9 +3,10 @@ import asyncio
 
 import discord
 
-from classes.databaseController import ConfigData, VerificationTransactions
 from classes.lobbyprocess import LobbyProcess
-from views.modals.inputmodal import InputModal, send_modal
+from databases.controllers.ConfigData import ConfigData
+from databases.controllers.VerificationTransactions import VerificationTransactions
+from views.modals.inputmodal import send_modal
 
 
 class ApprovalButtons(discord.ui.View):
@@ -16,7 +17,7 @@ class ApprovalButtons(discord.ui.View):
         super().__init__(timeout=None)
         button = discord.ui.Button(label='Help', style=discord.ButtonStyle.url, url='https://wolfricoz.github.io/ageverifier/lobby.html', emoji="❓")
         self.add_item(button)
-
+    # TODO: 
     @discord.ui.button(label="Approve User", style=discord.ButtonStyle.green, custom_id="allow")
     async def allow(self, interaction: discord.Interaction, button: discord.ui.Button):
         """starts approving process"""
@@ -42,7 +43,7 @@ class ApprovalButtons(discord.ui.View):
         await interaction.followup.send('User flagged for manual ID.', ephemeral=True)
         idcheck = ConfigData().get_key_int(interaction.guild.id, "idlog")
         idlog = interaction.guild.get_channel(idcheck)
-        VerificationTransactions.set_idcheck_to_true(self.user.id, f"manually flagged by {interaction.user.name} with reason: {reason}", server=interaction.guild.name)
+        VerificationTransactions().set_idcheck_to_true(self.user.id, f"manually flagged by {interaction.user.name} with reason: {reason}", server=interaction.guild.name)
         await interaction.message.edit(view=self)
         await idlog.send(
                 f"{interaction.user.mention} has flagged {self.user.mention} for manual ID with reason:\n"

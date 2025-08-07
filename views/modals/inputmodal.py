@@ -2,6 +2,7 @@
 import logging
 
 import discord
+from discord_py_utilities.messages import send_response
 
 
 class InputModal(discord.ui.Modal):
@@ -25,7 +26,7 @@ class InputModal(discord.ui.Modal):
     async def send_message(self, interaction: discord.Interaction, message: str) -> None:
         """sends the message to the channel."""
         try:
-            await interaction.response.send_message(message, ephemeral=True)
+            await send_response(interaction, message, ephemeral=True)
         except discord.errors.HTTPException:
             pass
         except Exception as e:

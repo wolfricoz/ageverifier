@@ -1,6 +1,6 @@
 import discord.ui
 
-from classes.support.discord_tools import send_response
+from discord_py_utilities.messages import send_response
 
 
 class Confirm(discord.ui.View):
@@ -27,14 +27,14 @@ class Confirm(discord.ui.View):
 			await interaction.message.delete()
 		except:
 			pass
-		await interaction.response.send_message("Confirmed", ephemeral=True)
+		await send_response(interaction, "Confirmed", ephemeral=True)
 		self.stop()
 
 	@discord.ui.button(label="Cancel", style=discord.ButtonStyle.red, custom_id="cancel")
 	async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
 		"""cancel the action"""
 		self.value = False
-		await interaction.response.send_message("Cancelled", ephemeral=True)
+		await send_response(interaction, "Cancelled", ephemeral=True)
 		self.stop()
 		try:
 			await interaction.message.delete()

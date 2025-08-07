@@ -3,10 +3,10 @@ import logging
 from abc import ABC, abstractmethod
 
 import discord
+from discord_py_utilities.messages import send_message, send_response
 
-from classes.databaseController import ConfigData, VerificationTransactions
-from classes.encryption import Encryption
-from classes.support.discord_tools import send_message, send_response
+from databases.controllers.ConfigData import ConfigData
+from databases.controllers.VerificationTransactions import VerificationTransactions
 from views.buttons.idverifybutton import IdVerifyButton
 
 
@@ -53,7 +53,7 @@ class IdCheck(ABC) :
 	@staticmethod
 	@abstractmethod
 	async def add_check(interaction, message) :
-		VerificationTransactions.set_idcheck_to_true(
+		VerificationTransactions().set_idcheck_to_true(
 			interaction.user.id,
 			f"{datetime.datetime.now(datetime.timezone.utc).strftime('%m/%d/%Y')}: {message}",
 			server=interaction.guild.name

@@ -4,20 +4,19 @@ import logging
 import os
 import re
 
-
 from discord import app_commands
-from discord.app_commands import Choice
 from discord.ext import commands
+from discord_py_utilities.messages import send_message
 
-from classes.access import AccessControl
-from classes.databaseController import ConfigData, UserTransactions
 from classes.jsonmaker import Configer
-from classes.support.discord_tools import send_message, send_response
-from classes.support.queue import queue
+from classes.support.queue import Queue
+from databases.controllers.ConfigData import ConfigData
+from databases.controllers.UserTransactions import UserTransactions
+from databases.controllers.VerificationTransactions import VerificationTransactions
 from databases.current import Users
 from views.modals.inputmodal import send_modal
 from views.select.configselectroles import *
-
+from discord_py_utilities.permissions import find_first_accessible_text_channel
 
 def check_access() :
 	def pred(interaction: discord.Interaction) -> bool :
@@ -48,7 +47,7 @@ class dev(commands.GroupCog, name="dev") :
 	@check_access()
 	async def announce(self, interaction: discord.Interaction) :
 		if interaction.user.id != int(os.getenv('DEVELOPER')) :
-			await interaction.response.send_message("You are not a developer", ephemeral=True)
+			await send_response(interaction, "You are not a developer", ephemeral=True)
 			return
 		message = await send_modal(interaction, "What is the announcement?", "Announcement", 1700)
 		bot = self.bot
@@ -76,7 +75,7 @@ class dev(commands.GroupCog, name="dev") :
 	@check_access()
 	async def show_servers(self, interaction: discord.Interaction) :
 		if interaction.user.id != int(os.getenv('DEVELOPER')) :
-			await interaction.response.send_message("You are not a developer", ephemeral=True)
+			await send_response(interaction, "You are not a developer", ephemeral=True)
 			return
 		servers = []
 		for guild in self.bot.guilds :
@@ -94,7 +93,7 @@ class dev(commands.GroupCog, name="dev") :
 			await send_response(interaction, "You are not the developer", ephemeral=True)
 			return
 		await send_response(interaction, "Attempting to find origin of date of birth")
-		users = UserTransactions.get_all_users(dob_only=True)
+		users = UserTransactions().get_all_users(dob_only=True)
 		for guild in self.bot.guilds :
 			try :
 				lobbylog = ConfigData().get_key(guild.id, "lobbylog")
@@ -110,12 +109,12 @@ class dev(commands.GroupCog, name="dev") :
 		for user in users :
 			if user.server is not None :
 				continue
-			queue().add(self.search(user, history, interaction.channel), priority=0)
+			Queue().add(self.search(user, history, interaction.channel), priority=0)
 
 	async def search(self, user, history, channel) :
 		for guild in self.bot.guilds :
 			if str(guild.id) in history and str(user.uid) in history[str(guild.id)] :
-				UserTransactions.update_user(user.uid, server=guild.name)
+				UserTransactions().update_user(user.uid, server=guild.name)
 				logging.info(f"{user.uid}'s entry found in {guild.name}, database has been updated")
 
 	@app_commands.command(name="blacklist_server", description="[DEV] Blacklist a server")
@@ -128,14 +127,14 @@ class dev(commands.GroupCog, name="dev") :
 			await guild.leave()
 		except :
 			pass
-		await interaction.response.send_message(f"Blacklisted {guild}")
+		await send_response(interaction, f"Blacklisted {guild}")
 
 	@app_commands.command(name="unblacklist_server", description="[DEV] Remove a server from the blacklist")
 	@check_access()
 	async def unblacklist_server(self, interaction: discord.Interaction, guildid: str) :
 		guildid = int(guildid)
 		await Configer.remove_from_blacklist(guildid)
-		await interaction.response.send_message(f"Unblacklisted {guildid}")
+		await send_response(interaction, f"Unblacklisted {guildid}")
 
 	# blacklist user goes here
 	@app_commands.command(name="blacklist_user", description="[DEV] Blacklist a user")
@@ -151,6 +150,13 @@ class dev(commands.GroupCog, name="dev") :
 		userid = int(userid)
 		await Configer.remove_from_user_blacklist(userid)
 		await send_response(interaction, f"Unblacklisted {userid}")
+
+	@app_commands.command(name="migrate", description="Migrates data")
+	async def test(self, interaction: discord.Interaction):
+		await send_response(interaction, f"Migrating IDverification table...")
+		VerificationTransactions().migrate()
+
+
 
 
 	# @app_commands.command(name="add_staff", description="[DEV] Adds a staff member to the team")

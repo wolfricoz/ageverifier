@@ -6,6 +6,7 @@ from Levenshtein import ratio
 
 
 class AutomodComponents(ABC):
+    @staticmethod
     @abstractmethod
     async def check_duplicate(forum, thread, originalmsg):
         found = None
@@ -33,6 +34,7 @@ class AutomodComponents(ABC):
                     break
         return found
 
+    @staticmethod
     @abstractmethod
     async def tags(thread, forum, message):
         skip = ['New', 'Approved', 'Bump']

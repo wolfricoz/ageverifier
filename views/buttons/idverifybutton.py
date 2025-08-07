@@ -1,7 +1,7 @@
 import discord
 
-from classes.databaseController import VerificationTransactions
-from classes.support.discord_tools import send_response
+from databases.controllers.VerificationTransactions import VerificationTransactions
+from discord_py_utilities.messages import send_response
 from views.modals.idverify import IdVerifyModal
 
 #
@@ -15,20 +15,23 @@ class IdVerifyButton(discord.ui.View) :
 			return await send_response(interaction, "You must have the administrator permission to execute this action!", ephemeral=True)
 		user = interaction.message.mentions[0]
 		await interaction.response.send_modal(IdVerifyModal(user, interaction.message))
+		return None
 
 	@discord.ui.button(label="Remove ID Check", style=discord.ButtonStyle.red, custom_id="remove")
 	async def remove(self, interaction: discord.Interaction, button: discord.ui.Button) :
 		if not interaction.user.guild_permissions.administrator :
 			return await send_response(interaction, "You must have the administrator permission to execute this action!", ephemeral=True)
 		user = interaction.message.mentions[0]
-		if VerificationTransactions.set_idcheck_to_false(user.id, server=interaction.guild.name) is False :
+		if VerificationTransactions().set_idcheck_to_false(user.id, server=interaction.guild.name) is False :
 			await send_response(interaction,f"Can't find entry: <@{user.id}>")
-			return
+			return None
 		await send_response(interaction, f"Deleted entry: <@{user.id}>")
 		await interaction.message.delete()
+		return None
 
 	@discord.ui.button(label="User Left", style=discord.ButtonStyle.red, custom_id="left")
 	async def left(self, interaction: discord.Interaction, button: discord.ui.Button) :
 		if not interaction.user.guild_permissions.administrator :
 			return await send_response(interaction, "You must have the administrator permission to execute this action!", ephemeral=True)
 		await interaction.message.delete()
+		return None

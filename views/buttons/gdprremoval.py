@@ -2,9 +2,11 @@ import logging
 
 import discord
 
-from classes.databaseController import ConfigData, KeyNotFound, UserTransactions
-from classes.support.discord_tools import send_message, send_response
-from classes.support.queue import queue
+from databases.controllers.ConfigData import ConfigData
+from databases.controllers.UserTransactions import UserTransactions
+from databases.exceptions.KeyNotFound import KeyNotFound
+from discord_py_utilities.messages import send_message, send_response
+from classes.support.queue import Queue
 
 
 class GDPRRemoval(discord.ui.View) :
@@ -14,7 +16,7 @@ class GDPRRemoval(discord.ui.View) :
 	@discord.ui.button(label="I want my data removed", style=discord.ButtonStyle.danger, custom_id="remove")
 	async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button) :
 		await send_response(interaction, "Thank you, your data will be hidden now.")
-		UserTransactions.soft_delete(interaction.user.id, "Deleted By User (GDPR)")
+		UserTransactions().soft_delete(interaction.user.id, "Deleted By User (GDPR)")
 		embed = discord.Embed(
 			title=f"{interaction.user.global_name} has requested data removal!",
 			description="This user has requested that all their data be removed from the bot. As a result, we can no longer guarantee their age. The bot will automatically remove the entry from your lobby log channel."
@@ -42,7 +44,7 @@ class GDPRRemoval(discord.ui.View) :
 			async for message in lobby_age.history(limit=None):
 				if str(interaction.user.id) in message.content:
 					logging.info(f"[GDPR] Deleting LobbyLog message in {guild.name}")
-					queue().add(message.delete())
+					Queue().add(message.delete())
 		except KeyNotFound:
 			print(f"could not delete entries in {guild.name} because lobbylog not setup")
 
