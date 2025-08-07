@@ -13,7 +13,7 @@ zipp>=3.19.1 # not directly required, pinned by Snyk to avoid a vulnerability
 fastapi~=0.115.13
 uvicorn
 sentry-sdk[fastapi]~=2.33.2
-discord-py-utilities>=0.0.8.5
+discord-py-utilities>=0.0.8.6
 pydantic~=2.11.7
 requests~=2.32.4
 alembic~=1.16.4

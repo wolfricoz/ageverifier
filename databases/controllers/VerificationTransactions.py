@@ -128,6 +128,7 @@ class VerificationTransactions(DatabaseTransactions) :
 					dt = datetime.strptime(record.verifieddob, "%Y-%m-%d %H:%M:%S")
 					formatted_date = dt.strftime("%m/%d/%Y")
 				except Exception as e:
+					logging.warning(f"failed to convert verifieddob to datetime for {record.uid} with {record.verifieddob}: {e}")
 					continue
 				self.update_verification(record.uid, record.reason, record.idcheck, record.idverified, formatted_date, record.server)
 
