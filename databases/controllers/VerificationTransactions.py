@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 
 from sqlalchemy import Select
 
@@ -14,11 +15,12 @@ class VerificationTransactions(DatabaseTransactions) :
 		with self.createsession() as session :
 			return session.query(IdVerification).where(IdVerification.uid == userid).count() > 0
 
-	def get_id_info(self, userid: int) -> IdVerification | None :
+	def get_id_info(self, userid: int, session = None) -> IdVerification | None :
+		if session:
+			return session.scalar(Select(IdVerification).where(IdVerification.uid == userid))
 		with self.createsession() as session :
-			userdata = session.scalar(Select(IdVerification).where(IdVerification.uid == userid))
-			session.close()
-			return userdata
+			return session.scalar(Select(IdVerification).where(IdVerification.uid == userid))
+
 
 	def update_check(self, userid, reason: str = None, idcheck=True, server=None) :
 		with self.createsession() as session :
@@ -75,7 +77,10 @@ class VerificationTransactions(DatabaseTransactions) :
 
 			userdata = session.scalar(Select(IdVerification).where(IdVerification.uid == userid))
 			if userdata is None :
-				VerificationTransactions().add_idcheck(userid, dob, idcheck=False, server=server)
+				verification = IdVerification(uid=userid, reason="User ID Verified", idcheck=False, idverified=idverified, verifieddob=Encryption().encrypt(dob), server=server)
+				session.add(verification)
+				self.commit(session)
+				UserTransactions().update_user_dob(userid, dob, guildname=guildname)
 				return
 			userdata.verifieddob = Encryption().encrypt(dob)
 			userdata.idverified = idverified
@@ -84,6 +89,45 @@ class VerificationTransactions(DatabaseTransactions) :
 			self.commit(session)
 			UserTransactions().update_user_dob(userid, dob, guildname=guildname)
 
+	def update_verification(self, uid: int, reason: str = None, idcheck: bool = None,
+	                        idverified: bool = None, verifieddob: str = None, server: str = None) :
+		with self.createsession() as session :
+			verification = self.get_id_info(uid, session=session)  # Assumes you have a method to retrieve the record
+
+			data = {
+				"reason"      : reason,
+				"idcheck"     : idcheck,
+				"idverified"  : idverified,
+				"verifieddob" : verifieddob,
+				"server"      : server
+			}
+
+			for field, value in data.items() :
+				if field == 'verifieddob' and value is not None :
+					encrypted_value = Encryption().encrypt(value)
+					setattr(verification, field, encrypted_value)
+				elif value is not None :
+					setattr(verification, field, value)
+
+			session.merge(verification)
+			self.commit(session)
+			logging.info(f"Updated verification for {uid} with:")
+			logging.info(data)
+
 	def get_all(self, ) :
 		with self.createsession() as session :
 			return session.query(IdVerification).all()
+
+	def migrate(self):
+		with self.createsession() as session :
+			records = self.get_all()
+			for record in records :
+				if record.idverified is False or record.verifieddob is None:
+					continue
+				try:
+					dt = datetime.strptime(record.verifieddob, "%Y-%m-%d %H:%M:%S")
+					formatted_date = dt.strftime("%m/%d/%Y")
+				except Exception as e:
+					continue
+				self.update_verification(record.uid, record.reason, record.idcheck, record.idverified, formatted_date, record.server)
+

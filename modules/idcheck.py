@@ -4,9 +4,11 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+from classes.encryption import Encryption
 from databases.controllers.VerificationTransactions import VerificationTransactions
 from discord_py_utilities.messages import send_message, send_response
 from classes.support.queue import Queue
+from resources.data.responses import StringStorage
 from views.buttons.approvalbuttons import ApprovalButtons
 from views.buttons.confirm import Confirm
 from views.buttons.dobentrybutton import dobentry
@@ -36,14 +38,14 @@ class idcheck(commands.GroupCog) :
 			"Reason"      : user.reason,
 			"idcheck"     : user.idcheck,
 			"idverified"  : user.idverified,
-			"verifieddob" : user.verifieddob
+			"verifieddob" : Encryption().decrypt(user.verifieddob) if user.verifieddob else ""
 		}
 
 		embed = discord.Embed(title="USER INFO",
 		                      description="Reminder: This data is only allowed to be shared with relevant parties.")
 		for title, value in data.items() :
 			embed.add_field(name=title, value=value, inline=False)
-		await send_response(interaction, f"", embed=embed, ephemeral=True)
+		await send_response(interaction, StringStorage.NO_SHARE_REMINDER, embed=embed, ephemeral=True)
 
 	@app_commands.command()
 	@app_commands.checks.has_permissions(administrator=True)

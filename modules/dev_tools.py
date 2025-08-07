@@ -12,10 +12,11 @@ from classes.jsonmaker import Configer
 from classes.support.queue import Queue
 from databases.controllers.ConfigData import ConfigData
 from databases.controllers.UserTransactions import UserTransactions
+from databases.controllers.VerificationTransactions import VerificationTransactions
 from databases.current import Users
 from views.modals.inputmodal import send_modal
 from views.select.configselectroles import *
-
+from discord_py_utilities.permissions import find_first_accessible_text_channel
 
 def check_access() :
 	def pred(interaction: discord.Interaction) -> bool :
@@ -149,6 +150,13 @@ class dev(commands.GroupCog, name="dev") :
 		userid = int(userid)
 		await Configer.remove_from_user_blacklist(userid)
 		await send_response(interaction, f"Unblacklisted {userid}")
+
+	@app_commands.command(name="migrate", description="Migrates data")
+	async def test(self, interaction: discord.Interaction):
+		await send_response(interaction, f"Migrating IDverification table...")
+		VerificationTransactions().migrate()
+
+
 
 
 	# @app_commands.command(name="add_staff", description="[DEV] Adds a staff member to the team")
