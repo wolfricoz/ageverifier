@@ -118,17 +118,19 @@ class VerificationTransactions(DatabaseTransactions) :
 		with self.createsession() as session :
 			return session.query(IdVerification).all()
 
-	def migrate(self):
-		with self.createsession() as session :
-			records = self.get_all()
-			for record in records :
-				if record.idverified is False or record.verifieddob is None:
-					continue
-				try:
-					dt = datetime.strptime(record.verifieddob, "%Y-%m-%d %H:%M:%S")
-					formatted_date = dt.strftime("%m/%d/%Y")
-				except Exception as e:
-					logging.warning(f"failed to convert verifieddob to datetime for {record.uid} with {record.verifieddob}: {e}")
-					continue
-				self.update_verification(record.uid, record.reason, record.idcheck, record.idverified, formatted_date, record.server)
+	# def migrate(self):
+	# 	with self.createsession() as session :
+	# 		records = self.get_all()
+	# 		for record in records :
+	# 			if record.idverified is False or record.verifieddob is None:
+	# 				continue
+	# 			try:
+	# 				dt = record.verifieddob
+	# 				if isinstance(record.verifieddob, str) :
+	# 					dt = datetime.strptime(record.verifieddob, "%Y-%m-%d %H:%M:%S")
+	# 				formatted_date = dt.strftime("%m/%d/%Y")
+	# 			except Exception as e:
+	# 				logging.warning(f"failed to convert verifieddob to datetime for {record.uid} with {record.verifieddob}: {e}")
+	# 				continue
+	# 			self.update_verification(record.uid, record.reason, record.idcheck, record.idverified, formatted_date, record.server)
 

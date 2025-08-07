@@ -151,11 +151,11 @@ class dev(commands.GroupCog, name="dev") :
 		await Configer.remove_from_user_blacklist(userid)
 		await send_response(interaction, f"Unblacklisted {userid}")
 
-	@app_commands.command(name="migrate", description="Migrates data")
-	async def test(self, interaction: discord.Interaction):
-		await send_response(interaction, f"Migrating IDverification table...")
-		VerificationTransactions().migrate()
-		await send_message(interaction.channel, f"Migrated IDverification table")
+	# @app_commands.command(name="migrate", description="Migrates data")
+	# async def test(self, interaction: discord.Interaction):
+	# 	await send_response(interaction, f"Migrating IDverification table...")
+	# 	VerificationTransactions().migrate()
+	# 	await send_message(interaction.channel, f"Migrated IDverification table")
 
 
 
