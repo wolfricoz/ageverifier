@@ -11,9 +11,11 @@ from discord_py_utilities.messages import send_message
 from classes.jsonmaker import Configer
 from classes.support.queue import Queue
 from databases.controllers.ConfigData import ConfigData
+from databases.controllers.HistoryTransactions import JoinHistoryTransactions
 from databases.controllers.UserTransactions import UserTransactions
 from databases.controllers.VerificationTransactions import VerificationTransactions
 from databases.current import Users
+from databases.enums.joinhistorystatus import JoinHistoryStatus
 from views.modals.inputmodal import send_modal
 from views.select.configselectroles import *
 from discord_py_utilities.permissions import find_first_accessible_text_channel
@@ -86,7 +88,7 @@ class dev(commands.GroupCog, name="dev") :
 
 	@app_commands.command(name="import_origin")
 	@check_access()
-	async def origin(self, interaction: discord.Interaction) :
+	async def origin(self, interaction: discord.Interaction, create_records:bool=False) :
 		user: Users
 		history = {}
 		if interaction.user.id != 188647277181665280 :
@@ -105,17 +107,25 @@ class dev(commands.GroupCog, name="dev") :
 				match = re.search(r"UID:\s(\d+)", message.content)
 				if match is None :
 					continue
-				history[str(guild.id)][str(match.group(1))] = message.id
-		for user in users :
-			if user.server is not None :
-				continue
-			Queue().add(self.search(user, history, interaction.channel), priority=0)
+				history[str(guild.id)][str(match.group(1))] = {}
+				history[str(guild.id)][str(match.group(1))]["message_id"] = message.id
+				history[str(guild.id)][str(match.group(1))]["date"] = message.created_at
 
-	async def search(self, user, history, channel) :
+
+		for user in users :
+
+			Queue().add(self.search(user, history, create_records), priority=0)
+
+	async def search(self, user, history, create_records: bool) :
 		for guild in self.bot.guilds :
 			if str(guild.id) in history and str(user.uid) in history[str(guild.id)] :
-				UserTransactions().update_user(user.uid, server=guild.name)
-				logging.info(f"{user.uid}'s entry found in {guild.name}, database has been updated")
+				if user.server is None :
+					UserTransactions().update_user(user.uid, server=guild.name)
+					logging.info(f"{user.uid}'s entry found in {guild.name}, database has been updated")
+
+				if create_records:
+					logging.info(f"Creating entry log for {user.uid}'s entry found in {guild.name}, ")
+					JoinHistoryTransactions().add(user.uid, guild.id, JoinHistoryStatus.SUCCESS, message_id=history[str(guild.id)][str(user.uid)]["message_id"], verification_date=history[str(guild.id)][str(user.uid)]["date"])
 
 	@app_commands.command(name="blacklist_server", description="[DEV] Blacklist a server")
 	@check_access()

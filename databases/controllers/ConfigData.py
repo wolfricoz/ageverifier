@@ -22,7 +22,7 @@ class ConfigData(metaclass=singleton) :
 		logging.info("reloading config")
 		for guild_id in self.conf :
 			self.load_guild(guild_id)
-		logging.info(self.conf)
+		# logging.debug(self.conf)
 
 	def load_guild(self, guild_id: int) :
 		config = ConfigTransactions().server_config_get(guild_id)
