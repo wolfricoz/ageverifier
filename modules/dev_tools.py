@@ -97,9 +97,12 @@ class dev(commands.GroupCog, name="dev") :
 		await send_response(interaction, "Attempting to find origin of date of birth")
 		users = UserTransactions().get_all_users(dob_only=True)
 		for guild in self.bot.guilds :
+			logging.info(f"Checking {guild.name}({guild.id}) for records")
 			try :
-				lobbylog = ConfigData().get_key(guild.id, "lobbylog")
+				lobbylog = ConfigData().get_key_or_none(guild.id, "lobbylog")
 			except :
+				continue
+			if lobbylog is None:
 				continue
 			channel = guild.get_channel(int(lobbylog))
 			history[str(guild.id)] = {}
@@ -110,11 +113,11 @@ class dev(commands.GroupCog, name="dev") :
 				history[str(guild.id)][str(match.group(1))] = {}
 				history[str(guild.id)][str(match.group(1))]["message_id"] = message.id
 				history[str(guild.id)][str(match.group(1))]["date"] = message.created_at
-
-
+		logging.info(f"Finished checking guilds: {len(history)}")
 		for user in users :
-
 			Queue().add(self.search(user, history, create_records), priority=0)
+		logging.info(f"Queued {len(users)} users")
+		await send_message(interaction.channel, f"Queued {len(users)} users to be updated.")
 
 	async def search(self, user, history, create_records: bool) :
 		for guild in self.bot.guilds :
