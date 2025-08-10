@@ -95,7 +95,7 @@ async def on_ready() :
 	whitelist.create_whitelist(bot.guilds)
 	await Configer.create_bot_config()
 	for guild in bot.guilds :
-		Queue().add(blacklist_check(guild, devroom), priority=2)
+		await blacklist_check(guild, devroom)
 		ServerTransactions().add(guild.id,
 		                         active=True,
 		                         name=guild.name,

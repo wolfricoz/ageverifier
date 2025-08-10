@@ -107,7 +107,8 @@ class dev(commands.GroupCog, name="dev") :
 				continue
 			channel = guild.get_channel(int(lobbylog))
 			history[str(guild.id)] = {}
-			async for message in channel.history(limit=10000) :
+			async for message in channel.history(limit=None) :
+				logging.info(f"Checking {message.guild.name}({message.guild.id}) for records")
 				match = re.search(r"UID:\s(\d+)", message.content)
 				if match is None :
 					continue
