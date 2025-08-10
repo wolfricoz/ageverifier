@@ -97,6 +97,7 @@ class dev(commands.GroupCog, name="dev") :
 		await send_response(interaction, "Attempting to find origin of date of birth")
 		users = UserTransactions().get_all_users(dob_only=True)
 		for guild in self.bot.guilds :
+			await asyncio.sleep(0.001)
 			logging.info(f"Checking {guild.name}({guild.id}) for records")
 			try :
 				lobbylog = ConfigData().get_key_or_none(guild.id, "lobbylog")
