@@ -5,6 +5,7 @@ import os
 from datetime import datetime, timedelta
 
 import discord
+from discord_py_utilities.invites import check_guild_invites
 from discord_py_utilities.messages import send_message, send_response
 from discord import app_commands
 from discord.ext import commands, tasks
@@ -22,7 +23,7 @@ OLDLOBBY = int(os.getenv("OLDLOBBY"))
 
 
 class Tasks(commands.GroupCog) :
-	def __init__(self, bot) :
+	def __init__(self, bot: commands.AutoShardedBot) :
 		"""loads tasks"""
 		self.bot = bot
 		self.index = 0
@@ -108,10 +109,29 @@ class Tasks(commands.GroupCog) :
 			if guild.id in guild_ids :
 				guild_ids.remove(guild.id)
 				continue
-			ServerTransactions().add(guild.id, active=True, reload=False)
+			ServerTransactions().add(guild.id,
+			                         active=True,
+			                         name=guild.name,
+			                         owner=guild.owner.name,
+			                         member_count=guild.member_count,
+			                         invite=await check_guild_invites(self.bot, guild)
+			                         )
 
 		for gid in guild_ids :
-			ServerTransactions().update(gid, active=False, reload=False)
+			try:
+				guild = self.bot.get_guild(gid)
+				if guild is None:
+					guild = await self.bot.fetch_guild(gid)
+			except discord.errors.NotFound:
+				ServerTransactions().delete(gid)
+				continue
+			ServerTransactions().add(gid,
+			                         active=False,
+			                         name=guild.name,
+			                         owner=guild.owner.name,
+			                         member_count=guild.member_count,
+			                         invite=await check_guild_invites(self.bot, guild)
+			                         )
 		ConfigData().reload()
 
 	@tasks.loop(hours=24 * 7)

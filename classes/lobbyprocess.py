@@ -10,10 +10,12 @@ from classes.AgeCalculations import AgeCalculations
 from classes.ageroles import change_age_roles
 from databases.controllers.ConfigData import ConfigData
 from databases.controllers.ConfigTransactions import ConfigTransactions
+from databases.controllers.HistoryTransactions import JoinHistoryTransactions
 from databases.controllers.UserTransactions import UserTransactions
 from discord_py_utilities.messages import send_message
 from classes.support.queue import Queue
 from classes.whitelist import check_whitelist
+from databases.enums.joinhistorystatus import JoinHistoryStatus
 
 
 class LobbyProcess(ABC) :
@@ -88,7 +90,7 @@ class LobbyProcess(ABC) :
 		dob_field = ""
 		if check_whitelist(guild.id) :
 			dob_field = f"DOB: {dob} \n"
-		await send_message(channel, f"{id_verify}"
+		message = await send_message(channel, f"{id_verify}"
 		                            f"user: {user.mention}\n"
 		                            f"Age: {age} \n"
 		                            f"{dob_field}"
@@ -99,6 +101,12 @@ class LobbyProcess(ABC) :
 		                            f"Executed at: {datetime.datetime.now().strftime('%m/%d/%Y %I:%M:%S %p')} \n"
 		                            f"first time: {f'yes' if not exists else 'no'}\n"
 		                            f"Staff: {staff}")
+		if id_verify :
+			JoinHistoryTransactions().update(user.id, guild.id, JoinHistoryStatus.VERIFIED,
+			                                 verification_date=datetime.datetime.now(), message_id=message.id)
+			return
+		JoinHistoryTransactions().update(user.id, guild.id, JoinHistoryStatus.SUCCESS, verification_date=datetime.datetime.now(), message_id=message.id)
+
 
 	@staticmethod
 	@abstractmethod

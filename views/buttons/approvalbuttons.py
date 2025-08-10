@@ -5,7 +5,9 @@ import discord
 
 from classes.lobbyprocess import LobbyProcess
 from databases.controllers.ConfigData import ConfigData
+from databases.controllers.HistoryTransactions import JoinHistoryTransactions
 from databases.controllers.VerificationTransactions import VerificationTransactions
+from databases.enums.joinhistorystatus import JoinHistoryStatus
 from views.modals.inputmodal import send_modal
 
 
@@ -44,6 +46,7 @@ class ApprovalButtons(discord.ui.View):
         idcheck = ConfigData().get_key_int(interaction.guild.id, "idlog")
         idlog = interaction.guild.get_channel(idcheck)
         VerificationTransactions().set_idcheck_to_true(self.user.id, f"manually flagged by {interaction.user.name} with reason: {reason}", server=interaction.guild.name)
+        JoinHistoryTransactions().update(self.user.id, interaction.guild.id, JoinHistoryStatus.IDCHECK)
         await interaction.message.edit(view=self)
         await idlog.send(
                 f"{interaction.user.mention} has flagged {self.user.mention} for manual ID with reason:\n"

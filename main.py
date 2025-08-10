@@ -23,6 +23,7 @@ from discord_py_utilities.messages import send_message
 from classes.support.queue import Queue
 from databases import current as db
 from views.buttons.idverifybutton import IdVerifyButton
+from discord_py_utilities.invites import check_guild_invites
 
 # Creating database
 db.database.create()
@@ -95,7 +96,13 @@ async def on_ready() :
 	await Configer.create_bot_config()
 	for guild in bot.guilds :
 		Queue().add(blacklist_check(guild, devroom), priority=2)
-		ServerTransactions().add(guild.id, active=True)
+		ServerTransactions().add(guild.id,
+		                         active=True,
+		                         name=guild.name,
+		                         owner=guild.owner.name,
+		                         member_count=guild.member_count,
+		                         invite= await check_guild_invites(bot, guild)
+		                         )
 		ConfigData().load_guild(guild.id)
 		guilds.append(guild.name)
 		try :
@@ -132,7 +139,13 @@ async def on_guild_join(guild) :
 				"This server is not whitelisted and the bot will run in a limited mode. Date of births will not be shown.")
 		except discord.errors.Forbidden :
 			print(f"Unable to send message to {guild.owner.name} in {guild.name}")
-	ServerTransactions().add(guild.id, True)
+	ServerTransactions().add(guild.id,
+	                         active=True,
+	                         name=guild.name,
+	                         owner=guild.owner.name,
+	                         member_count=guild.member_count,
+	                         invite=await check_guild_invites(bot, guild)
+	                         )
 	ConfigData().load_guild(guild.id)
 	try :
 		bot.invites[guild.id] = await guild.invites()

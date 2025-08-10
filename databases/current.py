@@ -4,11 +4,13 @@ from typing import List, Optional
 
 import pymysql
 from dotenv import load_dotenv
-from sqlalchemy import Integer, create_engine, DateTime, ForeignKey, String, BigInteger, Boolean
+from sqlalchemy import Enum, Integer, create_engine, DateTime, ForeignKey, String, BigInteger, Boolean
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, sessionmaker
 from sqlalchemy.pool import NullPool
 from sqlalchemy.sql import func
 from sqlalchemy_utils import database_exists, create_database
+
+from databases.enums.joinhistorystatus import JoinHistoryStatus
 
 pymysql.install_as_MySQLdb()
 load_dotenv('.env')
@@ -48,6 +50,8 @@ class Users(Base) :
 	                                                                   uselist=False)
 	deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True, default=None)
 
+	join_history: Mapped[list["JoinHistory"]] = relationship("JoinHistory", back_populates="user")
+
 
 # noinspection PyTypeChecker, PydanticTypeChecker
 class Warnings(Base) :
@@ -65,6 +69,18 @@ class Servers(Base) :
 	__tablename__ = "servers"
 	guild: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=False)
 	active: Mapped[bool] = mapped_column(Boolean, default=False)
+	# New columns
+	name: Mapped[str] = mapped_column(String(1024, collation='utf8mb4_unicode_ci'))
+	owner: Mapped[Optional[str]] = mapped_column(String(2048))
+	member_count: Mapped[int] = mapped_column(BigInteger, default=0)
+	invite: Mapped[str] = mapped_column(String(256, collation='utf8mb4_unicode_ci'), default="")
+	created: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+	updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(),
+	                                             server_onupdate=func.now())
+	deleted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=None, nullable=True)
+	premium: Mapped[bool] = mapped_column(Boolean, default=False)
+	join_history: Mapped[list["JoinHistory"]] = relationship("JoinHistory", back_populates="server")
+
 
 
 # noinspection PyTypeChecker, PydanticTypeChecker
@@ -112,6 +128,21 @@ class AgeRole(Base) :
 	role_id: Mapped[int] = mapped_column(BigInteger)
 	minimum_age: Mapped[int] = mapped_column(Integer, default=18, nullable=True)
 	maximum_age: Mapped[int] = mapped_column(Integer, default=200, nullable=True)
+
+
+class JoinHistory(Base) :
+	__tablename__ = "join_history"
+	id: Mapped[int] = mapped_column(primary_key=True)
+	uid: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.uid", ondelete="CASCADE"))
+	gid: Mapped[int] = mapped_column(BigInteger, ForeignKey("servers.guild", ondelete="CASCADE"))
+	status: Mapped[str] = mapped_column(Enum(JoinHistoryStatus))
+	verification_date: Mapped[datetime] = mapped_column(DateTime, default=None, nullable=True)
+	message_id: Mapped[int] = mapped_column(BigInteger, nullable=True)
+	created_date: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+	last_updated: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), server_onupdate=func.now())
+	user: Mapped["Users"] = relationship("Users", back_populates="join_history")
+	server: Mapped["Servers"] = relationship("Servers", back_populates="join_history")
+
 
 
 class database :

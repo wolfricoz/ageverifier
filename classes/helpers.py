@@ -7,8 +7,11 @@ from discord_py_utilities.permissions import find_first_accessible_text_channel
 import databases.exceptions.KeyNotFound
 from classes.retired.discord_tools import create_embed
 from databases.controllers.ConfigData import ConfigData
+from databases.controllers.HistoryTransactions import JoinHistoryTransactions
 from databases.controllers.UserTransactions import UserTransactions
 from discord_py_utilities.messages import send_message
+
+from databases.enums.joinhistorystatus import JoinHistoryStatus
 from views.buttons.verifybutton import VerifyButton
 
 
@@ -18,6 +21,7 @@ async def has_onboarding(guild: discord.Guild) -> bool :
 
 
 async def welcome_user(member) :
+	JoinHistoryTransactions().add(member.id, member.guild.id, JoinHistoryStatus.NEW)
 	warning = ""
 	lobby = ConfigData().get_key_int_or_zero(member.guild.id, "lobby")
 	channel = member.guild.get_channel(lobby)
