@@ -104,31 +104,31 @@ class dev(commands.GroupCog, name="dev") :
 			if lobbylog is None :
 				continue
 			channel = guild.get_channel(int(lobbylog))
-			async for message in channel.history(limit=None) :
-				Queue().add(await self.history(message, users, guild, create_records), priority=0)
+			Queue().add(await self.history(channel, users, guild, create_records), priority=0)
 
 		logging.info(f"Queued {len(users)} users")
 		await send_message(interaction.channel, f"Queued {len(users)} users to be updated.")
 
-	async def history(self, message, users, guild, create_records) :
-		logging.info(f"Checking {message.guild.name}({message.guild.id}) for records")
-		match = re.search(r"UID:\s(\d+)", message.content)
-		if match is None :
-			return
-		user_id = int(match.group(1))
-		user_ids = [int(user.uid) for user in users]
-		if int(match.group(1)) in user_ids :
-			user = UserTransactions().get_user(user_id)
-			if user.server is None :
-				UserTransactions().update_user(user.uid, server=guild.name)
-				logging.info(f"{user.uid}'s entry found in {guild.name}, database has been updated")
+	async def history(self, channel, users, guild, create_records) :
+		async for message in channel.history(limit=None) :
+			logging.info(f"Checking {message.guild.name}({message.guild.id}) for records")
+			match = re.search(r"UID:\s(\d+)", message.content)
+			if match is None :
+				return
+			user_id = int(match.group(1))
+			user_ids = [int(user.uid) for user in users]
+			if int(match.group(1)) in user_ids :
+				user = UserTransactions().get_user(user_id)
+				if user.server is None :
+					UserTransactions().update_user(user.uid, server=guild.name)
+					logging.info(f"{user.uid}'s entry found in {guild.name}, database has been updated")
 
-			if create_records :
-				JoinHistoryTransactions().add(user.uid,
-				                              guild.id,
-				                              JoinHistoryStatus.SUCCESS,
-				                              message_id=message.id,
-				                              verification_date=message.created_at)
+				if create_records :
+					JoinHistoryTransactions().add(user.uid,
+					                              guild.id,
+					                              JoinHistoryStatus.SUCCESS,
+					                              message_id=message.id,
+					                              verification_date=message.created_at)
 
 	# async def search(self, user, history, create_records: bool) :
 	# 	for guild in self.bot.guilds :
