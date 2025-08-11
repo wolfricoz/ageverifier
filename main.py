@@ -22,6 +22,7 @@ from classes.jsonmaker import Configer
 from discord_py_utilities.messages import send_message
 from classes.support.queue import Queue
 from databases import current as db
+from databases.current import Servers
 from views.buttons.idverifybutton import IdVerifyButton
 from discord_py_utilities.invites import check_guild_invites
 
@@ -96,13 +97,17 @@ async def on_ready() :
 	await Configer.create_bot_config()
 	for guild in bot.guilds :
 		await blacklist_check(guild, devroom)
+
+		invite = ""
+		db_guild: Servers = ServerTransactions().get(guild.id)
+		if db_guild :
+			invite = db_guild.invite
 		ServerTransactions().add(guild.id,
 		                         active=True,
 		                         name=guild.name,
 		                         owner=guild.owner.name,
 		                         member_count=guild.member_count,
-		                         invite= await check_guild_invites(bot, guild)
-		                         )
+		                         invite= await check_guild_invites(bot, guild, invite))
 		ConfigData().load_guild(guild.id)
 		guilds.append(guild.name)
 		try :

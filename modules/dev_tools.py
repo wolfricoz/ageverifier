@@ -17,6 +17,7 @@ from databases.current import Users
 from databases.enums.joinhistorystatus import JoinHistoryStatus
 from views.modals.inputmodal import send_modal
 from views.select.configselectroles import *
+from discord_py_utilities.invites import check_guild_invites
 
 
 def check_access() :
@@ -99,6 +100,14 @@ class dev(commands.GroupCog, name="dev") :
 		await send_message(interaction.channel, f"Filled the queue with {count} tasks")
 
 
+	@app_commands.command(name="test_invite")
+	@check_access()
+	async def test_invite(self, interaction: discord.Interaction, invite: str) -> None:
+		result = await check_guild_invites(self.bot, interaction.guild, invite)
+		await send_response(interaction, "Result: " + str(result))
+
+
+
 	@app_commands.command(name="import_origin")
 	@check_access()
 	async def origin(self, interaction: discord.Interaction, create_records: bool = False) :
@@ -110,7 +119,6 @@ class dev(commands.GroupCog, name="dev") :
 		users = UserTransactions().get_all_users(dob_only=True)
 		logging.info(f"Queued {len(users)} users")
 		for guild in self.bot.guilds :
-			await asyncio.sleep(0.001)
 			logging.info(f"Checking {guild.name}({guild.id}) for records")
 			try :
 				lobbylog = ConfigData().get_key_or_none(guild.id, "lobbylog")
