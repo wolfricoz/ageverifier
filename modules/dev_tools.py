@@ -85,6 +85,20 @@ class dev(commands.GroupCog, name="dev") :
 		server_message = "\n".join(servers)
 		await send_message(interaction.channel, server_message)
 
+	@app_commands.command(name="fill_queue")
+	@check_access()
+	async def fill_queue(self, interaction: discord.Interaction):
+		await send_response(interaction, "Starting to fill the queue")
+		count = 1
+		async def test(c):
+			logging.info(f"this is task: {c}")
+
+		while count < 1000:
+			Queue().add(test(count), priority=0)
+			count += 1
+		await send_message(interaction.channel, f"Filled the queue with {count} tasks")
+
+
 	@app_commands.command(name="import_origin")
 	@check_access()
 	async def origin(self, interaction: discord.Interaction, create_records: bool = False) :
@@ -94,24 +108,25 @@ class dev(commands.GroupCog, name="dev") :
 			return
 		await send_response(interaction, "Attempting to find origin of date of birth")
 		users = UserTransactions().get_all_users(dob_only=True)
+		logging.info(f"Queued {len(users)} users")
 		for guild in self.bot.guilds :
 			await asyncio.sleep(0.001)
 			logging.info(f"Checking {guild.name}({guild.id}) for records")
 			try :
 				lobbylog = ConfigData().get_key_or_none(guild.id, "lobbylog")
 			except :
+				logging.warning(f"Could not find lobbylog for {guild.name}({guild.id})")
 				continue
 			if lobbylog is None :
+				logging.warning(f"Could not find lobbylog for {guild.name}({guild.id})")
 				continue
 			channel = guild.get_channel(int(lobbylog))
 			Queue().add(await self.history(channel, users, guild, create_records), priority=0)
 
-		logging.info(f"Queued {len(users)} users")
 		await send_message(interaction.channel, f"Queued {len(users)} users to be updated.")
 
 	async def history(self, channel, users, guild, create_records) :
 		async for message in channel.history(limit=None) :
-			logging.info(f"Checking {message.guild.name}({message.guild.id}) for records")
 			match = re.search(r"UID:\s(\d+)", message.content)
 			if match is None :
 				return
@@ -122,7 +137,6 @@ class dev(commands.GroupCog, name="dev") :
 				if user.server is None :
 					UserTransactions().update_user(user.uid, server=guild.name)
 					logging.info(f"{user.uid}'s entry found in {guild.name}, database has been updated")
-
 				if create_records :
 					JoinHistoryTransactions().add(user.uid,
 					                              guild.id,

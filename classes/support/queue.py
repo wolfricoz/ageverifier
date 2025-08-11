@@ -92,7 +92,7 @@ class Queue(metaclass=Singleton):
             except Exception as e:
                 logging.error(f"Error in queue: {e}")
             self.task_finished = True
-            print(f"Remaining queue: High: {len(self.high_priority_queue)} Normal: {len(self.normal_priority_queue)} Low: {len(self.low_priority_queue)}")
+            logging.info(f"Remaining queue: High: {len(self.high_priority_queue)} Normal: {len(self.normal_priority_queue)} Low: {len(self.low_priority_queue)}")
 
     def get_queue_time(self) -> float:
         return len(self.high_priority_queue) + len(self.normal_priority_queue) * 0.3
