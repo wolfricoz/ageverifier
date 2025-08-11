@@ -13,12 +13,11 @@ from classes.support.queue import Queue
 from databases.controllers.ConfigData import ConfigData
 from databases.controllers.HistoryTransactions import JoinHistoryTransactions
 from databases.controllers.UserTransactions import UserTransactions
-from databases.controllers.VerificationTransactions import VerificationTransactions
 from databases.current import Users
 from databases.enums.joinhistorystatus import JoinHistoryStatus
 from views.modals.inputmodal import send_modal
 from views.select.configselectroles import *
-from discord_py_utilities.permissions import find_first_accessible_text_channel
+
 
 def check_access() :
 	def pred(interaction: discord.Interaction) -> bool :
@@ -88,9 +87,8 @@ class dev(commands.GroupCog, name="dev") :
 
 	@app_commands.command(name="import_origin")
 	@check_access()
-	async def origin(self, interaction: discord.Interaction, create_records:bool=False) :
+	async def origin(self, interaction: discord.Interaction, create_records: bool = False) :
 		user: Users
-		history = {}
 		if interaction.user.id != 188647277181665280 :
 			await send_response(interaction, "You are not the developer", ephemeral=True)
 			return
@@ -103,34 +101,45 @@ class dev(commands.GroupCog, name="dev") :
 				lobbylog = ConfigData().get_key_or_none(guild.id, "lobbylog")
 			except :
 				continue
-			if lobbylog is None:
+			if lobbylog is None :
 				continue
 			channel = guild.get_channel(int(lobbylog))
-			history[str(guild.id)] = {}
 			async for message in channel.history(limit=None) :
-				logging.info(f"Checking {message.guild.name}({message.guild.id}) for records")
-				match = re.search(r"UID:\s(\d+)", message.content)
-				if match is None :
-					continue
-				history[str(guild.id)][str(match.group(1))] = {}
-				history[str(guild.id)][str(match.group(1))]["message_id"] = message.id
-				history[str(guild.id)][str(match.group(1))]["date"] = message.created_at
-		logging.info(f"Finished checking guilds: {len(history)}")
-		for user in users :
-			Queue().add(self.search(user, history, create_records), priority=0)
+				Queue().add(await self.history(message, users, guild, create_records), priority=0)
+
 		logging.info(f"Queued {len(users)} users")
 		await send_message(interaction.channel, f"Queued {len(users)} users to be updated.")
 
-	async def search(self, user, history, create_records: bool) :
-		for guild in self.bot.guilds :
-			if str(guild.id) in history and str(user.uid) in history[str(guild.id)] :
-				if user.server is None :
-					UserTransactions().update_user(user.uid, server=guild.name)
-					logging.info(f"{user.uid}'s entry found in {guild.name}, database has been updated")
+	async def history(self, message, users, guild, create_records) :
+		logging.info(f"Checking {message.guild.name}({message.guild.id}) for records")
+		match = re.search(r"UID:\s(\d+)", message.content)
+		if match is None :
+			return
+		user_id = int(match.group(1))
+		user_ids = [int(user.uid) for user in users]
+		if int(match.group(1)) in user_ids :
+			user = UserTransactions().get_user(user_id)
+			if user.server is None :
+				UserTransactions().update_user(user.uid, server=guild.name)
+				logging.info(f"{user.uid}'s entry found in {guild.name}, database has been updated")
 
-				if create_records:
-					logging.info(f"Creating entry log for {user.uid}'s entry found in {guild.name}, ")
-					JoinHistoryTransactions().add(user.uid, guild.id, JoinHistoryStatus.SUCCESS, message_id=history[str(guild.id)][str(user.uid)]["message_id"], verification_date=history[str(guild.id)][str(user.uid)]["date"])
+			if create_records :
+				JoinHistoryTransactions().add(user.uid,
+				                              guild.id,
+				                              JoinHistoryStatus.SUCCESS,
+				                              message_id=message.id,
+				                              verification_date=message.created_at)
+
+	# async def search(self, user, history, create_records: bool) :
+	# 	for guild in self.bot.guilds :
+	# 		if str(guild.id) in history and str(user.uid) in history[str(guild.id)] :
+	# 			if user.server is None :
+	# 				UserTransactions().update_user(user.uid, server=guild.name)
+	# 				logging.info(f"{user.uid}'s entry found in {guild.name}, database has been updated")
+	#
+	# 			if create_records:
+	# 				logging.info(f"Creating entry log for {user.uid}'s entry found in {guild.name}, ")
+	# 				JoinHistoryTransactions().add(user.uid, guild.id, JoinHistoryStatus.SUCCESS, message_id=history[str(guild.id)][str(user.uid)]["message_id"], verification_date=history[str(guild.id)][str(user.uid)]["date"])
 
 	@app_commands.command(name="blacklist_server", description="[DEV] Blacklist a server")
 	@check_access()
@@ -166,30 +175,28 @@ class dev(commands.GroupCog, name="dev") :
 		await Configer.remove_from_user_blacklist(userid)
 		await send_response(interaction, f"Unblacklisted {userid}")
 
-	# @app_commands.command(name="migrate", description="Migrates data")
-	# async def test(self, interaction: discord.Interaction):
-	# 	await send_response(interaction, f"Migrating IDverification table...")
-	# 	VerificationTransactions().migrate()
-	# 	await send_message(interaction.channel, f"Migrated IDverification table")
+# @app_commands.command(name="migrate", description="Migrates data")
+# async def test(self, interaction: discord.Interaction):
+# 	await send_response(interaction, f"Migrating IDverification table...")
+# 	VerificationTransactions().migrate()
+# 	await send_message(interaction.channel, f"Migrated IDverification table")
 
+# @app_commands.command(name="add_staff", description="[DEV] Adds a staff member to the team")
+# @app_commands.choices(role=[Choice(name=x, value=x.lower()) for x in ["Dev", "Rep"]])
+# async def add_staff(self, interaction: discord.Interaction, user: discord.User, role: Choice[str]) :
+# 	if interaction.user.id != int(os.getenv("OWNER")) :
+# 		return await send_response(interaction, "You do not have permission to add staff members")
+# 	StaffDbTransactions.add(user.id, role.value)
+# 	await send_response(interaction, f"Staff member {user.mention} successfully added as a `{role.name}`!")
+# 	AccessControl().reload()
+#
+# @app_commands.command(name="remove_staff", description="[DEV] Remove a staff member from the team")
+# @AccessControl().check_access("dev")
+# async def remove_staff(self, interaction: discord.Interaction, user: discord.User) :
+# 	StaffDbTransactions.delete(user.id)
+# 	await send_response(interaction, f"Staff member {user.mention} successfully removed!")
+# 	AccessControl().reload()
 
-
-
-	# @app_commands.command(name="add_staff", description="[DEV] Adds a staff member to the team")
-	# @app_commands.choices(role=[Choice(name=x, value=x.lower()) for x in ["Dev", "Rep"]])
-	# async def add_staff(self, interaction: discord.Interaction, user: discord.User, role: Choice[str]) :
-	# 	if interaction.user.id != int(os.getenv("OWNER")) :
-	# 		return await send_response(interaction, "You do not have permission to add staff members")
-	# 	StaffDbTransactions.add(user.id, role.value)
-	# 	await send_response(interaction, f"Staff member {user.mention} successfully added as a `{role.name}`!")
-	# 	AccessControl().reload()
-	#
-	# @app_commands.command(name="remove_staff", description="[DEV] Remove a staff member from the team")
-	# @AccessControl().check_access("dev")
-	# async def remove_staff(self, interaction: discord.Interaction, user: discord.User) :
-	# 	StaffDbTransactions.delete(user.id)
-	# 	await send_response(interaction, f"Staff member {user.mention} successfully removed!")
-	# 	AccessControl().reload()
 
 async def setup(bot: commands.Bot) :
 	"""Adds the cog to the bot"""
