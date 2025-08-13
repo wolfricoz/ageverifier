@@ -80,14 +80,14 @@ class VerificationTransactions(DatabaseTransactions) :
 				verification = IdVerification(uid=userid, reason="User ID Verified", idcheck=False, idverified=idverified, verifieddob=Encryption().encrypt(dob), server=server)
 				session.add(verification)
 				self.commit(session)
-				UserTransactions().update_user_dob(userid, dob, guildname=guildname)
+				UserTransactions().update_user_dob(userid, dob, guildname=guildname, override=True)
 				return
 			userdata.verifieddob = Encryption().encrypt(dob)
 			userdata.idverified = idverified
 			userdata.idcheck = False
 			userdata.reason = "User ID Verified"
 			self.commit(session)
-			UserTransactions().update_user_dob(userid, dob, guildname=guildname)
+			UserTransactions().update_user_dob(userid, dob, guildname=guildname, override=True)
 
 	def update_verification(self, uid: int, reason: str = None, idcheck: bool = None,
 	                        idverified: bool = None, verifieddob: str = None, server: str = None) :
