@@ -2,7 +2,9 @@
 import asyncio
 import logging
 import os
+import random
 import re
+from datetime import datetime, timedelta
 
 from discord import app_commands
 from discord.ext import commands
@@ -10,8 +12,10 @@ from discord_py_utilities.messages import send_message
 
 from classes.jsonmaker import Configer
 from classes.support.queue import Queue
+from databases.Generators.uidgenerator import uidgenerator
 from databases.controllers.ConfigData import ConfigData
 from databases.controllers.HistoryTransactions import JoinHistoryTransactions
+from databases.controllers.ServerTransactions import ServerTransactions
 from databases.controllers.UserTransactions import UserTransactions
 from databases.current import Users
 from databases.enums.joinhistorystatus import JoinHistoryStatus
@@ -106,7 +110,15 @@ class dev(commands.GroupCog, name="dev") :
 		result = await check_guild_invites(self.bot, interaction.guild, invite)
 		await send_response(interaction, "Result: " + str(result))
 
+	@app_commands.command(name="create_stats")
+	@check_access()
+	async def test_stats(self, interaction: discord.Interaction, amount: int) -> None:
+		count = 0
 
+		while count < amount:
+			JoinHistoryTransactions().add(uidgenerator().create(), 1022307023527890974, random.choice(list(JoinHistoryStatus)), created_at=datetime.now() - timedelta(days=round(count / 2)+3))
+			count += 1
+		await send_response(interaction, "Finished generating records")
 
 	@app_commands.command(name="import_origin")
 	@check_access()
@@ -196,6 +208,30 @@ class dev(commands.GroupCog, name="dev") :
 		userid = int(userid)
 		await Configer.remove_from_user_blacklist(userid)
 		await send_response(interaction, f"Unblacklisted {userid}")
+
+	@app_commands.command(name="server_info", description="[DEV] Checks server info")
+	@check_access()
+	async def serverinfo(self, interaction: discord.Interaction, server: str) :
+		await send_response(interaction, "Retrieving server data")
+		guild = self.bot.get_guild(int(server))
+		if guild is None :
+			guild = await self.bot.fetch_guild(int(server))
+		if guild is None :
+			return
+		embed = discord.Embed(title=f"{guild.name}'s info")
+		server_info = ServerTransactions().get(guild.id)
+		guild_data = {
+			"Owner"         : f"{guild.owner}({guild.owner.id})",
+			"User count"    : len([m for m in guild.members if not m.bot]),
+			"Bot count"     : len([m for m in guild.members if m.bot]),
+			"Channel count" : len(guild.channels),
+			"Role count"    : len(guild.roles),
+			"Created at"    : guild.created_at.strftime("%m/%d/%Y"),
+			"MFA level"     : guild.mfa_level,
+			"invite"        : server_info.invite,
+			"server ID"     : guild.id,
+
+		}
 
 # @app_commands.command(name="migrate", description="Migrates data")
 # async def test(self, interaction: discord.Interaction):

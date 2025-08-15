@@ -134,7 +134,11 @@ async def on_ready() :
 async def on_guild_join(guild) :
 	# adds user to database
 	devroom = bot.get_channel(bot.DEV)
-	await devroom.send(f"Joined {guild.name}({guild.id})")
+	await devroom.send(f"Ban watch is now in {len(bot.guilds)}! It just joined:"
+	               f"\nGuild: {guild}({guild.id})"
+	               f"\nOwner: {guild.owner}({guild.owner.id})"
+	               f"\nMember count: {guild.member_count}"
+	               f"\n\nWelcome to the Banwatch collective!")
 	if await blacklist_check(guild, devroom) :
 		await guild.owner.send("This server is blacklisted. If this is a mistake then please contact the developer.")
 		return
