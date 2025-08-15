@@ -232,6 +232,10 @@ class dev(commands.GroupCog, name="dev") :
 			"server ID"     : guild.id,
 
 		}
+		for key, value in guild_data.items() :
+			embed.add_field(name=key, value=value, inline=False)
+		embed.set_footer(text=f"This data should not be shared outside of the support server.")
+		await send_message(interaction.channel, embed=embed)
 
 # @app_commands.command(name="migrate", description="Migrates data")
 # async def test(self, interaction: discord.Interaction):
