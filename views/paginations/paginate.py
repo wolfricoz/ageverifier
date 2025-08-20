@@ -16,6 +16,7 @@ class PaginationView(discord.ui.View):
 
     def __init__(self):
         super().__init__(timeout=300)
+        self.message = None
 
     async def send(self, interaction):
         self.message = await interaction.channel.send(view=self)

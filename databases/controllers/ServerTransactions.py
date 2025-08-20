@@ -2,7 +2,6 @@ import logging
 
 from sqlalchemy import Select
 
-from databases import current as db
 from databases.controllers.ConfigData import ConfigData
 from databases.controllers.ConfigTransactions import ConfigTransactions
 from databases.controllers.DatabaseTransactions import DatabaseTransactions

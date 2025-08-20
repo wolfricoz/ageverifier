@@ -1,8 +1,6 @@
-from datetime import datetime
 import logging
 
 import discord
-from discord import message
 from discord_py_utilities.messages import send_message, send_response
 
 import databases.current

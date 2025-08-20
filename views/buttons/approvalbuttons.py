@@ -80,7 +80,7 @@ Once you've made these changes you may resubmit your age and date of birth. Than
     async def add_to_db(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Adds user to db"""
         age_log = ConfigData().get_key_int(interaction.guild.id, "lobbylog")
-        await self.disable_buttons(interaction, button)
+        await self.disable_buttons(interaction, button,  disable_add=True)
         if self.user is None:
             await interaction.followup.send('The bot has restarted and the data of this button is missing. Please add the user manually.',
                                             ephemeral=True)
@@ -93,7 +93,7 @@ Once you've made these changes you may resubmit your age and date of birth. Than
 
 
 
-    async def disable_buttons(self, interaction, button: discord.ui.Button = None, update= True):
+    async def disable_buttons(self, interaction, button: discord.ui.Button = None, update= True, disable_add = False):
         """disables buttons"""
         self.manual_id.disabled = True
         self.manual_id.style = discord.ButtonStyle.grey
@@ -105,6 +105,10 @@ Once you've made these changes you may resubmit your age and date of birth. Than
         self.nsfw_warning.style = discord.ButtonStyle.grey
 
         button.style = discord.ButtonStyle.green
+        if disable_add:
+            self.add_to_db.disabled = True
+            self.add_to_db.style = discord.ButtonStyle.grey
+
         if update is False:
             return
         await interaction.response.edit_message(view=self)

@@ -72,15 +72,6 @@ class LobbyProcess(ABC) :
 			results.append(verrole)
 		return results
 
-	@staticmethod
-	@abstractmethod
-	async def calculate_age_role(user, guild, age) :
-		for n, y in {18 : 21, 21 : 25, 25 : 1000}.items() :
-			if n <= int(age) < y :
-				agerole = ConfigData().get_key(guild.id, str(n))
-				agerole = guild.get_role(int(agerole))
-				await user.add_roles(agerole)
-				break
 
 	@staticmethod
 	@abstractmethod
