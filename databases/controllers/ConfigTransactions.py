@@ -36,7 +36,7 @@ class ConfigTransactions(DatabaseTransactions) :
 				return False
 
 
-	def toggle_welcome(self, guildid: int, key: str, value) :
+	def toggle(self, guildid: int, key: str, value) :
 		# This function should check if the item already exists, if so it will override it or throw an error.
 		with self.createsession() as session :
 			value = str(value)

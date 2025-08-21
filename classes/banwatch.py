@@ -18,7 +18,8 @@ class BanWatch():
 		path = f"/bans/count/{user_id}"
 		try:
 			response = requests.get(self.urlbuilder(path))
-		except ConnectionError:
+		except Exception as e:
+			logging.info("Could not fetch Ban Count")
 			return None
 		if response.status_code != 200:
 			logging.info(f"BanWatch returned {response.status_code}")

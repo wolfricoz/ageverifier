@@ -29,29 +29,41 @@ class ApprovalButtons(discord.ui.View) :
 		                           url='https://wolfricoz.github.io/ageverifier/lobby.html', emoji="❓")
 		self.add_item(button)
 
-	async def send_message(self, interaction: discord.Interaction, mod_channel, id_verified=False) :
+	async def send_message(self, interaction: discord.Interaction, mod_channel, id_verified=None) :
 		# prepare the data
 		message = f"\n{interaction.user.mention} has given {self.age} and dob matches. You can let them through with the buttons below."
 		if check_whitelist(interaction.guild.id) :
 			message = f"\n{interaction.user.mention} has given {self.age} {self.dob}. You can let them through with the buttons below."
 		footer = f"{uuid.uuid4()}"
 		fields = {
-			# "date of birth" : self.dob if check_whitelist(interaction.guild.id) else None,
-			# "age"           : self.age,
-			"bans"          : await BanWatch().fetchBanCount(interaction.user.id),
-			"joined_at"     : interaction.user.joined_at.strftime("%m/%d/%Y %I:%M %p"),
-			"created_at"    : interaction.user.created_at.strftime("%m/%d/%Y"),
+			"ID verified": id_verified,
+			"date of birth" : self.dob if check_whitelist(interaction.guild.id) and str(
+				ConfigData().get_key(interaction.guild.id, "legacy_message", "DISABLED")).upper() == "DISABLED" else None,
+			"age"           : self.age if str(
+				ConfigData().get_key(interaction.guild.id, "legacy_message", "DISABLED")).upper() == "DISABLED" else None,
+			"bans"          : await BanWatch().fetchBanCount(interaction.user.id) if str(
+				ConfigData().get_key(interaction.guild.id, "bans", "ENABLED")).upper() == "ENABLED" else None,
+			"joined_at"     : interaction.user.joined_at.strftime("%m/%d/%Y %I:%M %p") if str(
+				ConfigData().get_key(interaction.guild.id, "joined_at", "ENABLED")).upper() == "ENABLED" else None,
+			"created_at"    : interaction.user.created_at.strftime("%m/%d/%Y") if str(
+				ConfigData().get_key(interaction.guild.id, "created_at", "ENABLED")).upper() == "ENABLED" else None,
+			"user ID"       : interaction.user.id if str(
+				ConfigData().get_key(interaction.guild.id, "user_id", "ENABLED")).upper() == "ENABLED" else None,
 		}
 		profile_picture = interaction.user.avatar.url
 
 		# Build the embed
-		embed = discord.Embed(title=f"Verification Request: {interaction.user.name}", description=message,
+		embed = discord.Embed(title=f"Verification Request: {interaction.user.name}", description=message if str(
+			ConfigData().get_key(interaction.guild.id, "legacy_message", "DISABLED")).upper() == "ENABLED" else None,
 		                      color=discord.Color.green())
 
 		embed.set_footer(text=footer)
 		try :
-			embed.set_thumbnail(url=profile_picture)
-			# embed.set_image(url=profile_picture)
+			if (str(ConfigData().get_key(interaction.guild.id, "picture_large", "DISAVLED")).upper() == "ENABLED"
+					and str(ConfigData().get_key(interaction.guild.id, "picture_small", "ENABLED")).upper() == "DISABLED") :
+				embed.set_image(url=profile_picture)
+			if str(ConfigData().get_key(interaction.guild.id, "picture_small", "ENABLED")).upper() == "ENABLED" :
+				embed.set_thumbnail(url=profile_picture)
 		except :
 			pass
 
@@ -78,7 +90,8 @@ class ApprovalButtons(discord.ui.View) :
 		self.load_data(interaction)
 		if self.age is None or self.dob is None or self.user is None :
 			await send_response(interaction,
-				'The bot has restarted and the data of this button is missing. Please use the command.', ephemeral=True)
+			                    'The bot has restarted and the data of this button is missing. Please use the command.',
+			                    ephemeral=True)
 			return
 		logging.info(f"Interaction user: {getattr(interaction, 'user', None)}")
 		logging.info(f"Interaction message: {getattr(interaction, 'message', None)}")
@@ -90,7 +103,6 @@ class ApprovalButtons(discord.ui.View) :
 			await LobbyProcess.approve_user(interaction.guild, self.user, self.dob, self.age, interaction.user.name)
 		except discord.NotFound :
 			await send_response(interaction, "User not found, please manually add them to the database.", ephemeral=True)
-
 
 	@discord.ui.button(label="Flag for ID Check", style=discord.ButtonStyle.red, custom_id="ID")
 	async def manual_id(self, interaction: discord.Interaction, button: discord.ui.Button) :

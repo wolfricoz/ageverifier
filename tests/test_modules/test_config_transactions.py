@@ -41,7 +41,7 @@ class TestAgeRoleTransactions(unittest.TestCase) :
 		self.assertEqual(result.value, "NEWVAL")
 
 	def test_toggle_welcome_add_new(self) :
-		toggled = self.config.toggle_welcome(self.guild, self.key, "ENABLED")
+		toggled = self.config.toggle(self.guild, self.key, "ENABLED")
 		self.assertFalse(toggled)
 
 		result = self.config.config_unique_get(self.guild, self.key)
@@ -49,7 +49,7 @@ class TestAgeRoleTransactions(unittest.TestCase) :
 
 	def test_toggle_welcome_update_existing(self) :
 		self.config.config_unique_add(self.guild, self.key, "DISABLED", overwrite=True)
-		toggled = self.config.toggle_welcome(self.guild, self.key, "ENABLED")
+		toggled = self.config.toggle(self.guild, self.key, "ENABLED")
 		self.assertTrue(toggled)
 
 		result = self.config.config_unique_get(self.guild, self.key)

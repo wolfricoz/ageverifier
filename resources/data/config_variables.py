@@ -17,3 +17,15 @@ rolechoices = {
 	"join"   : "These roles will be added to the user when they join the server and removed when they verify their age.",
 	"exclude" : "These roles are excluded from the automated age update system, ensuring the bot does not assign unnecessary roles to users."
 }
+
+lobby_approval_toggles = {
+	'picture_large': 'Show large profile picture in approval modal',
+	'picture_small': 'Show small profile picture (hides large)',
+	'bans': 'Display user’s ban records before approving',
+	'joined_at': 'Show when user joined this server',
+	'created_at': 'Show when the account was created',
+	'legacy_message': 'Use the old approval message style',
+	'user_id': 'Show the user id of the account',
+}
+
+available_toggles = ["LobbyWelcome", "Welcome", "Automatic", "Autokick", "Updateroles", "Pingowner"]

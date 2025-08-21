@@ -61,24 +61,13 @@ class VerifyButton(discord.ui.View) :
 					                    f'Thank you for submitting your age and dob! You will be let through immediately!',
 					                    ephemeral=True)
 					return True
-
-				if check_whitelist(interaction.guild.id) :
-					msg =	await send_message(modlobby,
-					                   f"\n{interaction.user.mention} is ID verified with: {dob}. You can let them through with the buttons below."
-					                   f"\n-# [LOBBY DEBUG] To manually process: `?approve {interaction.user.mention} {age} {dob}`",
-					                   view=ApprovalButtons(age=age, dob=dob, user=interaction.user))
-					LobbyDataTransactions().create(msg.id, dob, age)
-					await send_response(interaction, message,
-					                    ephemeral=True)
-					return True
-				msg = await send_message(modlobby,
-				                   f"\n{interaction.user.mention} is ID verified. You can let them through with the buttons below."
-				                   f"\n-# [LOBBY DEBUG] Server not whitelisted: Personal Information (PI) hidden",
-				                   view=ApprovalButtons(age=age, dob=dob, user=interaction.user))
-				LobbyDataTransactions().create(msg.id, dob, age)
-
+				mod_lobby = ConfigData().get_key_int(interaction.guild.id, "lobbymod")
+				mod_channel = interaction.guild.get_channel(mod_lobby)
+				approval_buttons = ApprovalButtons(age=age, dob=dob, user=interaction.user)
 				await send_response(interaction, message,
 				                    ephemeral=True)
+				await approval_buttons.send_message(interaction, mod_channel, id_verified=True)
+
 
 				return True
 			return False
