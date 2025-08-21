@@ -189,14 +189,22 @@ class JoinHistoryTransactions(DatabaseTransactions) :
 			guild_query += f"and gid={gid}"
 		with self.createsession() as session :
 			return session.execute(text(
-				f"""SELECT DATE(created_date) AS date_created,
-                  status,
-                  COUNT(*)           AS records
-           FROM join_history
-           WHERE created_date BETWEEN DATE_SUB(NOW(), INTERVAL {days} DAY)
-                     AND NOW() {guild_query}
-           GROUP BY date_created,
-                    status
+				f"""SELECT
+    DATE(GREATEST(created_date, last_updated)) AS date_created,
+    status,
+    COUNT(*) AS records
+FROM
+    join_history
+WHERE
+    (
+        created_date >= DATE_SUB(NOW(), INTERVAL 30 DAY) or
+        last_updated >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+    )
+GROUP BY
+    last_updated,
+    status
+ORDER BY
+    date_created;
 """
 			)).mappings().all()
 

@@ -17,8 +17,7 @@ plt.rcParams['ytick.left'] = False
 
 class JoinHistoryCharts():
 
-	def __init__(self, bot, data, days):
-		self.bot = bot
+	def __init__(self, data, days):
 		self.data = data
 		self.days = days
 		self.filename = ""
@@ -140,22 +139,59 @@ class JoinHistoryCharts():
 
 
 class AgeCharts():
-	def __init__(self, bot, data):
+	def __init__(self, data):
 		self.filename = None
-		self.bot = bot
 		self.data = data
 
 	def getAgeDistributionChart(self) :
 		graph_data = {}
+		age_groups = {
+			"18-24" : {
+				"name"  : "18-24",
+				"start" : 18,
+				"end"   : 24
+			},
+			"25-34" : {
+				"name"  : "25-34",
+				"start" : 25,
+				"end"   : 34
+			},
+			"35-44" : {
+				"name"  : "35-44",
+				"start" : 35,
+				"end"   : 44
+			},
+			"45-54" : {
+				"name"  : "45-54",
+				"start" : 45,
+				"end"   : 54
+			},
+			"55-64" : {
+				"name"  : "55-64",
+				"start" : 55,
+				"end"   : 64
+			},
+			"65+"   : {
+				"name"  : "65+",
+				"start" : 65,
+				"end"   : 200
+			}
+		}
 
 		for row in self.data :
 			if row.user.date_of_birth is None :
 				continue
 			dob = Encryption().decrypt(row.user.date_of_birth)
 			age = AgeCalculations.dob_to_age(dob)
-			if str(age) not in graph_data.keys() :
-				graph_data[str(age)] = 0
-			graph_data[str(age)] += 1
+			for age_group in age_groups.values() :
+				age_group: dict
+				if age_group.get('start', 18) < age < age_group.get('end', 200) :
+					if age_group.get('name') not in graph_data :
+						graph_data[age_group.get('name')] = 0
+					graph_data[age_group.get('name')] += 1
+					break
+		print(graph_data)
+		self.filename = 'age_distribution_chart.png'
 		fig, ax = plt.subplots(figsize=(12, 5))
 		ax.pie(graph_data.values(), labels=list(graph_data.keys()), autopct='%1.1f%%')
 
