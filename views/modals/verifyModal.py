@@ -11,6 +11,7 @@ from classes.lobbyprocess import LobbyProcess
 from classes.lobbytimers import LobbyTimers
 from classes.whitelist import check_whitelist
 from databases.controllers.AgeRoleTransactions import AgeRoleTransactions
+from databases.controllers.ButtonTransactions import LobbyDataTransactions
 from databases.controllers.ConfigData import ConfigData
 from databases.controllers.HistoryTransactions import JoinHistoryTransactions
 from databases.controllers.UserTransactions import UserTransactions
@@ -135,20 +136,12 @@ class VerifyModal(discord.ui.Modal) :
 		await AgeCalculations.check_history(interaction.guild.id, interaction.user, mod_channel)
 		LobbyTimers().add_cooldown(interaction.guild.id, interaction.user.id,
 		                           ConfigData().get_key_int_or_zero(interaction.guild.id, 'COOLDOWN'))
-		if check_whitelist(interaction.guild.id) :
-			await send_message(mod_channel,
-			                   f"\n{interaction.user.mention} has given {age} {dob}. You can let them through with the buttons below."
-			                   f"\n-# [LOBBY DEBUG] To manually process: `?approve {interaction.user.mention} {age} {dob}`",
-			                   view=ApprovalButtons(age=age, dob=dob, user=interaction.user))
-			await send_response(interaction, f'Thank you for submitting your age and dob! You will be let through soon!',
-			                    ephemeral=True)
-			return None
-		await send_message(mod_channel,
-		                   f"\n{interaction.user.mention} has given {age} and dob matches. You can let them through with the buttons below."
-		                   f"\n-# [LOBBY DEBUG] Server not whitelisted: Personal Information (PI) hidden",
-		                   view=ApprovalButtons(age=age, dob=dob, user=interaction.user))
+		approval_buttons = ApprovalButtons(age=age, dob=dob, user=interaction.user)
 		await send_response(interaction, f'Thank you for submitting your age and dob! You will be let through soon!',
 		                    ephemeral=True)
+		await approval_buttons.send_message(interaction, mod_channel)
+
+
 		return None
 
 	async def on_error(self, interaction: discord.Interaction, error: Exception) -> None :

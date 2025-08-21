@@ -143,6 +143,16 @@ class JoinHistory(Base) :
 	user: Mapped["Users"] = relationship("Users", back_populates="join_history")
 	server: Mapped["Servers"] = relationship("Servers", back_populates="join_history")
 
+class LobbyData(Base) :
+	__tablename__ = "lobby_data"
+	id: Mapped[int] = mapped_column(primary_key=True)
+	uuid: Mapped[str] = mapped_column(String(2048))
+	uid: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.uid", ondelete="CASCADE"))
+	dob: Mapped[Optional[str]] = mapped_column(String(2048))
+	age: Mapped[int] = mapped_column(Integer)
+	created_date: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+	last_updated: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), server_onupdate=func.now())
+
 
 
 class database :

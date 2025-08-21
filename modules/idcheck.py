@@ -19,9 +19,7 @@ class idcheck(commands.GroupCog) :
 	def __init__(self, bot: commands.Bot) :
 		self.bot = bot
 		self.index = 0
-		self.bot.add_view(VerifyButton())
-		self.bot.add_view(ApprovalButtons())
-		self.bot.add_view(dobentry())
+
 
 	@app_commands.command()
 	@app_commands.checks.has_permissions(manage_messages=True)

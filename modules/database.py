@@ -19,18 +19,12 @@ from databases.controllers.UserTransactions import UserTransactions
 from databases.controllers.VerificationTransactions import VerificationTransactions
 from databases.current import Users
 from resources.data.responses import StringStorage
-from views.buttons.approvalbuttons import ApprovalButtons
-from views.buttons.dobentrybutton import dobentry
-from views.buttons.verifybutton import VerifyButton
 
 
 class Database(commands.GroupCog) :
 	def __init__(self, bot: commands.Bot) :
 		self.bot = bot
 		self.index = 0
-		self.bot.add_view(VerifyButton())
-		self.bot.add_view(ApprovalButtons())
-		self.bot.add_view(dobentry())
 
 	#     @app_commands.choices(operation=[Choice(name=x, value=x) for x in
 	#                                      ['add', 'update', 'delete', 'get']])

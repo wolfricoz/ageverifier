@@ -23,8 +23,12 @@ from discord_py_utilities.messages import send_message
 from classes.support.queue import Queue
 from databases import current as db
 from databases.current import Servers
+from views.buttons.approvalbuttons import ApprovalButtons
+from views.buttons.dobentrybutton import dobentry
 from views.buttons.idverifybutton import IdVerifyButton
 from discord_py_utilities.invites import check_guild_invites
+
+from views.buttons.verifybutton import VerifyButton
 
 # Creating database
 db.database.create()
@@ -125,6 +129,9 @@ async def on_ready() :
 	logging.info(f"Commands synced, start up done! Connected to {len(guilds)} guilds and {bot.shard_count} shards.")
 	logging.info(f"Guilds: {formguilds}")
 	bot.add_view(IdVerifyButton())
+	bot.add_view(VerifyButton())
+	bot.add_view(ApprovalButtons())
+	bot.add_view(dobentry())
 	logging.info("Loaded routers: " + ", ".join(routers))
 	return guilds
 

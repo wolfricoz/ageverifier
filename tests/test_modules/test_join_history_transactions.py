@@ -57,7 +57,7 @@ class TestJoinHistoryTransactions(unittest.TestCase):
         # First add
         controller.add(self.user_id, self.guild_id, status=JoinHistoryStatus.NEW)
         # Second add for the same user/guild should trigger an update
-        updated_entry = controller.add(self.user_id, self.guild_id, status=JoinHistoryStatus.SUCCESS)
+        updated_entry = controller.add(self.user_id, self.guild_id, status=JoinHistoryStatus.SUCCESS, new_record=False)
 
         self.assertEqual(updated_entry.status, JoinHistoryStatus.SUCCESS)
         # Verify there is still only one entry

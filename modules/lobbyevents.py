@@ -16,9 +16,7 @@ class LobbyEvents(commands.Cog) :
 	def __init__(self, bot: commands.Bot) :
 		self.bot = bot
 		self.index = 0
-		self.bot.add_view(VerifyButton())
-		self.bot.add_view(ApprovalButtons())
-		self.bot.add_view(dobentry())
+
 
 	@commands.Cog.listener('on_member_join')
 	async def add_to_db(self, member) :
