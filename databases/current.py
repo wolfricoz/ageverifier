@@ -15,7 +15,7 @@ from databases.enums.joinhistorystatus import JoinHistoryStatus
 pymysql.install_as_MySQLdb()
 load_dotenv('.env')
 DB = os.getenv('DB')
-db_string = f"{DB}/rmrbotnew?charset=utf8mb4"
+db_string = f"{DB}/rmrbotnew"
 engine = create_engine(db_string, poolclass=NullPool, echo=False, isolation_level="READ COMMITTED")
 if not database_exists(engine.url) :
 	create_database(engine.url)
@@ -70,10 +70,10 @@ class Servers(Base) :
 	guild: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=False)
 	active: Mapped[bool] = mapped_column(Boolean, default=False)
 	# New columns
-	name: Mapped[str] = mapped_column(String(1024, collation='utf8mb4_unicode_ci'))
+	name: Mapped[str] = mapped_column(String(1024, ))
 	owner: Mapped[Optional[str]] = mapped_column(String(2048))
 	member_count: Mapped[int] = mapped_column(BigInteger, default=0)
-	invite: Mapped[str] = mapped_column(String(256, collation='utf8mb4_unicode_ci'), default="")
+	invite: Mapped[str] = mapped_column(String(256, ), default="")
 	created: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 	updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(),
 	                                             server_onupdate=func.now())

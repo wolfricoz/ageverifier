@@ -127,7 +127,6 @@ async def on_ready() :
 	await bot.tree.sync()
 	await devroom.send(f"AgeVerifier is in {len(guilds)} guilds. Ageverifier {version}")
 	logging.info(f"Commands synced, start up done! Connected to {len(guilds)} guilds and {bot.shard_count} shards.")
-	logging.info(f"Guilds: {formguilds}")
 	bot.add_view(IdVerifyButton())
 	bot.add_view(VerifyButton())
 	bot.add_view(ApprovalButtons())

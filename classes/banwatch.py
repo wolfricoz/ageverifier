@@ -25,5 +25,4 @@ class BanWatch():
 			logging.info(f"BanWatch returned {response.status_code}")
 			return None
 		data =json.loads(response.json())
-		logging.info(data)
-		return data['bans'] if 'bans' in data else None
+		return data['bans'] if 'bans' in data and data['bans'] > 0 else None

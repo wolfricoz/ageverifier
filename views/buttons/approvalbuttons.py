@@ -35,43 +35,56 @@ class ApprovalButtons(discord.ui.View) :
 		if check_whitelist(interaction.guild.id) :
 			message = f"\n{interaction.user.mention} has given {self.age} {self.dob}. You can let them through with the buttons below."
 		footer = f"{uuid.uuid4()}"
+		previous_guilds = None
+		# loading the config, to since some settings are used multiple times we do it here to prevent the same call being made multiple times
+		legacy_message: bool = ConfigData().get_toggle(interaction.guild.id, "legacy_message", default="DISABLED")
+		show_previous_servers: bool = ConfigData().get_toggle(interaction.guild.id, "show_previous_servers",
+		                                                      default="ENABLED")
+		show_bans: bool = ConfigData().get_toggle(interaction.guild.id, "bans", default="ENABLED")
+		show_joined_at: bool = ConfigData().get_toggle(interaction.guild.id, "joined_at", default="ENABLED")
+		show_created_at: bool = ConfigData().get_toggle(interaction.guild.id, "created_at", default="ENABLED")
+		show_user_id: bool = ConfigData().get_toggle(interaction.guild.id, "user_id", default="ENABLED")
+		picture_large: bool = ConfigData().get_toggle(interaction.guild.id, "picture_large", default="DISABLED")
+		picture_small: bool = ConfigData().get_toggle(interaction.guild.id, "picture_small", default="ENABLED")
+		show_inline: bool = ConfigData().get_toggle(interaction.guild.id, "show_inline", default="DISABLED")
+
+		# fetching previous servers
+		if show_previous_servers :
+			previous_guilds = "\n".join([guild.get('name', 'Failed to fetch name') for guild in
+			                             JoinHistoryTransactions().fetch_previous_verifications(interaction.user.id)])
+		# filling the fields
 		fields = {
-			"ID verified": id_verified,
-			"date of birth" : self.dob if check_whitelist(interaction.guild.id) and str(
-				ConfigData().get_key(interaction.guild.id, "legacy_message", "DISABLED")).upper() == "DISABLED" else None,
-			"age"           : self.age if str(
-				ConfigData().get_key(interaction.guild.id, "legacy_message", "DISABLED")).upper() == "DISABLED" else None,
-			"bans"          : await BanWatch().fetchBanCount(interaction.user.id) if str(
-				ConfigData().get_key(interaction.guild.id, "bans", "ENABLED")).upper() == "ENABLED" else None,
-			"joined_at"     : interaction.user.joined_at.strftime("%m/%d/%Y %I:%M %p") if str(
-				ConfigData().get_key(interaction.guild.id, "joined_at", "ENABLED")).upper() == "ENABLED" else None,
-			"created_at"    : interaction.user.created_at.strftime("%m/%d/%Y") if str(
-				ConfigData().get_key(interaction.guild.id, "created_at", "ENABLED")).upper() == "ENABLED" else None,
-			"user ID"       : interaction.user.id if str(
-				ConfigData().get_key(interaction.guild.id, "user_id", "ENABLED")).upper() == "ENABLED" else None,
+			"ID Verified"            : id_verified,
+			"Date of Birth"          : self.dob if check_whitelist(
+				interaction.guild.id) and legacy_message is False else None,
+			"Age"                    : self.age if legacy_message is False else None,
+			"Banwatch Bans"          : await BanWatch().fetchBanCount(interaction.user.id) if show_bans else None, # Potentially premium?
+			"Joined at"              : interaction.user.joined_at.strftime("%m/%d/%Y %I:%M %p") if show_joined_at else None,
+			"Created at"             : interaction.user.created_at.strftime("%m/%d/%Y") if show_created_at else None,
+			"Previous Verifications" : previous_guilds, # Potentially premium?
+			"User ID"                : interaction.user.id if show_user_id else None,
 		}
 		profile_picture = interaction.user.avatar.url
 
 		# Build the embed
 		embed = discord.Embed(title=f"Verification Request: {interaction.user.name}", description=message if str(
-			ConfigData().get_key(interaction.guild.id, "legacy_message", "DISABLED")).upper() == "ENABLED" else None,
+			ConfigData().get_key(interaction.guild.id, "legacy_message",
+			                     "DISABLED")).upper() == "ENABLED" else "You can modify this embed with `/config approval_toggles`",
 		                      color=discord.Color.green())
 
 		embed.set_footer(text=footer)
 		try :
-			if (str(ConfigData().get_key(interaction.guild.id, "picture_large", "DISAVLED")).upper() == "ENABLED"
-					and str(ConfigData().get_key(interaction.guild.id, "picture_small", "ENABLED")).upper() == "DISABLED") :
+			if picture_large is True and picture_small is False :
 				embed.set_image(url=profile_picture)
-			if str(ConfigData().get_key(interaction.guild.id, "picture_small", "ENABLED")).upper() == "ENABLED" :
+			if picture_small :
 				embed.set_thumbnail(url=profile_picture)
 		except :
 			pass
-
 		# Add the fields
 		for key, value in fields.items() :
 			if value is None :
 				continue
-			embed.add_field(name=key, value=value, inline=False)
+			embed.add_field(name=key, value=value, inline=show_inline)
 		# send the content and create the record
 		msg = await send_message(mod_channel,
 		                         f"{interaction.user.mention}\n-# All timestamps are (mm/dd/yyyy)",

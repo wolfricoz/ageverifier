@@ -182,6 +182,19 @@ class JoinHistoryTransactions(DatabaseTransactions) :
 			logging.warning(f"Attempted to delete non-existent join history for user {uid} in guild {gid}.")
 			return False
 
+	def fetch_previous_verifications(self, uid: int):
+		with self.createsession() as session :
+			result =  session.execute(text(
+				f"""select b.name from join_history a
+LEFT OUTER JOIN servers b on a.gid = b.guild
+    where uid = {uid}
+limit 5;
+		"""
+			)).mappings().all()
+
+			if len(result) < 1 :
+				return None
+			return result
 	# Statistic functions go here
 	def join_leave_graph_data(self, gid: int = None, days: int = 30) :
 		guild_query = ""

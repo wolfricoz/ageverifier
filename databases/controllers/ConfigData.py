@@ -19,12 +19,19 @@ class ConfigData(metaclass=singleton) :
 		pass
 
 	def reload(self) :
+		"""
+
+		"""
 		logging.info("reloading config")
 		for guild_id in self.conf :
 			self.load_guild(guild_id)
 		# logging.debug(self.conf)
 
 	def load_guild(self, guild_id: int) :
+		"""
+
+		:param guild_id: 
+		"""
 		config = ConfigTransactions().server_config_get(guild_id)
 		settings = config
 		add_list = ['REM', "RETURN", "JOIN", "EXCLUDE"]
@@ -64,19 +71,46 @@ class ConfigData(metaclass=singleton) :
 		self.output_to_json()
 
 	def get_config(self, guildid) :
+		"""
+
+		:param guildid: 
+		:return: 
+		"""
 		try :
 			return self.conf[guildid]
 		except KeyError :
 			raise ConfigNotFound
 
 	def get_key_int(self, guildid: int, key: str) :
+		"""
+
+		:param guildid: 
+		:param key: 
+		:return: 
+		"""
 		try :
 			return int(self.conf[guildid][key.upper()])
 		except KeyError :
 			raise KeyNotFound(key.upper())
 
 	def get_key_int_or_zero(self, guildid: int, key: str) :
+		"""
+
+		:param guildid: 
+		:param key: 
+		:return: 
+		"""
 		return int(self.conf[guildid].get(key.upper(), 0))
+	
+	def get_toggle(self, guildid: int, key: str, expected: str = "ENABLED", default: str = "DISABLED") -> bool:
+		"""
+		:param guildid: 
+		:param key: 
+		:param expected: 
+		:param default: 
+		:return: 
+		"""
+		return str(ConfigData().get_key(guildid, key, default)).upper() == expected.upper()
 
 	def get_key(self, guildid: int, key: str, default=None) :
 		try :
@@ -88,10 +122,18 @@ class ConfigData(metaclass=singleton) :
 			raise KeyNotFound(key.upper())
 
 	def get_key_or_none(self, guildid: int, key: str) :
+		"""
+
+		:param guildid: 
+		:param key: 
+		:return: 
+		"""
 		return self.conf[guildid].get(key.upper(), None)
 
-	def output_to_json(self) :
-		"""This is for debugging only."""
+	def output_to_json(self)  -> None:
+		"""This is for debugging only.
+		:rtype: None
+		"""
 		if os.path.isdir('debug') is False :
 			os.mkdir('debug')
 		with open('debug/config.json', 'w') as f :

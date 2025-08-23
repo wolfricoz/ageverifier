@@ -40,7 +40,14 @@ class ServerTransactions(DatabaseTransactions) :
 			ConfigTransactions().toggle_add(guildid, "WELCOME", "ENABLED")
 			ConfigTransactions().toggle_add(guildid, "LOBBYWELCOME", "ENABLED")
 			ConfigTransactions().toggle_add(guildid, "UPDATEROLES")
-			ConfigTransactions().toggle_add(guildid, "PINGOWNER")
+			ConfigTransactions().toggle_add(guildid, "LEGACY_MESSAGE")
+			ConfigTransactions().toggle_add(guildid, "BANS", "ENABLED")
+			ConfigTransactions().toggle_add(guildid, "JOINED_AT", "ENABLED")
+			ConfigTransactions().toggle_add(guildid, "CREATED_AT", "ENABLED")
+			ConfigTransactions().toggle_add(guildid, "USER_ID", "ENABLED")
+			ConfigTransactions().toggle_add(guildid, "PICTURE_LARGE")
+			ConfigTransactions().toggle_add(guildid, "PICTURE_SMALL", "ENABLED")
+			ConfigTransactions().toggle_add(guildid, "SHOW_INLINE")
 			ConfigTransactions().config_unique_add(guildid, "COOLDOWN", 5)
 
 		if reload :

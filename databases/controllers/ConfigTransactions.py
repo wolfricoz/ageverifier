@@ -118,8 +118,9 @@ class ConfigTransactions(DatabaseTransactions) :
 			return True
 
 
-	def toggle_add(self, guildid, key, value="DISABLED") :
+	def toggle_add(self, guildid: int, key: str, value="DISABLED") :
 		with self.createsession() as session :
+			key = key.upper()
 			if ConfigTransactions().key_exists_check(guildid, key) is True :
 				return
 			toggle = Config(guild=guildid, key=key, value=value)

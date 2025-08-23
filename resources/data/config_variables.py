@@ -26,6 +26,7 @@ lobby_approval_toggles = {
 	'created_at': 'Show when the account was created',
 	'legacy_message': 'Use the old approval message style',
 	'user_id': 'Show the user id of the account',
+	'show_previous_servers': 'Show previous servers',
 }
 
 available_toggles = ["LobbyWelcome", "Welcome", "Automatic", "Autokick", "Updateroles", "Pingowner"]

@@ -13,3 +13,7 @@ graph.getAgeDistributionChart()
 DAYS = 30
 data2 = JoinHistoryTransactions().join_leave_graph_data(1022307023527890974, DAYS)
 graph2 = JoinHistoryCharts(data2, DAYS).getBarChart()
+
+
+test = JoinHistoryTransactions().fetch_previous_verifications(474365489670389771)
+print(test)
