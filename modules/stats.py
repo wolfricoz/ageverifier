@@ -48,7 +48,7 @@ class Stats(commands.GroupCog, name="stats") :
 	@app_commands.command(name="average_ages", description="Get a graph of the average ages in the server")
 	async def average_ages_graph(self, interaction: discord.Interaction) :
 		data = JoinHistoryTransactions().age_graph_data(interaction.guild.id)
-		chart = AgeCharts(self.bot, data)
+		chart = AgeCharts(data)
 		chart.getAgeDistributionChart()
 		await send_message(interaction.channel, 'Pie chart of age distributions', files=[discord.File(chart.filename, filename=chart.filename)])
 		chart.clean_up_chart()
