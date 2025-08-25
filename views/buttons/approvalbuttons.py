@@ -67,7 +67,7 @@ class ApprovalButtons(discord.ui.View) :
 		profile_picture = interaction.user.avatar.url
 
 		# Build the embed
-		embed = discord.Embed(title=f"Verification Request: {interaction.user.name}", description=message if str(
+		embed = discord.Embed(title=f"Date of Birth and Age submitted by: {interaction.user.name}", description=message if str(
 			ConfigData().get_key(interaction.guild.id, "legacy_message",
 			                     "DISABLED")).upper() == "ENABLED" else "You can modify this embed with `/config approval_toggles`",
 		                      color=discord.Color.green())
