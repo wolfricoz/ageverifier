@@ -187,7 +187,8 @@ class JoinHistoryTransactions(DatabaseTransactions) :
 			result =  session.execute(text(
 				f"""select b.name from join_history a
 LEFT OUTER JOIN servers b on a.gid = b.guild
-    where uid = {uid}
+    where a.uid = {uid}
+    and a.status = 'SUCCESS'
 limit 5;
 		"""
 			)).mappings().all()
