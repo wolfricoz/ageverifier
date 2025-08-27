@@ -215,7 +215,7 @@ class ConfigSetup :
 	async def set_messages(self, guild, messagechoices) :
 		for messagekey, messagevalue in messagechoices.items() :
 			message_dict = {
-				'lobbywelcome'   : f"Please read the rules in the rules channel and click the verify button below to get started.",
+				'lobbywelcomemessage'   : f"Please read the rules in the rules channel and click the verify button below to get started.",
 				'welcomemessage' : "Be sure to get some roles in the roles channel and if you need help be sure to ask the staff!",
 			}
 			ConfigTransactions().config_unique_add(guild.id, messagekey, message_dict[messagekey], overwrite=True)

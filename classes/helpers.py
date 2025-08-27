@@ -33,7 +33,7 @@ async def welcome_user(member) :
 	if welcome_enabled.lower() == "disabled" :
 		return
 	try :
-		lobby_welcome = ConfigData().get_key(member.guild.id, "lobbywelcome")
+		lobby_welcome = ConfigData().get_key(member.guild.id, "LOBBYWELCOMEMESSAGE")
 	except databases.exceptions.KeyNotFound.KeyNotFound :
 		print(f"lobbywelcome not found for {member.guild.name}(id: {member.guild.id})")
 		logging.error(f"lobbywelcome not found for {member.guild.name}(id: {member.guild.id})")
