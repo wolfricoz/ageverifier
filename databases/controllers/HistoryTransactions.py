@@ -194,7 +194,7 @@ limit 5;
 			)).mappings().all()
 
 			if len(result) < 1 :
-				return None
+				return []
 			return result
 	# Statistic functions go here
 	def join_leave_graph_data(self, gid: int = None, days: int = 30) :
