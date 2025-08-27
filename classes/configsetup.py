@@ -239,7 +239,7 @@ class ConfigSetup :
 				guild.default_role : discord.PermissionOverwrite(read_messages=False),
 				guild.me           : discord.PermissionOverwrite(read_messages=True)
 			})
-		Queue().add(ConfigSetup().create_channels(guild), 2)
+		Queue().add(ConfigSetup().create_channels(guild, category), 2)
 		Queue().add(ConfigSetup().create_roles(guild, rolechoices), 2)
 		Queue().add(ConfigSetup().set_messages(guild, messagechoices), 2)
 		lobby_mod = guild.get_channel(ConfigData().get_key_int(guild.id, "lobbymod"))
