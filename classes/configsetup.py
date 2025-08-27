@@ -95,7 +95,9 @@ class ConfigSetup :
 		for r in roles :
 			await channel.set_permissions(r, read_messages=True, send_messages=True)
 
-	async def create_channels(self, guild, category, channelchoices, interaction=None) :
+	async def create_channels(self, guild, category, interaction=None) :
+		channelchoices = self.channelchoices
+		logging.info(channelchoices)
 		for channelkey, channelvalue in channelchoices.items() :
 			channel = None
 			logging.info("setting up channel: " + channelkey)
@@ -110,6 +112,7 @@ class ConfigSetup :
 					case 'general' :
 						general: discord.TextChannel = get(guild.text_channels, name="general")
 						if general :
+							logging.info("setting up general channel: ")
 							ConfigTransactions().config_unique_add(guild.id, channelkey, general.id, overwrite=True)
 							continue
 						if interaction is None :
@@ -161,8 +164,7 @@ class ConfigSetup :
 						                                    "This channel is where age discrepancies are flagged for ID verification. This channel should never be public.")
 					# await self.add_roles_to_channel(channel, roles)
 
-					case _ :
-						continue
+
 				try :
 					ConfigTransactions().config_unique_add(guild.id, channelkey, channel.id, overwrite=True)
 					return None
@@ -237,7 +239,7 @@ class ConfigSetup :
 				guild.default_role : discord.PermissionOverwrite(read_messages=False),
 				guild.me           : discord.PermissionOverwrite(read_messages=True)
 			})
-		Queue().add(ConfigSetup().create_channels(guild, category, channelchoices), 2)
+		Queue().add(ConfigSetup().create_channels(guild), 2)
 		Queue().add(ConfigSetup().create_roles(guild, rolechoices), 2)
 		Queue().add(ConfigSetup().set_messages(guild, messagechoices), 2)
 		lobby_mod = guild.get_channel(ConfigData().get_key_int(guild.id, "lobbymod"))
