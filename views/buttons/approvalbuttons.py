@@ -207,6 +207,9 @@ Once you've made these changes you may resubmit your age and date of birth. Than
 		await interaction.response.edit_message(view=self)
 
 	def load_data(self, interaction: discord.Interaction) :
+		if len(interaction.message.embeds) < 1:
+			return False
+
 		embed = interaction.message.embeds[0]
 		logging.info(embed.footer.text)
 		data = LobbyDataTransactions().read(embed.footer.text)
@@ -217,3 +220,4 @@ Once you've made these changes you may resubmit your age and date of birth. Than
 		logging.info(self.age)
 		logging.info(self.user)
 		logging.info(self.dob)
+		return True
