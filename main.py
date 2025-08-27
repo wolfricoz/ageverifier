@@ -5,6 +5,7 @@ import logging
 import os
 import threading
 from contextlib import asynccontextmanager
+from typing import Sequence
 
 import discord
 import sentry_sdk
@@ -96,12 +97,25 @@ bot.invites = {}
 # EVENT LISTENER FOR WHEN THE BOT HAS SWITCHED FROM OFFLINE TO ONLINE.
 @bot.event
 async def on_ready() :
+	ConfigData().load_all_guilds()
 	logging.info("Bot starting up")
 	devroom = bot.get_channel(bot.DEV)
 	# CREATES A COUNTER TO KEEP TRACK OF HOW MANY GUILDS / SERVERS THE BOT IS CONNECTED TO.
-	guilds = []
 	whitelist.create_whitelist(bot.guilds)
 	await Configer.create_bot_config()
+	Queue().add(bot.tree.sync(), 2)
+	Queue().add(devroom.send(f"AgeVerifier is in {len(bot.guilds)} guilds. Ageverifier {version}"), 2)
+	logging.info(f"Commands synced, start up done! Connected to {len(bot.guilds)} guilds and {bot.shard_count} shards.")
+	bot.add_view(IdVerifyButton())
+	bot.add_view(VerifyButton())
+	bot.add_view(ApprovalButtons())
+	bot.add_view(dobentry())
+	logging.info("Loaded routers: " + ", ".join(routers))
+	Queue().add(check_guilds(bot.guilds, devroom))
+
+
+
+async def check_guilds(guilds: Sequence, devroom: discord.TextChannel):
 	for guild in bot.guilds :
 		await blacklist_check(guild, devroom)
 
@@ -115,8 +129,6 @@ async def on_ready() :
 		                         owner=guild.owner.name,
 		                         member_count=guild.member_count,
 		                         invite= await check_guild_invites(bot, guild, invite))
-		ConfigData().load_guild(guild.id)
-		guilds.append(guild.name)
 		try :
 			bot.invites[guild.id] = await guild.invites()
 		except discord.errors.Forbidden :
@@ -126,17 +138,6 @@ async def on_ready() :
 			except discord.errors.Forbidden :
 				print(f"Unable to send message to {guild.owner.name} in {guild.name}")
 			pass
-	formguilds = "\n".join(guilds)
-	await bot.tree.sync()
-	await devroom.send(f"AgeVerifier is in {len(guilds)} guilds. Ageverifier {version}")
-	logging.info(f"Commands synced, start up done! Connected to {len(guilds)} guilds and {bot.shard_count} shards.")
-	bot.add_view(IdVerifyButton())
-	bot.add_view(VerifyButton())
-	bot.add_view(ApprovalButtons())
-	bot.add_view(dobentry())
-	logging.info("Loaded routers: " + ", ".join(routers))
-	return guilds
-
 
 # This can become its own cog.
 @bot.event
