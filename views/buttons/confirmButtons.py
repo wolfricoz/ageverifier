@@ -11,7 +11,7 @@ class confirmAction(discord.ui.View):
 
     async def send_message(self, interaction, description="Are you sure you want to confirm this action?"):
         embed = await self.create_embed(description=description)
-        await send_response(interaction, embed=embed, view=self)
+        await send_response(interaction, " ", embed=embed, view=self)
         self.interaction = interaction
 
     async def remove_message(self):
