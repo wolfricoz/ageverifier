@@ -112,7 +112,7 @@ class ApprovalButtons(discord.ui.View) :
 		logging.info(f"Interaction message: {getattr(interaction, 'message', None)}")
 		logging.info(f"Interaction guild: {getattr(interaction, 'guild', None)}")
 		logging.info(interaction)
-		await send_response(interaction, "User approved.", ephemeral=True)
+		await send_response(interaction, "User approval queue'd, please wait for ageverifier to process the user.", ephemeral=True)
 		# Share this with the age commands
 		try :
 			await LobbyProcess.approve_user(interaction.guild, self.user, self.dob, self.age, interaction.user.name)
@@ -206,7 +206,7 @@ Once you've made these changes you may resubmit your age and date of birth. Than
 
 		if update is False :
 			return
-		await interaction.response.edit_message(view=self)
+		await interaction.message.edit(view=self)
 
 	def load_data(self, interaction: discord.Interaction) :
 		if len(interaction.message.embeds) < 1:
