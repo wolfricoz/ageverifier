@@ -29,6 +29,7 @@ class ConfigData(metaclass=singleton) :
 
 	def load_all_guilds(self):
 		from databases.controllers.ServerTransactions import ServerTransactions
+		logging.info("Loading all guild configurations")
 		server_ids = ServerTransactions().get_all(id_only=True)
 		for server_id in server_ids :
 			self.load_guild(server_id)
@@ -108,9 +109,13 @@ class ConfigData(metaclass=singleton) :
 		"""
 		result = self.conf[guildid].get(key.upper(), 0)
 		if isinstance(result, int) :
+			return result
+		if isinstance(result, str) :
 			return int(result)
-		logging.warning(f"{guildid} key {key} is not an int")
-		return 0
+		if result is None:
+			logging.warning(f"{guildid} key {key} is not an int")
+			return 0
+		return result
 	
 	def get_toggle(self, guildid: int, key: str, expected: str = "ENABLED", default: str = "DISABLED") -> bool:
 		"""
