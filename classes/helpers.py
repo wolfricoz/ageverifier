@@ -73,6 +73,8 @@ async def invite_info(bot, member: discord.Member) :
 	if infochannel is None :
 		logging.info(f"{member.guild.name} doesn't have invite info setup")
 		return
+	if member.guild.id not in bot.invites:
+		bot.invites[member.guild.id] = {}
 	invites_before_join = bot.invites[member.guild.id]
 	invites_after_join = await member.guild.invites()
 	userdata = UserTransactions().get_user(member.id)

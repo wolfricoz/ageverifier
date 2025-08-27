@@ -40,12 +40,15 @@ DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 PREFIX = os.getenv("PREFIX")
 DBTOKEN = os.getenv("DB")
 version = os.getenv('VERSION')
+debug = os.getenv('DEBUG')
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 activity = discord.Activity(type=discord.ActivityType.watching, name="over the community")
-
-bot = commands.AutoShardedBot(command_prefix=PREFIX, case_insensitive=False, intents=intents, activity=activity, shard_count=5)
+shard_count = 5
+if debug:
+	shard_count = 1
+bot = commands.AutoShardedBot(command_prefix=PREFIX, case_insensitive=False, intents=intents, activity=activity, shard_count=shard_count)
 
 bot.DEV = int(os.getenv("DEV"))
 

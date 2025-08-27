@@ -75,10 +75,15 @@ class VerifyModal(discord.ui.Modal) :
 
 	async def on_submit(self, interaction: discord.Interaction) :
 		userdata: databases.current.Users = UserTransactions().get_user(interaction.user.id)
-		mod_lobby = ConfigData().get_key_int(interaction.guild.id, "lobbymod")
-		id_log = ConfigData().get_key_int(interaction.guild.id, "idlog")
+		mod_lobby = ConfigData().get_key_int_or_zero(interaction.guild.id, "lobbymod")
+		id_log = ConfigData().get_key_int_or_zero(interaction.guild.id, "idlog")
 		mod_channel = interaction.guild.get_channel(mod_lobby)
 		id_channel = interaction.guild.get_channel(id_log)
+		if mod_channel is None or id_channel is None:
+			await send_response(interaction, f"Lobbymod or id_channel not set, inform the server staff to setup the server.",
+			                    ephemeral=True)
+
+			return
 		age = int(self.age.value)
 		# validates inputs with regex
 		if mod_channel is None or id_channel is None :

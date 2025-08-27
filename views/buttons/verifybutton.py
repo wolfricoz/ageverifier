@@ -41,8 +41,9 @@ class VerifyButton(discord.ui.View) :
 
 	async def id_verified_check(self, interaction: discord.Interaction) -> bool :
 		try:
-			modlobby = interaction.guild.get_channel(ConfigData().get_key_int(interaction.guild.id, 'lobbymod'))
+			modlobby = interaction.guild.get_channel(ConfigData().get_key_int_or_zero(interaction.guild.id, 'lobbymod'))
 			if modlobby is None :
+				await send_response(interaction, f"Lobbymod not set, inform the server staff to setup the server.", ephemeral=True)
 				logging.info(f"{interaction.guild.name} does not have lobbymod set.")
 				return False
 			# User is ID verified, so the user does not need to input their dob and age again.

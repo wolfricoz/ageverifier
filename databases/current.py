@@ -50,7 +50,7 @@ class Users(Base) :
 	                                                                   uselist=False)
 	deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True, default=None)
 
-	join_history: Mapped[list["JoinHistory"]] = relationship("JoinHistory", back_populates="user")
+	join_history: Mapped[list["JoinHistory"]] = relationship("JoinHistory", back_populates="user", cascade="save-update, merge, delete, delete-orphan")
 
 
 # noinspection PyTypeChecker, PydanticTypeChecker
@@ -79,7 +79,7 @@ class Servers(Base) :
 	                                             server_onupdate=func.now())
 	deleted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=None, nullable=True)
 	premium: Mapped[bool] = mapped_column(Boolean, default=False)
-	join_history: Mapped[list["JoinHistory"]] = relationship("JoinHistory", back_populates="server")
+	join_history: Mapped[list["JoinHistory"]] = relationship("JoinHistory", back_populates="server", cascade="save-update, merge, delete, delete-orphan")
 
 
 
@@ -133,8 +133,8 @@ class AgeRole(Base) :
 class JoinHistory(Base) :
 	__tablename__ = "join_history"
 	id: Mapped[int] = mapped_column(primary_key=True)
-	uid: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.uid", ondelete="CASCADE"))
-	gid: Mapped[int] = mapped_column(BigInteger, ForeignKey("servers.guild", ondelete="CASCADE"))
+	uid: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.uid", ondelete="CASCADE"), nullable=False)
+	gid: Mapped[int] = mapped_column(BigInteger, ForeignKey("servers.guild", ondelete="CASCADE"), nullable=False)
 	status: Mapped[str] = mapped_column(Enum(JoinHistoryStatus))
 	verification_date: Mapped[datetime] = mapped_column(DateTime, default=None, nullable=True)
 	message_id: Mapped[int] = mapped_column(BigInteger, nullable=True)
