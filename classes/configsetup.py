@@ -86,7 +86,7 @@ class ConfigSetup :
 				interaction.guild.default_role : discord.PermissionOverwrite(read_messages=False),
 				interaction.guild.me           : discord.PermissionOverwrite(read_messages=True)
 			})
-		await self.create_channels(interaction.guild, category, channelchoices, interaction)
+		await self.create_channels(interaction.guild, category, interaction)
 		await self.create_roles(interaction.guild, rolechoices, interaction)
 		await self.set_messages(interaction.guild, messagechoices)
 		return True
@@ -167,13 +167,13 @@ class ConfigSetup :
 
 				try :
 					ConfigTransactions().config_unique_add(guild.id, channelkey, channel.id, overwrite=True)
-					return None
+					continue
 				except Exception as e :
 					logging.error(e, exc_info=True)
-					return None
+					continue
 			except Exception as e :
 				logging.error(e, exc_info=True)
-				return None
+				continue
 		return None
 
 	async def create_roles(self, guild, rolechoices, interaction=None) :
