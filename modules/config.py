@@ -28,6 +28,7 @@ class Config(commands.GroupCog, name="config") :
 	rolechoices = rolechoices
 	channelchoices = channelchoices
 	messagechoices = messagechoices
+	available_toggles = available_toggles
 
 
 
@@ -191,10 +192,10 @@ class Config(commands.GroupCog, name="config") :
 	@app_commands.checks.has_permissions(manage_guild=True)
 	async def view(self, interaction: discord.Interaction) :
 		"""Prints all the config options"""
-		roles: list = [x for x in self.rolechoices.values()]
+		roles: list = [x for x in rolechoices.values()]
 		other = ["FORUM", "SEARCH"]
-		optionsall = list(self.messagechoices) + list(self.channelchoices) + list(self.available_toggles) + list(
-			self.rolechoices)
+		optionsall = list(messagechoices) + list(channelchoices) + list(available_toggles) + list(
+			rolechoices)
 		await interaction.response.defer()
 		with open('config.txt', 'w') as file :
 			file.write(f"Config for {interaction.guild.name}: \n\n")

@@ -9,7 +9,7 @@ from discord_py_utilities.messages import send_message
 from classes.support.queue import Queue
 from views.buttons.confirmButtons import confirmAction
 from views.select.configselectroles import ConfigSelectRoles, ConfigSelectChannels
-from resources.data.config_variables import rolechoices, channelchoices, messagechoices
+from resources.data.config_variables import rolechoices, channelchoices, messagechoices, available_toggles
 
 
 class ConfigSetup :
@@ -17,6 +17,7 @@ class ConfigSetup :
 	rolechoices = rolechoices
 	channelchoices = channelchoices
 	messagechoices = messagechoices
+	available_toggles = available_toggles
 
 	async def manual(self, bot, interaction: discord.Interaction, channelchoices: dict, rolechoices: dict,
 	                 messagechoices: dict) :
