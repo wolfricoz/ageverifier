@@ -222,7 +222,12 @@ class ConfigSetup :
 		channel = get(guild.text_channels, name=name)
 		if not channel :
 			channel = await category.create_text_channel(name=name)
-		await channel.edit(topic=description)
+		try:
+			await channel.edit(topic=description)
+		except discord.Forbidden :
+			pass
+		except Exception as e:
+			logging.error(e, exc_info=True)
 		return channel
 
 	async def api_auto_setup(self, guild: discord.Guild) :

@@ -100,7 +100,11 @@ class ConfigData(metaclass=singleton) :
 		:param key: 
 		:return: 
 		"""
-		return int(self.conf[guildid].get(key.upper(), 0))
+		result = self.conf[guildid].get(key.upper(), 0)
+		if isinstance(result, int) :
+			return int(result)
+		logging.warning(f"{guildid} key {key} is not an int")
+		return 0
 	
 	def get_toggle(self, guildid: int, key: str, expected: str = "ENABLED", default: str = "DISABLED") -> bool:
 		"""
