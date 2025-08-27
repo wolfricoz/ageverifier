@@ -5,7 +5,6 @@ import os
 from databases.controllers.AgeRoleTransactions import AgeRoleTransactions
 from classes.singleton import singleton
 from databases.controllers.ConfigTransactions import ConfigTransactions
-from databases.controllers.ServerTransactions import ServerTransactions
 from databases.exceptions.ConfigNotFound import ConfigNotFound
 from databases.exceptions.KeyNotFound import KeyNotFound
 
@@ -29,6 +28,7 @@ class ConfigData(metaclass=singleton) :
 		# logging.debug(self.conf)
 
 	def load_all_guilds(self):
+		from databases.controllers.ServerTransactions import ServerTransactions
 		server_ids = ServerTransactions().get_all(id_only=True)
 		for server_id in server_ids :
 			self.load_guild(server_id)
