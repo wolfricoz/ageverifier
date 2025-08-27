@@ -32,7 +32,9 @@ class ApprovalButtons(discord.ui.View) :
 	async def send_message(self, interaction: discord.Interaction, mod_channel, id_verified=None) :
 		# prepare the data
 		message = f"\n{interaction.user.mention} has given {self.age} and dob matches. You can let them through with the buttons below."
-		if check_whitelist(interaction.guild.id) :
+		whitelisted: bool = check_whitelist(interaction.guild.id)
+
+		if whitelisted :
 			message = f"\n{interaction.user.mention} has given {self.age} {self.dob}. You can let them through with the buttons below."
 		footer = f"{uuid.uuid4()}"
 		previous_guilds = None
@@ -47,7 +49,7 @@ class ApprovalButtons(discord.ui.View) :
 		picture_large: bool = ConfigData().get_toggle(interaction.guild.id, "picture_large", default="DISABLED")
 		picture_small: bool = ConfigData().get_toggle(interaction.guild.id, "picture_small", default="ENABLED")
 		show_inline: bool = ConfigData().get_toggle(interaction.guild.id, "show_inline", default="DISABLED")
-
+		debug: bool = ConfigData().get_toggle(interaction.guild.id, "debug", default="DISABLED")
 		# fetching previous servers
 		if show_previous_servers :
 			previous_guilds = "\n".join([guild.get('name', 'Failed to fetch name') for guild in
@@ -55,14 +57,14 @@ class ApprovalButtons(discord.ui.View) :
 		# filling the fields
 		fields = {
 			"ID Verified"            : id_verified,
-			"Date of Birth"          : self.dob if check_whitelist(
-				interaction.guild.id) and legacy_message is False else None,
+			"Date of Birth"          : self.dob if whitelisted and legacy_message is False else None,
 			"Age"                    : self.age if legacy_message is False else None,
 			"Banwatch Bans"          : await BanWatch().fetchBanCount(interaction.user.id) if show_bans else None, # Potentially premium?
 			"Joined at"              : interaction.user.joined_at.strftime("%m/%d/%Y %I:%M %p") if show_joined_at else None,
 			"Created at"             : interaction.user.created_at.strftime("%m/%d/%Y") if show_created_at else None,
 			"Previous Verifications" : previous_guilds, # Potentially premium?
 			"User ID"                : interaction.user.id if show_user_id else None,
+			"debug"                  : f"?approve {interaction.user.mention} {self.age} {self.dob}" if whitelisted and debug else None
 		}
 		profile_picture = interaction.user.avatar.url
 

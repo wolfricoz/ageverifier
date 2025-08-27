@@ -48,6 +48,7 @@ class ServerTransactions(DatabaseTransactions) :
 			ConfigTransactions().toggle_add(guildid, "PICTURE_LARGE")
 			ConfigTransactions().toggle_add(guildid, "PICTURE_SMALL", "ENABLED")
 			ConfigTransactions().toggle_add(guildid, "SHOW_INLINE")
+			ConfigTransactions().toggle_add(guildid, "DEBUG")
 			ConfigTransactions().config_unique_add(guildid, "COOLDOWN", 5)
 
 		if reload :
