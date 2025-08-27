@@ -83,7 +83,7 @@ class Tasks(commands.GroupCog) :
 			await self.expiration_check(entry)
 
 	async def expiration_check(self, entry) :
-		if entry.entry < datetime.now() - timedelta(days=365) :
+		if entry.entry < datetime.now(entry.entry.tzinfo) - timedelta(days=365) :
 			UserTransactions().permanent_delete(entry.uid, "Expiration Check (Entry Expired)")
 			# logging.info("DEV: EXPIRATION CHECK DISABLED")
 			logging.info(f"Database record: {entry.uid} expired with date: {entry.entry}")
