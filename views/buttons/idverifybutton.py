@@ -13,7 +13,7 @@ class IdVerifyButton(discord.ui.View) :
 	async def idverify(self, interaction: discord.Interaction, button: discord.ui.Button) :
 		if not interaction.user.guild_permissions.administrator :
 			return await send_response(interaction, "You must have the administrator permission to execute this action!", ephemeral=True)
-		user = interaction.message.mentions[0]
+		user = interaction.message.mentions[-1]
 		await interaction.response.send_modal(IdVerifyModal(user, interaction.message))
 		return None
 
