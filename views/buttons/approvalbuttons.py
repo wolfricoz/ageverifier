@@ -66,7 +66,9 @@ class ApprovalButtons(discord.ui.View) :
 			"User ID"                : interaction.user.id if show_user_id else None,
 			"debug"                  : f"?approve {interaction.user.mention} {self.age} {self.dob}" if whitelisted and debug else None
 		}
-		profile_picture = interaction.user.avatar.url
+		profile_picture = None
+		if interaction.user.avatar:
+			profile_picture = interaction.user.avatar.url
 
 		# Build the embed
 		embed = discord.Embed(title=f"Date of Birth and Age submitted by: {interaction.user.name}", description=message if str(
