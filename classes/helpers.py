@@ -37,7 +37,7 @@ async def welcome_user(member) :
 	except databases.exceptions.KeyNotFound.KeyNotFound :
 		print(f"lobbywelcome not found for {member.guild.name}(id: {member.guild.id})")
 		logging.error(f"lobbywelcome not found for {member.guild.name}(id: {member.guild.id})")
-		lobby_welcome = "Lobby message not setup, please use `/config messages key:lobbywelcome action:set` to set it up. You can click the button below to verify!"
+		lobby_welcome = "Lobby message not setup, please use `/config messages key:LOBBYWELCOMEMESSAGE action:set` to set it up. You can click the button below to verify!"
 	await send_message(channel,
 	                   f"Welcome {member.mention}! {lobby_welcome}\n{warning}"
 	                   f"\n"
