@@ -52,9 +52,12 @@ class Lobby(commands.GroupCog) :
 
 	@app_commands.command()
 	@app_commands.checks.has_permissions(manage_messages=True)
+	@app_commands.guild_only()
 	async def returnlobby(self, interaction: discord.Interaction, user: discord.Member) :
 		"""returns user to lobby; removes the roles."""
 		await interaction.response.defer()
+		if interaction.guild is None:
+			return await send_response(interaction, "This command is limited to a server.")
 		add_roles: list = ConfigData().get_key(interaction.guild.id, "add")
 		add = list(add_roles)
 		rem: list = ConfigData().get_key(interaction.guild.id, "rem")
@@ -72,7 +75,7 @@ class Lobby(commands.GroupCog) :
 		await user.remove_roles(*rm, reason="returning to lobby")
 		await user.add_roles(*ra, reason="returning to lobby")
 		print('roles changed')
-		await interaction.followup.send(
+		return await interaction.followup.send(
 			f"{user.mention} has been moved back to the lobby by {interaction.user.mention}")
 
 	@app_commands.command()
