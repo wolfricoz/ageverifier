@@ -60,13 +60,32 @@ sentry_sdk.init(
     # see https://docs.sentry.io/platforms/python/data-management/data-collected/ for more info
     send_default_pii=True,
 )
-
+# Potential fix for not shutting down.
 @asynccontextmanager
-async def lifespan(app: FastAPI) :
-	threading.Thread(target=lambda : asyncio.run(run())).start()
-	app.state.bot = bot
-	yield
-	await bot.close()
+async def lifespan(app: FastAPI):
+    async def run_bot():
+        try:
+            await bot.start(DISCORD_TOKEN)
+        except asyncio.CancelledError:
+            # Graceful cancellation
+            await bot.close()
+            raise
+
+    bot_task = asyncio.create_task(run_bot())
+    app.state.bot = bot
+    try:
+        yield
+    finally:
+        # Trigger shutdown if still running
+        if not bot.is_closed():
+            await bot.close()
+        # Ensure the task finishes
+        if not bot_task.done():
+            bot_task.cancel()
+            try:
+                await bot_task
+            except asyncio.CancelledError:
+                pass
 
 
 app = FastAPI(lifespan=lifespan)
@@ -111,33 +130,36 @@ async def on_ready() :
 	bot.add_view(ApprovalButtons())
 	bot.add_view(dobentry())
 	logging.info("Loaded routers: " + ", ".join(routers))
-	Queue().add(check_guilds(bot.guilds, devroom))
+	Queue().add(check_guilds(devroom))
 
 
 
-async def check_guilds(guilds: Sequence, devroom: discord.TextChannel):
+async def check_guilds(devroom: discord.TextChannel):
 	for guild in bot.guilds :
-		await blacklist_check(guild, devroom)
+		Queue().add(update_guild(guild, devroom), 0)
 
-		invite = ""
-		db_guild: Servers = ServerTransactions().get(guild.id)
-		if db_guild :
-			invite = db_guild.invite
-		ServerTransactions().add(guild.id,
-		                         active=True,
-		                         name=guild.name,
-		                         owner=guild.owner.name,
-		                         member_count=guild.member_count,
-		                         invite= await check_guild_invites(bot, guild, invite))
+async def update_guild(guild: discord.Guild, devroom):
+	await blacklist_check(guild, devroom)
+
+	invite = ""
+	db_guild: Servers = ServerTransactions().get(guild.id)
+	if db_guild :
+		invite = db_guild.invite
+	ServerTransactions().add(guild.id,
+	                         active=True,
+	                         name=guild.name,
+	                         owner=guild.owner.name,
+	                         member_count=guild.member_count,
+	                         invite=await check_guild_invites(bot, guild, invite))
+	try :
+		bot.invites[guild.id] = await guild.invites()
+	except discord.errors.Forbidden :
+		print(f"Unable to get invites for {guild.name}")
 		try :
-			bot.invites[guild.id] = await guild.invites()
+			await guild.owner.send("I need the manage server permission to work properly.")
 		except discord.errors.Forbidden :
-			print(f"Unable to get invites for {guild.name}")
-			try :
-				await guild.owner.send("I need the manage server permission to work properly.")
-			except discord.errors.Forbidden :
-				print(f"Unable to send message to {guild.owner.name} in {guild.name}")
-			pass
+			print(f"Unable to send message to {guild.owner.name} in {guild.name}")
+		pass
 
 # This can become its own cog.
 @bot.event
