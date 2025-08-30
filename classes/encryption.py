@@ -1,3 +1,4 @@
+import logging
 import os
 
 from cryptography.fernet import Fernet
@@ -19,4 +20,7 @@ class Encryption:
         """Decrypts the text"""
         if text is None:
             return "No Dob Stored"
+        logging.info(f"Decrypting {text}")
+        logging.info(self.fernet)
+        logging.info(EncryptionKey)
         return self.fernet.decrypt(text).decode()
