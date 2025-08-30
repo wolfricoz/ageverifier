@@ -26,6 +26,8 @@ class LobbyDataTransactions(DatabaseTransactions):
             The newly created LobbyData object.
         """
         with self.createsession() as session:
+            logging.info(dob)
+            logging.info(Encryption().encrypt(dob))
             new_entry = LobbyData(
                 uuid=uuid,
                 uid=user_id,
