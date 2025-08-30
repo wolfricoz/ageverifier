@@ -31,7 +31,7 @@ class LobbyDataTransactions(DatabaseTransactions):
             new_entry = LobbyData(
                 uuid=uuid,
                 uid=user_id,
-                dob=Encryption().encrypt(dob),
+                dob=str(Encryption().encrypt(dob)),
                 age=age
             )
             session.add(new_entry)
