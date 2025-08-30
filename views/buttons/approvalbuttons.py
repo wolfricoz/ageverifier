@@ -182,12 +182,11 @@ Once you've made these changes you may resubmit your age and date of birth. Than
 	@discord.ui.button(label="User Left (stores DOB)", style=discord.ButtonStyle.primary, custom_id="add")
 	async def add_to_db(self, interaction: discord.Interaction, button: discord.ui.Button) :
 		"""Adds user to db"""
+		self.load_data(interaction)
 		if not interaction.user.guild_permissions.manage_roles :
 			return await send_response(interaction, "You must have the \"manage_roles\" permission to execute this action!", ephemeral=True)
 		age_log = ConfigData().get_key_int(interaction.guild.id, "lobbylog")
-		self.load_data(interaction)
 		await self.disable_buttons(interaction, button, disable_add=True)
-		self.load_data(interaction)
 		if self.user is None :
 			await send_response(interaction,
 				'The bot has restarted and the data of this button is missing. Please add the user manually.',
