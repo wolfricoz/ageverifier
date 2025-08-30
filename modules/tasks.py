@@ -32,6 +32,7 @@ class Tasks(commands.GroupCog) :
 		self.check_active_servers.start()
 		self.update_age_roles.start()
 		self.database_ping.start()
+		self.refresh_invites.start()
 
 	def cog_unload(self) :
 		"""unloads tasks"""
@@ -40,6 +41,7 @@ class Tasks(commands.GroupCog) :
 		self.check_active_servers.cancel()
 		self.update_age_roles.cancel()
 		self.database_ping.cancel()
+		self.refresh_invites.cancel()
 
 	@tasks.loop(hours=1)
 	async def config_reload(self) :
@@ -101,6 +103,12 @@ class Tasks(commands.GroupCog) :
 		await self.user_expiration_update(userids)
 		await self.user_expiration_remove(userdata)
 		logging.info("Finished checking all entries")
+
+	@tasks.loop(minutes=10)
+	async def refresh_invites(self):
+		self.bot.invites = {}
+		for guild in self.bot.guilds :
+			self.bot.invites[guild.id] = await guild.invites()
 
 	@tasks.loop(hours=12)
 	async def check_active_servers(self) :

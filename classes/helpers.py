@@ -33,7 +33,7 @@ async def welcome_user(member) :
 	if welcome_enabled.lower() == "disabled" :
 		return
 	try :
-		lobby_welcome = ConfigData().get_key(member.guild.id, "LOBBYWELCOMEMESSAGE")
+		lobby_welcome = ConfigData().get_key(member.guild.id, "LOBBYWELCOMEMESSAGE", "Lobby message not setup, please use `/config messages key:LOBBYWELCOMEMESSAGE action:set` to set it up. You can click the button below to verify!")
 	except databases.exceptions.KeyNotFound.KeyNotFound :
 		print(f"lobbywelcome not found for {member.guild.name}(id: {member.guild.id})")
 		logging.error(f"lobbywelcome not found for {member.guild.name}(id: {member.guild.id})")
@@ -91,12 +91,13 @@ async def invite_info(bot, member: discord.Member) :
 		for invite in invites_before_join :
 			if invite is None:
 				continue
+
 			if invite.uses < find_invite_by_code(invites_after_join, invite.code).uses :
 				fields["Invite Code"] = invite.code
 				fields["Code created by"] = invite.inviter.name
 				bot.invites[member.guild.id] = invites_after_join
 	except Exception as e :
-		logging.error(e, exc_info=True)
+		logging.warning(e)
 	embed = await create_embed(
 		title=f"{member.name} joined {member.guild.name}",
 		fields=fields
