@@ -37,7 +37,8 @@ class VerifyModal(discord.ui.Modal) :
 			placeholder='99',
 			max_length=3,
 			style=discord.TextStyle.short,
-			required=True
+			required=True,
+			row=0
 
 		)
 		self.month = discord.ui.TextInput(
