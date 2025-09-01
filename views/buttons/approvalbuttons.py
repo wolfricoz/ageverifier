@@ -107,7 +107,7 @@ class ApprovalButtons(discord.ui.View) :
 			return await send_response(interaction, "You must have the \"manage_roles\" permission to execute this action!", ephemeral=True)
 
 		await self.disable_buttons(interaction, button)
-		self.load_data(interaction)
+		await self.load_data(interaction)
 		if self.age is None or self.dob is None or self.user is None :
 			await send_response(interaction,
 			                    'The bot has restarted and the data of this button is missing. Please use the command.',
@@ -130,7 +130,7 @@ class ApprovalButtons(discord.ui.View) :
 		if not interaction.user.guild_permissions.manage_roles :
 			return await send_response(interaction, "You must have the \"manage_roles\" permission to execute this action!", ephemeral=True)
 		await self.disable_buttons(interaction, button)
-		self.load_data(interaction)
+		await self.load_data(interaction)
 		reason = await send_modal(interaction, confirmation="The user has been flagged",
 		                          title="Why should the user be ID Checked?", max_length=1500)
 		if self.user is None :
@@ -157,7 +157,7 @@ class ApprovalButtons(discord.ui.View) :
 		if not interaction.user.guild_permissions.manage_roles :
 			return await send_response(interaction, "You must have the \"manage_roles\" permission to execute this action!", ephemeral=True)
 		await self.disable_buttons(interaction, button)
-		self.load_data(interaction)
+		await self.load_data(interaction)
 		if self.user is None :
 			await send_response(interaction,
 				'The bot has restarted and the data of this button is missing. Please manually report user to admins',
@@ -182,7 +182,7 @@ Once you've made these changes you may resubmit your age and date of birth. Than
 	@discord.ui.button(label="User Left (stores DOB)", style=discord.ButtonStyle.primary, custom_id="add")
 	async def add_to_db(self, interaction: discord.Interaction, button: discord.ui.Button) :
 		"""Adds user to db"""
-		self.load_data(interaction)
+		await self.load_data(interaction)
 		if not interaction.user.guild_permissions.manage_roles :
 			return await send_response(interaction, "You must have the \"manage_roles\" permission to execute this action!", ephemeral=True)
 		age_log = ConfigData().get_key_int(interaction.guild.id, "lobbylog")
@@ -219,7 +219,7 @@ Once you've made these changes you may resubmit your age and date of birth. Than
 			return
 		await interaction.message.edit(view=self)
 
-	def load_data(self, interaction: discord.Interaction) :
+	async def load_data(self, interaction: discord.Interaction) :
 		if len(interaction.message.embeds) < 1:
 			return False
 
@@ -228,6 +228,11 @@ Once you've made these changes you may resubmit your age and date of birth. Than
 		data = LobbyDataTransactions().read(embed.footer.text)
 		logging.info(data)
 		self.user = interaction.guild.get_member(data.uid)
+		if self.user is None :
+			try:
+				self.user = await interaction.client.fetch_user(data.uid)
+			except:
+				self.user = None
 		self.dob = Encryption().decrypt(data.dob)
 		self.age = data.age
 		logging.info(self.age)
