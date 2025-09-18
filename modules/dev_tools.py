@@ -115,8 +115,10 @@ class dev(commands.GroupCog, name="dev") :
 	async def test_stats(self, interaction: discord.Interaction, amount: int) -> None:
 		count = 0
 
+		async def create_stat(count):
+			return JoinHistoryTransactions().add(uidgenerator().create(), 1022307023527890974, random.choice(list(JoinHistoryStatus)), created_at=datetime.now() - timedelta(days=random.randint(1, 7)))
 		while count < amount:
-			JoinHistoryTransactions().add(uidgenerator().create(), 1022307023527890974, random.choice(list(JoinHistoryStatus)), created_at=datetime.now() - timedelta(days=round(count / 2)+3))
+			Queue().add(create_stat(count), priority=0)
 			count += 1
 		await send_response(interaction, "Finished generating records")
 

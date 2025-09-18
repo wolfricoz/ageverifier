@@ -1,3 +1,5 @@
+import logging
+
 from classes.charts import AgeCharts, JoinHistoryCharts
 from classes.encryption import Encryption
 from databases.controllers.HistoryTransactions import JoinHistoryTransactions
@@ -5,7 +7,9 @@ from classes.AgeCalculations import AgeCalculations
 
 
 # age graph test
+
 data = JoinHistoryTransactions().age_graph_data(1022307023527890974)
+print(data)
 graph = AgeCharts(data)
 graph.getAgeDistributionChart()
 

@@ -1,3 +1,4 @@
+import logging
 import os
 
 import numpy as np
@@ -15,7 +16,7 @@ plt.rcParams['xtick.bottom'] = False
 plt.rcParams['ytick.left'] = False
 
 
-class JoinHistoryCharts():
+class JoinHistoryCharts :
 
 	def __init__(self, data, days):
 		self.data = data
@@ -23,6 +24,7 @@ class JoinHistoryCharts():
 		self.filename = ""
 
 	def getBarChart(self):
+		logging.info(self.data)
 		# Organize data by status and then by date
 		# This function was made by Gemini as a proof of concept, improved by humans.
 		graph_data = {
@@ -119,7 +121,16 @@ class JoinHistoryCharts():
 				graph_data[status] += records
 		fig, ax = plt.subplots(figsize=(12, 5))
 		explode = (0,0,0.1,0,0)
-		ax.pie(graph_data.values(), labels=list(graph_data.keys()), autopct='%1.1f%%', explode=explode)
+		if not graph_data or sum(graph_data.values()) == 0 :
+			# If there's no data, or the sum is 0, display a message instead of a chart.
+			ax.text(0.5, 0.5, "No data to display",
+			        horizontalalignment='center',
+			        verticalalignment='center',
+			        fontsize=12)
+			ax.axis('off')  # Hide the axes
+		else:
+			# Your existing code can now run safely
+			ax.pie(graph_data.values(), labels=list(graph_data.keys()), autopct='%1.1f%%', explode=explode)
 
 		ax.set_title(f'Join history stats (Last {self.days} Days)')
 
@@ -144,6 +155,7 @@ class AgeCharts():
 		self.data = data
 
 	def getAgeDistributionChart(self) :
+		logging.info(self.data)
 		graph_data = {}
 		age_groups = {
 			"18-24" : {
@@ -179,9 +191,9 @@ class AgeCharts():
 		}
 
 		for row in self.data :
-			if row.user.date_of_birth is None :
+			if row.date_of_birth is None :
 				continue
-			dob = Encryption().decrypt(row.user.date_of_birth)
+			dob = Encryption().decrypt(row.date_of_birth)
 			age = AgeCalculations.dob_to_age(dob)
 			for age_group in age_groups.values() :
 				age_group: dict

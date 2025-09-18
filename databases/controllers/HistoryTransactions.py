@@ -184,6 +184,8 @@ class JoinHistoryTransactions(DatabaseTransactions) :
 
 	def fetch_previous_verifications(self, uid: int):
 		with self.createsession() as session :
+			if isinstance(uid, int) is False:
+				return []
 			result =  session.execute(text(
 				f"""select b.name from join_history a
 LEFT OUTER JOIN servers b on a.gid = b.guild
@@ -199,23 +201,21 @@ limit 5;
 	# Statistic functions go here
 	def join_leave_graph_data(self, gid: int = None, days: int = 30) :
 		guild_query = ""
-		if gid:
+		if gid and isinstance(gid, int):
 			guild_query += f"and gid={gid}"
 		with self.createsession() as session :
 			return session.execute(text(
 				f"""SELECT
-    DATE(GREATEST(created_date, last_updated)) AS date_created,
+    GREATEST(created_date, last_updated)::date AS date_created,
     status,
     COUNT(*) AS records
 FROM
     join_history
 WHERE
-    (
-        created_date >= DATE_SUB(NOW(), INTERVAL 30 DAY) or
-        last_updated >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-    )
+    created_date >= now() - INTERVAL '{days} days' OR
+    last_updated >= now() - INTERVAL '{days} days'
 GROUP BY
-    last_updated,
+    date_created,
     status
 ORDER BY
     date_created;
@@ -224,9 +224,25 @@ ORDER BY
 
 	def age_graph_data(self, gid: int) :
 		with self.createsession() as session :
-			return session.scalars(
-				Select(JoinHistory).options(joinedload(JoinHistory.user))
-				.where(JoinHistory.gid == gid)
-				.order_by(JoinHistory.created_date)
-				.group_by(JoinHistory.uid)
-			).all()
+			if gid and isinstance(gid, int) :
+				guild = f"and gid= :gid"
+
+			return session.execute(text(
+				f"""
+			select
+			a.uid,
+			b.date_of_birth
+			from
+			join_history a
+			inner join users
+			b
+			on
+			a.uid = b.uid
+			where b.date_of_birth is not null
+			
+			{guild}
+			"""
+
+			), {
+				'gid': gid
+			}).mappings().all()

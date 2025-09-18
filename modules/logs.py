@@ -41,6 +41,43 @@ def extract_datetime_from_logfile(filename) :
 	return None
 
 
+class SafeFormatter(logging.Formatter) :
+	"""Formatter that prevents % formatting crashes (mixed mapping vs tuple)."""
+
+	def format(self, record: logging.LogRecord) -> str :
+		try :
+			return super().format(record)
+		except TypeError :
+			# Fallback: flatten message and drop args to avoid recursive failure.
+			record.msg = str(record.msg)
+			record.args = ()
+			return super().format(record)
+
+
+class GatewayPreFormatFilter(logging.Filter) :
+	"""Pre-format discord gateway heartbeat warnings to avoid mapping mismatch."""
+
+	def filter(self, record: logging.LogRecord) -> bool :
+		if record.name == "discord.gateway" :
+			# If mapping style tokens present but args is a tuple, render safely.
+			if "%(" in str(record.msg) and isinstance(record.args, tuple) :
+				try :
+					# Known pattern: "Shard ID %s heartbeat blocked for more than %s seconds."
+					# If it accidentally became mapping style somewhere, force manual format.
+					if "%s" in record.msg :
+						record.msg = record.msg % record.args  # pre-render
+						record.args = ()
+					else :
+						# Mapping placeholders but tuple args: best-effort substitution.
+						tuple_args = record.args
+						record.msg = record.msg.replace("%(sid)s", str(tuple_args[0] if len(tuple_args) > 0 else "?"))
+						record.msg = record.msg.replace("%(total)s", str(tuple_args[1] if len(tuple_args) > 1 else "?"))
+						record.args = ()
+				except Exception :
+					record.args = ()
+		return True
+
+
 if os.path.exists('logs') is False :
 	os.mkdir('logs')
 
@@ -59,17 +96,30 @@ with open(logfile, 'a') as f :
 	        f"\nbot started at: {time.strftime('%c %Z')}\n"
 	        f"----------------------------------------------------\n\n")
 
-handlers = [logging.FileHandler(filename=logfile, encoding='utf-8', mode='a'), logging.StreamHandler()]
-logging.basicConfig(handlers=handlers, level=logging.INFO,
-                    format='(%(asctime)s) %(levelname)s: %(message)s',
-                    datefmt='%d/%m/%Y, %H:%M:%S',
-                    force=True)
+handlers = [
+	logging.FileHandler(filename=logfile, encoding='utf-8', mode='a'),
+	logging.StreamHandler()
+]
+
+safe_fmt = SafeFormatter('(%(asctime)s) %(levelname)s: %(message)s',
+                         datefmt='%d/%m/%Y, %H:%M:%S')
+
+for h in handlers :
+	h.setFormatter(safe_fmt)
+
+logging.basicConfig(handlers=handlers, level=logging.INFO, force=True)
+
+# Root level
 logging.getLogger().setLevel(logging.INFO)
 
+# Existing logger setups
 logger = logging.getLogger('discord')
 logger.setLevel(logging.INFO)
 logger2 = logging.getLogger('sqlalchemy')
 logger2.setLevel(logging.WARN)
+
+
+# Attach the filter to the gateway logger (after handlers exist)
 
 
 class Logging(commands.Cog) :
@@ -112,9 +162,9 @@ class Logging(commands.Cog) :
 		"""sends a message to the user if the command fails."""
 		try :
 			if first_channel :
-					channel = find_first_accessible_text_channel(interaction.guild)
-					await send_message(channel, message, error_mode='ignore')
-					return
+				channel = find_first_accessible_text_channel(interaction.guild)
+				await send_message(channel, message, error_mode='ignore')
+				return
 			if owner :
 				await send_message(interaction.guild.owner, message, error_mode='ignore')
 				return
@@ -149,11 +199,12 @@ class Logging(commands.Cog) :
 
 		if isinstance(error.original, NoChannelException) :
 			return await self.on_fail_message(interaction,
-			                                  "No channel set or does not exist, check the config or fill in the required arguments.", first_channel=False)
+			                                  "No channel set or does not exist, check the config or fill in the required arguments.",
+			                                  first_channel=False)
 
 		if isinstance(error, app_commands.TransformerError) :
 			return await self.on_fail_message(interaction,
-			                                  "Failed to transform given input to member, please select the user from the list, or use the user's ID.",)
+			                                  "Failed to transform given input to member, please select the user from the list, or use the user's ID.", )
 		if isinstance(error, commands.MemberNotFound) :
 			return await self.on_fail_message(interaction, "User not found.")
 		if isinstance(error, discord.app_commands.errors.TransformerError) :
@@ -200,6 +251,7 @@ class Logging(commands.Cog) :
 				f'\n{server.name}({server.id}): {user}({user.id}) issued appcommand: `{commandname.name}` with no arguments.')
 		except AttributeError :
 			logging.debug(f'\n{server.name}({server.id}): {user}({user.id}) issued a command with no data or name.')
+
 
 # @app_commands.command(name="getlog")
 # async def getlog(self, interaction: Interaction) :

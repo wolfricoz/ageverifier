@@ -1,5 +1,3 @@
-import logging
-
 import discord
 import matplotlib
 from discord import app_commands
@@ -20,7 +18,7 @@ class Stats(commands.GroupCog, name="stats") :
 	@app_commands.command(name="graph", description="Get a graph of joins and leaves")
 	async def server(self, interaction: discord.Interaction, days: int = 7) :
 		data = JoinHistoryTransactions().join_leave_graph_data(interaction.guild.id, days)
-		chart = JoinHistoryCharts(self.bot, data, days)
+		chart = JoinHistoryCharts(data, days)
 		if days < 30 :
 			chart.getBarChart()
 		else :
@@ -36,7 +34,7 @@ class Stats(commands.GroupCog, name="stats") :
 	@app_commands.command(name="graph_all", description="Get a graph of joins and leaves")
 	async def all_bar_graph(self, interaction: discord.Interaction, days: int = 7) :
 		data = JoinHistoryTransactions().join_leave_graph_data(None, days)
-		chart = JoinHistoryCharts(self.bot, data, days)
+		chart = JoinHistoryCharts(data, days)
 		if days < 30:
 			chart.getBarChart()
 		else:
