@@ -40,6 +40,7 @@ class AccessControl(metaclass=singleton) :
 		logging.info(self.staff)
 
 	def add_premium_guilds_to_list(self):
+		self.premium_guilds = []
 		guilds = ServerTransactions().get_all(id_only=False)
 		for guild in guilds :
 			logging.info(guild.premium)
@@ -77,4 +78,6 @@ class AccessControl(metaclass=singleton) :
 		return app_commands.check(pred)
 
 	def is_premium(self, guild_id: int):
+		if os.getenv('DEBUG'):
+			logging.info(f"[DEBUG]: {guild_id} checking for premium status in list: {self.premium_guilds}")
 		return guild_id in self.premium_guilds

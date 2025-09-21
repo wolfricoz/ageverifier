@@ -1,4 +1,5 @@
 import logging
+import uuid
 
 import discord
 from discord_py_utilities.messages import send_message, send_response
@@ -13,6 +14,7 @@ from databases.controllers.ButtonTransactions import LobbyDataTransactions
 from databases.controllers.ConfigData import ConfigData
 from databases.controllers.UserTransactions import UserTransactions
 from databases.controllers.VerificationTransactions import VerificationTransactions
+from databases.controllers.WebsiteDataTransactions import WebsiteDataTransactions
 from views.buttons.approvalbuttons import ApprovalButtons
 from views.buttons.tosbutton import TOSButton
 
@@ -33,7 +35,9 @@ class VerifyButton(discord.ui.View) :
 		if idcheck :
 			return
 		if AccessControl().is_premium(interaction.guild.id) and ConfigData().get_toggle(interaction.guild.id, "ONLINE_VERIFICATION") :
-			await send_response(interaction, "This is where the web interface button is sent.")
+
+			uuid = WebsiteDataTransactions().create(user_id=interaction.user.id, guild_id=interaction.guild.id)
+			await send_response(interaction, f"This is where the web interface button is sent. The uuid is {uuid}")
 			return
 
 

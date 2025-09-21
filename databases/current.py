@@ -159,6 +159,15 @@ class LobbyData(Base) :
 	created_date: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 	last_updated: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), server_onupdate=func.now())
 
+class WebsiteData(Base) :
+	__tablename__ = "website_data"
+	id: Mapped[int] = mapped_column(primary_key=True)
+	uuid: Mapped[str] = mapped_column(String(2048))
+	uid: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.uid", ondelete="CASCADE"))
+	gid: Mapped[int] = mapped_column(BigInteger, ForeignKey("servers.guild", ondelete="CASCADE"))
+	verified: Mapped[datetime] = mapped_column(DateTime, default=None, nullable=True)
+	created_date: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+	last_updated: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), server_onupdate=func.now())
 
 
 class database :

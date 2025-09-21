@@ -16,6 +16,7 @@ from fastapi import FastAPI
 
 import api
 from classes import whitelist
+from classes.access import AccessControl
 from classes.blacklist import blacklist_check
 from databases.controllers.ServerTransactions import ServerTransactions
 from databases.controllers.ConfigData import ConfigData
@@ -117,6 +118,7 @@ bot.invites = {}
 @bot.event
 async def on_ready() :
 	ConfigData().load_all_guilds()
+	AccessControl().reload()
 	logging.info("Bot starting up")
 	devroom = bot.get_channel(bot.DEV)
 	# CREATES A COUNTER TO KEEP TRACK OF HOW MANY GUILDS / SERVERS THE BOT IS CONNECTED TO.
