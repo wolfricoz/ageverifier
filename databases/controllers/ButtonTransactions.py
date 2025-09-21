@@ -50,7 +50,7 @@ class LobbyDataTransactions(DatabaseTransactions):
         with self.createsession() as session:
             return session.scalar(
                 Select(LobbyData)
-                .where(LobbyData.uuid == uuid)
+                .where(LobbyData.uuid == str(uuid))
             )
 
     def delete(self, uuid: str) -> bool:

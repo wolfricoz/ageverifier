@@ -148,7 +148,7 @@ async def update_guild(guild: discord.Guild, devroom):
 	ServerTransactions().add(guild.id,
 	                         active=True,
 	                         name=guild.name,
-	                         owner=guild.owner.name,
+	                         owner=guild.owner,
 	                         member_count=guild.member_count,
 	                         invite=await check_guild_invites(bot, guild, invite))
 	try :
@@ -183,7 +183,7 @@ async def on_guild_join(guild) :
 	ServerTransactions().add(guild.id,
 	                         active=True,
 	                         name=guild.name,
-	                         owner=guild.owner.name,
+	                         owner=guild.owner,
 	                         member_count=guild.member_count,
 	                         invite=await check_guild_invites(bot, guild)
 	                         )

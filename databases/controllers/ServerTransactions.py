@@ -1,5 +1,7 @@
+import datetime
 import logging
 
+import discord
 from sqlalchemy import Select
 
 from databases.controllers.ConfigData import ConfigData
@@ -10,25 +12,26 @@ from databases.current import Servers
 
 class ServerTransactions(DatabaseTransactions) :
 
-	def add(self, guildid: int, active: bool = True, name: str = "", owner: str = "", member_count: int = 0,
-	        invite: str = "", premium: bool = False, reload=True) -> "Servers" :
-		with self.createsession() as session:
+	def add(self, guildid: int, active: bool = True, name: str = "", owner: discord.Member = None, member_count: int = 0,
+	        invite: str = "", reload=True) -> "Servers" :
+		with self.createsession() as session :
 
 			guild = self.get(guildid, session=session)
-
+			owner_name = owner.name if owner else ""
+			owner_id = owner.id if owner else None
 			if guild is not None :
 
-				self.update(guildid, active, name, owner, member_count, invite, premium)
+				self.update(guildid, active, name, owner_name, member_count, invite, owner_id=owner_id)
 			else :
 				session = self.createsession()
 				g = Servers(
 					guild=guildid,
 					active=active,
 					name=name,
-					owner=owner,
+					owner=owner_name,
 					member_count=member_count,
 					invite=invite,
-					premium=premium
+					owner_id=owner_id,
 				)
 				session.merge(g)
 				self.commit(session)
@@ -49,6 +52,7 @@ class ServerTransactions(DatabaseTransactions) :
 			ConfigTransactions().toggle_add(guildid, "PICTURE_SMALL", "ENABLED")
 			ConfigTransactions().toggle_add(guildid, "SHOW_INLINE")
 			ConfigTransactions().toggle_add(guildid, "DEBUG")
+			ConfigTransactions().toggle_add(guildid, "PINGOWNER")
 			ConfigTransactions().config_unique_add(guildid, "COOLDOWN", 5)
 
 		if reload :
@@ -69,7 +73,7 @@ class ServerTransactions(DatabaseTransactions) :
 			return session.scalar(Select(Servers).where(Servers.guild == guild_id))
 
 	def update(self, guild_id: int, active: bool = None, name: str = None, owner: str = None, member_count: int = None,
-	           invite: str = None, premium: bool = None, reload=True) -> bool :
+	           invite: str = None, premium: datetime = None, owner_id=None, reload=True) -> bool :
 
 		with self.createsession() as session :
 			guild = self.get(guild_id, session=session)
@@ -82,7 +86,8 @@ class ServerTransactions(DatabaseTransactions) :
 				"owner"        : owner,
 				"member_count" : member_count,
 				"invite"       : invite,
-				"premium"      : premium
+				"premium"      : premium,
+				"owner_id"     : owner_id
 			}
 
 			# Filter out None values to perform partial updates
@@ -113,4 +118,3 @@ class ServerTransactions(DatabaseTransactions) :
 			session.delete(guild)
 			self.commit(session)
 			return True
-
