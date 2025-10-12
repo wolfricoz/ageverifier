@@ -85,9 +85,6 @@ class VerificationProcess :
 			automatic_status = ConfigData().get_key_or_none(self.guild.id, "automatic")
 			if automatic_status and automatic_status == "enabled".upper() :
 				await LobbyProcess.approve_user(self.guild, self.user, dob, self.age, "Automatic")
-				# await send_response(interaction,
-				#                     f'Thank you for submitting your age and dob! You will be let through immediately!',
-				#                     ephemeral=True)
 				return "Thank you for submitting your age and date of birth! You’ve been automatically verified and granted access."
 
 			await AgeCalculations.check_history(self.guild.id, self.user, self.mod_channel)
@@ -127,10 +124,6 @@ class VerificationProcess :
 		if self.age < 18 or years < 18 :
 			JoinHistoryTransactions().update(self.user.id, self.guild.id, JoinHistoryStatus.IDCHECK)
 			self.discrepancy = "underage"
-			# This needs to be moved out of this function.
-			# await IdCheck.send_check(interaction, mod_channel, "underage", age, dob, id_check=True,
-			#                          verify_button=False, server=self.guild.name)
-			# await self.autokick(interaction, mod_channel, age, minimum_age)
 			return True
 		return None
 
@@ -139,11 +132,6 @@ class VerificationProcess :
 		minimum_age = AgeRoleTransactions().get_minimum_age(self.guild.id)
 		if minimum_age and self.age < minimum_age :
 			self.discrepancy = "below_minimum_age"
-			# This needs to be moved out of this function.
-			# await send_response(interaction,
-			#                     f'Thank you for submitting your date of birth, unfortunately you are too young for this server; you must be {minimum_age} years old.',
-			#                     ephemeral=True)
-			# await self.autokick(interaction, mod_channel, age, minimum_age)
 			return True
 		return None
 
@@ -157,15 +145,10 @@ class VerificationProcess :
 			self.discrepancy = "mismatch"
 			return True
 
-		# return await IdCheck.send_check(interaction, mod_channel, "mismatch", age, dob, years=years, verify_button=False)
 		if agechecked > 1 or agechecked < -1 :
 			self.discrepancy = "no_match"
 			return True
 		return None
-
-	# JoinHistoryTransactions().update(self.user.id, self.guild.id, JoinHistoryStatus.IDCHECK)
-	# return await IdCheck.send_check(interaction, id_channel, "nomatch", age, dob, years=years, id_check=True,
-	#                                 server=self.guild.name)
 
 	def check_record(self, dob) :
 		"""Checks if the user has a date of birth in the database, and if the date of births match."""
@@ -174,10 +157,6 @@ class VerificationProcess :
 			return True
 		return None
 
-	JoinHistoryTransactions().update(self.user.id, self.guild.id, JoinHistoryStatus.IDCHECK)
-	# return await IdCheck.send_check(interaction, id_channel, "dobmismatch", age, dob,
-	#                                 date_of_birth=Encryption().decrypt(userdata.date_of_birth), id_check=True,
-	# server = userdata.server)
 	def check_id_record(self) :
 		"""Checks if the user is on the id list."""
 		if id_check_info := AgeCalculations.id_check_or_id_verified(self.user) :
