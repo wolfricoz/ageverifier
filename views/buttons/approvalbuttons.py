@@ -2,7 +2,6 @@
 import asyncio
 import logging
 import uuid
-from datetime import datetime
 
 import discord
 from discord_py_utilities.messages import send_message, send_response
@@ -211,7 +210,7 @@ Once you've made these changes you may resubmit your age and date of birth. Than
 			self.add_to_db.disabled = True
 			self.add_to_db.style = discord.ButtonStyle.grey
 
-		if update is False :
+		if not update :
 			return
 		await interaction.message.edit(view=self)
 

@@ -62,7 +62,7 @@ class ServerTransactions(DatabaseTransactions) :
 
 	def get_all(self, id_only=True) :
 		with self.createsession() as session :
-			if id_only is False :
+			if not id_only :
 				return session.query(Servers).all()
 			return [sid[0] for sid in session.query(Servers.guild).all()]
 

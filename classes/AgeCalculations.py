@@ -6,11 +6,10 @@ from datetime import datetime
 
 import discord
 from dateutil.relativedelta import relativedelta
-from discord_py_utilities.messages import send_message, send_response
+from discord_py_utilities.messages import send_message
 
 import databases.current
 from classes.encryption import Encryption
-
 from databases.controllers.ConfigData import ConfigData
 from databases.controllers.VerificationTransactions import VerificationTransactions
 
@@ -67,7 +66,7 @@ class AgeCalculations(ABC) :
 		idchannel = guild.get_channel(idlog)
 		if userinfo is None :
 			return False
-		if userinfo.idcheck is True :
+		if userinfo.idcheck :
 			await send_message(idchannel,
 			                   f"[Info] {user.mention} is on the ID list with reason: {userinfo.reason}. Please ID the user before letting them through.")
 			return True

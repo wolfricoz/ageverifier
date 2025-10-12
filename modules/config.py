@@ -55,7 +55,7 @@ class Config(commands.GroupCog, name="config") :
 		await send_response(interaction,
 		                    "The config has been successfully setup, if you wish to check our toggles you please do /config toggles. Permission checking will commence shortly.",
 		                    ephemeral=True)
-		if status is False :
+		if not status :
 			return None
 		await ConfigSetup().check_channel_permissions(interaction.channel, interaction)
 		return None

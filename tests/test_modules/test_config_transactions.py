@@ -1,7 +1,6 @@
 import unittest
 
 from databases.controllers.ConfigTransactions import ConfigTransactions
-from databases.controllers.ServerTransactions import ServerTransactions
 from databases.current import create_bot_database, drop_bot_database
 
 

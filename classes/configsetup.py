@@ -77,7 +77,7 @@ class ConfigSetup :
 		                                "Are you sure you want to automatically setup the configuration for this server? You may see new channels and roles created and some configuration still needs to be done manually.")
 		await confirmation.wait()
 
-		if confirmation.confirmed is False :
+		if not confirmation.confirmed :
 			await interaction.followup.send("Setup Cancelled")
 			return None
 		category = get(interaction.guild.categories, name="Lobby")

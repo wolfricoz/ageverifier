@@ -3,13 +3,13 @@
 import asyncio
 import logging
 import os
-import threading
 from contextlib import asynccontextmanager
-from typing import Sequence
 
 import discord
 import sentry_sdk
 from discord.ext import commands
+from discord_py_utilities.invites import check_guild_invites
+from discord_py_utilities.messages import send_message
 # IMPORT LOAD_DOTENV FUNCTION FROM DOTENV MODULE.
 from dotenv import load_dotenv
 from fastapi import FastAPI
@@ -18,18 +18,15 @@ import api
 from classes import whitelist
 from classes.access import AccessControl
 from classes.blacklist import blacklist_check
-from databases.controllers.ServerTransactions import ServerTransactions
-from databases.controllers.ConfigData import ConfigData
 from classes.jsonmaker import Configer
-from discord_py_utilities.messages import send_message
 from classes.support.queue import Queue
 from databases import current as db
+from databases.controllers.ConfigData import ConfigData
+from databases.controllers.ServerTransactions import ServerTransactions
 from databases.current import Servers
 from views.buttons.approvalbuttons import ApprovalButtons
 from views.buttons.dobentrybutton import dobentry
 from views.buttons.idverifybutton import IdVerifyButton
-from discord_py_utilities.invites import check_guild_invites
-
 from views.buttons.verifybutton import VerifyButton
 
 # Creating database
@@ -48,56 +45,58 @@ intents.message_content = True
 intents.members = True
 activity = discord.Activity(type=discord.ActivityType.watching, name="over the community")
 shard_count = 5
-if debug:
+if debug :
 	shard_count = 1
-bot = commands.AutoShardedBot(command_prefix=PREFIX, case_insensitive=False, intents=intents, activity=activity, shard_count=shard_count)
+bot = commands.AutoShardedBot(command_prefix=PREFIX, case_insensitive=False, intents=intents, activity=activity,
+                              shard_count=shard_count)
 
 bot.DEV = int(os.getenv("DEV"))
 
 # Sentry Integration
 sentry_sdk.init(
-    dsn=os.getenv("SENTRY_DSN"),
-    # Add data like request headers and IP for users,
-    # see https://docs.sentry.io/platforms/python/data-management/data-collected/ for more info
-    send_default_pii=True,
+	dsn=os.getenv("SENTRY_DSN"),
+	# Add data like request headers and IP for users,
+	# see https://docs.sentry.io/platforms/python/data-management/data-collected/ for more info
+	send_default_pii=True,
 )
+
+
 # Potential fix for not shutting down.
 @asynccontextmanager
-async def lifespan(app: FastAPI):
-    async def run_bot():
-        try:
-            await bot.start(DISCORD_TOKEN)
-        except asyncio.CancelledError:
-            # Graceful cancellation
-            await bot.close()
-            raise
+async def lifespan(app: FastAPI) :
+	async def run_bot() :
+		try :
+			await bot.start(DISCORD_TOKEN)
+		except asyncio.CancelledError :
+			# Graceful cancellation
+			await bot.close()
+			raise
 
-    bot_task = asyncio.create_task(run_bot())
-    app.state.bot = bot
-    try:
-        yield
-    finally:
-        # Trigger shutdown if still running
-        if not bot.is_closed():
-            await bot.close()
-        # Ensure the task finishes
-        if not bot_task.done():
-            bot_task.cancel()
-            try:
-                await bot_task
-            except asyncio.CancelledError:
-                pass
+	bot_task = asyncio.create_task(run_bot())
+	app.state.bot = bot
+	try :
+		yield
+	finally :
+		# Trigger shutdown if still running
+		if not bot.is_closed() :
+			await bot.close()
+		# Ensure the task finishes
+		if not bot_task.done() :
+			bot_task.cancel()
+			try :
+				await bot_task
+			except asyncio.CancelledError :
+				pass
 
 
 app = FastAPI(lifespan=lifespan)
 routers = []
 for router in api.__all__ :
-	try:
+	try :
 		app.include_router(getattr(api, router))
 		routers.append(router)
-	except Exception as e:
+	except Exception as e :
 		logging.error(f"Failed to load {router}: {e}")
-
 
 if os.getenv("KEY") is None :
 	quit("No encryption key found in .env")
@@ -135,12 +134,12 @@ async def on_ready() :
 	Queue().add(check_guilds(devroom))
 
 
-
-async def check_guilds(devroom: discord.TextChannel):
+async def check_guilds(devroom: discord.TextChannel) :
 	for guild in bot.guilds :
 		Queue().add(update_guild(guild, devroom), 0)
 
-async def update_guild(guild: discord.Guild, devroom):
+
+async def update_guild(guild: discord.Guild, devroom) :
 	await blacklist_check(guild, devroom)
 
 	invite = ""
@@ -163,16 +162,17 @@ async def update_guild(guild: discord.Guild, devroom):
 			print(f"Unable to send message to {guild.owner.name} in {guild.name}")
 		pass
 
+
 # This can become its own cog.
 @bot.event
 async def on_guild_join(guild) :
 	# adds user to database
 	devroom = bot.get_channel(bot.DEV)
 	await devroom.send(f"Ban watch is now in {len(bot.guilds)}! It just joined:"
-	               f"\nGuild: {guild}({guild.id})"
-	               f"\nOwner: {guild.owner}({guild.owner.id})"
-	               f"\nMember count: {guild.member_count}"
-	               f"\n\nWelcome to the Banwatch collective!")
+	                   f"\nGuild: {guild}({guild.id})"
+	                   f"\nOwner: {guild.owner}({guild.owner.id})"
+	                   f"\nMember count: {guild.member_count}"
+	                   f"\n\nWelcome to the Banwatch collective!")
 	if await blacklist_check(guild, devroom) :
 		await guild.owner.send("This server is blacklisted. If this is a mistake then please contact the developer.")
 		return
@@ -255,9 +255,7 @@ async def run() :
 	except KeyboardInterrupt :
 		exit(0)
 
-
 # @app.on_event("startup")
 # async def app_startup() :
 # 	# Start Discord bot in a separate thread
 # 	threading.Thread(target=lambda : asyncio.run(run())).start()
-

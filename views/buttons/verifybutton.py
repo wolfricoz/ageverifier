@@ -1,16 +1,13 @@
 import logging
-import uuid
 
 import discord
-from discord_py_utilities.messages import send_message, send_response
+from discord_py_utilities.messages import send_response
 
 from classes.AgeCalculations import AgeCalculations
 from classes.access import AccessControl
 from classes.encryption import Encryption
 from classes.lobbyprocess import LobbyProcess
 from classes.lobbytimers import LobbyTimers
-from classes.whitelist import check_whitelist
-from databases.controllers.ButtonTransactions import LobbyDataTransactions
 from databases.controllers.ConfigData import ConfigData
 from databases.controllers.UserTransactions import UserTransactions
 from databases.controllers.VerificationTransactions import VerificationTransactions
@@ -63,7 +60,7 @@ class VerifyButton(discord.ui.View) :
 			userinfo = VerificationTransactions().get_id_info(interaction.user.id)
 			if userinfo is None :
 				return False
-			if userinfo.idverified is True :
+			if userinfo.idverified :
 				logging.info("user is id verified")
 				dob, age = self.get_user_data(interaction.user.id)
 				message = f'Due to prior ID verification, you do not need to re-enter your date of birth and age. You will be granted access once the staff completes the verification process.'

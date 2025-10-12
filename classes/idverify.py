@@ -13,7 +13,7 @@ async def verify(user, interaction, dob, process=True):
 	await LobbyProcess.log(user, interaction.guild, age, dob, interaction.user, True, id_verify=id_message)
 	await interaction.channel.send(
 		f"{user.mention} has been ID verified with `{dob}` by {interaction.user.mention}")
-	if process is False:
+	if not process :
 		return None
 	await LobbyProcess.approve_user(interaction.guild, user, dob, age, interaction.user.name, idverify=True)
 	return None

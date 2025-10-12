@@ -1,4 +1,3 @@
-import logging
 import os
 
 from cryptography.fernet import Fernet

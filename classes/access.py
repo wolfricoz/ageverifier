@@ -9,7 +9,6 @@ from classes.jsonmaker import Configer
 # from classes.databaseController import StaffDbTransactions
 from classes.singleton import singleton
 from databases.controllers.ServerTransactions import ServerTransactions
-from databases.controllers.StaffTransactions import StaffDbTransactions
 
 
 class AccessControl(metaclass=singleton) :

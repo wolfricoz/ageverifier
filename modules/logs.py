@@ -78,10 +78,10 @@ class GatewayPreFormatFilter(logging.Filter) :
 		return True
 
 
-if os.path.exists('logs') is False :
+if not os.path.exists('logs') :
 	os.mkdir('logs')
 
-if os.path.exists(logfile) is False :
+if not os.path.exists(logfile) :
 	with open(logfile, 'w') as f :
 		f.write("logging started")
 

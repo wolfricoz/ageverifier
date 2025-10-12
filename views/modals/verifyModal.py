@@ -1,23 +1,9 @@
-import logging
-
 import discord
 from discord_py_utilities.messages import send_message, send_response
 
-import databases.current
-from classes.AgeCalculations import AgeCalculations
-from classes.encryption import Encryption
 from classes.idcheck import IdCheck
-from classes.lobbyprocess import LobbyProcess
-from classes.lobbytimers import LobbyTimers
 from classes.verification.process import VerificationProcess
-from classes.whitelist import check_whitelist
-from databases.controllers.AgeRoleTransactions import AgeRoleTransactions
-from databases.controllers.ButtonTransactions import LobbyDataTransactions
 from databases.controllers.ConfigData import ConfigData
-from databases.controllers.HistoryTransactions import JoinHistoryTransactions
-from databases.controllers.UserTransactions import UserTransactions
-from databases.enums.joinhistorystatus import JoinHistoryStatus
-from views.buttons.approvalbuttons import ApprovalButtons
 
 
 class VerifyModal(discord.ui.Modal) :

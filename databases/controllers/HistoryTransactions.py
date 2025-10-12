@@ -2,7 +2,6 @@ import logging
 from datetime import datetime
 
 from sqlalchemy import Select, desc, text
-from sqlalchemy.orm import joinedload
 
 from databases.controllers.DatabaseTransactions import DatabaseTransactions
 from databases.controllers.UserTransactions import UserTransactions
@@ -184,7 +183,7 @@ class JoinHistoryTransactions(DatabaseTransactions) :
 
 	def fetch_previous_verifications(self, uid: int):
 		with self.createsession() as session :
-			if isinstance(uid, int) is False:
+			if not isinstance(uid, int) :
 				return []
 			result =  session.execute(text(
 				f"""select b.name from join_history a

@@ -3,16 +3,13 @@ import os
 import discord
 from discord import app_commands
 from discord.ext import commands
+from discord_py_utilities.messages import send_message, send_response
 
 from classes.encryption import Encryption
-from databases.controllers.VerificationTransactions import VerificationTransactions
-from discord_py_utilities.messages import send_message, send_response
 from classes.support.queue import Queue
+from databases.controllers.VerificationTransactions import VerificationTransactions
 from resources.data.responses import StringStorage
-from views.buttons.approvalbuttons import ApprovalButtons
 from views.buttons.confirm import Confirm
-from views.buttons.dobentrybutton import dobentry
-from views.buttons.verifybutton import VerifyButton
 
 
 class idcheck(commands.GroupCog) :

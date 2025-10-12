@@ -12,7 +12,7 @@ class ConfirmDialogue(ABC):
         msg = None
         embed = discord.Embed(title=title, description=desc)
         conf = await interaction.channel.send(embed=embed)
-        while confirm is True:
+        while confirm :
             msg = await bot.wait_for('message', check=check, timeout=600)
             if "confirm" in msg.content.lower():
                 embed = discord.Embed(title=title, description=desc)
