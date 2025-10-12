@@ -85,7 +85,7 @@ class VerifyModal(discord.ui.Modal) :
 			self.year.value,
 			self.age.value
 		)
-		await verification_process.verify()
+		message = await verification_process.verify()
 		if verification_process.error is not None :
 			await send_response(interaction, f"Verification failed: {verification_process.error}", ephemeral=True)
 			return
@@ -104,7 +104,7 @@ class VerifyModal(discord.ui.Modal) :
 			                                id_check_reason=verification_process.id_check_info.reason,
 			                                server=verification_process.id_check_info.server)
 
-		return await send_response(interaction, "Verification successful!", ephemeral=True)
+		return await send_response(interaction, message, ephemeral=True)
 
 	async def on_error(self, interaction: discord.Interaction, error: Exception) -> None :
 		print(error)

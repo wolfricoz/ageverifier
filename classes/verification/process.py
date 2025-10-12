@@ -88,14 +88,14 @@ class VerificationProcess :
 				# await send_response(interaction,
 				#                     f'Thank you for submitting your age and dob! You will be let through immediately!',
 				#                     ephemeral=True)
-				return None
+				return "Thank you for submitting your age and date of birth! You’ve been automatically verified and granted access."
 
 			await AgeCalculations.check_history(self.guild.id, self.user, self.mod_channel)
 			LobbyTimers().add_cooldown(self.guild.id, self.user.id, ConfigData().get_key_int_or_zero(self.guild.id, 'COOLDOWN'))
 			approval_buttons = ApprovalButtons(age=self.age, dob=dob, user=self.user)
 			await approval_buttons.send_message(self.guild, self.user, self.mod_channel)
 
-			return None
+			return "Your age and date of birth have been submitted successfully. A staff member will review your verification shortly to ensure everything checks out."
 
 		except discord.Forbidden :
 			self.error = "Ageverifier is missing permissions, please use `/config permissioncheck` to test permissions."
