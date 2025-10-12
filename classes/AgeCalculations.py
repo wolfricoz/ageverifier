@@ -21,13 +21,13 @@ class AgeCalculations(ABC) :
 	@abstractmethod
 	def check_date_of_birth(userdata, dob) :
 		if userdata is None or userdata.date_of_birth is None :
-			print("None found")
 			return True
 		return Encryption().decrypt(userdata.date_of_birth) == dob
 
 	@staticmethod
 	@abstractmethod
 	async def check_history(guild_id, user, channel) :
+		"""Checks legacy history of RMR lobby"""
 		if guild_id != int(os.getenv("RMR_ID")) :
 			return
 		count = 0
@@ -48,17 +48,13 @@ class AgeCalculations(ABC) :
 
 	@staticmethod
 	@abstractmethod
-	async def id_check_or_id_verified(user: discord.Member, guild, channel, sendmessage=True) :
+	def id_check_or_id_verified(user: discord.Member | discord.User) :
 		userinfo: databases.current.IdVerification = VerificationTransactions().get_id_info(user.id)
-		idlog = ConfigData().get_key_int(guild.id, "idlog")
-		idchannel = guild.get_channel(idlog)
 		if userinfo is None :
 			return False
-		if userinfo.idverified is True and userinfo.verifieddob is not None and sendmessage is True :
-			await channel.send(
-				f"[ID VERIFIED] {user.mention} has previously ID verified: {Encryption().decrypt(userinfo.verifieddob)}")
+		if userinfo.idverified :
 			return False
-		if userinfo.idcheck is True :
+		if userinfo.idcheck :
 			return userinfo
 		return False
 
@@ -79,25 +75,20 @@ class AgeCalculations(ABC) :
 
 	@staticmethod
 	@abstractmethod
-	async def infocheck(interaction: discord.Interaction, age: str, dateofbirth: str, channel: discord.TextChannel,
-	                    location="Lobby") :
-		agevalid = re.match(r'[0-9]*$', age)
-		if agevalid is None :
-			# noinspection PyUnresolvedReferences
-			await send_response(interaction, 'Please fill in your age in numbers.', ephemeral=True)
+	async def validate_user_info(user, age: int, dateofbirth: str, channel: discord.TextChannel,
+	                             location="Lobby") :
+		try:
+			agevalid = int(age)
+		except ValueError:
 			await channel.send(
-				f"{interaction.user.mention} failed in verification at age: {age} {dateofbirth}")
-			return False
-
+				f"{user.mention} failed in verification at age: {age} {dateofbirth}")
+			raise Exception("Failed to validate age. Please enter the age in numbers.")
 		validated_dob = AgeCalculations.validate_dob(dateofbirth)
-
 		if validated_dob is None :
-			await send_response(interaction, 'Please fill in your date of birth as with the format: mm/dd/yyyy.',
-			                    ephemeral=True)
 			await send_message(channel,
-			                   f"[{location} info] {interaction.user.mention} failed in verification at date of birth: {age} {dateofbirth}")
-			return None
-		dateofbirth = AgeCalculations.regex(dateofbirth)
+			                   f"[{location} info] {user.mention} failed in verification at date of birth: {age} {dateofbirth}")
+			raise Exception("Failed to validate date of birth. Please enter the date of birth in the format: mm/dd/yyyy")
+		dateofbirth = AgeCalculations.dob_regex(dateofbirth)
 		return dateofbirth
 
 	@staticmethod
@@ -141,7 +132,7 @@ class AgeCalculations(ABC) :
 
 	@staticmethod
 	@abstractmethod
-	def regex(date_of_birth) :
+	def dob_regex(date_of_birth) :
 		try :
 			date_of_birth = date_of_birth.replace("-", "/").replace(".", "/")
 			datetime.strptime(date_of_birth, "%m/%d/%Y")
@@ -151,16 +142,16 @@ class AgeCalculations(ABC) :
 			day = dob_object.group(2).zfill(2)
 			year = dob_object.group(3)
 			fulldob = f"{month}/{day}/{year}"
+			if month is None or day is None or year is None :
+				raise Exception("Failed to validate date of birth. Please enter the date of birth in the format: mm/dd/yyyy")
 			return fulldob
-		except AttributeError or TypeError :
-			return "AttributeError"
-		except ValueError :
-			return "ValueError"
+		except Exception as e:
+			raise Exception(f"Failed to validate date of birth, reason: {e}")
 
 	@staticmethod
 	@abstractmethod
-	async def validatedob(arg2, interaction) -> bool|str :
-		dob = AgeCalculations.regex(arg2)
+	async def validatedob(arg2, interaction) -> bool | str :
+		dob = AgeCalculations.dob_regex(arg2)
 		if dob == "AttributeError" :
 			await interaction.followup.send("Please fill in the date of birth field.")
 			return False
@@ -168,5 +159,3 @@ class AgeCalculations(ABC) :
 			await interaction.followup.send("Please fill the dob in with the format: mm/dd/yyyy")
 			return False
 		return dob
-
-

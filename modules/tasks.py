@@ -13,6 +13,7 @@ from discord.ext import commands, tasks
 from classes.AgeCalculations import AgeCalculations
 from classes.access import AccessControl
 from classes.ageroles import change_age_roles
+from classes.dashboard.Servers import Servers
 from classes.encryption import Encryption
 from classes.support.queue import Queue
 from databases.controllers.ConfigData import ConfigData
@@ -142,6 +143,10 @@ class Tasks(commands.GroupCog) :
 			                         member_count=guild.member_count,
 			                         invite=await check_guild_invites(self.bot, guild)
 			                         )
+
+		guilds = ServerTransactions().get_all(id_only=False)
+		for guild in guilds :
+			Queue().add(Servers().update_server(guild), 0)
 		ConfigData().reload()
 
 	@tasks.loop(hours=24 * 7)

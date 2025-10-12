@@ -89,7 +89,7 @@ class Lobby(commands.GroupCog) :
 	@commands.has_permissions(manage_messages=True)
 	async def approve(self, ctx: commands.Context, user: discord.Member, age: int, dob: str) :
 		"""allows user to enter"""
-		dob = AgeCalculations.regex(dob)
+		dob = AgeCalculations.dob_regex(dob)
 		await LobbyProcess.approve_user(ctx.guild, user, dob, age, ctx.author.name)
 		await ctx.message.delete()
 

@@ -11,8 +11,6 @@ router = APIRouter()
 
 
 
-
-
 @router.post("/age/get/{user_id}")
 async def refresh_config(request: Request, user_id: int):
 	token = request.headers.get('token')
@@ -29,3 +27,15 @@ async def refresh_config(request: Request, user_id: int):
 		"server": userinfo.server
 	}
 
+@router.post("/age/verify/{user_id}")
+async def refresh_config(request: Request, user_id: int):
+	token = request.headers.get('token')
+	if token != os.getenv("API_KEY"):
+		return {"message": "Invalid token"}
+	# setup data:
+	dob = request.query_params.get('dob')
+	age = request.query_params.get('age')
+
+	userinfo: Users = UserTransactions().get_user(user_id)
+	if userinfo is None:
+		return {"message": "No data found for this user"}
