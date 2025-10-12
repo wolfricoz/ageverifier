@@ -91,7 +91,7 @@ class VerifyModal(discord.ui.Modal) :
 			return
 		if verification_process.discrepancy is not None :
 			id_check = True
-			if verification_process.discrepancy in ["age_too_high", "mismatch"] :
+			if verification_process.discrepancy in ["age_too_high", "mismatch", "below_minimum_age"] :
 				id_check = False
 
 

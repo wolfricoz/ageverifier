@@ -37,6 +37,16 @@ class IdCheck(ABC) :
 					f"Date of birth indicates {years}. User may retry with correct information."
 				)
 			},
+			"below_minimum_age" : {
+				"user-message"    : (
+					"You appear to be below the minimum age required to join this server. "
+					"Unfortunately, you cannot proceed with verification at this time."
+				),
+				"channel-message" : (
+					f"[INFO: Below Minimum Age] [Info] User {interaction.user.mention} appears to be below the server’s minimum age requirement. "
+					f"User entered {age}, with date of birth indicating {years}. Verification process stopped."
+				)
+			},
 
 			"no_match"     : {
 				"user-message"    : f"It seems that the age you've given does not match the date of birth you've provided. A staff member will reach out to you shortly.",
