@@ -47,7 +47,7 @@ class VerificationProcess :
 			                                               self.mod_channel)
 			self.dob = dob
 			agechecked, years = AgeCalculations.agechecker(self.age, dob)
-
+			self.age = int(self.age)
 			# Check if user is underaged or below minimum age
 			if self.check_underage(years):
 				return self.discrepancy
@@ -110,7 +110,7 @@ class VerificationProcess :
 
 	def check_underage(self, years) :
 		"""Checks if the user is underage."""
-		if self.age < 18 or years < 18 :
+		if int(self.age) < 18 or int(years) < 18 :
 			JoinHistoryTransactions().update(self.user.id, self.guild.id, JoinHistoryStatus.IDCHECK)
 			self.discrepancy = "underage"
 			return True
