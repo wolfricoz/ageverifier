@@ -1,4 +1,5 @@
 import logging
+import os
 
 import discord
 from discord_py_utilities.messages import send_response
@@ -14,6 +15,7 @@ from databases.controllers.VerificationTransactions import VerificationTransacti
 from databases.controllers.WebsiteDataTransactions import WebsiteDataTransactions
 from views.buttons.approvalbuttons import ApprovalButtons
 from views.buttons.tosbutton import TOSButton
+from views.buttons.websitebutton import WebsiteButton
 
 
 class VerifyButton(discord.ui.View) :
@@ -34,7 +36,10 @@ class VerifyButton(discord.ui.View) :
 		if AccessControl().is_premium(interaction.guild.id) and ConfigData().get_toggle(interaction.guild.id, "ONLINE_VERIFICATION") :
 
 			uuid = WebsiteDataTransactions().create(user_id=interaction.user.id, guild_id=interaction.guild.id)
-			await send_response(interaction, f"This is where the web interface button is sent. The uuid is {uuid}")
+			website_base = os.getenv("DASHBOARD_URL")
+			url = f"{website_base}/ageverifier/verification/{interaction.guild.id}/{uuid}"
+
+			await send_response(interaction, f"This server uses our online verification system. Please use the button below to visit our verification page.", ephemeral=True, view=WebsiteButton(url))
 			return
 
 
@@ -78,7 +83,7 @@ class VerifyButton(discord.ui.View) :
 				approval_buttons = ApprovalButtons(age=age, dob=dob, user=interaction.user)
 				await send_response(interaction, message,
 				                    ephemeral=True)
-				await approval_buttons.send_message(interaction, mod_channel, id_verified=True)
+				await approval_buttons.send_message(interaction.guild, interaction.user , mod_channel, id_verified=True)
 
 				return True
 			return False

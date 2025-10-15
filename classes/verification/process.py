@@ -1,3 +1,5 @@
+import logging
+
 import discord
 from discord.ext import commands
 
@@ -16,7 +18,7 @@ from views.buttons.approvalbuttons import ApprovalButtons
 class VerificationProcess :
 	def __init__(self,
 	             bot: commands.Bot,
-	             user: discord.User,
+	             user: discord.Member,
 	             guild: discord.Guild,
 	             day: str,
 	             month: str,
@@ -85,10 +87,13 @@ class VerificationProcess :
 
 		except discord.Forbidden :
 			self.error = "Ageverifier is missing permissions, please use `/config permissioncheck` to test permissions."
+			logging.warning(f"Ageverifier is missing permissions, please use `/config permissioncheck` to test permissions.")
 		except discord.NotFound :
 			self.error = "Ageverifier could not fetch one of the channels, please use `/config view` and check if the channels still exist, and if ageverifier has permissions to view them."
+			logging.warning(f"Ageverifier could not fetch one of the channels, please use `/config view` and check if the channels still exist, and if ageverifier has permissions to view them.")
 		except Exception as e :
 			self.error = e
+			logging.error(e, exc_info=True)
 
 
 	async def load_data(self) :

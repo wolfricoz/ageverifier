@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import re
 from abc import ABC, abstractmethod
@@ -21,6 +22,7 @@ class AgeCalculations(ABC) :
 	def check_date_of_birth(userdata, dob) :
 		if userdata is None or userdata.date_of_birth is None :
 			return True
+		logging.info("dob encrypted: "  + userdata.date_of_birth)
 		return Encryption().decrypt(userdata.date_of_birth) == dob
 
 	@staticmethod
