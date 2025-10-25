@@ -89,7 +89,7 @@ class Lobby(commands.GroupCog) :
 	@commands.has_permissions(manage_messages=True)
 	async def approve(self, ctx: commands.Context, user: discord.Member, age: int, dob: str) :
 		"""allows user to enter"""
-		dob = AgeCalculations.regex(dob)
+		dob = AgeCalculations.dob_regex(dob)
 		await LobbyProcess.approve_user(ctx.guild, user, dob, age, ctx.author.name)
 		await ctx.message.delete()
 
@@ -107,13 +107,13 @@ class Lobby(commands.GroupCog) :
 		await view.send_message(interaction,
 		                        f"Are you sure you want to purge the lobby of users that have not been processed in the last {days} days?")
 		await view.wait()
-		if view.confirmed is False :
+		if not view.confirmed :
 			await interaction.followup.send("Purge cancelled")
 			return
 		days_to_datetime = datetime.datetime.now() - datetime.timedelta(days=days)
 		kicked = []
 		async for x in lobby_channel.history(limit=None, after=days_to_datetime) :
-			if x.author.bot is False :
+			if not x.author.bot :
 				continue
 			for a in x.mentions :
 				try :
@@ -155,7 +155,7 @@ class Lobby(commands.GroupCog) :
 		async for msg in lobby_channel.history(limit=None, before=cutoff) :
 
 			for user in msg.mentions :
-				if user.bot is True :
+				if user.bot :
 					continue
 				if user.id == interaction.guild.owner_id :
 					continue

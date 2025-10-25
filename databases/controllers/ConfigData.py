@@ -149,7 +149,7 @@ class ConfigData(metaclass=singleton) :
 		"""This is for debugging only.
 		:rtype: None
 		"""
-		if os.path.isdir('debug') is False :
+		if not os.path.isdir('debug') :
 			os.mkdir('debug')
 		with open('debug/config.json', 'w') as f :
 			json.dump(self.conf, f, indent=4)

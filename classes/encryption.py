@@ -1,4 +1,3 @@
-import logging
 import os
 
 from cryptography.fernet import Fernet
@@ -20,6 +19,8 @@ class Encryption:
         """Decrypts the text"""
         if text is None:
             return "No Dob Stored"
+
+
         if text.startswith("b'") and text.endswith("'") :
           text = text[2 :-1]
         if text.startswith('b"') and text.endswith('"') :

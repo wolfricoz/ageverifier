@@ -148,7 +148,7 @@ class ForumAutoMod(ABC):
     @staticmethod
     @abstractmethod
     def approval_log(interaction):
-        if os.path.isfile('config/approvals.txt') is False:
+        if not os.path.isfile('config/approvals.txt') :
             with open('config/approvals.txt', 'w') as f:
                 f.write('Advert Approvals')
         with open('config/approvals.txt', 'a') as f:

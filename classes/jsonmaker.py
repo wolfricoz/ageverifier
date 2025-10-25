@@ -123,6 +123,7 @@ class Configer(ABC):
 					return True
 
 
+# noinspection PyMethodParameters
 class BanLogger :
 	def create(userid) :
 		"""Creates the ban log, which is checked by the bot"""
@@ -327,6 +328,7 @@ class Updater :
 		print(f"updated: {count}")
 
 
+# noinspection PyMethodParameters,PyShadowingBuiltins
 class Datechecker :
 	def datecheck(input, channel, timedelt) :
 		now = datetime.now()
@@ -341,6 +343,7 @@ class Datechecker :
 			print("on cooldown")
 
 
+# noinspection PyMethodParameters
 class guildconfiger(ABC) :
 	@abstractmethod
 	async def create(guildid, guildname) :

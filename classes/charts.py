@@ -149,7 +149,7 @@ class JoinHistoryCharts :
 		return self
 
 
-class AgeCharts():
+class AgeCharts :
 	def __init__(self, data):
 		self.filename = None
 		self.data = data

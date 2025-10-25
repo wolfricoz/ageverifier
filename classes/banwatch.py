@@ -4,7 +4,7 @@ import os
 import requests
 
 
-class BanWatch():
+class BanWatch :
 	url = os.getenv("BANWATCH_URL")
 
 	def __init__(self):

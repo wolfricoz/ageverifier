@@ -18,7 +18,7 @@ class ConfigTransactions(DatabaseTransactions) :
 				value = str(value)
 				if ConfigTransactions().key_exists_check(guildid, key, overwrite) is True and overwrite is False :
 					return False
-				if ConfigTransactions().key_exists_check(guildid, key, overwrite) is True :
+				if ConfigTransactions().key_exists_check(guildid, key, overwrite) :
 					entries = session.scalars(
 						Select(db.Config).where(db.Config.guild == guildid, db.Config.key == key.upper())).all()
 					for entry in entries :
@@ -52,7 +52,7 @@ class ConfigTransactions(DatabaseTransactions) :
 
 	def config_unique_get(self, guildid: int, key: str) :
 		with self.createsession() as session :
-			if ConfigTransactions().key_exists_check(guildid, key) is False :
+			if not ConfigTransactions().key_exists_check(guildid, key) :
 				return False
 			exists = session.scalar(Select(db.Config).where(db.Config.guild == guildid, db.Config.key == key.upper()))
 			return exists
@@ -61,7 +61,7 @@ class ConfigTransactions(DatabaseTransactions) :
 	def config_key_add(self, guildid: int, key: str, value, overwrite) :
 		with self.createsession() as session :
 			value = str(value)
-			if ConfigTransactions().key_multiple_exists_check(guildid, key, value) is True :
+			if ConfigTransactions().key_multiple_exists_check(guildid, key, value) :
 				return False
 			item = db.Config(guild=guildid, key=key.upper(), value=value)
 			session.add(item)
@@ -82,7 +82,7 @@ class ConfigTransactions(DatabaseTransactions) :
 
 	def config_key_remove(self, guildid: int, key: str, value) :
 		with self.createsession() as session :
-			if ConfigTransactions().key_multiple_exists_check(guildid, key, value) is False :
+			if not ConfigTransactions().key_multiple_exists_check(guildid, key, value) :
 				return False
 			exists = session.scalar(
 				Select(db.Config).where(db.Config.guild == guildid, db.Config.key == key, db.Config.value == value))
@@ -94,7 +94,7 @@ class ConfigTransactions(DatabaseTransactions) :
 
 	def config_unique_remove(self, guild_id: int, key: str) :
 		with self.createsession() as session :
-			if ConfigTransactions().key_exists_check(guild_id, key) is False :
+			if not ConfigTransactions().key_exists_check(guild_id, key) :
 				return False
 			exists = session.scalar(
 				Select(db.Config).where(db.Config.guild == guild_id, db.Config.key == key))
@@ -111,7 +111,7 @@ class ConfigTransactions(DatabaseTransactions) :
 			if exists is None :
 				session.close()
 				return False
-			if overwrite is False :
+			if not overwrite :
 				return True
 			session.delete(exists)
 			self.commit(session)
@@ -121,7 +121,7 @@ class ConfigTransactions(DatabaseTransactions) :
 	def toggle_add(self, guildid: int, key: str, value="DISABLED") :
 		with self.createsession() as session :
 			key = key.upper()
-			if ConfigTransactions().key_exists_check(guildid, key) is True :
+			if ConfigTransactions().key_exists_check(guildid, key) :
 				return
 			toggle = Config(guild=guildid, key=key, value=value)
 			session.merge(toggle)

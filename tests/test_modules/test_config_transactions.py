@@ -80,13 +80,22 @@ class TestAgeRoleTransactions(unittest.TestCase) :
 	def test_server_config_get(self) :
 		self.config.config_key_add(self.guild, "KEY1", "VAL1", overwrite=False)
 		self.config.config_key_add(self.guild, "KEY2", "VAL2", overwrite=False)
-
+		# ServerTransactions().add(self.guild)
 		configs = self.config.server_config_get(self.guild)
 		keys = {cfg.key for cfg in configs}
 		expected_keys = {
 			"KEY1", "KEY2",
 			"UPDATEROLES", "COOLDOWN", "WELCOME",
-			"LOBBYWELCOME", "AUTOKICK", "AUTOMATIC", "PINGOWNER"
+			"LOBBYWELCOME", "AUTOKICK", "AUTOMATIC", "PINGOWNER",
+			                                         'JOINED_AT',
+			                                         'CREATED_AT',
+			                                         'USER_ID',
+			                                         'DEBUG',
+			                                         'BANS',
+			                                         'LEGACY_MESSAGE',
+			                                         'PICTURE_SMALL',
+			                                         'SHOW_INLINE',
+			                                         'PICTURE_LARGE',
 		}
 
 		self.assertSetEqual(keys, expected_keys)

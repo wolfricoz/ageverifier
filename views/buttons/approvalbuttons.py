@@ -2,7 +2,6 @@
 import asyncio
 import logging
 import uuid
-from datetime import datetime
 
 import discord
 from discord_py_utilities.messages import send_message, send_response
@@ -20,7 +19,7 @@ from views.modals.inputmodal import send_modal
 
 
 class ApprovalButtons(discord.ui.View) :
-	def __init__(self, age: int = None, dob: str = None, user: discord.Member = None) :
+	def __init__(self, age: int = None, dob: str = None, user: discord.Member | discord.User = None) :
 		self.age = age
 		self.dob = dob
 		self.user = user
@@ -29,50 +28,50 @@ class ApprovalButtons(discord.ui.View) :
 		                           url='https://wolfricoz.github.io/ageverifier/lobby.html', emoji="❓")
 		self.add_item(button)
 
-	async def send_message(self, interaction: discord.Interaction, mod_channel, id_verified=None) :
+	async def send_message(self, guild: discord.Guild, user: discord.User, mod_channel, id_verified=None) :
 		# prepare the data
-		message = f"\n{interaction.user.mention} has given {self.age} and dob matches. You can let them through with the buttons below."
-		whitelisted: bool = check_whitelist(interaction.guild.id)
+		message = f"\n{user.mention} has given {self.age} and dob matches. You can let them through with the buttons below."
+		whitelisted: bool = check_whitelist(guild.id)
 
 		if whitelisted :
-			message = f"\n{interaction.user.mention} has given {self.age} {self.dob}. You can let them through with the buttons below."
+			message = f"\n{user.mention} has given {self.age} {self.dob}. You can let them through with the buttons below."
 		footer = f"{uuid.uuid4()}"
 		previous_guilds = None
 		# loading the config, to since some settings are used multiple times we do it here to prevent the same call being made multiple times
-		legacy_message: bool = ConfigData().get_toggle(interaction.guild.id, "legacy_message", default="DISABLED")
-		show_previous_servers: bool = ConfigData().get_toggle(interaction.guild.id, "show_previous_servers",
+		legacy_message: bool = ConfigData().get_toggle(guild.id, "legacy_message", default="DISABLED")
+		show_previous_servers: bool = ConfigData().get_toggle(guild.id, "show_previous_servers",
 		                                                      default="ENABLED")
-		show_bans: bool = ConfigData().get_toggle(interaction.guild.id, "bans", default="ENABLED")
-		show_joined_at: bool = ConfigData().get_toggle(interaction.guild.id, "joined_at", default="ENABLED")
-		show_created_at: bool = ConfigData().get_toggle(interaction.guild.id, "created_at", default="ENABLED")
-		show_user_id: bool = ConfigData().get_toggle(interaction.guild.id, "user_id", default="ENABLED")
-		picture_large: bool = ConfigData().get_toggle(interaction.guild.id, "picture_large", default="DISABLED")
-		picture_small: bool = ConfigData().get_toggle(interaction.guild.id, "picture_small", default="ENABLED")
-		show_inline: bool = ConfigData().get_toggle(interaction.guild.id, "show_inline", default="DISABLED")
-		debug: bool = ConfigData().get_toggle(interaction.guild.id, "debug", default="DISABLED")
+		show_bans: bool = ConfigData().get_toggle(guild.id, "bans", default="ENABLED")
+		show_joined_at: bool = ConfigData().get_toggle(guild.id, "joined_at", default="ENABLED")
+		show_created_at: bool = ConfigData().get_toggle(guild.id, "created_at", default="ENABLED")
+		show_user_id: bool = ConfigData().get_toggle(guild.id, "user_id", default="ENABLED")
+		picture_large: bool = ConfigData().get_toggle(guild.id, "picture_large", default="DISABLED")
+		picture_small: bool = ConfigData().get_toggle(guild.id, "picture_small", default="ENABLED")
+		show_inline: bool = ConfigData().get_toggle(guild.id, "show_inline", default="DISABLED")
+		debug: bool = ConfigData().get_toggle(guild.id, "debug", default="DISABLED")
 		# fetching previous servers
 		if show_previous_servers :
 			previous_guilds = "\n".join([guild.get('name', 'Failed to fetch name') for guild in
-			                             JoinHistoryTransactions().fetch_previous_verifications(interaction.user.id)])
+			                             JoinHistoryTransactions().fetch_previous_verifications(user.id)])
 		# filling the fields
 		fields = {
 			"ID Verified"            : id_verified,
 			"Date of Birth"          : self.dob if whitelisted and legacy_message is False else None,
 			"Age"                    : self.age if legacy_message is False else None,
-			"Banwatch Bans"          : await BanWatch().fetchBanCount(interaction.user.id) if show_bans else None, # Potentially premium?
-			"Joined at"              : interaction.user.joined_at.strftime("%m/%d/%Y %I:%M %p") if show_joined_at else None,
-			"Created at"             : interaction.user.created_at.strftime("%m/%d/%Y") if show_created_at else None,
+			"Banwatch Bans"          : await BanWatch().fetchBanCount(user.id) if show_bans else None, # Potentially premium?
+			"Joined at"              : user.joined_at.strftime("%m/%d/%Y %I:%M %p") if show_joined_at else None,
+			"Created at"             : user.created_at.strftime("%m/%d/%Y") if show_created_at else None,
 			"Previous Verifications" : previous_guilds, # Potentially premium?
-			"User ID"                : interaction.user.id if show_user_id else None,
-			"debug"                  : f"?approve {interaction.user.mention} {self.age} {self.dob}" if whitelisted and debug else None
+			"User ID"                : user.id if show_user_id else None,
+			"debug"                  : f"?approve {user.mention} {self.age} {self.dob}" if whitelisted and debug else None
 		}
 		profile_picture = None
-		if interaction.user.avatar:
-			profile_picture = interaction.user.avatar.url
+		if user.avatar:
+			profile_picture = user.avatar.url
 
 		# Build the embed
-		embed = discord.Embed(title=f"Date of Birth and Age submitted by: {interaction.user.name}", description=message if str(
-			ConfigData().get_key(interaction.guild.id, "legacy_message",
+		embed = discord.Embed(title=f"Date of Birth and Age submitted by: {user.name}", description=message if str(
+			ConfigData().get_key(guild.id, "legacy_message",
 			                     "DISABLED")).upper() == "ENABLED" else "You can modify this embed with `/config approval_toggles`",
 		                      color=discord.Color.green())
 
@@ -90,15 +89,11 @@ class ApprovalButtons(discord.ui.View) :
 				continue
 			embed.add_field(name=key, value=value, inline=show_inline)
 		# send the content and create the record
-		msg = await send_message(mod_channel,
-		                         f"{interaction.user.mention}\n-# All timestamps are (mm/dd/yyyy)",
+		await send_message(mod_channel,
+		                         f"{user.mention}\n-# All timestamps are (mm/dd/yyyy)",
 		                         embed=embed,
 		                         view=self)
 		LobbyDataTransactions().create(footer, self.user.id, self.dob, self.age)
-
-		await send_response(interaction,
-		                    f'Thank you for submitting your age and dob! You will be let through soon!',
-		                    ephemeral=True)
 
 	@discord.ui.button(label="Approve User", style=discord.ButtonStyle.green, custom_id="allow")
 	async def allow(self, interaction: discord.Interaction, button: discord.ui.Button) :
@@ -215,7 +210,7 @@ Once you've made these changes you may resubmit your age and date of birth. Than
 			self.add_to_db.disabled = True
 			self.add_to_db.style = discord.ButtonStyle.grey
 
-		if update is False :
+		if not update :
 			return
 		await interaction.message.edit(view=self)
 

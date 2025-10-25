@@ -23,7 +23,7 @@ class UserTransactions(DatabaseTransactions) :
 			if self.user_exists(userid) and overwrite is False :
 				return False
 			item = db.Users(uid=userid)
-			if overwrite is True:
+			if overwrite :
 				session.merge(item)
 			else:
 				session.add(item)

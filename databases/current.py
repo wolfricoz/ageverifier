@@ -15,7 +15,11 @@ from databases.enums.joinhistorystatus import JoinHistoryStatus
 pymysql.install_as_MySQLdb()
 load_dotenv('.env')
 DB = os.getenv('DB')
+DEBUG = os.getenv('TEST')
+
 db_string = f"{DB}/rmrbotnew"
+if DEBUG == "true" :
+	db_string = f"{DB}/rmrbotnew_test"
 engine = create_engine(db_string, poolclass=NullPool, echo=False, isolation_level="READ COMMITTED")
 if not database_exists(engine.url) :
 	create_database(engine.url)
@@ -78,7 +82,9 @@ class Servers(Base) :
 	updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(),
 	                                             server_onupdate=func.now())
 	deleted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=None, nullable=True)
-	premium: Mapped[bool] = mapped_column(Boolean, default=False)
+	premium: Mapped[DateTime] = mapped_column(DateTime(timezone=True), nullable=True, default=None)
+	owner_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.uid"), nullable=True)
+
 	join_history: Mapped[list["JoinHistory"]] = relationship("JoinHistory", back_populates="server", cascade="save-update, merge, delete, delete-orphan")
 
 
@@ -153,6 +159,15 @@ class LobbyData(Base) :
 	created_date: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 	last_updated: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), server_onupdate=func.now())
 
+class WebsiteData(Base) :
+	__tablename__ = "website_data"
+	id: Mapped[int] = mapped_column(primary_key=True)
+	uuid: Mapped[str] = mapped_column(String(2048))
+	uid: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.uid", ondelete="CASCADE"))
+	gid: Mapped[int] = mapped_column(BigInteger, ForeignKey("servers.guild", ondelete="CASCADE"))
+	verified: Mapped[datetime] = mapped_column(DateTime, default=None, nullable=True)
+	created_date: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+	last_updated: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), server_onupdate=func.now())
 
 
 class database :

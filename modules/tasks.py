@@ -11,7 +11,9 @@ from discord import app_commands
 from discord.ext import commands, tasks
 
 from classes.AgeCalculations import AgeCalculations
+from classes.access import AccessControl
 from classes.ageroles import change_age_roles
+from classes.dashboard.Servers import Servers
 from classes.encryption import Encryption
 from classes.support.queue import Queue
 from databases.controllers.ConfigData import ConfigData
@@ -43,9 +45,10 @@ class Tasks(commands.GroupCog) :
 		self.database_ping.cancel()
 		self.refresh_invites.cancel()
 
-	@tasks.loop(hours=1)
+	@tasks.loop(minutes=10)
 	async def config_reload(self) :
 		"""Reloads the config for the latest data."""
+		AccessControl().reload()
 		for guild in self.bot.guilds :
 			ConfigData().load_guild(guild.id)
 		print("config reload")
@@ -120,7 +123,7 @@ class Tasks(commands.GroupCog) :
 			ServerTransactions().add(guild.id,
 			                         active=True,
 			                         name=guild.name,
-			                         owner=guild.owner.name,
+			                         owner=guild.owner,
 			                         member_count=guild.member_count,
 			                         invite=await check_guild_invites(self.bot, guild)
 			                         )
@@ -136,10 +139,14 @@ class Tasks(commands.GroupCog) :
 			ServerTransactions().add(gid,
 			                         active=False,
 			                         name=guild.name,
-			                         owner=guild.owner.name,
+			                         owner=guild.owner,
 			                         member_count=guild.member_count,
 			                         invite=await check_guild_invites(self.bot, guild)
 			                         )
+
+		guilds = ServerTransactions().get_all(id_only=False)
+		for guild in guilds :
+			Queue().add(Servers().update_server(guild), 0)
 		ConfigData().reload()
 
 	@tasks.loop(hours=24 * 7)
@@ -191,6 +198,7 @@ class Tasks(commands.GroupCog) :
 		"""pings the database to keep the connection alive"""
 		logging.debug("Pinging database.")
 		DatabaseTransactions().ping_db()
+
 
 	@app_commands.command(name="expirecheck")
 	@app_commands.checks.has_permissions(administrator=True)

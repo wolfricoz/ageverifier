@@ -7,9 +7,6 @@ from classes.helpers import has_onboarding, welcome_user
 from databases.controllers.HistoryTransactions import JoinHistoryTransactions
 from databases.controllers.UserTransactions import UserTransactions
 from databases.enums.joinhistorystatus import JoinHistoryStatus
-from views.buttons.approvalbuttons import ApprovalButtons
-from views.buttons.dobentrybutton import dobentry
-from views.buttons.verifybutton import VerifyButton
 
 
 class LobbyEvents(commands.Cog) :

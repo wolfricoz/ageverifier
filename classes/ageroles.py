@@ -11,7 +11,7 @@ def change_age_roles(guild: discord.Guild, user: discord.Member, age, remove = F
 	"""Adds the age roles to the user and removes the age roles that are not in the range if remove is True."""
 	roles = ConfigData().get_key(guild.id, "ADD")
 	exluded_roles = []
-	if remove is True:
+	if remove :
 		exluded_roles = ConfigData().get_key(guild.id, "EXCLUDE")
 	roles = {key: value for key, value in roles.items() if key not in exluded_roles}
 	logging.info(roles)
@@ -28,7 +28,7 @@ def change_age_roles(guild: discord.Guild, user: discord.Member, age, remove = F
 		remove_roles.append(role)
 	if len(add_roles) > 0 :
 		Queue().add(user.add_roles(*add_roles), priority=2 if not remove else 0)
-	if remove is False:
+	if not remove :
 		return
 	if len(remove_roles) < 1 :
 		return

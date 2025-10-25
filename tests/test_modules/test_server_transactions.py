@@ -1,5 +1,7 @@
+import datetime
 import unittest
 
+from classes.access import AccessControl
 from databases.controllers.ServerTransactions import ServerTransactions
 from databases.current import create_bot_database, drop_bot_database
 from databases.Generators.guildgenerator import guildgenerator
@@ -71,3 +73,12 @@ class TestServerTransactions(unittest.TestCase):
     def test_update_nonexistent_returns_false(self):
         result = self.st.update(9999999999, active=True)
         self.assertFalse(result)
+
+    def test_is_premium(self):
+        AccessControl().reload()
+        result = AccessControl().is_premium(self.guild)
+        self.assertFalse(result)
+        ServerTransactions().update(self.guild, premium=datetime.datetime.strptime("2030-01-01", "%Y-%m-%d"))
+        AccessControl().reload()
+        result = AccessControl().is_premium(self.guild)
+        self.assertTrue(result)

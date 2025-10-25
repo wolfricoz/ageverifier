@@ -2,6 +2,7 @@ import logging
 from datetime import datetime
 
 import discord
+# noinspection PyProtectedMember
 from discord.ext.commands.help import MISSING
 from pytz import utc
 
