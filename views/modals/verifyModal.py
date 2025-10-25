@@ -89,7 +89,7 @@ class VerifyModal(discord.ui.Modal) :
 			                                verification_process.dob,
 			                                id_check=id_check,
 			                                id_check_reason=verification_process.id_check_info.reason if verification_process.id_check_info else verification_process.discrepancy,
-			                                server=verification_process.id_check_info.server)
+			                                server=verification_process.id_check_info.server if verification_process.id_check_info else interaction.guild.id)
 
 		return await send_response(interaction, message, ephemeral=True)
 
