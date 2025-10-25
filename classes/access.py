@@ -42,7 +42,6 @@ class AccessControl(metaclass=singleton) :
 		self.premium_guilds = []
 		guilds = ServerTransactions().get_all(id_only=False)
 		for guild in guilds :
-			logging.info(guild.premium)
 			if guild.premium is not None and datetime.now(tz=UTC) < guild.premium :
 				self.premium_guilds.append(guild.guild)
 		logging.info("Premium guilds have been reloaded:")
