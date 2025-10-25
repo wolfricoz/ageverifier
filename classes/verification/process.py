@@ -92,7 +92,10 @@ class VerificationProcess :
 			self.error = "Ageverifier could not fetch one of the channels, please use `/config view` and check if the channels still exist, and if ageverifier has permissions to view them."
 			logging.warning(f"Ageverifier could not fetch one of the channels, please use `/config view` and check if the channels still exist, and if ageverifier has permissions to view them.")
 		except Exception as e :
+
 			self.error = e
+			if e in ['Failed to validate date of birth. Please enter the date of birth in the format: mm/dd/yyyy', ]:
+				return
 			logging.error(e, exc_info=True)
 
 
