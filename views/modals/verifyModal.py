@@ -77,6 +77,7 @@ class VerifyModal(discord.ui.Modal) :
 			return
 		if verification_process.discrepancy is not None :
 			id_check = True
+
 			if verification_process.discrepancy in ["age_too_high", "mismatch", "below_minimum_age"] :
 				id_check = False
 
@@ -87,7 +88,7 @@ class VerifyModal(discord.ui.Modal) :
 			                                verification_process.age,
 			                                verification_process.dob,
 			                                id_check=id_check,
-			                                id_check_reason=verification_process.id_check_info.reason,
+			                                id_check_reason=verification_process.id_check_info.reason if verification_process.id_check_info else verification_process.discrepancy,
 			                                server=verification_process.id_check_info.server)
 
 		return await send_response(interaction, message, ephemeral=True)
