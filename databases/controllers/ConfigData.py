@@ -120,7 +120,7 @@ class ConfigData(metaclass=singleton) :
 		result = self.conf[guildid].get(key.upper(), 0)
 		if isinstance(result, int) :
 			return result
-		if result is None:
+		if result is None or result == "" or result == "None":
 			logging.warning(f"{guildid} key {key} is not an int")
 			return 0
 		if isinstance(result, str) :
