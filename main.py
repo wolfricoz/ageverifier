@@ -28,6 +28,7 @@ from views.buttons.approvalbuttons import ApprovalButtons
 from views.buttons.dobentrybutton import dobentry
 from views.buttons.idverifybutton import IdVerifyButton
 from views.buttons.verifybutton import VerifyButton
+from classes.dashboard.Servers import Servers as DashServers
 
 # Creating database
 db.database.create()
@@ -116,7 +117,7 @@ bot.invites = {}
 # EVENT LISTENER FOR WHEN THE BOT HAS SWITCHED FROM OFFLINE TO ONLINE.
 @bot.event
 async def on_ready() :
-	ConfigData().load_all_guilds()
+	Queue().add(ConfigData().load_all_guilds(), 2)
 	AccessControl().reload()
 	logging.info("Bot starting up")
 	devroom = bot.get_channel(bot.DEV)
@@ -203,6 +204,7 @@ async def on_guild_join(guild) :
 	                         "Thank you for inviting Ageverifier. To help you get started, please read the documentation: https://wolfricoz.github.io/ageverifier/ and visit our [dashboard](https://bots.roleplaymeets.com/) to setup the bot with ease!\n\n"
 	                         "Please make sure the bot has permission to post in the channels where you try to run the commands!"))
 	ServerTransactions().add(guild.id, active=True)
+	Queue().add(DashServers().update_server(guild), 0)
 
 
 @bot.event
