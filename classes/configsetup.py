@@ -2,6 +2,7 @@ import logging
 
 import discord
 from discord.utils import get
+from discord_py_utilities.exceptions import NoPermissionException
 
 from databases.controllers.ConfigData import ConfigData
 from databases.controllers.ConfigTransactions import ConfigTransactions
@@ -273,7 +274,7 @@ class ConfigSetup :
 					fails.append(key)
 					continue
 				await mod_channel.send(f"I have permissions to post in {channel.name}!")
-			except discord.Forbidden :
+			except discord.Forbidden or NoPermissionException:
 				logging.info(f"Missing permissions for {key}, adding to fails")
 				fails.append(key)
 			except Exception as e :
