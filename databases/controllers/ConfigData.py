@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 import json
 import logging
@@ -34,6 +35,7 @@ class ConfigData(metaclass=singleton) :
 		logging.info("Loading all guild configurations")
 		server_ids = ServerTransactions().get_all(id_only=True)
 		for server_id in server_ids :
+			await asyncio.sleep(0.001)
 			server_start = dt.now()
 			self.load_guild(server_id)
 			logging.info(f"Loaded guild {server_id} in {dt.now() - server_start}")
