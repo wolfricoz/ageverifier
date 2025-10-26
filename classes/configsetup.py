@@ -273,6 +273,9 @@ class ConfigSetup :
 					fails.append(key)
 					continue
 				await mod_channel.send(f"I have permissions to post in {channel.name}!")
+			except discord.Forbidden :
+				logging.info(f"Missing permissions for {key}, adding to fails")
+				fails.append(key)
 			except Exception as e :
 				logging.error(e, exc_info=True)
 				fails.append(key)
