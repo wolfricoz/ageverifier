@@ -90,7 +90,7 @@ class Queue(metaclass=Singleton):
             except discord.Forbidden as e:
                 logging.warning(f"Discord Forbidden: {task.__name__}: {e}")
             except Exception as e:
-                logging.error(f"Error in queue: {e}")
+                logging.error(f"Error in queue: {e}", exc_info=True)
             self.task_finished = True
             logging.info(f"Remaining queue: High: {len(self.high_priority_queue)} Normal: {len(self.normal_priority_queue)} Low: {len(self.low_priority_queue)}")
 
