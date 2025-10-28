@@ -19,8 +19,9 @@ class UserTransactions(DatabaseTransactions) :
 
 	def add_user_empty(self, userid: int, overwrite=False) :
 		with self.createsession() as session :
+			userdata: Users = self.get_user(userid, deleted=True)
 
-			if self.user_exists(userid) and overwrite is False :
+			if userdata and overwrite is False :
 				return False
 			item = db.Users(uid=userid)
 			if overwrite :
