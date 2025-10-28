@@ -5,7 +5,6 @@ from sqlalchemy import Select
 
 from databases import current as db
 from databases.controllers.DatabaseTransactions import DatabaseTransactions
-from databases.controllers.ServerTransactions import ServerTransactions
 from databases.current import Config, Servers
 
 
@@ -15,6 +14,7 @@ class ConfigTransactions(DatabaseTransactions) :
 		# This function should check if the item already exists, if so it will override it or throw an error.
 		with self.createsession() as session :
 			# Check if guild exists
+			from databases.controllers.ServerTransactions import ServerTransactions
 			db_guild = ServerTransactions().get(guildid)
 			if not db_guild :
 				ServerTransactions().add(guildid, active=True, name="fetch error", owner=None, member_count=0, invite="")

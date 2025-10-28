@@ -107,6 +107,7 @@ class ServerTransactions(DatabaseTransactions) :
 
 			if reload :
 				from databases.controllers.ConfigData import ConfigData
+
 				ConfigData().load_guild(guild_id)
 
 			return True
