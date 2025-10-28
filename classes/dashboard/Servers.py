@@ -20,6 +20,9 @@ class Servers:
 			"Authorization": f"Bearer {encoded}",
 			"Content-Type": "application/json"
 		}
+		if guild.guild is None:
+			return
+
 		data = {
 			"id": guild.guild,
 			"ageverifier": guild.active,
