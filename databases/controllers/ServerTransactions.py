@@ -4,7 +4,6 @@ import logging
 import discord
 from sqlalchemy import Select
 
-from databases.controllers.ConfigData import ConfigData
 from databases.controllers.ConfigTransactions import ConfigTransactions
 from databases.controllers.DatabaseTransactions import DatabaseTransactions
 from databases.current import Servers
@@ -56,6 +55,7 @@ class ServerTransactions(DatabaseTransactions) :
 			ConfigTransactions().config_unique_add(guildid, "COOLDOWN", 5)
 
 		if reload :
+			from databases.controllers.ConfigData import ConfigData
 			ConfigData().load_guild(guildid)
 
 		return guild
@@ -106,6 +106,7 @@ class ServerTransactions(DatabaseTransactions) :
 			self.commit(session)
 
 			if reload :
+				from databases.controllers.ConfigData import ConfigData
 				ConfigData().load_guild(guild_id)
 
 			return True

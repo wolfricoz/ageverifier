@@ -35,7 +35,7 @@ db.database.create()
 # Declares the bots intent
 
 # Load the data from env
-load_dotenv('rmrbot/.env')
+load_dotenv('.env')
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 PREFIX = os.getenv("PREFIX")
 DBTOKEN = os.getenv("DB")
