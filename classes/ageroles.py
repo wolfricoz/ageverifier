@@ -17,6 +17,9 @@ def change_age_roles(guild: discord.Guild, user: discord.Member, age, remove = F
 	logging.info(roles)
 	add_roles = []
 	remove_roles = []
+	if isinstance(user, discord.User):
+		user = guild.get_member(user.id)
+
 	for key, value in roles.items() :
 		role = guild.get_role(key)
 		if value['MIN'] <= age <= value['MAX']:
