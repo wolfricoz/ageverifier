@@ -15,36 +15,33 @@ class TOSButton(discord.ui.View) :
 	                   custom_id="usa_accept",
 	                   row=1)
 	async def american(self, interaction: discord.Interaction, button: discord.ui.Button) :
-		if cooldown := LobbyTimers().check_cooldown(interaction.guild.id, interaction.user.id) :
-			await send_response(interaction,
-			                    f"{interaction.user.mention} You are on cooldown for verification. Please wait {discord.utils.format_dt(cooldown, style='R')} before trying again.",
-			                    ephemeral=True)
+		if cooldown :=LobbyTimers().check_cooldown(interaction.guild.id, interaction.user.id) :
+			await send_response(interaction, f"{interaction.user.mention} You are on cooldown for verification. Please wait {discord.utils.format_dt(cooldown, style='R')} before trying again.", ephemeral=True)
 			return
-		await interaction.response.send_modal(VerifyModal(original_message=interaction.message, view=self))
+		await interaction.response.send_modal(VerifyModal())
+		await self.disable_buttons(interaction)
 
 	@discord.ui.button(label="I accept the privacy policy (DD/MM/YYYY)",
 	                   style=discord.ButtonStyle.green,
 	                   custom_id="eu_accept",
 	                   row=2)
 	async def european(self, interaction: discord.Interaction, button: discord.ui.Button) :
-		if cooldown := LobbyTimers().check_cooldown(interaction.guild.id, interaction.user.id) :
-			await send_response(interaction,
-			                    f"{interaction.user.mention} You are on cooldown for verification. Please wait {discord.utils.format_dt(cooldown, style='R')} before trying again.",
-			                    ephemeral=True)
+		if cooldown :=LobbyTimers().check_cooldown(interaction.guild.id, interaction.user.id) :
+			await send_response(interaction, f"{interaction.user.mention} You are on cooldown for verification. Please wait {discord.utils.format_dt(cooldown, style='R')} before trying again.", ephemeral=True)
 			return
-		await interaction.response.send_modal(VerifyModal(day=2, month=3, original_message=interaction.message, view=self))
+		await interaction.response.send_modal(VerifyModal(day=2, month=3))
+		await self.disable_buttons(interaction)
 
 	@discord.ui.button(label="I accept the privacy policy (YYYY/MM/DD)",
 	                   style=discord.ButtonStyle.green,
 	                   custom_id="universal_accept",
 	                   row=3)
 	async def universal(self, interaction: discord.Interaction, button: discord.ui.Button) :
-		if cooldown := LobbyTimers().check_cooldown(interaction.guild.id, interaction.user.id) :
-			await send_response(interaction,
-			                    f"{interaction.user.mention} You are on cooldown for verification. Please wait {discord.utils.format_dt(cooldown, style='R')} before trying again.",
-			                    ephemeral=True)
+		if cooldown :=LobbyTimers().check_cooldown(interaction.guild.id, interaction.user.id) :
+			await send_response(interaction, f"{interaction.user.mention} You are on cooldown for verification. Please wait {discord.utils.format_dt(cooldown, style='R')} before trying again.", ephemeral=True)
 			return
-		await interaction.response.send_modal(VerifyModal(day=4, month=3, year=2, original_message=interaction.message, view=self))
+		await interaction.response.send_modal(VerifyModal(day=4, month=3, year=2))
+		await self.disable_buttons(interaction)
 
 	@discord.ui.button(label="I decline the privacy policy",
 	                   style=discord.ButtonStyle.danger,
@@ -60,6 +57,7 @@ class TOSButton(discord.ui.View) :
 		await send_response(interaction,
 		                    "Privacy policy declined and the staff team has been informed. You can click the 'dismiss message' to hide it.")
 		await self.disable_buttons(interaction)
+
 
 	async def disable_buttons(self, interaction) :
 		self.american.disabled = True
