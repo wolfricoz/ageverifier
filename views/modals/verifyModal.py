@@ -17,8 +17,10 @@ class VerifyModal(discord.ui.Modal) :
 	# By default, it is required and is a short-style input which is exactly
 	# what we want.
 
-	def __init__(self, month=2, day=3, year=4) :
+	def __init__(self, month=2, day=3, year=4, original_message=None, view=None) :
 		super().__init__()
+		self.original_message: discord.Message = original_message
+		self.view = view
 		self.age = discord.ui.TextInput(
 			label='Current Age (Do not round up or down)',
 			placeholder='99',
@@ -62,6 +64,13 @@ class VerifyModal(discord.ui.Modal) :
 		self.add_item(self.year)
 
 	async def on_submit(self, interaction: discord.Interaction) :
+		if self.original_message and self.view:
+			from views.buttons.tosbutton import TOSButton
+			view: TOSButton = self.view
+			for view_item in view.children :
+				view_item.disabled = True
+			await self.original_message.edit(view=view)
+
 		verification_process = VerificationProcess(
 			interaction.client,
 			interaction.user,
