@@ -57,6 +57,7 @@ class Users(Base) :
 	join_history: Mapped[list["JoinHistory"]] = relationship("JoinHistory", back_populates="user", cascade="save-update, merge, delete, delete-orphan")
 
 
+
 # noinspection PyTypeChecker, PydanticTypeChecker
 class Warnings(Base) :
 	__tablename__ = "warnings"
@@ -83,7 +84,7 @@ class Servers(Base) :
 	                                             server_onupdate=func.now())
 	deleted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=None, nullable=True)
 	premium: Mapped[DateTime] = mapped_column(DateTime(timezone=True), nullable=True, default=None)
-	owner_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.uid"), nullable=True)
+	owner_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.uid", ondelete="SET NULL"), nullable=True)
 
 	join_history: Mapped[list["JoinHistory"]] = relationship("JoinHistory", back_populates="server", cascade="save-update, merge, delete, delete-orphan")
 
