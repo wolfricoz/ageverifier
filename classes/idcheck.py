@@ -64,14 +64,19 @@ class IdCheck(ABC) :
 		view = None
 		if verify_button :
 			view = IdVerifyButton()
+		try:
+			await send_message(channel,
+			                   f"{f'{interaction.guild.owner.mention}' if ConfigData().get_key(interaction.guild.id, 'PINGOWNER') == 'ENABLED' else ''}{message.get('channel-message', f'No message set for {message}')}\n[Lobby Debug] Age: {age} dob {dob} userid: {interaction.user.id}",
+			                   view=view)
+			await send_response(interaction, message.get("user-message",
+			                                             "Thank you for submitting your age and date of birth, a staff member will contact you soon because of a discrepancy.")
+			                    ,
+			                    ephemeral=True)
+		except discord.Forbidden :
+			await send_response(interaction,
+			                    f"I don't have permission to send messages in {channel.mention}. Please contact a server administrator to resolve this issue.",
+			                    ephemeral=True)
 
-		await send_message(channel,
-		                   f"{f'{interaction.guild.owner.mention}' if ConfigData().get_key(interaction.guild.id, 'PINGOWNER') == 'ENABLED' else ''}{message.get('channel-message', f'No message set for {message}')}\n[Lobby Debug] Age: {age} dob {dob} userid: {interaction.user.id}",
-		                   view=view)
-		await send_response(interaction, message.get("user-message",
-		                                             "Thank you for submitting your age and date of birth, a staff member will contact you soon because of a discrepancy.")
-		                    ,
-		                    ephemeral=True)
 		logging.info(message.get("channel-message", f"No message set for {message}"))
 		if id_check and message.get("channel-message", None) :
 			JoinHistoryTransactions().update(interaction.user.id, interaction.guild.id, JoinHistoryStatus.IDCHECK)
