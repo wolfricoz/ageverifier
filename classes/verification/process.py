@@ -112,9 +112,9 @@ class VerificationProcess :
 		self.mod_channel = self.guild.get_channel(mod_lobby)
 		self.id_channel = self.guild.get_channel(id_log)
 		if self.id_channel is None :
-			self.id_channel = self.guild.fetch_channel(id_log)
+			self.id_channel = await self.guild.fetch_channel(id_log)
 		if self.mod_channel is None :
-			self.mod_channel = self.guild.fetch_channel(mod_lobby)
+			self.mod_channel = await self.guild.fetch_channel(mod_lobby)
 
 	def check_underage(self, years) :
 		"""Checks if the user is underage."""
