@@ -1,6 +1,9 @@
+import logging
+
 import discord
 from discord_py_utilities.messages import send_message, send_response
 
+from classes.encryption import Encryption
 from classes.idcheck import IdCheck
 from classes.verification.process import VerificationProcess
 from databases.controllers.ConfigData import ConfigData
@@ -80,13 +83,17 @@ class VerifyModal(discord.ui.Modal) :
 
 			if verification_process.discrepancy in ["age_too_high", "mismatch", "below_minimum_age"] :
 				id_check = False
-
-
+			logging.info(verification_process.user_record.date_of_birth)
 			return await IdCheck.send_check(interaction,
 			                                verification_process.id_channel,
 			                                verification_process.discrepancy,
 			                                verification_process.age,
 			                                verification_process.dob,
+			                                date_of_birth=Encryption().decrypt(
+				                                verification_process.user_record.date_of_birth)
+			                                if verification_process.user_record is not None
+			                                else None,
+			                                years=verification_process.years if verification_process.years else None,
 			                                id_check=id_check,
 			                                id_check_reason=verification_process.id_check_info.reason if verification_process.id_check_info else verification_process.discrepancy,
 			                                server=verification_process.id_check_info.server if verification_process.id_check_info else interaction.guild.id)

@@ -39,6 +39,7 @@ class VerificationProcess :
 		self.id_check_info = None
 		self.error = None
 		self.dob = None
+		self.years = None
 
 	async def verify(self) :
 		try :
@@ -49,6 +50,7 @@ class VerificationProcess :
 			                                               self.mod_channel)
 			self.dob = dob
 			agechecked, years = AgeCalculations.agechecker(self.age, dob)
+			self.years = years
 			self.age = int(self.age)
 			# Check if user is underaged or below minimum age
 			if self.check_underage(years):

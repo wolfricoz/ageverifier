@@ -18,6 +18,8 @@ class IdCheck(ABC) :
 	@abstractmethod
 	async def send_check(interaction: discord.Interaction, channel, message, age, dob, date_of_birth=None, years=None,
 	                     id_check=False, verify_button=True, id_check_reason=None, server=None) :
+		logging.info(f"Sending ID check message for {interaction.user.id} with date of birth: {date_of_birth}")
+
 		messages = {
 			"underage"          : {
 				"user-message"    : f"Unfortunately, you are too young to join our server. If you are 17, you may wait in the lobby until you are old enough to join.",
