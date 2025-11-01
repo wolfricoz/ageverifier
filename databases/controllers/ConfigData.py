@@ -49,7 +49,7 @@ class ConfigData(metaclass=singleton) :
 		config = ConfigTransactions().server_config_get(guild_id)
 		settings = config
 		add_list = ['REM', "RETURN", "JOIN", "EXCLUDE"]
-		add_dict = ["SEARCH", "BAN", "ADD"]
+		add_dict = ["SEARCH", "BAN", "ADD", "REVERIFY"]
 		self.conf[guild_id] = {}
 		reload = False
 

@@ -19,16 +19,17 @@ from views.modals.inputmodal import send_modal
 
 
 class ApprovalButtons(discord.ui.View) :
-	def __init__(self, age: int = None, dob: str = None, user: discord.Member | discord.User = None) :
+	def __init__(self, age: int = None, dob: str = None, user: discord.Member | discord.User = None, reverify=False) :
 		self.age = age
 		self.dob = dob
 		self.user = user
+		self.reverify = reverify
 		super().__init__(timeout=None)
 		button = discord.ui.Button(label='Help', style=discord.ButtonStyle.url,
 		                           url='https://wolfricoz.github.io/ageverifier/lobby.html', emoji="❓")
 		self.add_item(button)
 
-	async def send_message(self, guild: discord.Guild, user: discord.User, mod_channel, id_verified=None) :
+	async def send_message(self, guild: discord.Guild, user: discord.Member, mod_channel, id_verified=None) :
 		# prepare the data
 		message = f"\n{user.mention} has given {self.age} and dob matches. You can let them through with the buttons below."
 		whitelisted: bool = check_whitelist(guild.id)
@@ -93,7 +94,7 @@ class ApprovalButtons(discord.ui.View) :
 		                         f"{user.mention}\n-# All timestamps are (mm/dd/yyyy)",
 		                         embed=embed,
 		                         view=self)
-		LobbyDataTransactions().create(footer, self.user.id, self.dob, self.age)
+		LobbyDataTransactions().create(footer, self.user.id, self.dob, self.age, reverify=self.reverify)
 
 	@discord.ui.button(label="Approve User", style=discord.ButtonStyle.green, custom_id="allow")
 	async def allow(self, interaction: discord.Interaction, button: discord.ui.Button) :
@@ -221,7 +222,6 @@ Once you've made these changes you may resubmit your age and date of birth. Than
 		embed = interaction.message.embeds[0]
 		logging.info(embed.footer.text)
 		data = LobbyDataTransactions().read(embed.footer.text)
-		logging.info(data)
 		self.user = interaction.guild.get_member(data.uid)
 		if self.user is None :
 			try:
@@ -230,7 +230,4 @@ Once you've made these changes you may resubmit your age and date of birth. Than
 				self.user = None
 		self.dob = Encryption().decrypt(data.dob)
 		self.age = data.age
-		logging.info(self.age)
-		logging.info(self.user)
-		logging.info(self.dob)
 		return True

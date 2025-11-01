@@ -6,6 +6,7 @@ import discord
 from discord import app_commands
 
 from classes.jsonmaker import Configer
+from classes.retired.discord_tools import send_response
 # from classes.databaseController import StaffDbTransactions
 from classes.singleton import singleton
 from databases.controllers.ServerTransactions import ServerTransactions
@@ -73,6 +74,14 @@ class AccessControl(metaclass=singleton) :
 			return True
 
 		return app_commands.check(pred)
+
+	def check_premium(self):
+		async def is_premium_check(interaction: discord.Interaction) -> bool:
+			result = self.is_premium(interaction.guild.id)
+			if not result:
+				await send_response(interaction, "This command is premium only", ephemeral=True)
+			return result
+		return app_commands.check(is_premium_check)
 
 	def is_premium(self, guild_id: int):
 		if os.getenv('DEBUG'):

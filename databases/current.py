@@ -159,6 +159,7 @@ class LobbyData(Base) :
 	age: Mapped[int] = mapped_column(Integer)
 	created_date: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 	last_updated: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), server_onupdate=func.now())
+	reverify: Mapped[bool] = mapped_column(Boolean, default=False, nullable=True)
 
 class WebsiteData(Base) :
 	__tablename__ = "website_data"

@@ -22,7 +22,7 @@ class LobbyProcess(ABC) :
 
 	@staticmethod
 	@abstractmethod
-	async def approve_user(guild, user, dob, age, staff, idverify = False) :
+	async def approve_user(guild, user, dob, age, staff, idverify = False, reverify=False) :
 		# checks if user is on the id list
 
 		if await AgeCalculations.id_check(guild, user) :
@@ -31,9 +31,12 @@ class LobbyProcess(ABC) :
 		exists = UserTransactions().update_user_dob(user.id, dob, guild.name, override=True)
 
 		# changes user's roles; adds
-		Queue().add(change_age_roles(guild, user, age), priority=2)
 
+		if not reverify :
+			Queue().add(change_age_roles(guild, user, age), priority=2)
 
+		if reverify:
+			Queue().add(,2)
 		# Log age and dob to lobbylog
 		if not idverify:
 			Queue().add(LobbyProcess.log(user, guild, age, dob, staff, exists), priority=2)

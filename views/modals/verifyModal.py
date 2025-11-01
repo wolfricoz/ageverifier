@@ -20,8 +20,9 @@ class VerifyModal(discord.ui.Modal) :
 	# By default, it is required and is a short-style input which is exactly
 	# what we want.
 
-	def __init__(self, month=2, day=3, year=4) :
+	def __init__(self, month=2, day=3, year=4, reverify=False) :
 		super().__init__()
+		self.reverify = reverify
 		self.age = discord.ui.TextInput(
 			label='Current Age (Do not round up or down)',
 			placeholder='99',
@@ -72,7 +73,8 @@ class VerifyModal(discord.ui.Modal) :
 			self.day.value,
 			self.month.value,
 			self.year.value,
-			self.age.value
+			self.age.value,
+			reverify=self.reverify
 		)
 		message = await verification_process.verify()
 		if verification_process.error is not None :
