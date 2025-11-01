@@ -1,7 +1,9 @@
+import asyncio
+import datetime
 import json
 import logging
 import os
-
+from datetime import datetime as dt
 from databases.controllers.AgeRoleTransactions import AgeRoleTransactions
 from classes.singleton import singleton
 from databases.controllers.ConfigTransactions import ConfigTransactions
@@ -27,12 +29,17 @@ class ConfigData(metaclass=singleton) :
 			self.load_guild(guild_id)
 		# logging.debug(self.conf)
 
-	def load_all_guilds(self):
+	async def load_all_guilds(self):
+		start = dt.now()
 		from databases.controllers.ServerTransactions import ServerTransactions
 		logging.info("Loading all guild configurations")
 		server_ids = ServerTransactions().get_all(id_only=True)
 		for server_id in server_ids :
+			await asyncio.sleep(0.001)
+			server_start = dt.now()
 			self.load_guild(server_id)
+			logging.info(f"Loaded guild {server_id} in {dt.now() - server_start}")
+		logging.info(f"Loaded all guild configurations in {dt.now() - start}")
 
 	def load_guild(self, guild_id: int) :
 		"""
@@ -42,7 +49,7 @@ class ConfigData(metaclass=singleton) :
 		config = ConfigTransactions().server_config_get(guild_id)
 		settings = config
 		add_list = ['REM', "RETURN", "JOIN", "EXCLUDE"]
-		add_dict = ["SEARCH", "BAN", "ADD"]
+		add_dict = ["SEARCH", "BAN", "ADD", "REVERIFY"]
 		self.conf[guild_id] = {}
 		reload = False
 
@@ -107,14 +114,20 @@ class ConfigData(metaclass=singleton) :
 		:param key: 
 		:return: 
 		"""
+		if guildid not in self.conf :
+			return 0
+		if key.upper() not in self.conf[guildid] :
+			return 0
+
 		result = self.conf[guildid].get(key.upper(), 0)
 		if isinstance(result, int) :
 			return result
-		if isinstance(result, str) :
-			return int(result)
-		if result is None:
+		if result is None or result == "" or result == "None":
 			logging.warning(f"{guildid} key {key} is not an int")
 			return 0
+		if isinstance(result, str) :
+			return int(result)
+
 		return result
 	
 	def get_toggle(self, guildid: int, key: str, expected: str = "ENABLED", default: str = "DISABLED") -> bool:

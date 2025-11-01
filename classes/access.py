@@ -6,6 +6,7 @@ import discord
 from discord import app_commands
 
 from classes.jsonmaker import Configer
+from classes.retired.discord_tools import send_response
 # from classes.databaseController import StaffDbTransactions
 from classes.singleton import singleton
 from databases.controllers.ServerTransactions import ServerTransactions
@@ -44,8 +45,7 @@ class AccessControl(metaclass=singleton) :
 		for guild in guilds :
 			if guild.premium is not None and datetime.now(tz=UTC) < guild.premium :
 				self.premium_guilds.append(guild.guild)
-		logging.info("Premium guilds have been reloaded:")
-		logging.info(self.premium_guilds)
+		logging.info("Premium guilds have been reloaded")
 
 	def access_owner(self, user_id: int) -> bool :
 		return True if user_id == int(os.getenv('OWNER')) else False
@@ -74,6 +74,14 @@ class AccessControl(metaclass=singleton) :
 			return True
 
 		return app_commands.check(pred)
+
+	def check_premium(self):
+		async def is_premium_check(interaction: discord.Interaction) -> bool:
+			result = self.is_premium(interaction.guild.id)
+			if not result:
+				await send_response(interaction, "This command is premium only", ephemeral=True)
+			return result
+		return app_commands.check(is_premium_check)
 
 	def is_premium(self, guild_id: int):
 		if os.getenv('DEBUG'):

@@ -24,6 +24,7 @@ class VerificationProcess :
 	             month: str,
 	             year: str,
 	             age: int | str,
+	             reverify = False
 	             ) :
 		self.bot = bot
 		self.user = user
@@ -39,6 +40,8 @@ class VerificationProcess :
 		self.id_check_info = None
 		self.error = None
 		self.dob = None
+		self.years = None,
+		self.reverify = reverify
 
 	async def verify(self) :
 		try :
@@ -49,6 +52,7 @@ class VerificationProcess :
 			                                               self.mod_channel)
 			self.dob = dob
 			agechecked, years = AgeCalculations.agechecker(self.age, dob)
+			self.years = years
 			self.age = int(self.age)
 			# Check if user is underaged or below minimum age
 			if self.check_underage(years):
@@ -74,13 +78,13 @@ class VerificationProcess :
 
 			# === Validation finished, we now start processing the user ===
 			automatic_status = ConfigData().get_key_or_none(self.guild.id, "automatic")
-			if automatic_status and automatic_status == "enabled".upper() :
-				await LobbyProcess.approve_user(self.guild, self.user, dob, self.age, "Automatic")
+			if automatic_status and automatic_status == "enabled".upper() or self.reverify :
+				await LobbyProcess.approve_user(self.guild, self.user, dob, self.age, "Automatic", reverify=self.reverify)
 				return "Thank you for submitting your age and date of birth! You’ve been automatically verified and granted access."
 
 			await AgeCalculations.check_history(self.guild.id, self.user, self.mod_channel)
 			LobbyTimers().add_cooldown(self.guild.id, self.user.id, ConfigData().get_key_int_or_zero(self.guild.id, 'COOLDOWN'))
-			approval_buttons = ApprovalButtons(age=self.age, dob=dob, user=self.user)
+			approval_buttons = ApprovalButtons(age=self.age, dob=dob, user=self.user, reverify=self.reverify)
 			await approval_buttons.send_message(self.guild, self.user, self.mod_channel)
 
 			return "Your age and date of birth have been submitted successfully. A staff member will review your verification shortly to ensure everything checks out."
@@ -91,7 +95,10 @@ class VerificationProcess :
 		except discord.NotFound :
 			self.error = "Ageverifier could not fetch one of the channels, please use `/config view` and check if the channels still exist, and if ageverifier has permissions to view them."
 			logging.warning(f"Ageverifier could not fetch one of the channels, please use `/config view` and check if the channels still exist, and if ageverifier has permissions to view them.")
+		except ValueError:
+			self.error = "Ageverifier could not validate your date of birth, please make sure it is in the format: mm/dd/yyyy"
 		except Exception as e :
+
 			self.error = e
 			logging.error(e, exc_info=True)
 
@@ -109,9 +116,9 @@ class VerificationProcess :
 		self.mod_channel = self.guild.get_channel(mod_lobby)
 		self.id_channel = self.guild.get_channel(id_log)
 		if self.id_channel is None :
-			self.id_channel = self.guild.fetch_channel(id_log)
+			self.id_channel = await self.guild.fetch_channel(id_log)
 		if self.mod_channel is None :
-			self.mod_channel = self.guild.fetch_channel(mod_lobby)
+			self.mod_channel = await self.guild.fetch_channel(mod_lobby)
 
 	def check_underage(self, years) :
 		"""Checks if the user is underage."""

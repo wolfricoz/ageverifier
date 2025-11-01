@@ -7,8 +7,9 @@ from views.modals.verifyModal import VerifyModal
 
 
 class TOSButton(discord.ui.View) :
-	def __init__(self) :
+	def __init__(self, reverify=False) :
 		super().__init__(timeout=None)
+		self.reverify = reverify
 
 	@discord.ui.button(label="I accept the privacy policy (MM/DD/YYYY)",
 	                   style=discord.ButtonStyle.green,
@@ -18,7 +19,7 @@ class TOSButton(discord.ui.View) :
 		if cooldown :=LobbyTimers().check_cooldown(interaction.guild.id, interaction.user.id) :
 			await send_response(interaction, f"{interaction.user.mention} You are on cooldown for verification. Please wait {discord.utils.format_dt(cooldown, style='R')} before trying again.", ephemeral=True)
 			return
-		await interaction.response.send_modal(VerifyModal())
+		await interaction.response.send_modal(VerifyModal(reverify=self.reverify))
 		await self.disable_buttons(interaction)
 
 	@discord.ui.button(label="I accept the privacy policy (DD/MM/YYYY)",
@@ -29,7 +30,7 @@ class TOSButton(discord.ui.View) :
 		if cooldown :=LobbyTimers().check_cooldown(interaction.guild.id, interaction.user.id) :
 			await send_response(interaction, f"{interaction.user.mention} You are on cooldown for verification. Please wait {discord.utils.format_dt(cooldown, style='R')} before trying again.", ephemeral=True)
 			return
-		await interaction.response.send_modal(VerifyModal(day=2, month=3))
+		await interaction.response.send_modal(VerifyModal(day=2, month=3, reverify=self.reverify))
 		await self.disable_buttons(interaction)
 
 	@discord.ui.button(label="I accept the privacy policy (YYYY/MM/DD)",
@@ -40,7 +41,7 @@ class TOSButton(discord.ui.View) :
 		if cooldown :=LobbyTimers().check_cooldown(interaction.guild.id, interaction.user.id) :
 			await send_response(interaction, f"{interaction.user.mention} You are on cooldown for verification. Please wait {discord.utils.format_dt(cooldown, style='R')} before trying again.", ephemeral=True)
 			return
-		await interaction.response.send_modal(VerifyModal(day=4, month=3, year=2))
+		await interaction.response.send_modal(VerifyModal(day=4, month=3, year=2, reverify=self.reverify))
 		await self.disable_buttons(interaction)
 
 	@discord.ui.button(label="I decline the privacy policy",

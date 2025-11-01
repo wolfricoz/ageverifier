@@ -1,6 +1,9 @@
+import logging
+
 import discord
 from discord_py_utilities.messages import send_message, send_response
 
+from classes.encryption import Encryption
 from classes.idcheck import IdCheck
 from classes.verification.process import VerificationProcess
 from databases.controllers.ConfigData import ConfigData
@@ -17,8 +20,9 @@ class VerifyModal(discord.ui.Modal) :
 	# By default, it is required and is a short-style input which is exactly
 	# what we want.
 
-	def __init__(self, month=2, day=3, year=4) :
+	def __init__(self, month=2, day=3, year=4, reverify=False) :
 		super().__init__()
+		self.reverify = reverify
 		self.age = discord.ui.TextInput(
 			label='Current Age (Do not round up or down)',
 			placeholder='99',
@@ -69,7 +73,8 @@ class VerifyModal(discord.ui.Modal) :
 			self.day.value,
 			self.month.value,
 			self.year.value,
-			self.age.value
+			self.age.value,
+			reverify=self.reverify
 		)
 		message = await verification_process.verify()
 		if verification_process.error is not None :
@@ -77,18 +82,23 @@ class VerifyModal(discord.ui.Modal) :
 			return
 		if verification_process.discrepancy is not None :
 			id_check = True
+
 			if verification_process.discrepancy in ["age_too_high", "mismatch", "below_minimum_age"] :
 				id_check = False
-
-
+			logging.info(verification_process.user_record.date_of_birth)
 			return await IdCheck.send_check(interaction,
 			                                verification_process.id_channel,
 			                                verification_process.discrepancy,
 			                                verification_process.age,
 			                                verification_process.dob,
+			                                date_of_birth=Encryption().decrypt(
+				                                verification_process.user_record.date_of_birth)
+			                                if verification_process.user_record is not None
+			                                else None,
+			                                years=verification_process.years if verification_process.years else None,
 			                                id_check=id_check,
-			                                id_check_reason=verification_process.id_check_info.reason,
-			                                server=verification_process.id_check_info.server)
+			                                id_check_reason=verification_process.id_check_info.reason if verification_process.id_check_info else verification_process.discrepancy,
+			                                server=verification_process.id_check_info.server if verification_process.id_check_info else interaction.guild.id)
 
 		return await send_response(interaction, message, ephemeral=True)
 

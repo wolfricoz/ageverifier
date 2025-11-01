@@ -85,12 +85,16 @@ class Queue(metaclass=Singleton):
                 if task.__name__.lower() in ["delete"]:
                     await asyncio.sleep(1)
                 await task
+
             except KeyNotFound as e:
                 logging.warning(f"Key not found: {task.__name__}: {e}")
             except discord.Forbidden as e:
                 logging.warning(f"Discord Forbidden: {task.__name__}: {e}")
+
+            except discord.NotFound:
+              logging.warning(f"Discord NotFound: {task.__name__}")
             except Exception as e:
-                logging.error(f"Error in queue: {e}")
+              logging.error(f"Error in queue: {e}", exc_info=True)
             self.task_finished = True
             logging.info(f"Remaining queue: High: {len(self.high_priority_queue)} Normal: {len(self.normal_priority_queue)} Low: {len(self.low_priority_queue)}")
 

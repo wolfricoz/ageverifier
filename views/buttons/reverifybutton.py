@@ -33,19 +33,19 @@ class VerifyButton(discord.ui.View) :
 		idcheck = await self.id_verified_check(interaction)
 		if idcheck :
 			return
-		if AccessControl().is_premium(interaction.guild.id) and ConfigData().get_toggle(interaction.guild.id, "ONLINE_VERIFICATION") :
-
-			uuid = WebsiteDataTransactions().create(user_id=interaction.user.id, guild_id=interaction.guild.id)
-			website_base = os.getenv("DASHBOARD_URL")
-			url = f"{website_base}/ageverifier/verification/{interaction.guild.id}/{uuid}"
-
-			await send_response(interaction, f"This server uses our online verification system. Please use the button below to visit our verification page.", ephemeral=True, view=WebsiteButton(url))
-			return
+		# if AccessControl().is_premium(interaction.guild.id) and ConfigData().get_toggle(interaction.guild.id, "ONLINE_VERIFICATION") :
+		#
+		# 	uuid = WebsiteDataTransactions().create(user_id=interaction.user.id, guild_id=interaction.guild.id)
+		# 	website_base = os.getenv("DASHBOARD_URL")
+		# 	url = f"{website_base}/ageverifier/verification/{interaction.guild.id}/{uuid}"
+		#
+		# 	await send_response(interaction, f"This server uses our online verification system. Please use the button below to visit our verification page.", ephemeral=True, view=WebsiteButton(url))
+		# 	return
 
 
 		await send_response(interaction,
 		                    f"{interaction.user.mention} To verify using AgeVerifier, you must accept our [Privacy Policy](https://wolfricoz.github.io/ageverifier/privacypolicy.html). By accepting, you consent to your date of birth being stored for verification purposes. Please review the policy and if you accept our privacy policy, please click 'I accept.'",
-		                    view=TOSButton(), ephemeral=True)
+		                    view=TOSButton(reverify=True), ephemeral=True)
 
 	def get_user_data(self, user_id: int) :
 		user = UserTransactions().get_user(user_id)

@@ -113,7 +113,7 @@ class Tasks(commands.GroupCog) :
 		for guild in self.bot.guilds :
 			self.bot.invites[guild.id] = await guild.invites()
 
-	@tasks.loop(hours=12)
+	@tasks.loop(hours=2)
 	async def check_active_servers(self) :
 		guild_ids = ServerTransactions().get_all()
 		for guild in self.bot.guilds :

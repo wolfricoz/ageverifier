@@ -144,7 +144,7 @@ class AgeCalculations(ABC) :
 			year = dob_object.group(3)
 			fulldob = f"{month}/{day}/{year}"
 			if month is None or day is None or year is None :
-				raise Exception("Failed to validate date of birth. Please enter the date of birth in the format: mm/dd/yyyy")
+				raise ValueError("Failed to validate date of birth. Please enter the date of birth in the format: mm/dd/yyyy")
 			return fulldob
 		except Exception as e:
 			raise Exception(f"Failed to validate date of birth, reason: {e}")

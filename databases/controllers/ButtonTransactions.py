@@ -13,7 +13,7 @@ class LobbyDataTransactions(DatabaseTransactions):
     Handles database transactions for the LobbyData model.
     """
 
-    def create(self, uuid: str, user_id: int,  dob: str, age: int) -> LobbyData:
+    def create(self, uuid: str, user_id: int,  dob: str, age: int, reverify=False) -> LobbyData:
         """
         Creates a new LobbyData record.
 
@@ -30,7 +30,8 @@ class LobbyDataTransactions(DatabaseTransactions):
                 uuid=uuid,
                 uid=user_id,
                 dob=str(Encryption().encrypt(dob)),
-                age=age
+                age=age,
+	              reverify=reverify
             )
             session.add(new_entry)
             self.commit(session)

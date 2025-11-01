@@ -19,8 +19,9 @@ class UserTransactions(DatabaseTransactions) :
 
 	def add_user_empty(self, userid: int, overwrite=False) :
 		with self.createsession() as session :
+			userdata: Users = self.get_user(userid, deleted=True)
 
-			if self.user_exists(userid) and overwrite is False :
+			if userdata and overwrite is False :
 				return False
 			item = db.Users(uid=userid)
 			if overwrite :
@@ -170,9 +171,8 @@ class UserTransactions(DatabaseTransactions) :
 
 	def user_exists(self, userid: int) :
 		with self.createsession() as session :
-
 			exists = session.scalar(
-				Select(db.Users).where(db.Users.uid == userid))
+				Select(db.Users).where(db.Users.uid == int(userid)))
 			session.close()
 			if exists is None :
 				return False
