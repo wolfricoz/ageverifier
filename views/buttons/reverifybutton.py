@@ -30,7 +30,7 @@ class ReVerifyButton(discord.ui.View) :
 			                    ephemeral=True)
 			return
 
-		idcheck = await self.id_verified_check(interaction)
+		idcheck = await self.id_verified_check(interaction, True)
 		if idcheck :
 			return
 		# if AccessControl().is_premium(interaction.guild.id) and ConfigData().get_toggle(interaction.guild.id, "ONLINE_VERIFICATION") :
@@ -53,7 +53,7 @@ class ReVerifyButton(discord.ui.View) :
 		age = AgeCalculations.dob_to_age(dob)
 		return dob, age
 
-	async def id_verified_check(self, interaction: discord.Interaction) -> bool :
+	async def id_verified_check(self, interaction: discord.Interaction, reverify= False) -> bool :
 		try :
 			modlobby = interaction.guild.get_channel(ConfigData().get_key_int_or_zero(interaction.guild.id, 'lobbymod'))
 			if modlobby is None :
@@ -72,8 +72,8 @@ class ReVerifyButton(discord.ui.View) :
 				LobbyTimers().add_cooldown(interaction.guild.id, interaction.user.id,
 				                           ConfigData().get_key_int_or_zero(interaction.guild.id, 'COOLDOWN'))
 				automatic_status = ConfigData().get_key_or_none(interaction.guild.id, "automatic")
-				if automatic_status and automatic_status == "enabled".upper() :
-					await LobbyProcess.approve_user(interaction.guild, interaction.user, dob, age, "Automatic")
+				if automatic_status and automatic_status == "enabled".upper() or reverify:
+					await LobbyProcess.approve_user(interaction.guild, interaction.user, dob, age, "Automatic", reverify=reverify)
 					await send_response(interaction,
 					                    f'Thank you for submitting your age and dob! You will be let through immediately!',
 					                    ephemeral=True)

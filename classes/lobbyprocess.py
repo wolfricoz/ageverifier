@@ -82,6 +82,10 @@ class LobbyProcess(ABC) :
 	@staticmethod
 	@abstractmethod
 	async def log(user, guild, age, dob, staff, exists, id_verify = "", reverify=False) :
+		# Empty variables, these may be filled based on the type of verification
+		dob_field = ""
+		reverify_field = ""
+
 		lobbylog = ConfigData().get_key(guild.id, "lobbylog")
 		if reverify:
 			revlog = ConfigData().get_key(guild.id, "reverifylog")
@@ -89,11 +93,14 @@ class LobbyProcess(ABC) :
 				lobbylog = revlog
 
 		channel = guild.get_channel(int(lobbylog))
-		dob_field = ""
 		if check_whitelist(guild.id) :
 			dob_field = f"DOB: {dob} \n"
+		if reverify:
+			reverify_field = "[REVERIFICATION]\n"
+
+
 		message = await send_message(channel, f"{id_verify}"
-		                            f"[REVERIFICATION]\n" if reverify else "\n"
+		                            f"{reverify_field}"
 		                            f"user: {user.mention}\n"
 		                            f"Age: {age} \n"
 		                            f"{dob_field}"
