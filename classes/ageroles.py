@@ -11,7 +11,13 @@ def change_age_roles(guild: discord.Guild, user: discord.Member, age, remove = F
 	"""Adds the age roles to the user and removes the age roles that are not in the range if remove is True."""
 	roles = ConfigData().get_key(guild.id, "ADD")
 	if reverify :
-		roles += ConfigData().get_key(guild.id, "REVERIFY")
+		rev_roles = ConfigData().get_key(guild.id, "REVERIFY")
+		if isinstance(rev_roles, str):
+			roles[rev_roles] = {'MIN': 18, 'MAX': 200}
+		if isinstance(rev_roles, list):
+			for role in rev_roles :
+				roles[role] = {'MIN': 18, 'MAX': 200}
+
 
 	exluded_roles = []
 	if remove :

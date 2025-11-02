@@ -8,7 +8,8 @@ channelchoices = {
 	"lobby"      : 'This is your lobby channel, where the lobby welcome message will be posted. This is also where the verification process will start; this is where new users should interact with the bot.',
 	"lobbylog"   : 'This is the channel where the lobby logs will be posted, this channel has to be hidden from the users; failure to do so will result in the bot leaving.',
 	"lobbymod"   : 'This is where the verification approval happens, this channel should be hidden from the users.',
-	"idlog"      : 'This is where failed verification logs will be posted, this channel should be hidden from the users.'
+	"idlog"      : 'This is where failed verification logs will be posted, this channel should be hidden from the users.',
+	"reverifylog" : 'This is the channel where the reverification logs will be posted, this channel has to be hidden from the users; failure to do so will result in the bot leaving.'
 }
 rolechoices = {
 	'add'    : 'These roles will be added to the user after a successful verification',

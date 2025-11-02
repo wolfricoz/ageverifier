@@ -2,8 +2,10 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import GroupCog
 from discord import app_commands
+from discord_py_utilities.messages import send_message, send_response
 
 from classes.access import AccessControl
+from views.buttons.reverifybutton import ReVerifyButton
 
 
 class AdditionalVerification(GroupCog, name="reverify"):
@@ -12,14 +14,14 @@ class AdditionalVerification(GroupCog, name="reverify"):
 		self.bot = bot
 
 
-def setup(bot: commands.Bot):
-	bot.add_cog(AdditionalVerification(bot))
-
 	@app_commands.command(name="create")
 	@AccessControl().check_premium()
-	async def create(interaction: discord.Interaction, button_text: str = "Start Verification", desc_text: str = ""):
+	async def create(self, interaction: discord.Interaction, channel: discord.TextChannel, desc_text: str = " "):
 		"""Creates the button to start the secondary verification"""
-		pass
+		await send_response(interaction, f"creating reverification button in {channel.name}", ephemeral=True)
+		view = ReVerifyButton()
+		await send_message(channel, desc_text, view=view)
 
 
-	
+async def setup(bot: commands.Bot):
+	await bot.add_cog(AdditionalVerification(bot))

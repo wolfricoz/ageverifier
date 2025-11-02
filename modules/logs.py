@@ -169,6 +169,9 @@ class Logging(commands.Cog) :
 				await send_message(interaction.guild.owner, message, error_mode='ignore')
 				return
 			await send_response(interaction, message, ephemeral=True, error_mode='ignore')
+		except NoMessagePermissionException :
+			logging.warning(f"No message permission for {interaction.guild.name} {interaction.guild.id}")
+
 		except Exception as e :
 			logging.error(e)
 
