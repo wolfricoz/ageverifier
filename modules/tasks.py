@@ -2,7 +2,7 @@
 import asyncio
 import logging
 import os
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import discord
 from discord_py_utilities.invites import check_guild_invites
@@ -20,8 +20,10 @@ from databases.controllers.ConfigData import ConfigData
 from databases.controllers.DatabaseTransactions import DatabaseTransactions
 from databases.controllers.ServerTransactions import ServerTransactions
 from databases.controllers.UserTransactions import UserTransactions
+from databases.current import Servers as servers_DB
 
 OLDLOBBY = int(os.getenv("OLDLOBBY"))
+DEBUG = os.getenv("DEBUG")
 
 
 class Tasks(commands.GroupCog) :
@@ -107,8 +109,77 @@ class Tasks(commands.GroupCog) :
 		await self.user_expiration_remove(userdata)
 		logging.info("Finished checking all entries")
 
+	async def clean_lobby(self, guild: discord.Guild) :
+		# Setup for the function; preparing the variables.
+		count_messages = 0
+		kicked_users = []
+		lobby_channel = guild.get_channel(ConfigData().get_key_int_or_zero(guild.id, "lobby"))
+		mod_lobby = guild.get_channel(ConfigData().get_key_int_or_zero(guild.id, "lobbymod"))
+		days = ConfigData().get_key_int_or_zero(guild.id, "clean_lobby_days")
+		guild_db: servers_DB = ServerTransactions().get(guild.id)
+		removal_message = (
+			f"You have been removed from the server due to {days} days of inactivity. "
+			f"If you’d like to rejoin, you’re always welcome back! Here’s a new invite link: {guild_db.invite}"
+		)
+
+		if not lobby_channel :
+			return
+		if days == 0:
+			return
+		removal_date = datetime.now(tz=UTC) - timedelta(days=days)
+		async for message in lobby_channel.history(limit=None, after=removal_date):
+			user = message.mentions[0]
+			if message.author != self.bot.user:
+				Queue().add(message.delete(), 0)
+				count_messages += 1
+			if message.author.guild_permissions.manage_messages:
+				continue
+			if message.author != self.bot.user and len(message.mentions) < 1:
+				continue
+			if user.guild_permissions.manage_messages :
+				continue
+			count_messages +=1
+			if user.global_name not in kicked_users :
+				kicked_users.append(user.global_name)
+			if not DEBUG:
+				Queue().add(user.send(removal_message), 0)
+				Queue().add(user.kick(reason=f"In lobby for more than {days} days"),0)
+				Queue().add(message.delete(),0)
+
+		with open("config/kicked.txt", "w") as file :
+			str_kicked = "\n".join(kicked_users)
+			file.write("These users were queue'd for removal during the purge:\n")
+			file.write(str_kicked)
+		await mod_lobby.send(
+			f"[Automatic Lobby Cleanup] cleaned up {len(kicked_users)} users and {count_messages} messages",
+			file=discord.File(file.name, "autocleanup.txt")
+		)
+		os.remove("config/kicked.txt")
+
+
+
+
+
+
+
+
+
+
+
+
+
+	@tasks.loop(hours=24)
+	async def clean_guilds(self) :
+		"""This function cleans up the guilds from left-over messages, and inactive users"""
+		premium_guilds = AccessControl.premium_guilds
+		for gid in premium_guilds:
+			guild = self.bot.get_guild(gid)
+			if not guild :
+				continue
+			Queue().add(self.clean_lobby(guild))
+
 	@tasks.loop(minutes=10)
-	async def refresh_invites(self):
+	async def refresh_invites(self) :
 		self.bot.invites = {}
 		for guild in self.bot.guilds :
 			self.bot.invites[guild.id] = await guild.invites()
@@ -129,11 +200,11 @@ class Tasks(commands.GroupCog) :
 			                         )
 
 		for gid in guild_ids :
-			try:
+			try :
 				guild = self.bot.get_guild(gid)
-				if guild is None:
+				if guild is None :
 					guild = await self.bot.fetch_guild(gid)
-			except discord.errors.NotFound:
+			except discord.errors.NotFound :
 				ServerTransactions().delete(gid)
 				continue
 			ServerTransactions().add(gid,
@@ -158,7 +229,7 @@ class Tasks(commands.GroupCog) :
 		for guild in self.bot.guilds :
 			await asyncio.sleep(0.001)
 			rem_roles = (ConfigData().get_key_or_none(guild.id, "REM") or []) + (
-						ConfigData().get_key_or_none(guild.id, "JOIN") or [])
+					ConfigData().get_key_or_none(guild.id, "JOIN") or [])
 			mod_lobby = guild.get_channel(ConfigData().get_key_int_or_zero(guild.id, "lobbymod"))
 			if mod_lobby is None :
 				logging.info(f"Mod lobby not found in {guild.name}, skipping age role update.")
@@ -183,7 +254,6 @@ class Tasks(commands.GroupCog) :
 					age = AgeCalculations.dob_to_age(date_of_birth)
 					user_roles = [role.id for role in member.roles]
 
-
 					for rem_role in rem_roles :
 						if rem_role in user_roles :
 							logging.info(f"User {member.name} still in the lobby")
@@ -198,7 +268,6 @@ class Tasks(commands.GroupCog) :
 		"""pings the database to keep the connection alive"""
 		logging.debug("Pinging database.")
 		DatabaseTransactions().ping_db()
-
 
 	@app_commands.command(name="expirecheck")
 	@app_commands.checks.has_permissions(administrator=True)
@@ -231,6 +300,7 @@ class Tasks(commands.GroupCog) :
 	async def before_ping(self) :
 		"""stops event from starting before the bot has fully loaded"""
 		await self.bot.wait_until_ready()
+
 
 async def setup(bot) :
 	"""Adds the cog to the bot."""

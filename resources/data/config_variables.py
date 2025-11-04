@@ -32,4 +32,9 @@ lobby_approval_toggles = {
 	'debug': 'shows debug approval message'
 }
 
+int_options = {
+	'clean_lobby_days': 'Inactive member cleanup threshold from the lobby (days).'
+}
+
+
 available_toggles = ["LobbyWelcome", "Welcome", "Automatic", "Autokick", "Updateroles", "Pingowner"]
