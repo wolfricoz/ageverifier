@@ -37,6 +37,7 @@ class Tasks(commands.GroupCog) :
 		self.update_age_roles.start()
 		self.database_ping.start()
 		self.refresh_invites.start()
+		self.clean_guilds.start()
 
 	def cog_unload(self) :
 		"""unloads tasks"""
@@ -46,6 +47,8 @@ class Tasks(commands.GroupCog) :
 		self.update_age_roles.cancel()
 		self.database_ping.cancel()
 		self.refresh_invites.cancel()
+		self.clean_guilds.cancel()
+
 
 	@tasks.loop(minutes=10)
 	async def config_reload(self) :
@@ -111,6 +114,7 @@ class Tasks(commands.GroupCog) :
 
 	async def clean_lobby(self, guild: discord.Guild) :
 		# Setup for the function; preparing the variables.
+		logging.info(f"cleaning lobby for {guild.name}")
 		count_messages = 0
 		kicked_users = []
 		lobby_channel = guild.get_channel(ConfigData().get_key_int_or_zero(guild.id, "lobby"))
@@ -123,19 +127,24 @@ class Tasks(commands.GroupCog) :
 		)
 
 		if not lobby_channel :
+			logging.warning(f"[clean-up] No lobby channel found for {guild.name}")
 			return
 		if days == 0:
+			logging.info(f"[clean-up] Days are set to 0, skipping {guild.name}")
 			return
 		removal_date = datetime.now(tz=UTC) - timedelta(days=days)
-		async for message in lobby_channel.history(limit=None, after=removal_date):
-			user = message.mentions[0]
+
+		async for message in lobby_channel.history(limit=None, before=removal_date):
+			logging.debug(f"Message: {message.content}")
 			if message.author != self.bot.user:
 				Queue().add(message.delete(), 0)
 				count_messages += 1
 			if message.author.guild_permissions.manage_messages:
 				continue
-			if message.author != self.bot.user and len(message.mentions) < 1:
+			if message.author != self.bot.user or len(message.mentions) < 1:
 				continue
+			user = message.mentions[0]
+
 			if user.guild_permissions.manage_messages :
 				continue
 			count_messages +=1
@@ -145,8 +154,14 @@ class Tasks(commands.GroupCog) :
 				Queue().add(user.send(removal_message), 0)
 				Queue().add(user.kick(reason=f"In lobby for more than {days} days"),0)
 				Queue().add(message.delete(),0)
+		if count_messages < 1 and len(kicked_users) < 1 :
+			return
 
-		with open("config/kicked.txt", "w") as file :
+		if not os.path.isdir('temp') :
+			os.mkdir('temp')
+
+
+		with open("temp/kicked.txt", "w") as file :
 			str_kicked = "\n".join(kicked_users)
 			file.write("These users were queue'd for removal during the purge:\n")
 			file.write(str_kicked)
@@ -154,24 +169,19 @@ class Tasks(commands.GroupCog) :
 			f"[Automatic Lobby Cleanup] cleaned up {len(kicked_users)} users and {count_messages} messages",
 			file=discord.File(file.name, "autocleanup.txt")
 		)
-		os.remove("config/kicked.txt")
-
-
-
-
-
-
-
-
-
-
+		os.remove("temp/kicked.txt")
 
 
 
 	@tasks.loop(hours=24)
 	async def clean_guilds(self) :
 		"""This function cleans up the guilds from left-over messages, and inactive users"""
-		premium_guilds = AccessControl.premium_guilds
+		await asyncio.sleep(15)
+		logging.info("Cleaning up guilds.")
+		access_control = AccessControl()
+		if len(access_control.premium_guilds) < 1:
+			access_control.add_premium_guilds_to_list()
+		premium_guilds = access_control.premium_guilds
 		for gid in premium_guilds:
 			guild = self.bot.get_guild(gid)
 			if not guild :
@@ -300,6 +310,12 @@ class Tasks(commands.GroupCog) :
 	async def before_ping(self) :
 		"""stops event from starting before the bot has fully loaded"""
 		await self.bot.wait_until_ready()
+
+	@clean_guilds.before_loop
+	async def before_cleanup(self) :
+		"""stops event from starting before the bot has fully loaded"""
+		await self.bot.wait_until_ready()
+
 
 
 async def setup(bot) :
