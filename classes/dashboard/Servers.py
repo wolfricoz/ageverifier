@@ -37,6 +37,7 @@ class Servers:
 		result = requests.post(url, headers=headers, json=data)
 		if result.status_code != 200:
 			logging.info(f"Server {guild.guild} could not be updated: {result.status_code}")
+			logging.info(f"Variables:\npath: {path}\nurl: {url}\nheaders: {headers}, key: {self.key}\nsecret: {self.secret}")
 			return None
 		result = result.json()
 		ServerTransactions().update(guild.guild, premium=result.get('premium', None) )
