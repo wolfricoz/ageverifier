@@ -38,6 +38,12 @@ async def welcome_user(member) :
 		print(f"lobbywelcome not found for {member.guild.name}(id: {member.guild.id})")
 		logging.error(f"lobbywelcome not found for {member.guild.name}(id: {member.guild.id})")
 		lobby_welcome = "Lobby message not setup, please use `/config messages key:LOBBYWELCOMEMESSAGE action:set` to set it up. You can click the button below to verify!"
+	if channel is None :
+		channel = find_first_accessible_text_channel(member.guild)
+		warning = f"Lobby channel not found, sending to {channel.mention} instead."
+		if channel is None :
+			return
+
 	await send_message(channel,
 	                   f"Welcome {member.mention}! {lobby_welcome}\n{warning}"
 	                   f"\n"
@@ -107,4 +113,4 @@ async def invite_info(bot, member: discord.Member) :
 	except :
 		pass
 	channel = bot.get_channel(int(infochannel))
-	await send_message(channel, embed=embed)
+	await send_message(channel, embed=embed, error_mode="ignore")

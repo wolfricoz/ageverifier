@@ -21,7 +21,8 @@ class UserTransactions(DatabaseTransactions) :
 		with self.createsession() as session :
 			userdata: Users = self.get_user(userid, deleted=True)
 
-			if userdata and overwrite is False :
+			if userdata:
+				#to fix error, overwrite was removed.
 				return False
 			item = db.Users(uid=userid)
 			if overwrite :

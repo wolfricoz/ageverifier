@@ -27,6 +27,7 @@ from databases.current import Servers
 from views.buttons.approvalbuttons import ApprovalButtons
 from views.buttons.dobentrybutton import dobentry
 from views.buttons.idverifybutton import IdVerifyButton
+from views.buttons.reverifybutton import ReVerifyButton
 from views.buttons.verifybutton import VerifyButton
 from classes.dashboard.Servers import Servers as DashServers
 
@@ -129,6 +130,7 @@ async def on_ready() :
 	logging.info(f"Commands synced, start up done! Connected to {len(bot.guilds)} guilds and {bot.shard_count} shards.")
 	bot.add_view(IdVerifyButton())
 	bot.add_view(VerifyButton())
+	bot.add_view(ReVerifyButton())
 	bot.add_view(ApprovalButtons())
 	bot.add_view(dobentry())
 	logging.info("Loaded routers: " + ", ".join(routers))

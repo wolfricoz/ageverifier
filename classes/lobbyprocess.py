@@ -5,6 +5,8 @@ from abc import ABC, abstractmethod
 
 import discord
 from discord.utils import get
+from discord_py_utilities.permissions import find_first_accessible_text_channel
+from pytz.reference import first_sunday_on_or_after
 
 from classes.AgeCalculations import AgeCalculations
 from classes.ageroles import change_age_roles
@@ -16,6 +18,7 @@ from discord_py_utilities.messages import send_message
 from classes.support.queue import Queue
 from classes.whitelist import check_whitelist
 from databases.enums.joinhistorystatus import JoinHistoryStatus
+from databases.exceptions.KeyNotFound import KeyNotFound
 
 
 class LobbyProcess(ABC) :
@@ -32,19 +35,20 @@ class LobbyProcess(ABC) :
 
 		# changes user's roles; adds
 
-		if not reverify :
-			Queue().add(change_age_roles(guild, user, age), priority=2)
+
+		Queue().add(change_age_roles(guild, user, age, remove=reverify, reverify=reverify), priority=2)
 
 		# Log age and dob to lobbylog
 		if not idverify:
-			Queue().add(LobbyProcess.log(user, guild, age, dob, staff, exists), priority=2)
-
+			Queue().add(LobbyProcess.log(user, guild, age, dob, staff, exists, reverify=reverify), priority=2)
+		if not reverify :
 		# fetches welcoming message and welcomes them in general channel
-		Queue().add(LobbyProcess.welcome(user, guild), priority=2)
+
+			Queue().add(LobbyProcess.welcome(user, guild), priority=2)
 
 		# changes user's roles; removes - Moved here to give some time between adding and removing roles (potential fixing a discord syncing bug)
 
-		Queue().add(LobbyProcess.remove_user_roles(user, guild), priority=2)
+			Queue().add(LobbyProcess.remove_user_roles(user, guild), priority=2)
 
 		# Cleans up the messages in the lobby and where the command was executed
 		Queue().add(LobbyProcess.clean_up(guild, user), priority=0)
@@ -52,7 +56,8 @@ class LobbyProcess(ABC) :
 	@staticmethod
 	@abstractmethod
 	async def remove_user_roles(user, guild: discord.Guild) :
-
+		if isinstance(user, discord.User) :
+			user = guild.get_member(user.id)
 		config_rem_roles = ConfigData().get_key(guild.id, "REM")
 		rem_roles = await LobbyProcess.get_roles(guild, config_rem_roles, "REM")
 		Queue().add(user.remove_roles(*rem_roles), priority=2)
@@ -76,13 +81,26 @@ class LobbyProcess(ABC) :
 
 	@staticmethod
 	@abstractmethod
-	async def log(user, guild, age, dob, staff, exists, id_verify = "") :
-		lobbylog = ConfigData().get_key(guild.id, "lobbylog")
-		channel = guild.get_channel(int(lobbylog))
+	async def log(user, guild, age, dob, staff, exists, id_verify = "", reverify=False) :
+		# Empty variables, these may be filled based on the type of verification
 		dob_field = ""
+		reverify_field = ""
+
+		lobbylog = ConfigData().get_key(guild.id, "lobbylog")
+		if reverify:
+			revlog = ConfigData().get_key(guild.id, "reverifylog")
+			if revlog is not None:
+				lobbylog = revlog
+
+		channel = guild.get_channel(int(lobbylog))
 		if check_whitelist(guild.id) :
 			dob_field = f"DOB: {dob} \n"
+		if reverify:
+			reverify_field = "[REVERIFICATION]\n"
+
+
 		message = await send_message(channel, f"{id_verify}"
+		                            f"{reverify_field}"
 		                            f"user: {user.mention}\n"
 		                            f"Age: {age} \n"
 		                            f"{dob_field}"
@@ -142,7 +160,12 @@ class LobbyProcess(ABC) :
 	@staticmethod
 	@abstractmethod
 	async def age_log(userid, dob, interaction, operation="added", log=True, reason="") :
-		age_log = interaction.guild.get_channel(ConfigData().get_key_int(interaction.guild.id, "lobbylog"))
+		try:
+			age_log = interaction.guild.get_channel(ConfigData().get_key_int(interaction.guild.id, "lobbylog"))
+		except KeyNotFound:
+			age_log = find_first_accessible_text_channel(interaction.guild)
+			await send_message(age_log, f"Could not find age log channel, using {age_log.mention} instead. Please set one up with `/config channels`")
+			return
 		dev_channel = interaction.client.get_channel(int(os.getenv('DEV')))
 		dob_field = ""
 		if check_whitelist(interaction.guild.id) :
