@@ -2,8 +2,7 @@ import base64
 import logging
 import os
 
-
-
+from databases.controllers.ServerTransactions import ServerTransactions
 from databases.current import Servers as dbServers
 import requests
 
@@ -35,12 +34,16 @@ class Servers:
 			"member_count": guild.member_count,
 			"invite": guild.invite
 		}
-		try:
-			result = requests.post(url, headers=headers, json=data)
-			if result.status_code != 200 :
-				logging.info(f"Server {guild.guild} could not be updated: {result.status_code}")
-			logging.info(f"Server {guild.guild} updated")
+		result = requests.post(url, headers=headers, json=data)
+		if result.status_code != 200:
+			logging.info(f"Server {guild.guild} could not be updated: {result.status_code}")
+			return None
+		result = result.json()
+		ServerTransactions().update(guild.guild, premium=result.get('premium', None) )
 
-		except requests.exceptions.ConnectionError  :
-			logging.info("There is an error connecting to the dashboard, it may be down.")
+		logging.info(f"Server {guild.guild} updated successfully: {result}")
+
+
+
+		logging.info(f"Server {guild.guild} updated")
 

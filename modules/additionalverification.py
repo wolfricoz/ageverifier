@@ -22,6 +22,5 @@ class AdditionalVerification(GroupCog, name="reverify"):
 		view = ReVerifyButton()
 		await send_message(channel, desc_text, view=view)
 
-
 async def setup(bot: commands.Bot):
 	await bot.add_cog(AdditionalVerification(bot))
