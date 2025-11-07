@@ -19,7 +19,7 @@ class Servers:
 		encoded = base64.b64encode(f"{self.key}:{self.secret}".encode('ascii')).decode()
 
 		headers = {
-			"Authorization": f"Bearer {encoded}",
+			"Authorization": f"basic {encoded}",
 			"Content-Type": "application/json"
 		}
 		logging.info(f"headers: {headers}")
