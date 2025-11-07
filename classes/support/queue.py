@@ -3,6 +3,7 @@ import inspect
 import logging
 
 import discord
+from discord_py_utilities.exceptions import NoPermissionException
 
 from databases.exceptions.KeyNotFound import KeyNotFound
 
@@ -88,6 +89,8 @@ class Queue(metaclass=Singleton):
 
             except KeyNotFound as e:
                 logging.warning(f"Key not found: {task.__name__}: {e}")
+            except NoPermissionException as e:
+                logging.warning(f"Not enough permissions to perform task: {task.__name__}: {e}")
             except discord.Forbidden as e:
                 logging.warning(f"Discord Forbidden: {task.__name__}: {e}")
 

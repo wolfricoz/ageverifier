@@ -75,11 +75,14 @@ class AccessControl(metaclass=singleton) :
 
 		return app_commands.check(pred)
 
-	def check_premium(self):
-		async def is_premium_check(interaction: discord.Interaction) -> bool:
+	def check_premium(self) :
+		async def is_premium_check(interaction: discord.Interaction) -> bool :
 			result = self.is_premium(interaction.guild.id)
-			if not result:
-				await send_response(interaction, "This command is premium only", ephemeral=True)
+			if not result :
+				await interaction.response.send_message(
+					"This command is premium only",
+					ephemeral=True
+				)
 			return result
 		return app_commands.check(is_premium_check)
 

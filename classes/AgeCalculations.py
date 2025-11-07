@@ -83,12 +83,12 @@ class AgeCalculations(ABC) :
 		except ValueError:
 			await channel.send(
 				f"{user.mention} failed in verification at age: {age} {dateofbirth}")
-			raise Exception("Failed to validate age. Please enter the age in numbers.")
+			raise ValueError("Failed to validate age. Please enter the age in numbers.")
 		validated_dob = AgeCalculations.validate_dob(dateofbirth)
 		if validated_dob is None :
 			await send_message(channel,
 			                   f"[{location} info] {user.mention} failed in verification at date of birth: {age} {dateofbirth}")
-			raise Exception("Failed to validate date of birth. Please enter the date of birth in the format: mm/dd/yyyy")
+			raise ValueError("Failed to validate date of birth. Please enter the date of birth in the format: mm/dd/yyyy")
 		dateofbirth = AgeCalculations.dob_regex(dateofbirth)
 		return dateofbirth
 
@@ -147,7 +147,7 @@ class AgeCalculations(ABC) :
 				raise ValueError("Failed to validate date of birth. Please enter the date of birth in the format: mm/dd/yyyy")
 			return fulldob
 		except Exception as e:
-			raise Exception(f"Failed to validate date of birth, reason: {e}")
+			raise ValueError(f"Failed to validate date of birth, reason: {e}")
 
 	@staticmethod
 	@abstractmethod
