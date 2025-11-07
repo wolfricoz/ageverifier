@@ -35,8 +35,6 @@ class LobbyProcess(ABC) :
 		if not reverify :
 			Queue().add(change_age_roles(guild, user, age), priority=2)
 
-		if reverify:
-			Queue().add(,2)
 		# Log age and dob to lobbylog
 		if not idverify:
 			Queue().add(LobbyProcess.log(user, guild, age, dob, staff, exists), priority=2)

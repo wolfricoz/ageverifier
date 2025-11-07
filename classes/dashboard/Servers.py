@@ -1,6 +1,8 @@
 import base64
 import logging
 import os
+
+from databases.controllers.ServerTransactions import ServerTransactions
 from databases.current import Servers as dbServers
 import requests
 
@@ -35,5 +37,13 @@ class Servers:
 		result = requests.post(url, headers=headers, json=data)
 		if result.status_code != 200:
 			logging.info(f"Server {guild.guild} could not be updated: {result.status_code}")
+			return None
+		result = result.json()
+		ServerTransactions().update(guild.guild, premium=result.get('premium', None) )
+
+		logging.info(f"Server {guild.guild} updated successfully: {result}")
+
+
+
 		logging.info(f"Server {guild.guild} updated")
 

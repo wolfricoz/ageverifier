@@ -12,8 +12,7 @@ class AdditionalVerification(GroupCog, name="reverify"):
 		self.bot = bot
 
 
-def setup(bot: commands.Bot):
-	bot.add_cog(AdditionalVerification(bot))
+
 
 	@app_commands.command(name="create")
 	@AccessControl().check_premium()
@@ -21,5 +20,7 @@ def setup(bot: commands.Bot):
 		"""Creates the button to start the secondary verification"""
 		pass
 
+async def setup(bot: commands.Bot):
+	await bot.add_cog(AdditionalVerification(bot))
 
 	
