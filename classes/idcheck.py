@@ -155,3 +155,20 @@ class IdCheck(ABC) :
 			server=guild.name
 
 		)
+
+	@staticmethod
+	@abstractmethod
+	async def auto_kick(member: discord.Member, discrepancy, guild, channel):
+		if discrepancy not in ['underage', 'below_minimum_age']:
+			return
+		config_state = ConfigData().get_toggle(guild.id, "Autokick")
+		if not config_state:
+			return
+		kick_message = (
+			"You have been removed from the server because you do not meet the minimum age requirement. You may rejoin once you meet the minimum age required."
+		)
+		await send_message(member, kick_message)
+		await member.kick(reason=kick_message)
+		await channel.send(f"[Autokick] {member.mention} doesn't meet the minimum age requirement and has been kicked.")
+
+
