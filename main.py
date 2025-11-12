@@ -26,6 +26,8 @@ from databases.controllers.ServerTransactions import ServerTransactions
 from databases.current import Servers
 from views.buttons.approvalbuttons import ApprovalButtons
 from views.buttons.dobentrybutton import dobentry
+from views.buttons.idreviewbuttons import IdReviewButton
+from views.buttons.idsubmitbutton import IdSubmitButton
 from views.buttons.idverifybutton import IdVerifyButton
 from views.buttons.reverifybutton import ReVerifyButton
 from views.buttons.verifybutton import VerifyButton
@@ -133,6 +135,8 @@ async def on_ready() :
 	bot.add_view(ReVerifyButton())
 	bot.add_view(ApprovalButtons())
 	bot.add_view(dobentry())
+	bot.add_view(IdSubmitButton())
+	bot.add_view(IdReviewButton())
 	logging.info("Loaded routers: " + ", ".join(routers))
 	Queue().add(check_guilds(devroom))
 

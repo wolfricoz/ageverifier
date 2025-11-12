@@ -8,8 +8,8 @@ from discord_py_utilities.messages import send_message, send_response
 from databases.controllers.ConfigData import ConfigData
 from databases.controllers.HistoryTransactions import JoinHistoryTransactions
 from databases.controllers.VerificationTransactions import VerificationTransactions
+from databases.current import IdVerification
 from databases.enums.joinhistorystatus import JoinHistoryStatus
-from views.buttons.idverifybutton import IdVerifyButton
 
 
 class IdCheck(ABC) :
@@ -65,6 +65,7 @@ class IdCheck(ABC) :
 		message = messages.get(message, message)
 		view = None
 		if verify_button :
+			from views.buttons.idverifybutton import IdVerifyButton
 			view = IdVerifyButton()
 		try:
 			await send_message(channel,
@@ -135,6 +136,7 @@ class IdCheck(ABC) :
 		message = messages.get(message, message)
 		view = None
 		if verify_button :
+			from views.buttons.idverifybutton import IdVerifyButton
 			view = IdVerifyButton()
 
 		await send_message(channel,
@@ -155,3 +157,16 @@ class IdCheck(ABC) :
 			server=guild.name
 
 		)
+
+
+	@staticmethod
+	@abstractmethod
+	async def remove_idmessage(user: discord.User | discord.Member, idcheck: IdVerification) :
+		try :
+			dm_channel = user.dm_channel or await user.create_dm()
+			message_to_delete = await dm_channel.fetch_message(idcheck.idmessage)
+			await message_to_delete.delete()
+			VerificationTransactions().remove_idmessage(user.id)
+		except Exception :
+			pass
+

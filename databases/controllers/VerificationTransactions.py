@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 
 from sqlalchemy import Select
 
@@ -89,22 +90,26 @@ class VerificationTransactions(DatabaseTransactions) :
 			UserTransactions().update_user_dob(userid, dob, guildname=guildname, override=True)
 
 	def update_verification(self, uid: int, reason: str = None, idcheck: bool = None,
-	                        idverified: bool = None, verifieddob: str = None, server: str = None) :
+	                        idverified: bool = None, verifieddob: str = None, server: str = None, idmessage: int = None) :
 		with self.createsession() as session :
-			verification = self.get_id_info(uid, session=session)  # Assumes you have a method to retrieve the record
-
+			verification = self.get_id_info(uid, session=session)
 			data = {
 				"reason"      : reason,
 				"idcheck"     : idcheck,
 				"idverified"  : idverified,
 				"verifieddob" : verifieddob,
-				"server"      : server
+				"server"      : server,
+				"idmessage"   : idmessage,
+
 			}
 
 			for field, value in data.items() :
 				if field == 'verifieddob' and value is not None :
 					encrypted_value = Encryption().encrypt(value)
 					setattr(verification, field, encrypted_value)
+				if field == "idmessage" and value is not None :
+					setattr(verification, field, value)
+					setattr(verification, "idmessagecreated", datetime.now())
 				elif value is not None :
 					setattr(verification, field, value)
 
@@ -112,6 +117,18 @@ class VerificationTransactions(DatabaseTransactions) :
 			self.commit(session)
 			logging.info(f"Updated verification for {uid} with:")
 			logging.info(data)
+
+	def remove_idmessage(self, uid: int) :
+		with self.createsession() as session :
+			verification = self.get_id_info(uid, session=session)
+
+			verification.idmessage = None
+			verification.idmessagecreated = None
+
+			session.merge(verification)
+			self.commit(session)
+			logging.info(f"Removed idmessage for {uid}")
+
 
 	def get_all(self, ) :
 		with self.createsession() as session :
