@@ -1,6 +1,7 @@
 messagechoices = {
 	'welcomemessage' : 'This is the welcome message that will be posted in the general channel This starts with: `Welcome to {server name} {user}! This is where the message goes`',
 	"lobbywelcomemessage"   : 'This is the welcome message that will be posted in the lobby channel, and be the first message new users see. This starts with: `Welcome {user}! This is where the message goes`',
+	"idmessage"    : 'This message will be sent to the user when using the id request method along with the default.',
 }
 channelchoices = {
 	'inviteinfo' : 'This channel will be used to log invite information',

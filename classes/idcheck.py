@@ -18,7 +18,7 @@ class IdCheck(ABC) :
 	@abstractmethod
 	async def send_check(interaction: discord.Interaction, channel, message, age, dob, date_of_birth=None, years=None,
 	                     id_check=False, verify_button=True, id_check_reason=None, server=None) :
-		logging.info(f"Sending ID check message for {interaction.user.id} with date of birth: {date_of_birth}")
+		logging.debug(f"Sending ID check message for {interaction.user.id} with date of birth: {date_of_birth}")
 
 		messages = {
 			"underage"          : {
@@ -62,8 +62,20 @@ class IdCheck(ABC) :
 				"channel-message" : f"{interaction.user.mention} is on the ID list added by {server} with the reason:\n{id_check_reason}"
 			}
 		}
-		message = messages.get(message, message)
 		view = None
+		m_key = message
+		message = messages.get(message, message)
+		if m_key in ['mismatch', 'age_too_high', 'below_minimum_age'] :
+			await send_response(interaction,
+			                    message.get("user-message",
+			                                "There was an issue with the age and date of birth you provided. Please try again."),
+			                    ephemeral=True)
+			lobbymod = interaction.guild.get_channel(ConfigData().get_key_int_or_zero(interaction.guild.id, 'lobbymod'))
+			await lobbymod.send(message)
+			return
+
+
+
 		if verify_button :
 			from views.buttons.idverifybutton import IdVerifyButton
 			view = IdVerifyButton()
