@@ -37,13 +37,12 @@ class AccessControl(metaclass=singleton) :
 				continue
 			self.staff[role] = [staff.uid]
 		logging.info("Staff information has been reloaded:")
-		logging.info(self.staff)
 
 	def add_premium_guilds_to_list(self):
 		self.premium_guilds = []
 		guilds = ServerTransactions().get_all(id_only=False)
 		for guild in guilds :
-			if guild.premium is not None and datetime.now(tz=UTC) < guild.premium :
+			if guild.premium is not None and datetime.now(tz=UTC) < guild.premium.replace(tzinfo=UTC) :
 				self.premium_guilds.append(guild.guild)
 		logging.info("Premium guilds have been reloaded")
 
