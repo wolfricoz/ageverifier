@@ -36,7 +36,7 @@ class Servers:
 			"invite": guild.invite
 		}
 
-		result = requests.post(url, headers=headers, json=data)
+		result = requests.post(url, headers=headers, json=data, timeout=5)
 		if result.status_code != 200:
 			logging.info(f"Server {guild.guild} could not be updated: {result.status_code}: {result.text}")
 
