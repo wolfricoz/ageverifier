@@ -35,19 +35,21 @@ class Servers:
 			"member_count": guild.member_count,
 			"invite": guild.invite
 		}
+		try:
+			result = requests.post(url, headers=headers, json=data, timeout=5)
+			if result.status_code != 200:
+				logging.info(f"Server {guild.guild} could not be updated: {result.status_code}: {result.text}")
 
-		result = requests.post(url, headers=headers, json=data, timeout=5)
-		if result.status_code != 200:
-			logging.info(f"Server {guild.guild} could not be updated: {result.status_code}: {result.text}")
+				# logging.info(f"Variables:\npath: {path}\nurl: {url}\nheaders: {headers}, key: {self.key}\nsecret: {self.secret}")
+				return None
+			result = result.json()
+			ServerTransactions().update(guild.guild, premium=result.get('premium', None) )
 
-			# logging.info(f"Variables:\npath: {path}\nurl: {url}\nheaders: {headers}, key: {self.key}\nsecret: {self.secret}")
-			return None
-		result = result.json()
-		ServerTransactions().update(guild.guild, premium=result.get('premium', None) )
-
-		logging.info(f"Server {guild.guild} updated successfully: {result}")
+			logging.info(f"Server {guild.guild} updated successfully: {result}")
 
 
 
-		logging.info(f"Server {guild.guild} updated")
+			logging.info(f"Server {guild.guild} updated")
+		except Exception as e:
+			logging.warning(f"Error updating server {guild.guild}: {e}")
 
