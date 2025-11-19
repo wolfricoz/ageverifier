@@ -79,9 +79,17 @@ class IdCheck(ABC) :
 		if verify_button :
 			from views.buttons.idverifybutton import IdVerifyButton
 			view = IdVerifyButton()
+		# create the embed
+		embed = discord.Embed(title="ID Check Required",
+		                      description=message.get('user-message', 'No message set for this ID check.'))
+		embed.add_field(name="Staff Notice",
+		                value="Please contact the user to complete their ID check. They must submit a valid ID. Do not share or store the ID outside of authorized verification staff. Any abuse results in immediate blacklisting. If the issue may be a typo, you may allow a retry by removing them from the ID check list.",)
+		embed.set_footer(text=f"{interaction.user.id}")
+
 		try:
 			await send_message(channel,
-			                   f"{f'{interaction.guild.owner.mention}' if ConfigData().get_key(interaction.guild.id, 'PINGOWNER') == 'ENABLED' else ''}{message.get('channel-message', f'No message set for {message}')}\n[Lobby Debug] Age: {age} dob {dob} userid: {interaction.user.id}",
+			                   f"{f'{interaction.guild.owner.mention}' if ConfigData().get_key(interaction.guild.id, 'PINGOWNER') == 'ENABLED' else ''} -# Lobby Debug] Age: {age} dob {dob} userid: {interaction.user.mention}",
+			                   embed=embed,
 			                   view=view)
 			await send_response(interaction, message.get("user-message",
 			                                             "Thank you for submitting your age and date of birth, a staff member will contact you soon because of a discrepancy.")

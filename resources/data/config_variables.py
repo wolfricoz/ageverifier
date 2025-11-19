@@ -38,4 +38,4 @@ int_options = {
 }
 
 
-available_toggles = ["LobbyWelcome", "Welcome", "Automatic", "Autokick", "Updateroles", "Pingowner"]
+available_toggles = ["LobbyWelcome", "Welcome", "Automatic", "Autokick", "Updateroles", "Pingowner", "online_verification"]
