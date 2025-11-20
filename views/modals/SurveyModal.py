@@ -18,6 +18,14 @@ class SurveyModal(discord.ui.Modal) :
 		self.guild: discord.Guild = bot.get_guild(guild_id)
 		super().__init__(timeout=None, title=title)  # Set a timeout for the modal
 		self.confirmation = f"Thank you for completing the survey for {self.guild.name}!"
+		self.leave = discord.ui.TextInput(
+			label='Why are you leaving the server?',
+			style=discord.TextStyle.long,
+			placeholder='Type your reason here...',
+			max_length=1000,
+			required=False
+		)
+
 		self.rating = discord.ui.TextInput(
 			label='Rating (1-10)',
 			style=discord.TextStyle.short,
@@ -51,6 +59,7 @@ class SurveyModal(discord.ui.Modal) :
 
 		# Add all inputs to the modal
 		self.add_item(self.rating)
+		self.add_item(self.leave)
 		self.add_item(self.like)
 		self.add_item(self.dislike)
 		self.add_item(self.feedback)
@@ -65,6 +74,7 @@ class SurveyModal(discord.ui.Modal) :
 				return await self.send_message(interaction, "Could not find the mod channel to send the survey results to.")
 			embed = discord.Embed(title=f"Survey from {interaction.user.name}", description=f"This survey is to help your server improve; please remain cordial with the user.", color=discord.Color.green())
 			embed.add_field(name="Rating (1-10)", value=self.rating.value, inline=False)
+			embed.add_field(name="leave reason", value=self.leave.value, inline=False)
 			embed.add_field(name="Likes", value=self.like.value, inline=False)
 			embed.add_field(name="Dislikes", value=self.dislike.value, inline=False)
 			embed.add_field(name="Feedback", value=self.feedback.value, inline=False)
