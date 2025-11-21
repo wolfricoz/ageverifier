@@ -97,6 +97,8 @@ class LobbyProcess(ABC) :
 			dob_field = f"DOB: {dob} \n"
 		if reverify:
 			reverify_field = "[REVERIFICATION]\n"
+		if isinstance(user, discord.User) :
+			user = guild.get_member(user.id)
 
 
 		message = await send_message(channel, f"{id_verify}"
