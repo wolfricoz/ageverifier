@@ -50,6 +50,8 @@ class VerificationTransactions(DatabaseTransactions) :
 			if userdata is None :
 				VerificationTransactions().add_idcheck(userid, reason, idcheck=True, server=server)
 				return
+			if userdata.idcheck :
+				return
 			userdata.idcheck = True
 			userdata.reason = reason
 			self.commit(session)

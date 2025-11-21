@@ -78,6 +78,7 @@ class Config(commands.GroupCog, name="config") :
 			case 'set' :
 				# noinspection PyUnresolvedReferences
 				await interaction.response.send_modal(ConfigInputUnique(key=key.value))
+
 			case 'remove' :
 				await interaction.response.defer(ephemeral=True)
 				result = ConfigTransactions().config_unique_remove(guild_id=interaction.guild.id, key=key.value)

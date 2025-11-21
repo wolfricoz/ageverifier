@@ -19,7 +19,6 @@ class IdCheck(ABC) :
 	async def send_check(interaction: discord.Interaction, channel, message, age, dob, date_of_birth=None, years=None,
 	                     id_check=False, verify_button=True, id_check_reason=None, server=None) :
 		logging.debug(f"Sending ID check message for {interaction.user.id} with date of birth: {date_of_birth}")
-
 		messages = {
 			"underage"          : {
 				"user-message"    : f"Unfortunately, you are too young to join our server. If you are 17, you may wait in the lobby until you are old enough to join.",
@@ -73,26 +72,23 @@ class IdCheck(ABC) :
 			lobbymod = interaction.guild.get_channel(ConfigData().get_key_int_or_zero(interaction.guild.id, 'lobbymod'))
 			await lobbymod.send(message)
 			return
-
-
-
 		if verify_button :
 			from views.buttons.idverifybutton import IdVerifyButton
 			view = IdVerifyButton()
 		# create the embed
 		embed = discord.Embed(title="ID Check Required",
-		                      description=message.get('user-message', 'No message set for this ID check.'))
+		                      description=message.get('channel-message', 'No message set for this ID check.'))
 		embed.add_field(name="Staff Notice",
-		                value="Please contact the user to complete their ID check. They must submit a valid ID. Do not share or store the ID outside of authorized verification staff. Any abuse results in immediate blacklisting. If the issue may be a typo, you may allow a retry by removing them from the ID check list.",)
+		                value="Please contact the user to complete their ID check. They must submit a valid ID. Do not share or store the ID outside of authorized verification staff. Any abuse results in immediate blacklisting. If the issue may be a typo, you may allow a retry by removing them from the ID check list.", )
 		embed.set_footer(text=f"{interaction.user.id}")
 
-		try:
+		try :
 			await send_message(channel,
 			                   f"{f'{interaction.guild.owner.mention}' if ConfigData().get_key(interaction.guild.id, 'PINGOWNER') == 'ENABLED' else ''} -# Lobby Debug] Age: {age} dob {dob} userid: {interaction.user.mention}",
 			                   embed=embed,
 			                   view=view)
-			await send_response(interaction, message.get("user-message",
-			                                             "Thank you for submitting your age and date of birth, a staff member will contact you soon because of a discrepancy.")
+			await send_response(interaction, interaction.user.mention + " " + message.get("user-message",
+			                                                                              "Thank you for submitting your age and date of birth, a staff member will contact you soon because of a discrepancy.")
 			                    ,
 			                    ephemeral=True)
 		except discord.Forbidden :
@@ -100,10 +96,8 @@ class IdCheck(ABC) :
 			                    f"I don't have permission to send messages in {channel.mention}. Please contact a server administrator to resolve this issue.",
 			                    ephemeral=True)
 
-		logging.info(message.get("channel-message", f"No message set for {message}"))
 		if id_check and message.get("channel-message", None) :
 			JoinHistoryTransactions().update(interaction.user.id, interaction.guild.id, JoinHistoryStatus.IDCHECK)
-
 			await IdCheck.add_check(interaction.user, interaction.guild,
 			                        message.get("channel-message", f"No message set for {message}"))
 
@@ -162,7 +156,6 @@ class IdCheck(ABC) :
 		await send_message(channel,
 		                   f"{f'{guild.owner.mention}' if ConfigData().get_key(guild.id, 'PINGOWNER') == 'ENABLED' else ''}{message.get('channel-message', f'No message set for {message}')}\n[Lobby Debug] Age: {age} dob {dob} userid: {user.id}",
 		                   view=view)
-		logging.info(message.get("channel-message", f"No message set for {message}"))
 		if id_check and message.get("channel-message", None) :
 			JoinHistoryTransactions().update(user.id, guild.id, JoinHistoryStatus.IDCHECK)
 
@@ -171,13 +164,13 @@ class IdCheck(ABC) :
 	@staticmethod
 	@abstractmethod
 	async def add_check(user, guild, message) :
+
 		VerificationTransactions().set_idcheck_to_true(
 			user.id,
 			f"{datetime.datetime.now(datetime.timezone.utc).strftime('%m/%d/%Y')}: {message}",
 			server=guild.name
 
 		)
-
 
 	@staticmethod
 	@abstractmethod
@@ -189,4 +182,3 @@ class IdCheck(ABC) :
 			VerificationTransactions().remove_idmessage(user.id)
 		except Exception :
 			pass
-

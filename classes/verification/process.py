@@ -75,7 +75,8 @@ class VerificationProcess :
 				return self.discrepancy
 
 			# To be added: Check username for suspicious patterns.
-
+			if self.discrepancy:
+				return self.discrepancy
 			# === Validation finished, we now start processing the user ===
 			automatic_status = ConfigData().get_key_or_none(self.guild.id, "automatic")
 			if automatic_status and automatic_status == "enabled".upper() or self.reverify :
