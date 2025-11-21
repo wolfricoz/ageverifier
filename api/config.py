@@ -5,6 +5,7 @@ import os
 from discord.ext import commands
 from fastapi import APIRouter, Request
 
+from classes.config.utils import ConfigUtils
 from classes.configsetup import ConfigSetup
 from classes.support.queue import Queue
 from databases.controllers.ConfigData import ConfigData
@@ -67,3 +68,16 @@ async def permission_check(request: Request, guildid: int) :
 		return {"message" : "No moderation channel set"}
 	Queue().add(ConfigSetup().check_channel_permissions(mod_channel))
 	return {"message" : f"Permission check for {guild.name} queued"}
+
+@router.post("/config/{guildid}/changes/log")
+async def log_config_changes(request: Request, guildid: int, changes: dict, user_name: str = "dashboard_api") :
+	if verify_token(request) :
+		logging.warning(f"Invalid token for config change log request for {guildid} with ip {request.client.host}")
+		return None
+
+	bot: commands.Bot = request.app.state.bot
+	guild = bot.get_guild(guildid)
+	if not guild :
+		return {"message" : "Guild not found"}
+	await ConfigUtils.log_change(guild, changes, user_name)
+	return {"message" : f"Configuration changes for {guild.name} logged"}

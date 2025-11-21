@@ -76,7 +76,9 @@ async def lifespan(app: FastAPI) :
 			await bot.close()
 			raise
 
+	logging.info("Starting bot...")
 	bot_task = asyncio.create_task(run_bot())
+	logging.info("Bot started.")
 	app.state.bot = bot
 	try :
 		yield
@@ -120,6 +122,7 @@ bot.invites = {}
 # EVENT LISTENER FOR WHEN THE BOT HAS SWITCHED FROM OFFLINE TO ONLINE.
 @bot.event
 async def on_ready() :
+	logging.info(f"{bot.user} has connected to Discord!")
 	Queue().add(ConfigData().load_all_guilds(), 2)
 	AccessControl().reload()
 	logging.info("Bot starting up")
@@ -176,11 +179,11 @@ async def update_guild(guild: discord.Guild, devroom) :
 async def on_guild_join(guild) :
 	# adds user to database
 	devroom = bot.get_channel(bot.DEV)
-	await devroom.send(f"Ban watch is now in {len(bot.guilds)}! It just joined:"
+	await devroom.send(f"Ageverifier is now in {len(bot.guilds)}! It just joined:"
 	                   f"\nGuild: {guild}({guild.id})"
 	                   f"\nOwner: {guild.owner}({guild.owner.id})"
 	                   f"\nMember count: {guild.member_count}"
-	                   f"\n\nWelcome to the Banwatch collective!")
+	                   f"\n\nThank you for choosing Ageverifier to keep your server safe.")
 	if await blacklist_check(guild, devroom) :
 		await guild.owner.send("This server is blacklisted. If this is a mistake then please contact the developer.")
 		return
@@ -267,115 +270,114 @@ async def run() :
 
 
 # python
-async def dump_app_commands(bot, path: str = 'commands.txt'):
-    option_type_map = {
-        1: "SUB_COMMAND",
-        2: "SUB_COMMAND_GROUP",
-        3: "STRING",
-        4: "INTEGER",
-        5: "BOOLEAN",
-        6: "USER",
-        7: "CHANNEL",
-        8: "ROLE",
-        9: "MENTIONABLE",
-        10: "NUMBER",
-        11: "ATTACHMENT",
-    }
+async def dump_app_commands(bot, path: str = 'commands.txt') :
+	option_type_map = {
+		1  : "SUB_COMMAND",
+		2  : "SUB_COMMAND_GROUP",
+		3  : "STRING",
+		4  : "INTEGER",
+		5  : "BOOLEAN",
+		6  : "USER",
+		7  : "CHANNEL",
+		8  : "ROLE",
+		9  : "MENTIONABLE",
+		10 : "NUMBER",
+		11 : "ATTACHMENT",
+	}
 
-    def fmt_args(opts):
-        parts = []
-        for a in opts:
-            name = a.get('name')
-            req = a.get('required', False)
-            parts.append(f"<{name}>" if req else f"[{name}]")
-        return " ".join(parts)
+	def fmt_args(opts) :
+		parts = []
+		for a in opts :
+			name = a.get('name')
+			req = a.get('required', False)
+			parts.append(f"<{name}>" if req else f"[{name}]")
+		return " ".join(parts)
 
-    def decode_permissions(val):
-        if not val:
-            return "None"
-        try:
-            p = discord.Permissions(int(val))
-            enabled = [k for k, v in p.to_dict().items() if v]
-            return ", ".join(enabled) if enabled else "None"
-        except Exception:
-            return str(val)
+	def decode_permissions(val) :
+		if not val :
+			return "None"
+		try :
+			p = discord.Permissions(int(val))
+			enabled = [k for k, v in p.to_dict().items() if v]
+			return ", ".join(enabled) if enabled else "None"
+		except Exception :
+			return str(val)
 
-    # Group commands by cog name and module
-    groups = {}
-    for cmd in bot.tree.walk_commands():
-        cog = getattr(cmd, "cog", None)
-        if cog:
-            cog_name = cog.__class__.__name__
-            module = getattr(cog, "__module__", "unknown")
-        else:
-            cb = getattr(cmd, "callback", None)
-            cog_name = "NoCog"
-            module = getattr(cb, "__module__", "unknown") if cb else "unknown"
+	# Group commands by cog name and module
+	groups = {}
+	for cmd in bot.tree.walk_commands() :
+		cog = getattr(cmd, "cog", None)
+		if cog :
+			cog_name = cog.__class__.__name__
+			module = getattr(cog, "__module__", "unknown")
+		else :
+			cb = getattr(cmd, "callback", None)
+			cog_name = "NoCog"
+			module = getattr(cb, "__module__", "unknown") if cb else "unknown"
 
-        key = (cog_name, module)
-        groups.setdefault(key, []).append(cmd)
+		key = (cog_name, module)
+		groups.setdefault(key, []).append(cmd)
 
-    lines = []
-    first_group = True
-    for (cog_name, module), cmds in groups.items():
-        # header for the cog / location
-        if not first_group:
-            lines.append("")  # blank line between cog sections
-        first_group = False
-        lines.append(f"Cog: {cog_name}  —  module: {module}")
-        lines.append("")  # blank line after header
+	lines = []
+	first_group = True
+	for (cog_name, module), cmds in groups.items() :
+		# header for the cog / location
+		if not first_group :
+			lines.append("")  # blank line between cog sections
+		first_group = False
+		lines.append(f"Cog: {cog_name}  —  module: {module}")
+		lines.append("")  # blank line after header
 
-        for cmd in cmds:
-            try:
-                data = cmd.to_dict(tree=bot.tree)
-            except TypeError:
-                data = cmd.to_dict()
+		for cmd in cmds :
+			try :
+				data = cmd.to_dict(tree=bot.tree)
+			except TypeError :
+				data = cmd.to_dict()
 
-            top_name = data.get('name')
-            top_desc = data.get('description', '')
-            top_options = data.get('options', [])
-            perms_text = decode_permissions(data.get('default_member_permissions'))
+			top_name = data.get('name')
+			top_desc = data.get('description', '')
+			top_options = data.get('options', [])
+			perms_text = decode_permissions(data.get('default_member_permissions'))
 
-            # If there are SUB_COMMAND / SUB_COMMAND_GROUP options, iterate them as commands under the group
-            if any(opt.get('type') in (1, 2) for opt in top_options):
-                for sub in top_options:
-                    if sub.get('type') not in (1, 2):
-                        continue
-                    sub_name = sub.get('name')
-                    sub_desc = sub.get('description', '')
-                    sub_args = sub.get('options', [])
-                    sig = f"/{top_name} {sub_name} {fmt_args(sub_args)}".strip()
-                    lines.append(sig)
-                    lines.append(f"  Description: {sub_desc or top_desc}")
-                    lines.append(f"  Required permissions: {perms_text}")
-                    if sub_args:
-                        for a in sub_args:
-                            a_type = option_type_map.get(a.get('type'), a.get('type'))
-                            a_req = "required" if a.get('required', False) else "optional"
-                            a_desc = a.get('description', '')
-                            lines.append(f"    - {a.get('name')} ({a_req}, type={a_type}) - {a_desc}")
-                    else:
-                        lines.append("    - no arguments")
-                    lines.append("")  # blank line between commands
-            else:
-                # Top-level command (no subcommands)
-                sig = f"/{top_name} {fmt_args(top_options)}".strip()
-                lines.append(sig)
-                lines.append(f"  Description: {top_desc}")
-                lines.append(f"  Required permissions: {perms_text}")
-                if top_options:
-                    for a in top_options:
-                        a_type = option_type_map.get(a.get('type'), a.get('type'))
-                        a_req = "required" if a.get('required', False) else "optional"
-                        a_desc = a.get('description', '')
-                        lines.append(f"    - {a.get('name')} ({a_req}, type={a_type}) - {a_desc}")
-                else:
-                    lines.append("    - no arguments")
-                lines.append("")
+			# If there are SUB_COMMAND / SUB_COMMAND_GROUP options, iterate them as commands under the group
+			if any(opt.get('type') in (1, 2) for opt in top_options) :
+				for sub in top_options :
+					if sub.get('type') not in (1, 2) :
+						continue
+					sub_name = sub.get('name')
+					sub_desc = sub.get('description', '')
+					sub_args = sub.get('options', [])
+					sig = f"/{top_name} {sub_name} {fmt_args(sub_args)}".strip()
+					lines.append(sig)
+					lines.append(f"  Description: {sub_desc or top_desc}")
+					lines.append(f"  Required permissions: {perms_text}")
+					if sub_args :
+						for a in sub_args :
+							a_type = option_type_map.get(a.get('type'), a.get('type'))
+							a_req = "required" if a.get('required', False) else "optional"
+							a_desc = a.get('description', '')
+							lines.append(f"    - {a.get('name')} ({a_req}, type={a_type}) - {a_desc}")
+					else :
+						lines.append("    - no arguments")
+					lines.append("")  # blank line between commands
+			else :
+				# Top-level command (no subcommands)
+				sig = f"/{top_name} {fmt_args(top_options)}".strip()
+				lines.append(sig)
+				lines.append(f"  Description: {top_desc}")
+				lines.append(f"  Required permissions: {perms_text}")
+				if top_options :
+					for a in top_options :
+						a_type = option_type_map.get(a.get('type'), a.get('type'))
+						a_req = "required" if a.get('required', False) else "optional"
+						a_desc = a.get('description', '')
+						lines.append(f"    - {a.get('name')} ({a_req}, type={a_type}) - {a_desc}")
+				else :
+					lines.append("    - no arguments")
+				lines.append("")
 
-    with open(path, 'w', encoding='utf-8') as f:
-        f.write('\n'.join(lines))
-
+	with open(path, 'w', encoding='utf-8') as f :
+		f.write('\n'.join(lines))
 
 # @app.on_event("startup")
 # async def app_startup() :

@@ -5,19 +5,21 @@ import json
 import logging
 import os
 
+import discord
 from discord import app_commands
 from discord.app_commands import Choice
 from discord.ext import commands
-from discord_py_utilities.messages import send_message
+from discord_py_utilities.messages import send_message, send_response
 
 from classes.configsetup import ConfigSetup
+from classes.support.queue import Queue
 from databases.controllers.AgeRoleTransactions import AgeRoleTransactions
 from databases.controllers.ConfigData import ConfigData
 from databases.controllers.ConfigTransactions import ConfigTransactions
 from resources.data.config_variables import available_toggles, channelchoices, lobby_approval_toggles, messagechoices, \
 	rolechoices
 from views.modals.configinput import ConfigInputUnique
-from views.select.configselectroles import *
+from classes.config.utils import ConfigUtils
 
 
 class Config(commands.GroupCog, name="config") :
@@ -29,8 +31,6 @@ class Config(commands.GroupCog, name="config") :
 	channelchoices = channelchoices
 	messagechoices = messagechoices
 	available_toggles = available_toggles
-
-
 
 	@app_commands.command(name='setup')
 	@app_commands.checks.has_permissions(manage_guild=True)
@@ -67,7 +67,6 @@ class Config(commands.GroupCog, name="config") :
 		await send_response(interaction, f"Starting to check permissions for all the channels!", ephemeral=True)
 		await ConfigSetup().check_channel_permissions(interaction.channel, interaction)
 
-
 	@app_commands.command()
 	@app_commands.choices(key=[Choice(name=x, value=x) for x, _ in messagechoices.items()])
 	@app_commands.choices(action=[Choice(name=x, value=x) for x in ['set', 'Remove']])
@@ -85,7 +84,10 @@ class Config(commands.GroupCog, name="config") :
 				if result is False :
 					await interaction.followup.send(f"{key.value} was not in database")
 					return
-				await interaction.followup.send(f"{key.value} has been removed from the database")
+				Queue().add(
+					ConfigUtils.log_change(interaction.guild, {key : None}, user_name=interaction.user.mention,
+					                       ))
+				await interaction.followup.send(f"{key.value} has been removed from the database", ephemeral=True)
 			case _ :
 				raise NotImplementedError
 
@@ -99,13 +101,16 @@ class Config(commands.GroupCog, name="config") :
 			case "ENABLED" :
 				ConfigTransactions().toggle(interaction.guild.id, key.value, action.value.upper())
 
-
 			case "DISABLED" :
 				ConfigTransactions().toggle(interaction.guild.id, key.value, action.value.upper())
 				if key.value == "LobbyWelcome" :
-					return send_response(interaction, f"The lobby welcome message has been disabled. Users will no longer receive a welcome message or the verification button in the lobby channel. To allow users to verify, please use the /lobby command in the channel.", ephemeral=True)
-		return await send_response(interaction,f"{key.value} has been set to {action.value}", ephemeral=True)
-
+					return send_response(interaction,
+					                     f"The lobby welcome message has been disabled. Users will no longer receive a welcome message or the verification button in the lobby channel. To allow users to verify, please use the /lobby command in the channel.",
+					                     ephemeral=True)
+		Queue().add(
+			ConfigUtils.log_change(interaction.guild, {key.value : action.value.upper()}, user_name=interaction.user.mention,
+			                       ))
+		return await send_response(interaction, f"{key.value} has been set to {action.value}", ephemeral=True)
 
 	@app_commands.command()
 	@app_commands.choices(action=[Choice(name=x, value=x) for x in ["enabled", "disabled"]],
@@ -118,7 +123,10 @@ class Config(commands.GroupCog, name="config") :
 				ConfigTransactions().toggle(interaction.guild.id, key.value, action.value.upper())
 			case "DISABLED" :
 				ConfigTransactions().toggle(interaction.guild.id, key.value, action.value.upper())
-		return await send_response(interaction,f"{key.value} has been set to {action.value}", ephemeral=True)
+		Queue().add(
+			ConfigUtils.log_change(interaction.guild, {key.value : action.value.upper()}, user_name=interaction.user.mention,
+			                       ))
+		return await send_response(interaction, f"{key.value} has been set to {action.value}", ephemeral=True)
 
 	@app_commands.command()
 	@app_commands.choices(key=[Choice(name=f"{x} channel", value=x) for x, _ in channelchoices.items()])
@@ -133,13 +141,15 @@ class Config(commands.GroupCog, name="config") :
 		match action.value.lower() :
 			case 'set' :
 				ConfigTransactions().config_unique_add(guildid=interaction.guild.id, key=key.value, value=value,
-				                                     overwrite=True)
+				                                       overwrite=True)
+				Queue().add(ConfigUtils.log_change(interaction.guild, {key.value : value}, user_name=interaction.user.mention))
 				await interaction.followup.send(f"{key.value} has been added to the database with value:\n{value}")
 			case 'remove' :
 				result = ConfigTransactions().config_unique_remove(guild_id=interaction.guild.id, key=key.value)
 				if result is False :
 					await interaction.followup.send(f"{key.value} was not in database")
 					return
+				Queue().add(ConfigUtils.log_change(interaction.guild, {key.value : None}, user_name=interaction.user.mention))
 				await interaction.followup.send(f"{key.value} has been removed from the database")
 			case _ :
 				raise NotImplementedError
@@ -158,11 +168,17 @@ class Config(commands.GroupCog, name="config") :
 				if key.value == "add" and maximum_age and minimum_age :
 					AgeRoleTransactions().add(guild_id=interaction.guild.id, role_id=value, role_type=key.value,
 					                          minimum_age=minimum_age, maximum_age=maximum_age)
+					Queue().add(ConfigUtils.log_change(interaction.guild, {
+						key.value : f"role id: {value} minimum_age: {minimum_age} maximum age: {maximum_age}"},
+					                                   user_name=interaction.user.mention))
+
 					await interaction.followup.send(f"{key.name}: <@&{value}> has been added to the database")
 					return
-
+				Queue().add(ConfigUtils.log_change(interaction.guild, {
+					key.value : f"role id: {value} minimum_age: {minimum_age} maximum age: {maximum_age}"},
+				                                   user_name=interaction.user.mention))
 				result = ConfigTransactions().config_key_add(guildid=interaction.guild.id, key=key.value.upper(),
-				                                           value=value, overwrite=False)
+				                                             value=value, overwrite=False)
 				if result is False :
 					await interaction.followup.send(f"{key.name}: <@&{value}> already exists")
 					return
@@ -170,29 +186,36 @@ class Config(commands.GroupCog, name="config") :
 			case 'remove' :
 				if key.value == "add" :
 					AgeRoleTransactions().permanentdelete(interaction.guild_id, value)
+					Queue().add(ConfigUtils.log_change(interaction.guild, {key.value : f"role id: {value} removed"},
+					                                   user_name=interaction.user.mention))
 					await interaction.followup.send(f"{key.name}: <@&{value}> has been removed from the database")
 					return
 
 				result = ConfigTransactions().config_key_remove(guildid=interaction.guild.id, key=key.value.upper(),
-				                                              value=value)
+				                                                value=value)
 				if result is False :
 					await interaction.followup.send(f"{key.name}: <@&{value}> could not be found in database")
+				Queue().add(ConfigUtils.log_change(interaction.guild, {key.value : f"role id: {value} removed"},
+				                                   user_name=interaction.user.mention))
 				await interaction.followup.send(f"{key.name}: <@&{value}> has been removed from the database")
 			case _ :
 				raise NotImplementedError
 
-
 	@app_commands.command(name="cooldown")
-	async def cooldown(self, interaction: discord.Interaction, cooldown: int):
+	async def cooldown(self, interaction: discord.Interaction, cooldown: int) :
 		"""set the cooldown (in minutes) for the lobby verification process. 0 to disable"""
 		ConfigTransactions().config_unique_add(interaction.guild.id, "cooldown", cooldown, overwrite=True)
+		Queue().add(
+			ConfigUtils.log_change(interaction.guild, {"cooldown" : cooldown}, user_name=interaction.user.mention,
+			                       ))
 		await send_response(interaction, f"The cooldown has been set to {cooldown} minutes", ephemeral=True)
-
 
 	@app_commands.command()
 	@app_commands.checks.has_permissions(manage_guild=True)
-	async def view(self, interaction: discord.Interaction) :
+	async def view(self, interaction: discord.Interaction, guild: str = None) :
 		"""Prints all the config options"""
+		if guild and interaction.user.id != int(os.getenv('DEVELOPER')):
+			return await send_response(interaction, "You do not have permission to view other guilds' configs.", ephemeral=True)
 		roles: list = [x for x in rolechoices.values()]
 		other = ["FORUM", "SEARCH"]
 		optionsall = list(messagechoices) + list(channelchoices) + list(available_toggles) + list(
@@ -201,12 +224,10 @@ class Config(commands.GroupCog, name="config") :
 		with open('config.txt', 'w') as file :
 			file.write(f"Config for {interaction.guild.name}: \n\n")
 			for item in optionsall :
-				info = ConfigData().get_key_or_none(interaction.guild.id, item)
+				info = ConfigData().get_key_or_none(interaction.guild.id if guild is None else guild, item)
 				file.write(f"{item}: {info}\n")
-		await interaction.followup.send(f"Config for {interaction.guild.name}", file=discord.File(file.name))
+		await interaction.followup.send(f"Config for {interaction.guild.name if guild is None else guild}", file=discord.File(file.name))
 		os.remove(file.name)
-
-
 
 	@commands.command()
 	@commands.is_owner()

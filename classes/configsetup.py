@@ -4,6 +4,7 @@ import discord
 from discord.utils import get
 from discord_py_utilities.exceptions import NoPermissionException
 
+from classes.config.utils import ConfigUtils
 from databases.controllers.ConfigData import ConfigData
 from databases.controllers.ConfigTransactions import ConfigTransactions
 from discord_py_utilities.messages import send_message
@@ -19,6 +20,7 @@ class ConfigSetup :
 	channelchoices = channelchoices
 	messagechoices = messagechoices
 	available_toggles = available_toggles
+	changes = {}
 
 	async def manual(self, bot, interaction: discord.Interaction, channelchoices: dict, rolechoices: dict,
 	                 messagechoices: dict) :
@@ -90,6 +92,7 @@ class ConfigSetup :
 		await self.create_channels(interaction.guild, category, interaction)
 		await self.create_roles(interaction.guild, rolechoices, interaction)
 		await self.set_messages(interaction.guild, messagechoices)
+		Queue().add(ConfigUtils.log_change(interaction.guild, self.changes, user_name=interaction.user.name), 1)
 		return True
 
 	async def add_roles_to_channel(self, channel, roles) :
@@ -167,6 +170,7 @@ class ConfigSetup :
 
 
 				try :
+					self.changes[channelkey] = channel.id
 					ConfigTransactions().config_unique_add(guild.id, channelkey, channel.id, overwrite=True)
 					continue
 				except Exception as e :
@@ -185,11 +189,13 @@ class ConfigSetup :
 			if key in skip_roles :
 				if key == "add" :
 					if verified := [r for r in guild.roles if r.name.lower() == "verified"] :
+						self.changes["add"] = verified[0].id
 						ConfigTransactions().config_unique_add(guild.id, "add", verified[0].id, overwrite=True)
 						continue
 					verified = get(guild.roles, name="Verified")
 					if verified is None :
 						verified = await guild.create_role(name="Verified", reason="Setup")
+					self.changes["add"] = verified[0].id
 					ConfigTransactions().config_unique_add(guild.id, "add", verified.id, overwrite=True)
 					continue
 
@@ -209,6 +215,7 @@ class ConfigSetup :
 					return False
 			except AttributeError :
 				logging.info("No value found, message was deleted")
+			self.changes[key] = int(view.value[0])
 			ConfigTransactions().config_unique_add(guild.id, key, int(view.value[0]), overwrite=True)
 			return None
 		return None
@@ -219,6 +226,7 @@ class ConfigSetup :
 				'lobbywelcomemessage'   : f"Please read the rules in the rules channel and click the verify button below to get started.",
 				'welcomemessage' : "Be sure to get some roles in the roles channel and if you need help be sure to ask the staff!",
 			}
+			self.changes[messagekey] = messagevalue
 			ConfigTransactions().config_unique_add(guild.id, messagekey, message_dict[messagekey], overwrite=True)
 
 	async def create_channel(self, guild, category, name, description=None) :
@@ -246,6 +254,7 @@ class ConfigSetup :
 		lobby_mod = guild.get_channel(ConfigData().get_key_int(guild.id, "lobbymod"))
 		Queue().add(send_message(lobby_mod, f"## Auto Setup for {guild.name} has been completed!"), 0)
 		Queue().add(send_message(guild.owner, f"## Auto Setup for {guild.name} has been completed!"), 0)
+		Queue().add(ConfigUtils.log_change(guild, self.changes, user_name="Dashboard"), 1)
 
 	async def check_channel_permissions(self, mod_channel: discord.TextChannel, interaction: discord.Interaction = None) :
 		fails = []
