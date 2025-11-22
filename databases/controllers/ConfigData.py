@@ -16,20 +16,27 @@ class ConfigData(metaclass=singleton) :
 	The goal of this class is to save the config to reduce database calls for the config; especially the roles.
 	"""
 	conf = {}
+	reloading = False
 
 	def __init__(self) :
 		pass
 
-	def reload(self) :
+	async def reload(self) :
 		"""
 
 		"""
 		logging.info("reloading config")
+		if self.reload :
+			return
+		self.reloading = True
 		for guild_id in self.conf :
+			await asyncio.sleep(0.001)
 			self.load_guild(guild_id)
-		# logging.debug(self.conf)
+		self.reloading = False
 
-	async def load_all_guilds(self):
+	# logging.debug(self.conf)
+
+	async def load_all_guilds(self) :
 		start = dt.now()
 		from databases.controllers.ServerTransactions import ServerTransactions
 		logging.info("Loading all guild configurations")
@@ -122,15 +129,15 @@ class ConfigData(metaclass=singleton) :
 		result = self.conf[guildid].get(key.upper(), 0)
 		if isinstance(result, int) :
 			return result
-		if result is None or result == "" or result == "None":
+		if result is None or result == "" or result == "None" :
 			logging.warning(f"{guildid} key {key} is not an int")
 			return 0
 		if isinstance(result, str) :
 			return int(result)
 
 		return result
-	
-	def get_toggle(self, guildid: int, key: str, expected: str = "ENABLED", default: str = "DISABLED") -> bool:
+
+	def get_toggle(self, guildid: int, key: str, expected: str = "ENABLED", default: str = "DISABLED") -> bool :
 		"""
 		:param guildid: 
 		:param key: 
@@ -145,7 +152,7 @@ class ConfigData(metaclass=singleton) :
 			return self.conf[guildid][key.upper()]
 
 		except KeyError :
-			if default:
+			if default :
 				return default
 			raise KeyNotFound(key.upper())
 
@@ -158,7 +165,7 @@ class ConfigData(metaclass=singleton) :
 		"""
 		return self.conf[guildid].get(key.upper(), None)
 
-	def output_to_json(self)  -> None:
+	def output_to_json(self) -> None :
 		"""This is for debugging only.
 		:rtype: None
 		"""
