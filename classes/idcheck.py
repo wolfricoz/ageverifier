@@ -104,7 +104,6 @@ class IdCheck(ABC) :
 			                        message.get("channel-message", f"No message set for {message}"))
 		await IdCheck.auto_kick(interaction.user, og_message, interaction.guild, channel)
 
-
 	@staticmethod
 	@abstractmethod
 	async def send_check_api(user, guild, channel, message, age, dob, date_of_birth=None, years=None,
@@ -188,14 +187,15 @@ class IdCheck(ABC) :
 			VerificationTransactions().remove_idmessage(user.id)
 		except Exception :
 			pass
-    
-   @staticmethod
+
+
+	@staticmethod
 	@abstractmethod
-	async def auto_kick(member: discord.Member, discrepancy, guild:discord.Guild, channel):
-		if discrepancy not in ['underage', 'below_minimum_age']:
+	async def auto_kick(member: discord.Member, discrepancy, guild: discord.Guild, channel) :
+		if discrepancy not in ['underage', 'below_minimum_age'] :
 			return
 		config_state = ConfigData().get_toggle(guild.id, "Autokick")
-		if not config_state:
+		if not config_state :
 			logging.info(f'{guild.name} Autokick disabled, skipping autokick.')
 			return
 		logging.info('Autokick enabled')
@@ -207,5 +207,3 @@ class IdCheck(ABC) :
 		await send_message(member, kick_message)
 		await member.kick(reason=kick_message)
 		await channel.send(f"[Autokick] {member.mention} doesn't meet the minimum age requirement and has been kicked.")
-
-
