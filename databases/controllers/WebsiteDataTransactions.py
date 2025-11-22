@@ -6,6 +6,7 @@ from uuid import uuid4
 from sqlalchemy import Select
 
 from databases.controllers.DatabaseTransactions import DatabaseTransactions
+from databases.controllers.UserTransactions import UserTransactions
 from databases.current import WebsiteData
 
 
@@ -22,6 +23,11 @@ class WebsiteDataTransactions(DatabaseTransactions) :
 				The newly created LobbyData object.
 		"""
 		with self.createsession() as session :
+			# Ensure the user exists to prevent foreign key issues
+			user = UserTransactions().get_user(user_id, session=session)
+			if not user:
+				UserTransactions().add_user_empty(user_id)
+			# Create the WebsiteData entry
 			uuid = uuid4().__str__()
 			new_entry = WebsiteData(
 				uuid=uuid,

@@ -5,6 +5,8 @@ from abc import ABC, abstractmethod
 import discord
 from discord_py_utilities.messages import send_message, send_response
 
+from classes.AgeCalculations import AgeCalculations
+from databases.controllers.AgeRoleTransactions import AgeRoleTransactions
 from databases.controllers.ConfigData import ConfigData
 from databases.controllers.HistoryTransactions import JoinHistoryTransactions
 from databases.controllers.VerificationTransactions import VerificationTransactions
@@ -100,6 +102,8 @@ class IdCheck(ABC) :
 			JoinHistoryTransactions().update(interaction.user.id, interaction.guild.id, JoinHistoryStatus.IDCHECK)
 			await IdCheck.add_check(interaction.user, interaction.guild,
 			                        message.get("channel-message", f"No message set for {message}"))
+		await IdCheck.auto_kick(interaction.user, og_message, interaction.guild, channel)
+
 
 	@staticmethod
 	@abstractmethod
@@ -147,6 +151,7 @@ class IdCheck(ABC) :
 				"channel-message" : f"{user.mention} is on the ID list added by {server} with the reason:\n{id_check_reason}"
 			}
 		}
+		og_message = message
 		message = messages.get(message, message)
 		view = None
 		if verify_button :
@@ -160,6 +165,7 @@ class IdCheck(ABC) :
 			JoinHistoryTransactions().update(user.id, guild.id, JoinHistoryStatus.IDCHECK)
 
 			await IdCheck.add_check(user, guild, message.get("channel-message", f"No message set for {message}"))
+		await IdCheck.auto_kick(user, m_key, guild, channel)
 
 	@staticmethod
 	@abstractmethod
@@ -182,3 +188,24 @@ class IdCheck(ABC) :
 			VerificationTransactions().remove_idmessage(user.id)
 		except Exception :
 			pass
+    
+   @staticmethod
+	@abstractmethod
+	async def auto_kick(member: discord.Member, discrepancy, guild:discord.Guild, channel):
+		if discrepancy not in ['underage', 'below_minimum_age']:
+			return
+		config_state = ConfigData().get_toggle(guild.id, "Autokick")
+		if not config_state:
+			logging.info(f'{guild.name} Autokick disabled, skipping autokick.')
+			return
+		logging.info('Autokick enabled')
+		minimum_age = AgeRoleTransactions().get_minimum_age(guild.id)
+
+		kick_message = (
+			f"You have been removed from the server because you do not meet the minimum age requirement. You may rejoin once you meet the minimum age required of {minimum_age}."
+		)
+		await send_message(member, kick_message)
+		await member.kick(reason=kick_message)
+		await channel.send(f"[Autokick] {member.mention} doesn't meet the minimum age requirement and has been kicked.")
+
+

@@ -93,6 +93,8 @@ async def verify_age(request: Request, guild_id: int, user_id: int, verification
 
 	if vp.discrepancy is not None :
 		id_check = True
+
+
 		if vp.discrepancy in ["age_too_high", "mismatch", "below_minimum_age"] :
 			id_check = False
 
