@@ -45,7 +45,10 @@ def change_age_roles(guild: discord.Guild, user: discord.Member, age, remove = F
 		logging.warning("User is none, they may have left the server.")
 		return
 	if len(add_roles) > 0:
-		Queue().add(user.add_roles(*add_roles), priority=2 if not remove else 0)
+		try:
+			Queue().add(user.add_roles(*add_roles), priority=2 if not remove else 0)
+		except Exception as e:
+			logging.error(f"Failed to add roles to {user.mention} in {guild.name}: {e}", exc_info=True)
 	if not remove :
 		return
 	if len(remove_roles) < 1 :

@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 import logging
 
@@ -7,6 +8,7 @@ from sqlalchemy import Select
 from databases.controllers.ConfigTransactions import ConfigTransactions
 from databases.controllers.DatabaseTransactions import DatabaseTransactions
 from databases.current import Servers
+from resources.data.config_variables import available_toggles, lobby_approval_toggles
 
 
 class ServerTransactions(DatabaseTransactions) :
@@ -37,21 +39,12 @@ class ServerTransactions(DatabaseTransactions) :
 				guild = g
 
 			# Apply configurations to new servers
-			ConfigTransactions().toggle_add(guildid, "AUTOKICK")
-			ConfigTransactions().toggle_add(guildid, "AUTOMATIC")
-			ConfigTransactions().toggle_add(guildid, "WELCOME", "ENABLED")
-			ConfigTransactions().toggle_add(guildid, "LOBBYWELCOME", "ENABLED")
-			ConfigTransactions().toggle_add(guildid, "UPDATEROLES")
-			ConfigTransactions().toggle_add(guildid, "LEGACY_MESSAGE")
-			ConfigTransactions().toggle_add(guildid, "BANS", "ENABLED")
-			ConfigTransactions().toggle_add(guildid, "JOINED_AT", "ENABLED")
-			ConfigTransactions().toggle_add(guildid, "CREATED_AT", "ENABLED")
-			ConfigTransactions().toggle_add(guildid, "USER_ID", "ENABLED")
-			ConfigTransactions().toggle_add(guildid, "PICTURE_LARGE")
-			ConfigTransactions().toggle_add(guildid, "PICTURE_SMALL", "ENABLED")
-			ConfigTransactions().toggle_add(guildid, "SHOW_INLINE")
-			ConfigTransactions().toggle_add(guildid, "DEBUG")
-			ConfigTransactions().toggle_add(guildid, "PINGOWNER")
+
+			enabled_toggles = ['WELCOME', 'LOBBYWELCOME', 'BANS', 'JOINED_AT', 'CREATED_AT', 'USER_ID', 'PICTURE_SMALL', 'LOGCHANGES']
+			for toggle in available_toggles + list(lobby_approval_toggles.keys()):
+				if toggle.upper() in enabled_toggles:
+					ConfigTransactions().toggle_add(guildid, toggle, "ENABLED")
+				ConfigTransactions().toggle_add(guildid, toggle)
 			ConfigTransactions().config_unique_add(guildid, "COOLDOWN", 5)
 
 		if reload :

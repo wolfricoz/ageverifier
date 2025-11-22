@@ -10,8 +10,8 @@ from databases.controllers.AgeRoleTransactions import AgeRoleTransactions
 from databases.controllers.ConfigData import ConfigData
 from databases.controllers.HistoryTransactions import JoinHistoryTransactions
 from databases.controllers.VerificationTransactions import VerificationTransactions
+from databases.current import IdVerification
 from databases.enums.joinhistorystatus import JoinHistoryStatus
-from views.buttons.idverifybutton import IdVerifyButton
 
 
 class IdCheck(ABC) :
@@ -20,8 +20,7 @@ class IdCheck(ABC) :
 	@abstractmethod
 	async def send_check(interaction: discord.Interaction, channel, message, age, dob, date_of_birth=None, years=None,
 	                     id_check=False, verify_button=True, id_check_reason=None, server=None) :
-		logging.info(f"Sending ID check message for {interaction.user.id} with date of birth: {date_of_birth}")
-
+		logging.debug(f"Sending ID check message for {interaction.user.id}")
 		messages = {
 			"underage"          : {
 				"user-message"    : f"Unfortunately, you are too young to join our server. If you are 17, you may wait in the lobby until you are old enough to join.",
@@ -64,17 +63,34 @@ class IdCheck(ABC) :
 				"channel-message" : f"{interaction.user.mention} is on the ID list added by {server} with the reason:\n{id_check_reason}"
 			}
 		}
-		og_message = message
-		message = messages.get(message, message)
 		view = None
+		m_key = message
+		message = messages.get(message, message)
+		if m_key in ['mismatch', 'age_too_high', 'below_minimum_age'] :
+			await send_response(interaction,
+			                    message.get("user-message",
+			                                "There was an issue with the age and date of birth you provided. Please try again."),
+			                    ephemeral=True)
+			lobbymod = interaction.guild.get_channel(ConfigData().get_key_int_or_zero(interaction.guild.id, 'lobbymod'))
+			await lobbymod.send(message)
+			return
 		if verify_button :
+			from views.buttons.idverifybutton import IdVerifyButton
 			view = IdVerifyButton()
-		try:
+		# create the embed
+		embed = discord.Embed(title="ID Check Required",
+		                      description=message.get('channel-message', 'No message set for this ID check.'))
+		embed.add_field(name="Staff Notice",
+		                value="Please contact the user to complete their ID check. They must submit a valid ID. Do not share or store the ID outside of authorized verification staff. Any abuse results in immediate blacklisting. If the issue may be a typo, you may allow a retry by removing them from the ID check list.", )
+		embed.set_footer(text=f"{interaction.user.id}")
+
+		try :
 			await send_message(channel,
-			                   f"{f'{interaction.guild.owner.mention}' if ConfigData().get_key(interaction.guild.id, 'PINGOWNER') == 'ENABLED' else ''}{message.get('channel-message', f'No message set for {message}')}\n[Lobby Debug] Age: {age} dob {dob} userid: {interaction.user.id}",
+			                   f"{f'{interaction.guild.owner.mention}' if ConfigData().get_key(interaction.guild.id, 'PINGOWNER') == 'ENABLED' else ''} -# Lobby Debug] Age: {age} dob {dob} userid: {interaction.user.mention}",
+			                   embed=embed,
 			                   view=view)
-			await send_response(interaction, message.get("user-message",
-			                                             "Thank you for submitting your age and date of birth, a staff member will contact you soon because of a discrepancy.")
+			await send_response(interaction, interaction.user.mention + " " + message.get("user-message",
+			                                                                              "Thank you for submitting your age and date of birth, a staff member will contact you soon because of a discrepancy.")
 			                    ,
 			                    ephemeral=True)
 		except discord.Forbidden :
@@ -82,10 +98,8 @@ class IdCheck(ABC) :
 			                    f"I don't have permission to send messages in {channel.mention}. Please contact a server administrator to resolve this issue.",
 			                    ephemeral=True)
 
-		logging.info(message.get("channel-message", f"No message set for {message}"))
 		if id_check and message.get("channel-message", None) :
 			JoinHistoryTransactions().update(interaction.user.id, interaction.guild.id, JoinHistoryStatus.IDCHECK)
-
 			await IdCheck.add_check(interaction.user, interaction.guild,
 			                        message.get("channel-message", f"No message set for {message}"))
 		await IdCheck.auto_kick(interaction.user, og_message, interaction.guild, channel)
@@ -141,21 +155,22 @@ class IdCheck(ABC) :
 		message = messages.get(message, message)
 		view = None
 		if verify_button :
+			from views.buttons.idverifybutton import IdVerifyButton
 			view = IdVerifyButton()
 
 		await send_message(channel,
 		                   f"{f'{guild.owner.mention}' if ConfigData().get_key(guild.id, 'PINGOWNER') == 'ENABLED' else ''}{message.get('channel-message', f'No message set for {message}')}\n[Lobby Debug] Age: {age} dob {dob} userid: {user.id}",
 		                   view=view)
-		logging.info(message.get("channel-message", f"No message set for {message}"))
 		if id_check and message.get("channel-message", None) :
 			JoinHistoryTransactions().update(user.id, guild.id, JoinHistoryStatus.IDCHECK)
 
 			await IdCheck.add_check(user, guild, message.get("channel-message", f"No message set for {message}"))
-		await IdCheck.auto_kick(user, og_message, guild, channel)
+		await IdCheck.auto_kick(user, m_key, guild, channel)
 
 	@staticmethod
 	@abstractmethod
 	async def add_check(user, guild, message) :
+
 		VerificationTransactions().set_idcheck_to_true(
 			user.id,
 			f"{datetime.datetime.now(datetime.timezone.utc).strftime('%m/%d/%Y')}: {message}",
@@ -164,6 +179,17 @@ class IdCheck(ABC) :
 		)
 
 	@staticmethod
+	@abstractmethod
+	async def remove_idmessage(user: discord.User | discord.Member, idcheck: IdVerification) :
+		try :
+			dm_channel = user.dm_channel or await user.create_dm()
+			message_to_delete = await dm_channel.fetch_message(idcheck.idmessage)
+			await message_to_delete.delete()
+			VerificationTransactions().remove_idmessage(user.id)
+		except Exception :
+			pass
+    
+   @staticmethod
 	@abstractmethod
 	async def auto_kick(member: discord.Member, discrepancy, guild:discord.Guild, channel):
 		if discrepancy not in ['underage', 'below_minimum_age']:

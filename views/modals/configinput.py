@@ -2,6 +2,8 @@
 import discord
 from discord_py_utilities.messages import send_response
 
+from classes.config.utils import ConfigUtils
+from classes.support.queue import Queue
 from databases.controllers.ConfigTransactions import ConfigTransactions
 
 
@@ -19,7 +21,8 @@ class ConfigInputUnique(discord.ui.Modal, title='set config message'):
 
     async def on_submit(self, interaction: discord.Interaction):
         ConfigTransactions().config_unique_add(guildid=interaction.guild.id, key=self.key, value=self.text.value, overwrite=True)
-
+        Queue().add(ConfigUtils.log_change(interaction.guild, {self.key: self.text.value}, user_name=interaction.user.mention,
+                                           ))
         await send_response(interaction, f"{self.key} has been added to the database with value:\n{self.text.value}", ephemeral=True)
 
     async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:

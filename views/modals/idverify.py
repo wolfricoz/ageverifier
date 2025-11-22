@@ -1,9 +1,15 @@
+import logging
+
 import discord
 from discord_py_utilities.messages import send_response
 
 from classes.AgeCalculations import AgeCalculations
+from classes.idcheck import IdCheck
 from classes.idverify import verify
 from classes.support.queue import Queue
+from databases.controllers.ConfigData import ConfigData
+from databases.controllers.VerificationTransactions import VerificationTransactions
+from views.buttons.IDConfirm import IDConfirm
 
 
 class IdVerifyModal(discord.ui.Modal) :
@@ -11,12 +17,12 @@ class IdVerifyModal(discord.ui.Modal) :
 	# but the title can be whatever you want.
 
 	def __init__(self, user, message: discord.Message) :
-		self.user = user
+		self.user: discord.User = user
 		self.message = message
 		super().__init__()
 
 	title = "Verify your age"
-	custom_id = "NsfwVerify"
+	custom_id = "IDVerifyModal"
 
 	dateofbirth = discord.ui.TextInput(
 		label='Date of Birth (mm/dd/yyyy)',
@@ -31,9 +37,12 @@ class IdVerifyModal(discord.ui.Modal) :
 		# validates inputs with regex
 		if AgeCalculations.validate_dob(self.dateofbirth.value) is None :
 			return await send_response(interaction, f"Please fill in the date of birth as with the format: mm/dd/yyyy.")
-		await verify(self.user, interaction, self.dateofbirth.value, True)
-		Queue().add(self.message.delete())
-		await send_response(interaction, "User's ID verification entry has been updated.")
+
+		idcheckchannel = ConfigData().get_key_int_or_zero(interaction.guild.id,"idlog")
+		return await send_response(interaction,
+		                           f"Please confirm the Date of Birth matches the user's ID you viewed via DMs and that you personally reviewed the ID. Submitting a DOB without viewing the ID or maliciously adding a false date of births may result in blacklisting. If `{self.dateofbirth.value}` is correct for {self.user.mention}, please click `Confirm & Proceed`.",
+		                           view=IDConfirm(self.dateofbirth.value, self.user, self.message),
+		                           ephemeral=True)
 
 	async def on_error(self, interaction: discord.Interaction, error: Exception) -> None :
 		print(error)

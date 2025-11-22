@@ -66,6 +66,7 @@ class VerifyModal(discord.ui.Modal) :
 		self.add_item(self.year)
 
 	async def on_submit(self, interaction: discord.Interaction) :
+		# await interaction.response.defer(ephemeral=True)
 		verification_process = VerificationProcess(
 			interaction.client,
 			interaction.user,
@@ -81,11 +82,11 @@ class VerifyModal(discord.ui.Modal) :
 			await send_response(interaction, f"Verification failed: {verification_process.error}", ephemeral=True)
 			return
 		if verification_process.discrepancy is not None :
+			logging.info(f"discrepancy: {verification_process.discrepancy}")
 			id_check = True
 
 			if verification_process.discrepancy in ["age_too_high", "mismatch", "below_minimum_age"] :
 				id_check = False
-			logging.info(verification_process.user_record.date_of_birth)
 			return await IdCheck.send_check(interaction,
 			                                verification_process.id_channel,
 			                                verification_process.discrepancy,

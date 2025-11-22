@@ -114,6 +114,8 @@ class IdVerification(Base) :
 	verifieddob: Mapped[Optional[str]] = mapped_column(String(2048))
 	server: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
 	user: Mapped["Users"] = relationship(back_populates="id_verification")
+	idmessage: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
+	idmessagecreated: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
 
 class Timers(Base) :
