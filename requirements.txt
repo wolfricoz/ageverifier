@@ -21,5 +21,3 @@ numpy~=2.3.2
 scipy~=1.16.1
 psycopg2-binary
 gunicorn
-easyocr
-cv2
