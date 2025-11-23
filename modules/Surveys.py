@@ -31,8 +31,12 @@ class Surveys(GroupCog) :
 				embed=embed,
 				view = SurveyButton()
 			)
+		except discord.Forbidden:
+			logging.warning(f"Could not send survey to {member} for leaving {member.guild.name}: We dont share a server.")
+			pass
+
 		except Exception as e:
-			logging.error(f"Could not send survey to {member} for leaving {member.guild.name}: {e}")
+			logging.warning(f"Could not send survey to {member} for leaving {member.guild.name}: {e}")
 			pass
 
 async def setup(bot: Bot) :
