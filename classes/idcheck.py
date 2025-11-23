@@ -72,7 +72,7 @@ class IdCheck(ABC) :
 			                                "There was an issue with the age and date of birth you provided. Please try again."),
 			                    ephemeral=True)
 			lobbymod = interaction.guild.get_channel(ConfigData().get_key_int_or_zero(interaction.guild.id, 'lobbymod'))
-			await lobbymod.send(message)
+			await lobbymod.send(f"Lobby Debug] Age: {age} dob {dob} userid: {interaction.user.mention}\n" + message.get('channel-message'))
 			return
 		if verify_button :
 			from views.buttons.idverifybutton import IdVerifyButton
