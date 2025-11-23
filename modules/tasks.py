@@ -228,7 +228,7 @@ class Tasks(commands.GroupCog) :
 		guilds = ServerTransactions().get_all(id_only=False)
 		for guild in guilds :
 			Queue().add(Servers().update_server(guild), 0)
-		ConfigData().reload()
+		await ConfigData().reload()
 
 	@tasks.loop(hours=24 * 7)
 	async def update_age_roles(self) :
