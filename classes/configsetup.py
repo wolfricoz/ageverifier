@@ -102,6 +102,10 @@ class ConfigSetup :
 	async def create_channels(self, guild, category, interaction=None) :
 		channelchoices = self.channelchoices
 		logging.info(channelchoices)
+		if guild is None:
+			logging.warning("Guild is None, cannot create channels")
+			return None
+
 		for channelkey, channelvalue in channelchoices.items() :
 			channel = None
 			logging.info("setting up channel: " + channelkey)
@@ -179,7 +183,7 @@ class ConfigSetup :
 			except Exception as e :
 				logging.error(e, exc_info=True)
 				continue
-		return None
+		return True
 
 	async def create_roles(self, guild, rolechoices, interaction=None) :
 		skip_roles = ['return', 'add']
