@@ -40,9 +40,11 @@ async def welcome_user(member) :
 		lobby_welcome = "Lobby message not setup, please use `/config messages key:LOBBYWELCOMEMESSAGE action:set` to set it up. You can click the button below to verify!"
 	if channel is None :
 		channel = find_first_accessible_text_channel(member.guild)
-		warning = f"Lobby channel not found, sending to {channel.mention} instead."
 		if channel is None :
+			logging.info("Lobby channel not found, and no accessible text channel found to send welcome message.")
 			return
+		warning = f"Lobby channel not found, sending to {channel.mention} instead."
+
 
 	await send_message(channel,
 	                   f"Welcome {member.mention}! {lobby_welcome}\n{warning}"
