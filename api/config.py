@@ -1,6 +1,7 @@
 # my_discord_bot/routes/example_routes.py
 import logging
 import os
+from typing import Optional
 
 from discord.ext import commands
 from fastapi import APIRouter, Request
@@ -23,14 +24,16 @@ def verify_token(request: Request) :
 
 
 @router.post("/config/refresh")
-async def refresh_config(request: Request) :
+async def refresh_config(request: Request, guildid: Optional[int]= None) :
 	if verify_token(request) :
 		logging.warning(f"Invalid token for config refresh request from ip {request.client.host}")
 
 		return None
 	logging.info("Website Request: Reload Config")
-
-	ConfigData().reload()
+	if guildid is not None :
+		ConfigData().load_guild(guildid)
+		return {"message" : f"Config refresh queued for {guildid}"}
+	await ConfigData().reload()
 	return {"message" : "Config refresh queued"}
 
 
@@ -42,10 +45,12 @@ async def auto_setup(request: Request, guildid: int) :
 
 	bot: commands.Bot = request.app.state.bot
 	guild = bot.get_guild(guildid)
+	if not guild:
+		guild = await bot.fetch_guild(guildid)
 	if not guild :
 		return {"message" : "Guild not found"}
 	Queue().add(ConfigSetup().api_auto_setup(guild))
-	ConfigData().reload()
+	ConfigData().load_guild(guildid)
 	return {"message" : f"Auto Setup for {guild.name} queued"}
 
 
