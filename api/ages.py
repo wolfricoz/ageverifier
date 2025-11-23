@@ -33,7 +33,6 @@ async def fetch_age(request: Request, user_id: int):
 	if token != os.getenv("API_KEY"):
 		return {"message": "Invalid token"}
 	userinfo: Users = UserTransactions().get_user(user_id)
-	raise NotImplemented
 	if userinfo is None:
 		return {"message": "No data found for this user"}
 
