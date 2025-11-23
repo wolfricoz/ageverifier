@@ -199,7 +199,7 @@ class ConfigSetup :
 					verified = get(guild.roles, name="Verified")
 					if verified is None :
 						verified = await guild.create_role(name="Verified", reason="Setup")
-					self.changes["add"] = verified[0].id
+					self.changes["add"] = verified.id
 					ConfigTransactions().config_unique_add(guild.id, "add", verified.id, overwrite=True)
 					continue
 
