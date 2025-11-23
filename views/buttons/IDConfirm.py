@@ -32,7 +32,7 @@ class IDConfirm(discord.ui.View) :
 
 		Queue().add(self.ogmessage.delete())
 		await send_response(interaction, "User's ID verification entry has been updated.", ephemeral=True)
-		await self.user.send(f"Your ID verification entry has been updated with the date of birth: {self.dateofbirth.value} and your ID has been removed from our system. Thank you for using AgeVerifier!")
+		await self.user.send(f"Your ID verification entry has been updated with the date of birth: {self.dateofbirth} and your ID has been removed from our system. Thank you for using AgeVerifier!")
 		return None
 
 	@discord.ui.button(label="Cancel Verification", style=discord.ButtonStyle.red, custom_id="declineID")
