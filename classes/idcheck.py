@@ -102,7 +102,7 @@ class IdCheck(ABC) :
 			JoinHistoryTransactions().update(interaction.user.id, interaction.guild.id, JoinHistoryStatus.IDCHECK)
 			await IdCheck.add_check(interaction.user, interaction.guild,
 			                        message.get("channel-message", f"No message set for {message}"))
-		await IdCheck.auto_kick(interaction.user, og_message, interaction.guild, channel)
+		await IdCheck.auto_kick(interaction.user, m_key, interaction.guild, channel)
 
 	@staticmethod
 	@abstractmethod
@@ -150,7 +150,7 @@ class IdCheck(ABC) :
 				"channel-message" : f"{user.mention} is on the ID list added by {server} with the reason:\n{id_check_reason}"
 			}
 		}
-		og_message = message
+		m_key = message
 		message = messages.get(message, message)
 		view = None
 		if verify_button :
