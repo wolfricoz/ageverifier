@@ -28,7 +28,7 @@ class IdCheck(ABC) :
 			},
 			"mismatch"          : {
 				"user-message"    : f"It seems that the age you've given does not match the date of birth you've provided. Please try again. As a reminder, you must use your CURRENT age.",
-				"channel-message" : f"[INFO: Age Mismatch] [Info] User {interaction.user.mention}\'s age does not match. User gave {age} (mm/dd/yyyy) but dob indicates {years}. User may retry."
+				"channel-message" : f"[INFO: Age Mismatch] [Info] User {interaction.user.mention}\'s age does not match. User gave {age} but dob indicates {years}. User may retry."
 			},
 			"age_too_high"      : {
 				"user-message"    : (
@@ -53,7 +53,7 @@ class IdCheck(ABC) :
 
 			"no_match"          : {
 				"user-message"    : f"It seems that the age you've given does not match the date of birth you've provided. A staff member will reach out to you shortly.",
-				"channel-message" : f"[ID CHECK: Age Mismatch] User {interaction.user.mention}\'s age does not match, please reach out to the user. User gave {age} (mm/dd/yyyy) but dob indicates {years} in {server}"
+				"channel-message" : f"[ID CHECK: Age Mismatch] User {interaction.user.mention}\'s age does not match, please reach out to the user. User gave {age} but dob indicates {years} in {server}"
 			},
 			"dob_mismatch"      : {
 				"user-message"    : f"It seems that the date of birth you've provided does not match a previously given date of birth. A staff member will reach out to you shortly.",
