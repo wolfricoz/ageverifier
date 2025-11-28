@@ -43,10 +43,10 @@ class Config(commands.GroupCog, name="config") :
 		status: bool = True
 		match setup_type.value.lower() :
 			case 'dashboard' :
-				return await send_response(interaction, f"You can access the dashboard here: https://bots.roleplaymeets.com/")
+				return await send_response(interaction, f"You can access the dashboard here: {os.getenv("dashboard_url")}")
 			case 'manual' :
 				await send_message(interaction.channel,
-				                   f"You can access the dashboard here for easier setup! https://bots.roleplaymeets.com/")
+				                   f"You can access the dashboard here for easier setup! {os.getenv("dashboard_url")}")
 				status = await ConfigSetup().manual(self.bot, interaction, self.channelchoices, self.rolechoices,
 				                                    self.messagechoices)
 			case 'auto' :
