@@ -57,7 +57,7 @@ class Config(commands.GroupCog, name="config") :
 		                    ephemeral=True)
 		if not status :
 			return None
-		await ConfigSetup().check_channel_permissions(interaction.channel, interaction)
+		await ConfigSetup().check_channel_permissions(interaction.guild)
 		return None
 
 	@app_commands.command()
@@ -65,7 +65,8 @@ class Config(commands.GroupCog, name="config") :
 	async def permissioncheck(self, interaction: discord.Interaction) :
 		"""Checks the permissions of the bot."""
 		await send_response(interaction, f"Starting to check permissions for all the channels!", ephemeral=True)
-		await ConfigSetup().check_channel_permissions(interaction.channel, interaction)
+		await ConfigSetup().check_channel_permissions(interaction.guild)
+
 
 	@app_commands.command()
 	@app_commands.choices(key=[Choice(name=x, value=x) for x, _ in messagechoices.items()])

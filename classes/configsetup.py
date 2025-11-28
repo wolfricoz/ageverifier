@@ -3,8 +3,10 @@ import logging
 import discord
 from discord.utils import get
 from discord_py_utilities.exceptions import NoPermissionException
+from discord_py_utilities.permissions import check_missing_channel_permissions, find_first_accessible_text_channel
 
 from classes.config.utils import ConfigUtils
+from databases.controllers.AgeRoleTransactions import AgeRoleTransactions
 from databases.controllers.ConfigData import ConfigData
 from databases.controllers.ConfigTransactions import ConfigTransactions
 from discord_py_utilities.messages import send_message
@@ -102,7 +104,7 @@ class ConfigSetup :
 	async def create_channels(self, guild, category, interaction=None) :
 		channelchoices = self.channelchoices
 		logging.info(channelchoices)
-		if guild is None:
+		if guild is None :
 			logging.warning("Guild is None, cannot create channels")
 			return None
 
@@ -172,7 +174,6 @@ class ConfigSetup :
 						                                    "This channel is where age discrepancies are flagged for ID verification. This channel should never be public.")
 					# await self.add_roles_to_channel(channel, roles)
 
-
 				try :
 					self.changes[channelkey] = channel.id
 					ConfigTransactions().config_unique_add(guild.id, channelkey, channel.id, overwrite=True)
@@ -227,8 +228,8 @@ class ConfigSetup :
 	async def set_messages(self, guild, messagechoices) :
 		for messagekey, messagevalue in messagechoices.items() :
 			message_dict = {
-				'lobbywelcomemessage'   : f"Please read the rules in the rules channel and click the verify button below to get started.",
-				'welcomemessage' : "Be sure to get some roles in the roles channel and if you need help be sure to ask the staff!",
+				'lobbywelcomemessage' : f"Please read the rules in the rules channel and click the verify button below to get started.",
+				'welcomemessage'      : "Be sure to get some roles in the roles channel and if you need help be sure to ask the staff!",
 			}
 			self.changes[messagekey] = messagevalue
 			ConfigTransactions().config_unique_add(guild.id, messagekey, message_dict[messagekey], overwrite=True)
@@ -237,11 +238,11 @@ class ConfigSetup :
 		channel = get(guild.text_channels, name=name)
 		if not channel :
 			channel = await category.create_text_channel(name=name)
-		try:
+		try :
 			await channel.edit(topic=description)
 		except discord.Forbidden :
 			pass
-		except Exception as e:
+		except Exception as e :
 			logging.error(e, exc_info=True)
 		return channel
 
@@ -260,48 +261,112 @@ class ConfigSetup :
 		Queue().add(send_message(guild.owner, f"## Auto Setup for {guild.name} has been completed!"), 0)
 		Queue().add(ConfigUtils.log_change(guild, self.changes, user_name="Dashboard"), 1)
 
-	async def check_channel_permissions(self, mod_channel: discord.TextChannel, interaction: discord.Interaction = None) :
-		fails = []
-		for key in self.channelchoices :
-			try :
-				channel = ConfigData().get_key_or_none(mod_channel.guild.id, key)
-				if channel is None or channel == "" :
-					await send_message(mod_channel,
-					                   f"{key} is not set, please set it with /config channels\n[DEBUG] {key}: {channel}")
-					fails.append(key)
-					continue
-				try :
-					channel = mod_channel.guild.get_channel(int(channel))
-				except AttributeError :
-					continue
+	async def check_channel_permissions(self, guild: discord.Guild) :
+		channel = guild.get_channel(ConfigData().get_key_int_or_zero(guild.id, "lobbymod"))
+		if channel is None :
+			logging.warning("Mod channel is None, cannot check permissions")
+			channel = find_first_accessible_text_channel(guild)
+		embed = await self.create_permission_channels_embed(channel.guild)
+		try :
+			await send_message(channel, "-# Make sure ageverifier has the right permissions to operate", embed=embed)
+		except discord.Forbidden or NoPermissionException :
+			channel = find_first_accessible_text_channel(guild)
+			await send_message(channel, "-# Make sure ageverifier has the right permissions to operate", embed=embed)
+		embed = await self.create_permission_roles_embed(channel.guild)
+		try :
+			await send_message(channel, "-# Make sure ageverifier has the right permissions to assign roles", embed=embed)
+		except discord.Forbidden or NoPermissionException :
+			channel = find_first_accessible_text_channel(guild)
+			await send_message(channel, "-# Make sure ageverifier has the right permissions to assign roles", embed=embed)
 
+		return None
+
+	async def create_permission_channels_embed(self, guild: discord.Guild) :
+		embed = discord.Embed(title="Permissions Check (channels)", color=0x00ff00)
+		embed.description = f"Checking channel permissions in {guild.name}:"
+
+		for key in self.channelchoices.keys() :
+			try :
+				channel = guild.get_channel(ConfigData().get_key_int_or_zero(guild.id, key))
 				if channel is None :
-					await send_message(mod_channel, f"{key} is not a valid channel, please set it with /config channels")
-					fails.append(key)
+					embed.add_field(name=f"**{key}**", value=f"❌ This key was not set or channel not found", inline=False)
 					continue
-				try :
-					msg = await send_message(channel, "Checking permissions, if you see this I can post here!")
-					await msg.delete()
-				except discord.Forbidden :
-					await send_message(mod_channel, f"I do not have permissions to post in {channel.name}")
-					fails.append(key)
+				missing = check_missing_channel_permissions(channel,
+				                                            ['view_channel', 'send_messages', 'embed_links', 'attach_files'])
+				if len(missing) > 0 :
+					embed.add_field(name=f"**{key}**", value=f"❌ Missing permissions: {', '.join(missing)}", inline=False)
 					continue
-				await mod_channel.send(f"I have permissions to post in {channel.name}!")
-			except discord.Forbidden or NoPermissionException:
-				logging.info(f"Missing permissions for {key}, adding to fails")
-				fails.append(key)
+				embed.add_field(name=f"**{key}**", value=f"✅ All required permissions are set", inline=False)
+
 			except Exception as e :
 				logging.error(e, exc_info=True)
-				fails.append(key)
-		if len(fails) > 0 :
-			warning = f"Failed to check permissions for: {', '.join(fails)}"
-			if interaction is None :
-				return await send_message(mod_channel.guild.owner, warning)
-			await interaction.followup.send(warning)
+				embed.add_field(name=f"**{key}**", value=f"❌ Error checking permissions", inline=False)
+		return embed
 
-			return None
-		success = "All permissions are set correctly!"
-		if interaction is None :
-			return await send_message(mod_channel.guild.owner, success)
-		await interaction.followup.send(success)
-		return None
+	async def create_permission_roles_embed(self, guild: discord.Guild) :
+		ement = discord.Embed(title="Permissions Check (roles)", color=0x00ff00)
+		ement.description = f"Checking role permissions in {guild.name}:"
+		top_role = guild.me.top_role
+		ement.add_field(name=f"role giving permission",
+		                value="✅ I have permission to give roles" if guild.me.guild_permissions.manage_roles else "❌ I don't have permission to give roles",
+		                inline=False)
+		for key in self.rolechoices.keys() :
+			await self.process_roles(ement, guild, key, top_role)
+		ageroles = AgeRoleTransactions().get_all(guild.id)
+		for age_role in ageroles :
+			await self.process_roles(ement, guild, str(age_role.role_id), top_role, type="age role", value=age_role.role_id)
+		return ement
+
+
+	async def process_roles(self, ement, guild, key, top_role, type = "role", value = None) :
+		logging.info(key)
+		if len(ement.fields) > 20 :
+			return
+		if type == "role" :
+			data = ConfigData().get_key_or_none(guild.id, key)
+		else :
+			key = "age role"
+			data = value
+		if not data  :
+			ement.add_field(name=f"**{key}**", value=f"❌ This key was not set", inline=False)
+			return
+		if isinstance(data, str | int):
+			data = [data]
+		if isinstance(data, list) and len(data) > 0 :
+			fail = []
+			for role_id in data :
+				try :
+					role = guild.get_role(role_id)
+					if not await self.check_role_permissions(role, top_role) :
+						fail.append(role_id)
+						continue
+				except ValueError :
+					ement.add_field(name=f"**{key} - {role_id}**", value=f"❌ Unable to retrieve role", inline=False)
+					continue
+				except Exception as e :
+					logging.error(e, exc_info=True)
+					ement.add_field(name=f"**{key} - {role_id}**", value=f"❌ Error checking permissions", inline=False)
+					continue
+			await self.add_role_field(ement, key, len(fail) < 1, failed=fail)
+			return
+
+
+	async def check_role_permissions(self, role: discord.Role, top_role: discord.Role) :
+		if role is None :
+			raise ValueError("Role is None")
+		if role.position >= top_role.position :
+			return False
+		return True
+
+	async def add_role_field(self, embed, key, status: bool, failed: list = None):
+
+		if failed and len(failed) > 0 :
+			embed.add_field(name=f"**{key}**", value=f"❌ I don't have permission to assign roles: {', '.join(failed)}",
+			                inline=False)
+			return
+		if not status :
+			embed.add_field(name=f"**{key}**", value=f"❌ I don't have permission to assign this role" ,
+			                inline=False)
+			return
+		embed.add_field(name=f"**{key}**", value=f"✅ I have permission to assign this role", inline=False)
+

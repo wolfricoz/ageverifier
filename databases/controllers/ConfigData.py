@@ -26,7 +26,7 @@ class ConfigData(metaclass=singleton) :
 
 		"""
 		logging.info("reloading config")
-		if self.reload :
+		if self.reloading :
 			return
 		self.reloading = True
 		for guild_id in self.conf :

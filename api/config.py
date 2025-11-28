@@ -33,7 +33,8 @@ async def refresh_config(request: Request, guildid: Optional[int]= None) :
 	if guildid is not None :
 		ConfigData().load_guild(guildid)
 		return {"message" : f"Config refresh queued for {guildid}"}
-	await ConfigData().reload()
+	ConfigData().reloading = True
+	Queue().add(ConfigData().reload())
 	return {"message" : "Config refresh queued"}
 
 
@@ -65,13 +66,7 @@ async def permission_check(request: Request, guildid: int) :
 	guild = bot.get_guild(guildid)
 	if not guild :
 		return {"message" : "Guild not found"}
-	try :
-		mod_channel = bot.get_channel(ConfigData().get_key_int(guildid, "lobbymod"))
-		if mod_channel is None :
-			return {"message" : "No moderation channel set"}
-	except :
-		return {"message" : "No moderation channel set"}
-	Queue().add(ConfigSetup().check_channel_permissions(mod_channel))
+	Queue().add(ConfigSetup().check_channel_permissions(guild))
 	return {"message" : f"Permission check for {guild.name} queued"}
 
 @router.post("/config/{guildid}/changes/log")
