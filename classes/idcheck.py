@@ -137,7 +137,6 @@ class IdCheck(ABC) :
 					f"User entered {age}, with date of birth indicating {years}. Verification process stopped."
 				)
 			},
-
 			"no_match"          : {
 				"user-message"    : f"It seems that the age you've given does not match the date of birth you've provided. A staff member will reach out to you shortly.",
 				"channel-message" : f"[ID CHECK: Age Mismatch] User {user.mention}\'s age does not match, please reach out to the user. User gave {age} (mm/dd/yyyy) but dob indicates {years} in {server}"
@@ -153,17 +152,42 @@ class IdCheck(ABC) :
 		m_key = message
 		message = messages.get(message, message)
 		view = None
+
+		# For the discrepancy cases that previously used send_response, DM the user and log to lobby mod channel.
+		if m_key in ['mismatch', 'age_too_high', 'below_minimum_age'] :
+			await send_message(user, message.get("user-message",
+			                                     "There was an issue with the age and date of birth you provided. Please try again."))
+			lobbymod = guild.get_channel(ConfigData().get_key_int_or_zero(guild.id, 'lobbymod'))
+			if lobbymod :
+				await lobbymod.send(
+					f"Lobby Debug] Age: {age} dob {dob} userid: {user.mention}\n" + message.get('channel-message'))
+			return
+
 		if verify_button :
 			from views.buttons.idverifybutton import IdVerifyButton
 			view = IdVerifyButton()
 
-		await send_message(channel,
-		                   f"{f'{guild.owner.mention}' if ConfigData().get_key(guild.id, 'PINGOWNER') == 'ENABLED' else ''}{message.get('channel-message', f'No message set for {message}')}\n[Lobby Debug] Age: {age} dob {dob} userid: {user.id}",
-		                   view=view)
+		embed = discord.Embed(title="ID Check Required",
+		                      description=message.get('channel-message', 'No message set for this ID check.'))
+		embed.add_field(name="Staff Notice",
+		                value="Please contact the user to complete their ID check. They must submit a valid ID. Do not share or store the ID outside of authorized verification staff. Any abuse results in immediate blacklisting. If the issue may be a typo, you may allow a retry by removing them from the ID check list.")
+		embed.set_footer(text=f"{user.id}")
+
+		try :
+			await send_message(channel,
+			                   f"{f'{guild.owner.mention}' if ConfigData().get_key(guild.id, 'PINGOWNER') == 'ENABLED' else ''} -# Lobby Debug] Age: {age} dob {dob} userid: {user.mention}",
+			                   embed=embed,
+			                   view=view)
+			await send_message(user, user.mention + " " + message.get("user-message",
+			                                                          "Thank you for submitting your age and date of birth, a staff member will contact you soon because of a discrepancy."))
+		except discord.Forbidden :
+			await send_message(user,
+			                   f"I don't have permission to send messages in {channel.mention}. Please contact a server administrator to resolve this issue.")
+
 		if id_check and message.get("channel-message", None) :
 			JoinHistoryTransactions().update(user.id, guild.id, JoinHistoryStatus.IDCHECK)
-
 			await IdCheck.add_check(user, guild, message.get("channel-message", f"No message set for {message}"))
+
 		await IdCheck.auto_kick(user, m_key, guild, channel)
 
 	@staticmethod
