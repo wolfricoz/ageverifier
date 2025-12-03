@@ -154,6 +154,9 @@ class LobbyProcess(ABC) :
 		general = ConfigData().get_key(guild.id, "general")
 		message = ConfigData().get_key(guild.id, "welcomemessage")
 		channel = guild.get_channel(int(general))
+		if channel is None:
+			channel = await guild.fetch_channel(int(general))
+
 		async for cmessage in channel.history(limit=20) :
 			if cmessage.author.bot and user in cmessage.mentions :
 				return
