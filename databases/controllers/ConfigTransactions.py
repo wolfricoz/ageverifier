@@ -103,6 +103,8 @@ class ConfigTransactions(DatabaseTransactions) :
 				return False
 			exists = session.scalar(
 				Select(db.Config).where(db.Config.guild == guild_id, db.Config.key == key))
+			if exists is None :
+				return False
 			session.delete(exists)
 			self.commit(session)
 			return None
