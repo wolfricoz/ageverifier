@@ -7,6 +7,7 @@ from sqlalchemy import Select
 
 from databases.controllers.ConfigTransactions import ConfigTransactions
 from databases.controllers.DatabaseTransactions import DatabaseTransactions
+from databases.controllers.UserTransactions import UserTransactions
 from databases.current import Servers
 from resources.data.config_variables import available_toggles, lobby_approval_toggles
 
@@ -19,7 +20,11 @@ class ServerTransactions(DatabaseTransactions) :
 
 			guild = self.get(guildid, session=session)
 			owner_name = owner.name if owner else ""
-			owner_id = owner.id if owner else None
+			owner_id = owner.id if owner else 0
+			owner = UserTransactions().user_exists(owner_id)
+			if not owner and owner_id != 0 :
+				UserTransactions().add_user_empty(owner_id)
+
 			if guild is not None :
 
 				self.update(guildid, active, name, owner_name, member_count, invite, owner_id=owner_id)
