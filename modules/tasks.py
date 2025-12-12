@@ -201,13 +201,17 @@ class Tasks(commands.GroupCog) :
 			if guild.id in guild_ids :
 				guild_ids.remove(guild.id)
 				continue
-			ServerTransactions().add(guild.id,
-			                         active=True,
-			                         name=guild.name,
-			                         owner=guild.owner,
-			                         member_count=guild.member_count,
-			                         invite=await check_guild_invites(self.bot, guild)
-			                         )
+			try:
+				ServerTransactions().add(guild.id,
+				                         active=True,
+				                         name=guild.name,
+				                         owner=guild.owner,
+				                         member_count=guild.member_count,
+				                         invite=await check_guild_invites(self.bot, guild)
+				                         )
+			except:
+				logging.error(f"Error adding guild {guild.name} ({guild.id}) to the database", exc_info=True)
+				continue
 
 		for gid in guild_ids :
 			try :
