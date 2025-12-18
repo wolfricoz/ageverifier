@@ -11,7 +11,6 @@ from pydantic import BaseModel, Field
 from starlette.responses import JSONResponse
 
 from classes.encryption import Encryption
-from classes.idcheck import IdCheck
 from classes.support.queue import Queue
 from classes.verification.process import VerificationProcess
 from databases.controllers.UserTransactions import UserTransactions
@@ -96,7 +95,7 @@ async def verify_age(request: Request, guild_id: int, user_id: int, verification
 
 		if vp.discrepancy in ["age_too_high", "mismatch", "below_minimum_age"] :
 			id_check = False
-
+		from classes.idcheck import IdCheck
 		Queue().add(IdCheck.send_check_api(user, guild,
 		                                vp.id_channel,
 		                                vp.discrepancy,

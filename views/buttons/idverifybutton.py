@@ -1,14 +1,10 @@
 import discord
-
-from classes.access import AccessControl
-from classes.retired.discord_tools import send_message
-from databases.controllers.AgeRoleTransactions import AgeRoleTransactions
-from databases.controllers.VerificationTransactions import VerificationTransactions
 from discord_py_utilities.messages import send_response
 
-from resources.data.IDVerificationMessage import create_message
-from views.buttons.idsubmitbutton import IdSubmitButton
+from classes.access import AccessControl
+from databases.controllers.VerificationTransactions import VerificationTransactions
 from views.modals.idverify import IdVerifyModal
+from classes.idcheck import IdCheck as IdCheckClass
 
 #
 class IdVerifyButton(discord.ui.View) :
@@ -29,17 +25,9 @@ class IdVerifyButton(discord.ui.View) :
 		if not idcheck :
 			return await send_response(interaction, f"No ID verification request found for <@{self.user.id}>", ephemeral=True)
 
-		try:
-			embed = discord.Embed(title="ID Verification", description=create_message(interaction, min_age=AgeRoleTransactions().get_minimum_age(interaction.guild.id)))
-			embed.set_footer(text=f"{interaction.guild.id}")
-			embed.add_field(name="ID Check", value=idcheck.reason, inline=False)
+		await IdCheckClass.send_id_check(interaction, self.user, idcheck)
 
-			await send_message(self.user, embed=embed, view=IdSubmitButton())
-			await send_response(interaction, "Successfully sent ID verification request.!", ephemeral=True)
-		except discord.Forbidden or discord.NotFound:
-			await send_response(interaction, "Could not DM user.", ephemeral=True)
-		except Exception as e :
-			await send_response(interaction, f"Could not DM user due to an error: {e}", ephemeral=True)
+
 
 		return None
 

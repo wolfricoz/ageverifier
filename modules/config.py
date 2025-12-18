@@ -225,7 +225,7 @@ class Config(commands.GroupCog, name="config") :
 		with open('config.txt', 'w') as file :
 			file.write(f"Config for {interaction.guild.name}: \n\n")
 			for item in optionsall :
-				info = ConfigData().get_key_or_none(interaction.guild.id if guild is None else guild, item)
+				info = ConfigData().get_key_or_none(interaction.guild.id if guild is None else int(guild), item)
 				file.write(f"{item}: {info}\n")
 		await interaction.followup.send(f"Config for {interaction.guild.name if guild is None else guild}", file=discord.File(file.name))
 		os.remove(file.name)

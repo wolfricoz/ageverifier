@@ -1,14 +1,8 @@
-import logging
-
 import discord
 from discord_py_utilities.messages import send_response
 
 from classes.AgeCalculations import AgeCalculations
-from classes.idcheck import IdCheck
-from classes.idverify import verify
-from classes.support.queue import Queue
 from databases.controllers.ConfigData import ConfigData
-from databases.controllers.VerificationTransactions import VerificationTransactions
 from views.buttons.IDConfirm import IDConfirm
 
 

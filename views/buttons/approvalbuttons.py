@@ -15,6 +15,7 @@ from databases.controllers.ConfigData import ConfigData
 from databases.controllers.HistoryTransactions import JoinHistoryTransactions
 from databases.controllers.VerificationTransactions import VerificationTransactions
 from databases.enums.joinhistorystatus import JoinHistoryStatus
+from views.buttons.idverifybutton import IdVerifyButton
 from views.modals.inputmodal import send_modal
 
 
@@ -141,9 +142,12 @@ class ApprovalButtons(discord.ui.View) :
 		                                               server=interaction.guild.name)
 		JoinHistoryTransactions().update(self.user.id, interaction.guild.id, JoinHistoryStatus.IDCHECK)
 		await interaction.message.edit(view=self)
+
 		await idlog.send(
 			f"{interaction.user.mention} has flagged {self.user.mention} for manual ID with reason:\n"
-			f"```{reason}```")
+			f"```{reason}```",
+			view=IdVerifyButton()
+		)
 
 		return
 

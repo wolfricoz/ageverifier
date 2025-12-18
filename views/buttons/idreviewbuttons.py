@@ -3,10 +3,8 @@ import logging
 import discord
 from discord_py_utilities.messages import send_response
 
-from classes.idcheck import IdCheck
 from classes.retired.discord_tools import send_message
 from databases.controllers.VerificationTransactions import VerificationTransactions
-from views.modals.idverify import IdVerifyModal
 from views.modals.inputmodal import InputModal, send_modal
 
 
@@ -43,6 +41,8 @@ class IdReviewButton(discord.ui.View) :
 			return await send_response(interaction, "You must have the administrator permission to execute this action!",
 			                           ephemeral=True)
 		user = interaction.message.mentions[-1]
+		from views.modals.idverify import IdVerifyModal
+
 		await interaction.response.send_modal(IdVerifyModal(user, interaction.message))
 		return None
 
@@ -54,18 +54,21 @@ class IdReviewButton(discord.ui.View) :
 		if not await self.load_data(interaction) :
 			return await send_response(interaction, "Could not load user data from message!", ephemeral=True)
 
-		await send_modal(interaction, title="Decline ID Verification", confirmation=f"Thank you for providing a reason for declining the ID verification for <@{self.member.id}>.")
+		await send_modal(interaction, title="Decline ID Verification",
+		                 confirmation=f"Thank you for providing a reason for declining the ID verification for <@{self.member.id}>.")
 		idcheck = VerificationTransactions().get_id_info(self.member.id)
 
-		await send_response(interaction, f"Declined ID verification for: <@{self.member.id}> by {interaction.user.mention}",)
+		await send_response(interaction,
+		                    f"Declined ID verification for: <@{self.member.id}> by {interaction.user.mention}", )
 		if idcheck.idmessage :
 			try :
-
+				from classes.idcheck import IdCheck
 				await IdCheck.remove_idmessage(self.member, idcheck)
 
 			except (discord.NotFound, discord.Forbidden) as e :
 				logging.info(f"Could not delete previous ID message for {self.member.id}: {e}")
-		await send_message(self.member, "Your ID verification has been declined by the server staff with the following reason:\n")
+		await send_message(self.member,
+		                   "Your ID verification has been declined by the server staff with the following reason:\n")
 		await interaction.message.delete()
 		return None
 

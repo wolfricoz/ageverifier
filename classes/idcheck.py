@@ -12,6 +12,8 @@ from databases.controllers.HistoryTransactions import JoinHistoryTransactions
 from databases.controllers.VerificationTransactions import VerificationTransactions
 from databases.current import IdVerification
 from databases.enums.joinhistorystatus import JoinHistoryStatus
+from resources.data.IDVerificationMessage import create_message
+from views.buttons.idsubmitbutton import IdSubmitButton
 
 
 class IdCheck(ABC) :
@@ -231,3 +233,18 @@ class IdCheck(ABC) :
 		await send_message(member, kick_message)
 		await member.kick(reason=kick_message)
 		await channel.send(f"[Autokick] {member.mention} doesn't meet the minimum age requirement and has been kicked.")
+
+	@staticmethod
+	@abstractmethod
+	async def send_id_check(interaction: discord.Interaction, user: discord.User | discord.Member, idcheck: IdVerification):
+		try:
+			embed = discord.Embed(title="ID Verification", description=create_message(interaction, min_age=AgeRoleTransactions().get_minimum_age(interaction.guild.id)))
+			embed.set_footer(text=f"{interaction.guild.id}")
+			embed.add_field(name="ID Check", value=idcheck.reason, inline=False)
+
+			await send_message(user, embed=embed, view=IdSubmitButton())
+			await send_response(interaction, "Successfully sent ID verification request!", ephemeral=True)
+		except discord.Forbidden or discord.NotFound:
+			await send_response(interaction, "Could not DM user.", ephemeral=True)
+		except Exception as e :
+			await send_response(interaction, f"Could not DM user due to an error: {e}", ephemeral=True)

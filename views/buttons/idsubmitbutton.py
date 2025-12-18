@@ -1,7 +1,6 @@
 import discord
 from discord_py_utilities.messages import await_message, send_message, send_response
 
-from classes.idcheck import IdCheck
 from databases.controllers.ConfigData import ConfigData
 from databases.controllers.VerificationTransactions import VerificationTransactions
 from views.buttons.idreviewbuttons import IdReviewButton
@@ -48,6 +47,7 @@ By providing your ID, you consent to ageverifier storing it for a maximum of 7 d
 		)
 		idcheck = VerificationTransactions().get_id_info(interaction.user.id)
 		if idcheck and idcheck.idmessage:
+			from classes.idcheck import IdCheck
 			await IdCheck.remove_idmessage(interaction.user, idcheck)
 		VerificationTransactions().update_verification(interaction.user.id, idmessage=message.id)
 		embed = discord.Embed(
