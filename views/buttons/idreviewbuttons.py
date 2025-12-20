@@ -29,6 +29,7 @@ class IdReviewButton(discord.ui.View) :
 			return await send_response(interaction,
 			                           f"ID verification message expired for <@{self.member.id}>, we hold these up to 7 days.",
 			                           ephemeral=True)
+		await send_message(interaction.channel, f"{interaction.user.mention} sent a request to review the ID for <@{self.member.id}>.")
 
 		# fetch the image from DMs
 		message = await self.member.dm_channel.fetch_message(idcheck.idmessage)
