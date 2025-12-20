@@ -83,7 +83,7 @@ class ReVerifyButton(discord.ui.View) :
 				approval_buttons = ApprovalButtons(age=age, dob=dob, user=interaction.user)
 				await send_response(interaction, message,
 				                    ephemeral=True)
-				await approval_buttons.send_message(interaction.guild, interaction.user , mod_channel, id_verified=True)
+				await approval_buttons.send_message(interaction.guild, interaction.user , mod_channel, id_verified=True, )
 
 				return True
 			return False

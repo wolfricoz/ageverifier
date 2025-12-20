@@ -27,7 +27,7 @@ class LobbyProcess(ABC) :
 	@abstractmethod
 	async def approve_user(guild, user, dob, age, staff, idverify = False, reverify=False) :
 		# checks if user is on the id list
-
+		id_msg = ""
 		if await AgeCalculations.id_check(guild, user) :
 			return
 		# updates user's age if it exists, otherwise makes a new entry
@@ -39,8 +39,9 @@ class LobbyProcess(ABC) :
 		Queue().add(change_age_roles(guild, user, age, remove=reverify, reverify=reverify), priority=2)
 
 		# Log age and dob to lobbylog
-		if not idverify:
-			Queue().add(LobbyProcess.log(user, guild, age, dob, staff, exists, reverify=reverify), priority=2)
+		if idverify:
+			id_msg = "**ID VERIFIED**\n"
+		Queue().add(LobbyProcess.log(user, guild, age, dob, staff, exists, id_verify=id_msg , reverify=reverify), priority=2)
 		if not reverify :
 		# fetches welcoming message and welcomes them in general channel
 
