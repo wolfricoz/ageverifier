@@ -1,5 +1,5 @@
 import discord
-from discord_py_utilities.messages import send_response
+from discord_py_utilities.messages import send_message, send_response
 
 from classes.access import AccessControl
 from databases.controllers.VerificationTransactions import VerificationTransactions
@@ -26,6 +26,7 @@ class IdVerifyButton(discord.ui.View) :
 			return await send_response(interaction, f"No ID verification request found for <@{self.user.id}>", ephemeral=True)
 
 		await IdCheckClass.send_id_check(interaction, self.user, idcheck)
+		await send_message(interaction.channel, f"{interaction.user.mention} sent a request to review the ID for <@{self.member.id}>.")
 
 
 
