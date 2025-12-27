@@ -20,6 +20,7 @@ from resources.data.config_variables import available_toggles, channelchoices, l
 	rolechoices
 from views.modals.configinput import ConfigInputUnique
 from classes.config.utils import ConfigUtils
+from discord_py_utilities.permissions import check_missing_channel_permissions
 
 
 class Config(commands.GroupCog, name="config") :
@@ -37,6 +38,11 @@ class Config(commands.GroupCog, name="config") :
 	@app_commands.choices(setup_type=[Choice(name=x, value=x) for x in ['dashboard', 'manual', 'auto']])
 	async def configsetup(self, interaction: discord.Interaction, setup_type: Choice[str]) :
 		"""Sets up the config for the bot."""
+		if check_missing_channel_permissions(interaction.channel, ['send_messages', 'embed_links', 'view_channel']) :
+			return await send_response(interaction,
+			                           "I do not have permission to send messages or embed links in this channel. Please fix this and try again.",
+			                           ephemeral=True)
+
 		await send_message(interaction.channel,
 		                   "For more information about setting up the bot, visit our [Documentation](<https://wolfricoz.github.io/ageverifier/config.html>)")
 		logging.info(f"{interaction.guild.name} started {setup_type.value}")
