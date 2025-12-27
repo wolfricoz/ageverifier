@@ -53,11 +53,14 @@ class ConfigData(metaclass=singleton) :
 
 		:param guild_id: 
 		"""
+		# Regardless if the guild exists, we add it to the config to avoid KeyErrors
+		self.conf[guild_id] = {}
+
+		# Fetch the settings from the database
 		config = ConfigTransactions().server_config_get(guild_id)
 		settings = config
 		add_list = ['REM', "RETURN", "JOIN", "EXCLUDE", "REVERIFY"]
 		add_dict = ["SEARCH", "BAN", "ADD"]
-		self.conf[guild_id] = {}
 		reload = False
 
 		for key in add_list :
@@ -91,6 +94,17 @@ class ConfigData(metaclass=singleton) :
 			self.load_guild(guild_id)
 		self.output_to_json()
 
+	def get_guild(self, guild_id: int) -> dict :
+		"""
+
+		:param guild_id:
+		:return:
+		"""
+		if guild_id in self.conf :
+			return self.conf[guild_id]
+		self.load_guild(guild_id)
+		return self.conf[guild_id]
+
 	def get_config(self, guildid) :
 		"""
 
@@ -98,7 +112,7 @@ class ConfigData(metaclass=singleton) :
 		:return: 
 		"""
 		try :
-			return self.conf[guildid]
+			return self.get_guild(guildid)
 		except KeyError :
 			raise ConfigNotFound
 
@@ -110,7 +124,7 @@ class ConfigData(metaclass=singleton) :
 		:return: 
 		"""
 		try :
-			return int(self.conf[guildid][key.upper()])
+			return int(self.get_guild(guildid)[key.upper()])
 		except KeyError :
 			raise KeyNotFound(key.upper())
 
@@ -126,7 +140,7 @@ class ConfigData(metaclass=singleton) :
 		if key.upper() not in self.conf[guildid] :
 			return 0
 
-		result = self.conf[guildid].get(key.upper(), 0)
+		result = self.get_guild(guildid).get(key.upper(), 0)
 		if isinstance(result, int) :
 			return result
 		if result is None or result == "" or result == "None" :
@@ -149,7 +163,7 @@ class ConfigData(metaclass=singleton) :
 
 	def get_key(self, guildid: int, key: str, default=None) :
 		try :
-			return self.conf[guildid][key.upper()]
+			return self.get_guild(guildid)[key.upper()]
 
 		except KeyError :
 			if default :
@@ -163,7 +177,7 @@ class ConfigData(metaclass=singleton) :
 		:param key: 
 		:return: 
 		"""
-		return self.conf[guildid].get(key.upper(), None)
+		return self.get_guild(guildid).get(key.upper(), None)
 
 	def output_to_json(self) -> None :
 		"""This is for debugging only.
