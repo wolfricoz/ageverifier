@@ -78,7 +78,7 @@ class ConfigTransactions(DatabaseTransactions) :
 	def key_multiple_exists_check(self, guildid: int, key: str, value) :
 		with self.createsession() as session :
 			exists = session.scalar(
-				Select(db.Config).where(db.Config.guild == guildid, db.Config.key == key, db.Config.value == value))
+				Select(db.Config).where(db.Config.guild == guildid, db.Config.key == key, db.Config.value == str(value)))
 			session.close()
 			if exists is not None :
 				return True
@@ -90,7 +90,7 @@ class ConfigTransactions(DatabaseTransactions) :
 			if not ConfigTransactions().key_multiple_exists_check(guildid, key, value) :
 				return False
 			exists = session.scalar(
-				Select(db.Config).where(db.Config.guild == guildid, db.Config.key == key, db.Config.value == value))
+				Select(db.Config).where(db.Config.guild == guildid, db.Config.key == key, db.Config.value == str(value)))
 			session.delete(exists)
 			self.commit(session)
 			self.reload_guild(guildid)
