@@ -192,7 +192,11 @@ class Tasks(commands.GroupCog) :
 	async def refresh_invites(self) :
 		self.bot.invites = {}
 		for guild in self.bot.guilds :
-			self.bot.invites[guild.id] = await guild.invites()
+			try:
+				self.bot.invites[guild.id] = await guild.invites()
+			except Exception as e :
+				logging.warning(f"Could not refresh invites for {guild.name}: {e}")
+				continue
 
 	@tasks.loop(hours=2)
 	async def check_active_servers(self) :
