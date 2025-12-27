@@ -22,13 +22,17 @@ class IdSubmitButton(discord.ui.View) :
 		if interaction.user not in self.guild.members:
 			await send_response(interaction, "You are not a member of this server.", ephemeral=True)
 			return
-		message = await await_message(interaction, """ID verification reminder:
-* Black out everything on your ID except your date of birth (DOB). Make sure the DOB is clear and legible.
-* Include a handwritten note in the same image with your username, the text For ID verification, and the current date (YYYY-MM-DD).
-* Send the redacted ID image and the note together in one message.
-
-By providing your ID, you consent to ageverifier storing it for a maximum of 7 days.
-""")
+		try:
+			message = await await_message(interaction, """ID verification reminder:
+	* Black out everything on your ID except your date of birth (DOB). Make sure the DOB is clear and legible.
+	* Include a handwritten note in the same image with your username, the text For ID verification, and the current date (YYYY-MM-DD).
+	* Send the redacted ID image and the note together in one message.
+	
+	By providing your ID, you consent to ageverifier storing it for a maximum of 7 days.
+	""")
+		except TimeoutError:
+			await send_response(interaction, "You did not respond in time. Please try again.", ephemeral=True)
+			return
 		if len(message.attachments) < 1:
 			await send_response(interaction, "No attachments attached to this message")
 			return

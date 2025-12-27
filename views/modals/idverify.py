@@ -10,8 +10,8 @@ class IdVerifyModal(discord.ui.Modal) :
 	# Our modal classes MUST subclass `discord.ui.Modal`,
 	# but the title can be whatever you want.
 
-	def __init__(self, user, message: discord.Message) :
-		self.user: discord.User = user
+	def __init__(self, user: discord.Member, message: discord.Message) :
+		self.user: discord.Member = user
 		self.message = message
 		super().__init__()
 

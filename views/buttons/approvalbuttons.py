@@ -20,7 +20,7 @@ from views.modals.inputmodal import send_modal
 
 
 class ApprovalButtons(discord.ui.View) :
-	def __init__(self, age: int = None, dob: str = None, user: discord.Member | discord.User = None, reverify=False) :
+	def __init__(self, age: int = None, dob: str = None, user: discord.Member = None, reverify=False) :
 		self.age = age
 		self.dob = dob
 		self.user = user

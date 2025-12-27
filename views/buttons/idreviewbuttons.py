@@ -40,10 +40,11 @@ class IdReviewButton(discord.ui.View) :
 		if not interaction.user.guild_permissions.administrator :
 			return await send_response(interaction, "You must have the administrator permission to execute this action!",
 			                           ephemeral=True)
-		user = interaction.message.mentions[-1]
+		await self.load_data(interaction)
+
 		from views.modals.idverify import IdVerifyModal
 
-		await interaction.response.send_modal(IdVerifyModal(user, interaction.message))
+		await interaction.response.send_modal(IdVerifyModal(self.member, interaction.message))
 		return None
 
 	@discord.ui.button(label="Decline ID", style=discord.ButtonStyle.red, custom_id="decline_id")

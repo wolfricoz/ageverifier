@@ -1,4 +1,5 @@
 import datetime
+import logging
 import os
 import re
 from abc import ABC, abstractmethod
@@ -25,7 +26,7 @@ class LobbyProcess(ABC) :
 
 	@staticmethod
 	@abstractmethod
-	async def approve_user(guild, user, dob, age, staff, idverify = False, reverify=False) :
+	async def approve_user(guild: discord.Guild, user: discord.Member, dob: str, age: int, staff: str, idverify: bool = False, reverify: bool =False) :
 		# checks if user is on the id list
 		id_msg = ""
 		if await AgeCalculations.id_check(guild, user) :
@@ -56,11 +57,21 @@ class LobbyProcess(ABC) :
 
 	@staticmethod
 	@abstractmethod
-	async def remove_user_roles(user, guild: discord.Guild) :
+	async def remove_user_roles(user: discord.Member, guild: discord.Guild) :
+		id = user.id
 		if isinstance(user, discord.User) :
-			user = guild.get_member(user.id)
+			user = guild.get_member(id)
+			if user is None :
+				try:
+					user = await guild.fetch_member(id)
+				except Exception as e:
+					logging.warning(f"Could not get user {id}: {e}")
+					return
 		config_rem_roles = ConfigData().get_key(guild.id, "REM")
 		rem_roles = await LobbyProcess.get_roles(guild, config_rem_roles, "REM")
+		if user is None :
+			logging.info('user is none in remove_user_roles')
+			return
 		Queue().add(user.remove_roles(*rem_roles), priority=2)
 
 

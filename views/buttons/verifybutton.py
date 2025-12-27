@@ -65,6 +65,12 @@ class VerifyButton(discord.ui.View) :
 			userinfo = VerificationTransactions().get_id_info(interaction.user.id)
 			if userinfo is None :
 				return False
+			from classes.helpers import fetch_member
+			member = await fetch_member(interaction.guild, interaction.user.id)
+			if member is None :
+				return False
+
+
 			if userinfo.idverified :
 				logging.info("user is id verified")
 				dob, age = self.get_user_data(interaction.user.id)
@@ -80,10 +86,12 @@ class VerifyButton(discord.ui.View) :
 					return True
 				mod_lobby = ConfigData().get_key_int(interaction.guild.id, "lobbymod")
 				mod_channel = interaction.guild.get_channel(mod_lobby)
-				approval_buttons = ApprovalButtons(age=age, dob=dob, user=interaction.user)
+
+
+				approval_buttons = ApprovalButtons(age=age, dob=dob, user=member)
 				await send_response(interaction, message,
 				                    ephemeral=True)
-				await approval_buttons.send_message(interaction.guild, interaction.user , mod_channel, id_verified=True)
+				await approval_buttons.send_message(interaction.guild, user=member , mod_channel=mod_channel, id_verified=True)
 
 				return True
 			return False

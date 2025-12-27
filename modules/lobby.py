@@ -37,7 +37,7 @@ class Lobby(commands.GroupCog) :
 	@app_commands.command()
 	@app_commands.checks.has_permissions(administrator=True)
 	async def idverify(self, interaction: discord.Interaction, process: bool,
-	                   user: discord.User, dob: str) :
+	                   user: discord.Member, dob: str) :
 		"""ID verifies user. process True will put the user through the lobby."""
 		if check_whitelist(interaction.guild.id) is False and not permissions.check_dev(interaction.user.id) :
 			await send_response(interaction,

@@ -116,3 +116,14 @@ async def invite_info(bot, member: discord.Member) :
 		pass
 	channel = bot.get_channel(int(infochannel))
 	await send_message(channel, embed=embed, error_mode="ignore")
+
+
+async def fetch_member(guild: discord.Guild, user_id:int) -> discord.Member | None:
+	member = guild.get_member(user_id)
+	if member is None :
+		try :
+			member = await guild.fetch_member(user_id)
+		except Exception as e :
+			logging.error(e, exc_info=True)
+			return None
+	return member
