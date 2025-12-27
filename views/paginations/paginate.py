@@ -2,8 +2,8 @@ from abc import ABC, abstractmethod
 
 import discord
 
-from databases.controllers.ConfigData import ConfigData
-from databases.controllers.UserTransactions import UserTransactions
+from databases.transactions.ConfigData import ConfigData
+from databases.transactions.UserTransactions import UserTransactions
 
 
 # noinspection PyUnresolvedReferences

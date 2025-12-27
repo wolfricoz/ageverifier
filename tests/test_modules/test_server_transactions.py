@@ -2,7 +2,7 @@ import datetime
 import unittest
 
 from classes.access import AccessControl
-from databases.controllers.ServerTransactions import ServerTransactions
+from databases.transactions.ServerTransactions import ServerTransactions
 from databases.current import create_bot_database, drop_bot_database
 from databases.Generators.guildgenerator import guildgenerator
 

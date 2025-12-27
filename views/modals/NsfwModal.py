@@ -5,9 +5,9 @@ from datetime import datetime
 import discord
 
 from classes.AgeCalculations import AgeCalculations
-from databases.controllers.ConfigData import ConfigData
-from databases.controllers.VerificationTransactions import VerificationTransactions
-from databases.controllers.UserTransactions import UserTransactions
+from databases.transactions.ConfigData import ConfigData
+from databases.transactions.VerificationTransactions import VerificationTransactions
+from databases.transactions.UserTransactions import UserTransactions
 
 
 class NsfwFunctions(ABC):

@@ -10,10 +10,10 @@ from pytz.reference import first_sunday_on_or_after
 
 from classes.AgeCalculations import AgeCalculations
 from classes.ageroles import change_age_roles
-from databases.controllers.ConfigData import ConfigData
-from databases.controllers.ConfigTransactions import ConfigTransactions
-from databases.controllers.HistoryTransactions import JoinHistoryTransactions
-from databases.controllers.UserTransactions import UserTransactions
+from databases.transactions.ConfigData import ConfigData
+from databases.transactions.ConfigTransactions import ConfigTransactions
+from databases.transactions.HistoryTransactions import JoinHistoryTransactions
+from databases.transactions.UserTransactions import UserTransactions
 from discord_py_utilities.messages import send_message
 from classes.support.queue import Queue
 from classes.whitelist import check_whitelist

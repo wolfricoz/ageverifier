@@ -4,9 +4,9 @@ import json
 import logging
 import os
 from datetime import datetime as dt
-from databases.controllers.AgeRoleTransactions import AgeRoleTransactions
+from databases.transactions.AgeRoleTransactions import AgeRoleTransactions
 from classes.singleton import singleton
-from databases.controllers.ConfigTransactions import ConfigTransactions
+from databases.transactions.ConfigTransactions import ConfigTransactions
 from databases.exceptions.ConfigNotFound import ConfigNotFound
 from databases.exceptions.KeyNotFound import KeyNotFound
 
@@ -38,7 +38,7 @@ class ConfigData(metaclass=singleton) :
 
 	async def load_all_guilds(self) :
 		start = dt.now()
-		from databases.controllers.ServerTransactions import ServerTransactions
+		from databases.transactions.ServerTransactions import ServerTransactions
 		logging.info("Loading all guild configurations")
 		server_ids = ServerTransactions().get_all(id_only=True)
 		for server_id in server_ids :

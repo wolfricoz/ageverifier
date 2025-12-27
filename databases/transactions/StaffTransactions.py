@@ -1,7 +1,7 @@
 from sqlalchemy import Select
 from sqlalchemy.util import to_list
 
-from databases.controllers.DatabaseTransactions import DatabaseTransactions
+from databases.transactions.DatabaseTransactions import DatabaseTransactions
 from databases.current import Staff
 
 

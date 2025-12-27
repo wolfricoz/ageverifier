@@ -2,8 +2,8 @@ import logging
 
 import discord
 
-from databases.controllers.ConfigData import ConfigData
-from databases.controllers.UserTransactions import UserTransactions
+from databases.transactions.ConfigData import ConfigData
+from databases.transactions.UserTransactions import UserTransactions
 from databases.exceptions.KeyNotFound import KeyNotFound
 from discord_py_utilities.messages import send_message, send_response
 from classes.support.queue import Queue

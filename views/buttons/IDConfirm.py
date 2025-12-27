@@ -6,7 +6,7 @@ from discord_py_utilities.messages import send_message, send_response
 from classes.idcheck import IdCheck
 from classes.idverify import verify
 from classes.support.queue import Queue
-from databases.controllers.VerificationTransactions import VerificationTransactions
+from databases.transactions.VerificationTransactions import VerificationTransactions
 
 
 class IDConfirm(discord.ui.View) :

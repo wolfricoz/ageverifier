@@ -2,8 +2,8 @@ import unittest
 
 from databases.Generators.guildgenerator import guildgenerator
 from databases.Generators.uidgenerator import uidgenerator
-from databases.controllers.TimersTransactions import TimersTransactions
-from databases.controllers.UserTransactions import UserTransactions
+from databases.transactions.TimersTransactions import TimersTransactions
+from databases.transactions.UserTransactions import UserTransactions
 from databases.current import create_bot_database, drop_bot_database
 
 

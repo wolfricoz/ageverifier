@@ -8,7 +8,7 @@ from discord.ext import commands
 
 import classes.permissions as permissions
 from classes.AgeCalculations import AgeCalculations
-from databases.controllers.ConfigData import ConfigData
+from databases.transactions.ConfigData import ConfigData
 from classes.idverify import verify
 from classes.lobbyprocess import LobbyProcess
 from discord_py_utilities.messages import send_message, send_response

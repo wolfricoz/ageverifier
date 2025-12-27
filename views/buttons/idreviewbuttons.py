@@ -4,7 +4,7 @@ import discord
 from discord_py_utilities.messages import send_response
 
 from classes.retired.discord_tools import send_message
-from databases.controllers.VerificationTransactions import VerificationTransactions
+from databases.transactions.VerificationTransactions import VerificationTransactions
 from views.modals.inputmodal import InputModal, send_modal
 
 

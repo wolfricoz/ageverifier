@@ -9,10 +9,10 @@ from classes.access import AccessControl
 from classes.encryption import Encryption
 from classes.lobbyprocess import LobbyProcess
 from classes.lobbytimers import LobbyTimers
-from databases.controllers.ConfigData import ConfigData
-from databases.controllers.UserTransactions import UserTransactions
-from databases.controllers.VerificationTransactions import VerificationTransactions
-from databases.controllers.WebsiteDataTransactions import WebsiteDataTransactions
+from databases.transactions.ConfigData import ConfigData
+from databases.transactions.UserTransactions import UserTransactions
+from databases.transactions.VerificationTransactions import VerificationTransactions
+from databases.transactions.WebsiteDataTransactions import WebsiteDataTransactions
 from views.buttons.approvalbuttons import ApprovalButtons
 from views.buttons.tosbutton import TOSButton
 from views.buttons.websitebutton import WebsiteButton

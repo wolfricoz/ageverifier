@@ -7,7 +7,7 @@ import discord
 import pytz
 
 from classes.AutomodComponents import AutomodComponents
-from databases.controllers.ConfigData import ConfigData
+from databases.transactions.ConfigData import ConfigData
 
 
 class ForumAutoMod(ABC):

@@ -4,7 +4,7 @@ import discord
 from discord.ext.commands import Cog, GroupCog, Bot
 
 from classes.access import AccessControl
-from databases.controllers.ConfigData import ConfigData
+from databases.transactions.ConfigData import ConfigData
 from views.buttons.SurveyButton import SurveyButton
 
 

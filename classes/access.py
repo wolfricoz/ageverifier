@@ -9,7 +9,7 @@ from classes.jsonmaker import Configer
 from classes.retired.discord_tools import send_response
 # from classes.databaseController import StaffDbTransactions
 from classes.singleton import singleton
-from databases.controllers.ServerTransactions import ServerTransactions
+from databases.transactions.ServerTransactions import ServerTransactions
 
 
 class AccessControl(metaclass=singleton) :

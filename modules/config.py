@@ -13,9 +13,9 @@ from discord_py_utilities.messages import send_message, send_response
 
 from classes.configsetup import ConfigSetup
 from classes.support.queue import Queue
-from databases.controllers.AgeRoleTransactions import AgeRoleTransactions
-from databases.controllers.ConfigData import ConfigData
-from databases.controllers.ConfigTransactions import ConfigTransactions
+from databases.transactions.AgeRoleTransactions import AgeRoleTransactions
+from databases.transactions.ConfigData import ConfigData
+from databases.transactions.ConfigTransactions import ConfigTransactions
 from resources.data.config_variables import available_toggles, channelchoices, lobby_approval_toggles, messagechoices, \
 	rolechoices
 from views.modals.configinput import ConfigInputUnique

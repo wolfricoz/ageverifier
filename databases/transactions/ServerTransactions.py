@@ -5,9 +5,9 @@ import logging
 import discord
 from sqlalchemy import Select
 
-from databases.controllers.ConfigTransactions import ConfigTransactions
-from databases.controllers.DatabaseTransactions import DatabaseTransactions
-from databases.controllers.UserTransactions import UserTransactions
+from databases.transactions.ConfigTransactions import ConfigTransactions
+from databases.transactions.DatabaseTransactions import DatabaseTransactions
+from databases.transactions.UserTransactions import UserTransactions
 from databases.current import Servers
 from resources.data.config_variables import available_toggles, lobby_approval_toggles
 
@@ -53,7 +53,7 @@ class ServerTransactions(DatabaseTransactions) :
 			ConfigTransactions().config_unique_add(guildid, "COOLDOWN", 5)
 
 		if reload :
-			from databases.controllers.ConfigData import ConfigData
+			from databases.transactions.ConfigData import ConfigData
 			ConfigData().load_guild(guildid)
 
 		return guild
@@ -104,7 +104,7 @@ class ServerTransactions(DatabaseTransactions) :
 			self.commit(session)
 
 			if reload :
-				from databases.controllers.ConfigData import ConfigData
+				from databases.transactions.ConfigData import ConfigData
 
 				ConfigData().load_guild(guild_id)
 

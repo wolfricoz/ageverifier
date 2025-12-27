@@ -6,9 +6,9 @@ from discord_py_utilities.permissions import find_first_accessible_text_channel
 
 import databases.exceptions.KeyNotFound
 from classes.retired.discord_tools import create_embed
-from databases.controllers.ConfigData import ConfigData
-from databases.controllers.HistoryTransactions import JoinHistoryTransactions
-from databases.controllers.UserTransactions import UserTransactions
+from databases.transactions.ConfigData import ConfigData
+from databases.transactions.HistoryTransactions import JoinHistoryTransactions
+from databases.transactions.UserTransactions import UserTransactions
 from discord_py_utilities.messages import send_message
 
 from databases.enums.joinhistorystatus import JoinHistoryStatus

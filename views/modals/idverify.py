@@ -2,7 +2,7 @@ import discord
 from discord_py_utilities.messages import send_response
 
 from classes.AgeCalculations import AgeCalculations
-from databases.controllers.ConfigData import ConfigData
+from databases.transactions.ConfigData import ConfigData
 from views.buttons.IDConfirm import IDConfirm
 
 

@@ -2,7 +2,7 @@ import base64
 import logging
 import os
 
-from databases.controllers.ServerTransactions import ServerTransactions
+from databases.transactions.ServerTransactions import ServerTransactions
 from databases.current import Servers as dbServers
 import requests
 

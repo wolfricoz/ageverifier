@@ -1,7 +1,7 @@
 import random
 import unittest
 
-from databases.controllers.StaffTransactions import StaffDbTransactions
+from databases.transactions.StaffTransactions import StaffDbTransactions
 from databases.current import create_bot_database, drop_bot_database
 
 

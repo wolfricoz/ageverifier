@@ -1,7 +1,7 @@
 import unittest
 
 from databases.current import create_bot_database, drop_bot_database
-from databases.controllers.AgeRoleTransactions import AgeRoleTransactions
+from databases.transactions.AgeRoleTransactions import AgeRoleTransactions
 
 
 class TestAgeRoleTransactions(unittest.TestCase):

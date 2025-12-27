@@ -1,14 +1,14 @@
 import unittest
 
 from classes.encryption import Encryption
-from databases.controllers.ButtonTransactions import LobbyDataTransactions
-from databases.controllers.UserTransactions import UserTransactions
+from databases.transactions.ButtonTransactions import LobbyDataTransactions
+from databases.transactions.UserTransactions import UserTransactions
 from databases.current import create_bot_database, drop_bot_database
 
 
 # Assuming these are defined elsewhere in your project
 # from databases.current import create_bot_database, drop_bot_database
-# from databases.controllers.LobbyDataTransactions import LobbyDataTransactions
+# from databases.transactions.LobbyDataTransactions import LobbyDataTransactions
 # from databases.models.LobbyData import LobbyData
 
 class TestLobbyDataTransactions(unittest.TestCase) :

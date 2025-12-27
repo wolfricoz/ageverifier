@@ -16,10 +16,10 @@ from classes.ageroles import change_age_roles
 from classes.dashboard.Servers import Servers
 from classes.encryption import Encryption
 from classes.support.queue import Queue
-from databases.controllers.ConfigData import ConfigData
-from databases.controllers.DatabaseTransactions import DatabaseTransactions
-from databases.controllers.ServerTransactions import ServerTransactions
-from databases.controllers.UserTransactions import UserTransactions
+from databases.transactions.ConfigData import ConfigData
+from databases.transactions.DatabaseTransactions import DatabaseTransactions
+from databases.transactions.ServerTransactions import ServerTransactions
+from databases.transactions.UserTransactions import UserTransactions
 from databases.current import Servers as servers_DB
 
 OLDLOBBY = int(os.getenv("OLDLOBBY"))

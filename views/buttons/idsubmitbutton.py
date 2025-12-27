@@ -1,8 +1,8 @@
 import discord
 from discord_py_utilities.messages import await_message, send_message, send_response
 
-from databases.controllers.ConfigData import ConfigData
-from databases.controllers.VerificationTransactions import VerificationTransactions
+from databases.transactions.ConfigData import ConfigData
+from databases.transactions.VerificationTransactions import VerificationTransactions
 from views.buttons.idreviewbuttons import IdReviewButton
 
 

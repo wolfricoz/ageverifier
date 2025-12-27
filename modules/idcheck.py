@@ -9,7 +9,7 @@ from classes.access import AccessControl
 from classes.encryption import Encryption
 from classes.idcheck import IdCheck
 from classes.support.queue import Queue
-from databases.controllers.VerificationTransactions import VerificationTransactions
+from databases.transactions.VerificationTransactions import VerificationTransactions
 from databases.current import IdVerification
 from resources.data.responses import StringStorage
 from views.buttons.confirm import Confirm

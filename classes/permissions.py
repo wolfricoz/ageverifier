@@ -2,7 +2,7 @@ import os
 
 import discord
 
-from databases.controllers.ConfigData import ConfigData
+from databases.transactions.ConfigData import ConfigData
 
 
 def check_dev(userid):

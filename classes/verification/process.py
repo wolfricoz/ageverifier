@@ -7,10 +7,10 @@ import databases.current
 from classes.AgeCalculations import AgeCalculations
 from classes.lobbyprocess import LobbyProcess
 from classes.lobbytimers import LobbyTimers
-from databases.controllers.AgeRoleTransactions import AgeRoleTransactions
-from databases.controllers.ConfigData import ConfigData
-from databases.controllers.HistoryTransactions import JoinHistoryTransactions
-from databases.controllers.UserTransactions import UserTransactions
+from databases.transactions.AgeRoleTransactions import AgeRoleTransactions
+from databases.transactions.ConfigData import ConfigData
+from databases.transactions.HistoryTransactions import JoinHistoryTransactions
+from databases.transactions.UserTransactions import UserTransactions
 from databases.enums.joinhistorystatus import JoinHistoryStatus
 from views.buttons.approvalbuttons import ApprovalButtons
 

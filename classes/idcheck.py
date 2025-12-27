@@ -6,10 +6,10 @@ import discord
 from discord_py_utilities.messages import send_message, send_response
 
 from classes.AgeCalculations import AgeCalculations
-from databases.controllers.AgeRoleTransactions import AgeRoleTransactions
-from databases.controllers.ConfigData import ConfigData
-from databases.controllers.HistoryTransactions import JoinHistoryTransactions
-from databases.controllers.VerificationTransactions import VerificationTransactions
+from databases.transactions.AgeRoleTransactions import AgeRoleTransactions
+from databases.transactions.ConfigData import ConfigData
+from databases.transactions.HistoryTransactions import JoinHistoryTransactions
+from databases.transactions.VerificationTransactions import VerificationTransactions
 from databases.current import IdVerification
 from databases.enums.joinhistorystatus import JoinHistoryStatus
 from resources.data.IDVerificationMessage import create_message

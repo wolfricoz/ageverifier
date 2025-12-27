@@ -1,5 +1,5 @@
 from classes.AgeCalculations import AgeCalculations
-from databases.controllers.VerificationTransactions import VerificationTransactions
+from databases.transactions.VerificationTransactions import VerificationTransactions
 from classes.lobbyprocess import LobbyProcess
 
 

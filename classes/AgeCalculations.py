@@ -11,8 +11,8 @@ from discord_py_utilities.messages import send_message
 
 import databases.current
 from classes.encryption import Encryption
-from databases.controllers.ConfigData import ConfigData
-from databases.controllers.VerificationTransactions import VerificationTransactions
+from databases.transactions.ConfigData import ConfigData
+from databases.transactions.VerificationTransactions import VerificationTransactions
 
 
 class AgeCalculations(ABC) :
