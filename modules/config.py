@@ -202,6 +202,7 @@ class Config(commands.GroupCog, name="config") :
 				                                                value=value)
 				if result is False :
 					await interaction.followup.send(f"{key.name}: <@&{value}> could not be found in database")
+					return
 				Queue().add(ConfigUtils.log_change(interaction.guild, {key.value : f"role id: {value} removed"},
 				                                   user_name=interaction.user.mention))
 				await interaction.followup.send(f"{key.name}: <@&{value}> has been removed from the database")
