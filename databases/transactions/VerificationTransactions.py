@@ -4,8 +4,8 @@ from datetime import datetime
 from sqlalchemy import Select
 
 from classes.encryption import Encryption
-from databases.controllers.DatabaseTransactions import DatabaseTransactions
-from databases.controllers.UserTransactions import UserTransactions
+from databases.transactions.DatabaseTransactions import DatabaseTransactions
+from databases.transactions.UserTransactions import UserTransactions
 from databases.current import IdVerification
 
 
@@ -34,6 +34,8 @@ class VerificationTransactions(DatabaseTransactions) :
 
 	def add_idcheck(self, userid: int, reason: str = None, idcheck=True, server=None) :
 		with self.createsession() as session :
+			if self.id_exists(userid) :
+				return VerificationTransactions().get_id_info(userid, session)
 			UserTransactions().add_user_empty(userid, True)
 			idinfo = VerificationTransactions().get_id_info(userid)
 			logging.info(idinfo)
