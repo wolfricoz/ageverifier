@@ -13,9 +13,9 @@ from starlette.responses import JSONResponse
 from classes.encryption import Encryption
 from classes.support.queue import Queue
 from classes.verification.process import VerificationProcess
-from databases.controllers.UserTransactions import UserTransactions
-from databases.controllers.VerificationTransactions import VerificationTransactions
-from databases.controllers.WebsiteDataTransactions import WebsiteDataTransactions
+from databases.transactions.UserTransactions import UserTransactions
+from databases.transactions.VerificationTransactions import VerificationTransactions
+from databases.transactions.WebsiteDataTransactions import WebsiteDataTransactions
 from databases.current import Users
 
 router = APIRouter()
@@ -92,11 +92,10 @@ async def verify_age(request: Request, guild_id: int, user_id: int, verification
 
 	if vp.discrepancy is not None :
 		id_check = True
-		if vp.id_check_info is None :
-			vp.id_check_info = VerificationTransactions().add_idcheck(user.id, )
 
 		if vp.discrepancy in ["age_too_high", "mismatch", "below_minimum_age"] :
 			id_check = False
+
 		from classes.idcheck import IdCheck
 		Queue().add(IdCheck.send_check_api(user, guild,
 		                                   vp.id_channel,
