@@ -26,7 +26,7 @@ class IdVerifyButton(discord.ui.View) :
 			return await send_response(interaction, f"No ID verification request found for <@{self.user.id}>", ephemeral=True)
 
 		await IdCheckClass.send_id_check(interaction, self.user, idcheck)
-		await send_message(interaction.channel, f"{interaction.user.mention} sent a request to review the ID for <@{self.member.id}>.")
+		await send_message(interaction.channel, f"{interaction.user.mention} sent a request to review the ID for <@{self.user.id}>.")
 
 
 
