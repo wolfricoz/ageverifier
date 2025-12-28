@@ -141,7 +141,7 @@ class LobbyProcess(ABC) :
 		messages = channel.history(limit=100)
 		notify = re.compile(r"Info", flags=re.IGNORECASE)
 		count = 0
-		if ConfigData().get_toggle(guild.id, "cleanlobby", "ENABLED", "ENABLED"):
+		if ConfigData().get_toggle(guild.id, "cleanup", "ENABLED", "ENABLED"):
 			return
 
 		async for message in messages :
