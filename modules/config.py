@@ -236,6 +236,7 @@ class Config(commands.GroupCog, name="config") :
 				file.write(f"{item}: {info}\n")
 		await interaction.followup.send(f"Config for {interaction.guild.name if guild is None else guild}", file=discord.File(file.name))
 		os.remove(file.name)
+		return None
 
 	@commands.command()
 	@commands.is_owner()
