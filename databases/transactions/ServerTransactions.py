@@ -9,7 +9,7 @@ from databases.transactions.ConfigTransactions import ConfigTransactions
 from databases.transactions.DatabaseTransactions import DatabaseTransactions
 from databases.transactions.UserTransactions import UserTransactions
 from databases.current import Servers
-from resources.data.config_variables import available_toggles, lobby_approval_toggles
+from resources.data.config_variables import available_toggles, enabled_toggles, lobby_approval_toggles
 
 
 class ServerTransactions(DatabaseTransactions) :
@@ -45,7 +45,7 @@ class ServerTransactions(DatabaseTransactions) :
 
 			# Apply configurations to new servers
 
-			enabled_toggles = ['WELCOME', 'LOBBYWELCOME', 'BANS', 'JOINED_AT', 'CREATED_AT', 'USER_ID', 'PICTURE_SMALL', 'LOGCHANGES']
+			enabled = enabled_toggles
 			for toggle in available_toggles + list(lobby_approval_toggles.keys()):
 				if toggle.upper() in enabled_toggles:
 					ConfigTransactions().toggle_add(guildid, toggle, "ENABLED")
