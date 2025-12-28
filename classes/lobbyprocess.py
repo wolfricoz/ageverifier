@@ -141,7 +141,11 @@ class LobbyProcess(ABC) :
 		messages = channel.history(limit=100)
 		notify = re.compile(r"Info", flags=re.IGNORECASE)
 		count = 0
+		if ConfigData().get_toggle(guild.id, "cleanlobby", "ENABLED", "ENABLED"):
+			return
+
 		async for message in messages :
+
 			if message.author == user or user in message.mentions and count < 10 :
 				count += 1
 				Queue().add(message.delete(), priority=0)
