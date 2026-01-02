@@ -27,7 +27,7 @@ class ServerTransactions(DatabaseTransactions) :
 
 			if guild is not None :
 
-				self.update(guildid, active, name, owner_name, member_count, invite, owner_id=owner_id)
+				self.update(guildid, active, name, owner_name, member_count, invite, owner_id=owner_id if owner_id != 0 else None)
 			else :
 				session = self.createsession()
 				g = Servers(
