@@ -75,6 +75,8 @@ class IdCheck(ABC) :
 			                    ephemeral=True)
 			lobbymod = interaction.guild.get_channel(ConfigData().get_key_int_or_zero(interaction.guild.id, 'lobbymod'))
 			await lobbymod.send(f"Lobby Debug] Age: {age} dob {dob} userid: {interaction.user.mention}\n" + message.get('channel-message', "Message not found."))
+			await IdCheck.auto_kick(interaction.user, m_key, interaction.guild, channel)
+
 			return
 		if verify_button :
 			from views.buttons.idverifybutton import IdVerifyButton
@@ -104,7 +106,6 @@ class IdCheck(ABC) :
 			JoinHistoryTransactions().update(interaction.user.id, interaction.guild.id, JoinHistoryStatus.IDCHECK)
 			await IdCheck.add_check(interaction.user, interaction.guild,
 			                        message.get("channel-message", f"No message set for {message}"))
-		await IdCheck.auto_kick(interaction.user, m_key, interaction.guild, channel)
 
 	@staticmethod
 	@abstractmethod
