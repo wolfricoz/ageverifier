@@ -24,6 +24,7 @@ from databases import current as db
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.ServerTransactions import ServerTransactions
 from databases.current import Servers
+from project.data import VERSION
 from views.buttons.approvalbuttons import ApprovalButtons
 from views.buttons.dobentrybutton import dobentry
 from views.buttons.idreviewbuttons import IdReviewButton
@@ -131,7 +132,7 @@ async def on_ready() :
 	whitelist.create_whitelist(bot.guilds)
 	await Configer.create_bot_config()
 	Queue().add(bot.tree.sync(), 2)
-	Queue().add(devroom.send(f"AgeVerifier is in {len(bot.guilds)} guilds. Ageverifier {version}"), 2)
+	Queue().add(devroom.send(f"AgeVerifier is in {len(bot.guilds)} guilds. Ageverifier {VERSION}"), 2)
 	logging.info(f"Commands synced, start up done! Connected to {len(bot.guilds)} guilds and {bot.shard_count} shards.")
 	bot.add_view(IdVerifyButton())
 	bot.add_view(VerifyButton())
@@ -227,15 +228,25 @@ async def on_guild_remove(guild) :
 # cogloader
 @bot.event
 async def setup_hook() :
-	bot.lobbyages = bot.get_channel(454425835064262657)
-	for filename in os.listdir("modules") :
+	directories = ["modules", "listeners", "tasks"]
+	loaded = []
+	for directory in directories :
+		try :
+			# Loop through all the files in the directory, and load them.
+			for filename in os.listdir(directory) :
 
-		if filename.endswith('.py') :
-			await bot.load_extension(f"modules.{filename[:-3]}")
-			print({filename[:-3]})
-		else :
-			print(f'Unable to load {filename[:-3]}')
+				if filename.endswith('.py') :
 
+
+
+					await bot.load_extension(f"{directory}.{filename[:-3]}")
+					loaded.append(f"{directory}.{filename[:-3]}")
+				else :
+					logging.info(f'Unable to load {filename[:-3]} in {directory}')
+		except FileNotFoundError :
+			os.mkdir(directory)
+			pass
+	logging.info(f'Loaded {len(loaded)} modules: {", ".join(loaded)}')
 
 @bot.command(aliases=["cr", "reload"])
 @commands.has_permissions(administrator=True)
@@ -268,116 +279,6 @@ async def run() :
 	except KeyboardInterrupt :
 		exit(0)
 
-
-# python
-async def dump_app_commands(bot, path: str = 'commands.txt') :
-	option_type_map = {
-		1  : "SUB_COMMAND",
-		2  : "SUB_COMMAND_GROUP",
-		3  : "STRING",
-		4  : "INTEGER",
-		5  : "BOOLEAN",
-		6  : "USER",
-		7  : "CHANNEL",
-		8  : "ROLE",
-		9  : "MENTIONABLE",
-		10 : "NUMBER",
-		11 : "ATTACHMENT",
-	}
-
-	def fmt_args(opts) :
-		parts = []
-		for a in opts :
-			name = a.get('name')
-			req = a.get('required', False)
-			parts.append(f"<{name}>" if req else f"[{name}]")
-		return " ".join(parts)
-
-	def decode_permissions(val) :
-		if not val :
-			return "None"
-		try :
-			p = discord.Permissions(int(val))
-			enabled = [k for k, v in p.to_dict().items() if v]
-			return ", ".join(enabled) if enabled else "None"
-		except Exception :
-			return str(val)
-
-	# Group commands by cog name and module
-	groups = {}
-	for cmd in bot.tree.walk_commands() :
-		cog = getattr(cmd, "cog", None)
-		if cog :
-			cog_name = cog.__class__.__name__
-			module = getattr(cog, "__module__", "unknown")
-		else :
-			cb = getattr(cmd, "callback", None)
-			cog_name = "NoCog"
-			module = getattr(cb, "__module__", "unknown") if cb else "unknown"
-
-		key = (cog_name, module)
-		groups.setdefault(key, []).append(cmd)
-
-	lines = []
-	first_group = True
-	for (cog_name, module), cmds in groups.items() :
-		# header for the cog / location
-		if not first_group :
-			lines.append("")  # blank line between cog sections
-		first_group = False
-		lines.append(f"Cog: {cog_name}  —  module: {module}")
-		lines.append("")  # blank line after header
-
-		for cmd in cmds :
-			try :
-				data = cmd.to_dict(tree=bot.tree)
-			except TypeError :
-				data = cmd.to_dict()
-
-			top_name = data.get('name')
-			top_desc = data.get('description', '')
-			top_options = data.get('options', [])
-			perms_text = decode_permissions(data.get('default_member_permissions'))
-
-			# If there are SUB_COMMAND / SUB_COMMAND_GROUP options, iterate them as commands under the group
-			if any(opt.get('type') in (1, 2) for opt in top_options) :
-				for sub in top_options :
-					if sub.get('type') not in (1, 2) :
-						continue
-					sub_name = sub.get('name')
-					sub_desc = sub.get('description', '')
-					sub_args = sub.get('options', [])
-					sig = f"/{top_name} {sub_name} {fmt_args(sub_args)}".strip()
-					lines.append(sig)
-					lines.append(f"  Description: {sub_desc or top_desc}")
-					lines.append(f"  Required permissions: {perms_text}")
-					if sub_args :
-						for a in sub_args :
-							a_type = option_type_map.get(a.get('type'), a.get('type'))
-							a_req = "required" if a.get('required', False) else "optional"
-							a_desc = a.get('description', '')
-							lines.append(f"    - {a.get('name')} ({a_req}, type={a_type}) - {a_desc}")
-					else :
-						lines.append("    - no arguments")
-					lines.append("")  # blank line between commands
-			else :
-				# Top-level command (no subcommands)
-				sig = f"/{top_name} {fmt_args(top_options)}".strip()
-				lines.append(sig)
-				lines.append(f"  Description: {top_desc}")
-				lines.append(f"  Required permissions: {perms_text}")
-				if top_options :
-					for a in top_options :
-						a_type = option_type_map.get(a.get('type'), a.get('type'))
-						a_req = "required" if a.get('required', False) else "optional"
-						a_desc = a.get('description', '')
-						lines.append(f"    - {a.get('name')} ({a_req}, type={a_type}) - {a_desc}")
-				else :
-					lines.append("    - no arguments")
-				lines.append("")
-
-	with open(path, 'w', encoding='utf-8') as f :
-		f.write('\n'.join(lines))
 
 # @app.on_event("startup")
 # async def app_startup() :

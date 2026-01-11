@@ -1,47 +1,52 @@
+
 ---
 layout: default
-title: Id Check Management
-nav_order: 6
+title: Whitelisting
+nav_order: 8
+---		
+		
+<h1>idcheck</h1>
+<h6>version: 3.2</h6>
+<h6>Documentation automatically generated from docstrings.</h6>
+
+
+### `get`
+
+**Usage:** `/get`
+
+> [manage_messages] Get the ID check status of the specified user
+
 ---
 
-<h1>Id Check Management</h1>
-When a user fills in the wrong dob, or makes a mistake they are added to the ID list, of course you can do the same manually; when they are added to this list they will be stopped to verify if they try to input their date of birth in any server they join until they have been verified.
+### `update`
 
+**Usage:** `/update`
 
-## Commands
+> [administrator] Update the id check status and reason of the specified user.
 
-### `/get`
+---
 
-**Description:** Get the ID check status of the specified user.
+### `delete`
 
-**Permissions:** `manage_messages`
+**Usage:** `/delete`
 
-**Usage:** /get user:<user or user id>
+> [Administrator] Delete the ID check entry of a specified user.
 
-### `/update`
+---
 
-**Description:** Update the ID check status and reason of the specified user.
+### `create`
 
-**Permissions:** `administrator`
+**Usage:** `/create`
 
-**Usage:**/update user:<user or user id> idcheck:<bool> reason:<reason>
+> [manage_messages] Adds specified user to the ID list
 
-### `/delete`
+---
 
-**Description:** Delete the ID check entry of a specified user.
+### `send`
 
-**Permissions:** `administrator`
+**Usage:** `/send`
 
-**Usage:** /delete user:<user or user id>
+> [manage_messages][premium] Sends an ID check request to the specified user.
 
-### `/create`
+---
 
-**Description:** Adds specified user to the ID list.
-
-**Permissions:** `manage_messages`
-
-**Usage:** /create user:<user or user id> reason:<reason>
-
-## Notes
-
-- The data retrieved or modified by these commands is only allowed to be shared with relevant parties.

@@ -33,7 +33,7 @@ def check_access() :
 	return app_commands.check(pred)
 
 
-class dev(commands.GroupCog, name="dev") :
+class DevTools(commands.GroupCog, name="dev") :
 
 	def __init__(self, bot: commands.Bot) :
 		self.bot = bot

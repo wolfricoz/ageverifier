@@ -95,6 +95,9 @@ class LobbyProcess(ABC) :
 	@abstractmethod
 	async def log(user, guild, age, dob, staff, exists, id_verify = "", reverify=False) :
 		# Empty variables, these may be filled based on the type of verification
+
+
+
 		dob_field = ""
 		reverify_field = ""
 
@@ -105,6 +108,13 @@ class LobbyProcess(ABC) :
 				lobbylog = revlog
 
 		channel = guild.get_channel(int(lobbylog))
+
+		viewers = [member for member in channel.members if member.bot is False]
+		if len(viewers) > 20:
+			await send_message(channel, f"[SECURITY NOTICE] More than 20 non-bot users have access to the lobby log channel. Ageverifier will not log verifications here to protect user privacy. Please reduce the number of users with access to under 20 to re-enable logging.")
+			return
+
+
 		if check_whitelist(guild.id) :
 			dob_field = f"DOB: {dob} \n"
 		if reverify:

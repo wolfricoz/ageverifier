@@ -1,52 +1,60 @@
+
 ---
 layout: default
-title: Database Management
-nav_order: 5
+title: Whitelisting
+nav_order: 8
+---		
+		
+<h1>Database</h1>
+<h6>version: 3.2</h6>
+<h6>Documentation automatically generated from docstrings.</h6>
+
+
+### `whitelist`
+
+**Usage:** `/whitelist <self> <interaction>`
+
+> Missing Documentation
+
 ---
 
-<h1>Database Management</h1>
-To access the database command, your server must be whitelisted; otherwise you can open a ticket on the support server to have a dob changed or looked up
+### `stats`
 
-# Database Module
+**Usage:** `/stats`
 
-This module handles the lobby-related commands for the bot.
+> Missing Documentation
 
-## Commands
+---
 
-### `/get`
+### `get`
 
-**Description:** Gets the date of birth of the specified user.
+**Usage:** `/get`
 
-**Permissions:** `manage_messages`
+> [manage_messages] Gets the date of birth of the specified user.
 
-**Usage:** /get user:<user or user id>
+---
 
-### `/create`
+### `create`
 
-**Description:** Adds the date of birth of the specified user to the database.
+**Usage:** `/create`
 
-**Permissions:** `manage_messages`
+> [manage_messages] Add the date of birth of the specified user to the database
 
-**Usage:** /create user:<user or user id> dob:<date_of_birth><
+---
 
-### `/update`
+### `update`
 
-**Description:** Updates the date of birth of a specified user.
+**Usage:** `/update`
 
-**Permissions:** `manage_messages`
+> [manage_messages] updates the date of birth of a specified user.
 
-**Usage:** /update user:<user or user id> dob:<date_of_birth>
+---
 
-### `/delete`
+### `delete`
 
-**Description:** Deletes the date of birth of a specified user. Only use this to correct mistakes.
+**Usage:** `/delete`
 
-**Permissions:** `administrator`
+> [administrator] Deletes the date of birth of a specified user. Only use this to correct mistakes.
 
-**Usage:** /delete user:<user or userid> reason:<reason>
+---
 
-## Notes
-
-- The commands are limited to whitelisted servers. If your server is not whitelisted, please join the support server and open a ticket.
-- The data retrieved or modified by these commands is only allowed to be shared with relevant parties.
-- All changes are logged and may be reviewed in cases of abuse.
