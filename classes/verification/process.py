@@ -113,7 +113,7 @@ class VerificationProcess :
 		self.user_record: databases.current.Users = UserTransactions().get_user(self.member.id)
 		mod_lobby = ConfigData().get_key_int_or_zero(self.guild.id, "lobbymod")
 		id_log = ConfigData().get_key_int_or_zero(self.guild.id, "idlog")
-		if mod_lobby is None or id_log is None :
+		if mod_lobby == 0 or id_log == 0 :
 			raise Exception("Lobbymod or id_channel not set, inform the server staff to setup the server.")
 		self.mod_channel = self.guild.get_channel(mod_lobby)
 		self.id_channel = self.guild.get_channel(id_log)
