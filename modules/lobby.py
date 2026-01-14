@@ -5,15 +5,15 @@ import os
 import discord
 from discord import app_commands
 from discord.ext import commands
+from discord_py_utilities.messages import send_message, send_response
 
 import classes.permissions as permissions
 from classes.AgeCalculations import AgeCalculations
-from databases.transactions.ConfigData import ConfigData
 from classes.idverify import verify
 from classes.lobbyprocess import LobbyProcess
-from discord_py_utilities.messages import send_message, send_response
 from classes.support.queue import Queue
 from classes.whitelist import check_whitelist
+from databases.transactions.ConfigData import ConfigData
 from views.buttons.approvalbuttons import ApprovalButtons
 from views.buttons.confirmButtons import confirmAction
 from views.buttons.dobentrybutton import dobentry
@@ -58,10 +58,10 @@ class Lobby(commands.GroupCog) :
 		await interaction.response.defer()
 		if interaction.guild is None:
 			return await send_response(interaction, "This command is limited to a server.")
-		add_roles: list = ConfigData().get_key(interaction.guild.id, "add")
+		add_roles: list = ConfigData().get_key(interaction.guild.id, "VERIFICATION_ADD_ROLE")
 		add = list(add_roles)
-		rem: list = ConfigData().get_key(interaction.guild.id, "rem")
-		returns: list = ConfigData().get_key(interaction.guild.id, "return")
+		rem: list = ConfigData().get_key(interaction.guild.id, "verification_remove_role")
+		returns: list = ConfigData().get_key(interaction.guild.id, "return_remove_role")
 		print('data retrieved')
 		rm = []
 		ra = []
@@ -97,7 +97,7 @@ class Lobby(commands.GroupCog) :
 	@app_commands.checks.has_permissions(administrator=True)
 	async def raid_purge(self, interaction: discord.Interaction, days: int = 30) :
 		"""This command will kick all the users that have not been processed through the lobby with the given days."""
-		lobby_config = ConfigData().get_key_int(interaction.guild.id, "lobby")
+		lobby_config = ConfigData().get_key_int(interaction.guild.id, "server_join_channel")
 		lobby_channel = interaction.guild.get_channel(lobby_config)
 		if days > 30 :
 			days = 30
@@ -134,7 +134,7 @@ class Lobby(commands.GroupCog) :
 	@app_commands.checks.has_permissions(administrator=True)
 	async def lobby_purge(self, interaction: discord.Interaction, days: int = 30) :
 		"""Kick users who have been in the lobby longer than the given days (based on message age)."""
-		lobby_config = ConfigData().get_key_int(interaction.guild.id, "lobby")
+		lobby_config = ConfigData().get_key_int(interaction.guild.id, "server_join_channel")
 		lobby_channel = interaction.guild.get_channel(lobby_config)
 		if days > 30 :
 			days = 30

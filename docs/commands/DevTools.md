@@ -1,18 +1,16 @@
-
 ---
 layout: default
 title: Whitelisting
 nav_order: 8
 ---		
-		
+
 <h1>DevTools</h1>
 <h6>version: 3.2</h6>
 <h6>Documentation automatically generated from docstrings.</h6>
 
-
 ### `create_invite`
 
-**Usage:** `/create_invite <self> <guild: <class 'discord.guild.Guild'>>`
+**Usage:** `/create_invite <guild>`
 
 > Missing Documentation
 
@@ -44,7 +42,7 @@ nav_order: 8
 
 ### `test_invite`
 
-**Usage:** `/test_invite`
+**Usage:** `/test_invite <invite>`
 
 > Missing Documentation
 
@@ -52,7 +50,7 @@ nav_order: 8
 
 ### `test_stats`
 
-**Usage:** `/test_stats`
+**Usage:** `/test_stats <amount>`
 
 > Missing Documentation
 
@@ -60,7 +58,7 @@ nav_order: 8
 
 ### `origin`
 
-**Usage:** `/origin`
+**Usage:** `/origin <create_records>`
 
 > Missing Documentation
 
@@ -68,7 +66,7 @@ nav_order: 8
 
 ### `history`
 
-**Usage:** `/history <self> <channel> <users> <guild> <create_records>`
+**Usage:** `/history <channel> <users> <guild> <create_records>`
 
 > Missing Documentation
 
@@ -76,7 +74,7 @@ nav_order: 8
 
 ### `blacklist_server`
 
-**Usage:** `/blacklist_server`
+**Usage:** `/blacklist_server <guildid>`
 
 > Missing Documentation
 
@@ -84,7 +82,7 @@ nav_order: 8
 
 ### `unblacklist_server`
 
-**Usage:** `/unblacklist_server`
+**Usage:** `/unblacklist_server <guildid>`
 
 > Missing Documentation
 
@@ -92,7 +90,7 @@ nav_order: 8
 
 ### `blacklist_user`
 
-**Usage:** `/blacklist_user`
+**Usage:** `/blacklist_user <userid>`
 
 > Missing Documentation
 
@@ -100,7 +98,7 @@ nav_order: 8
 
 ### `unblacklist_user`
 
-**Usage:** `/unblacklist_user`
+**Usage:** `/unblacklist_user <userid>`
 
 > Missing Documentation
 
@@ -108,7 +106,7 @@ nav_order: 8
 
 ### `serverinfo`
 
-**Usage:** `/serverinfo`
+**Usage:** `/serverinfo <server>`
 
 > Missing Documentation
 

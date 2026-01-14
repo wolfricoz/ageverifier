@@ -5,13 +5,12 @@ from abc import ABC, abstractmethod
 import discord
 from discord_py_utilities.messages import send_message, send_response
 
-from classes.AgeCalculations import AgeCalculations
+from databases.current import IdVerification
+from databases.enums.joinhistorystatus import JoinHistoryStatus
 from databases.transactions.AgeRoleTransactions import AgeRoleTransactions
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.HistoryTransactions import JoinHistoryTransactions
 from databases.transactions.VerificationTransactions import VerificationTransactions
-from databases.current import IdVerification
-from databases.enums.joinhistorystatus import JoinHistoryStatus
 from resources.data.IDVerificationMessage import create_message
 from views.buttons.idsubmitbutton import IdSubmitButton
 
@@ -73,7 +72,8 @@ class IdCheck(ABC) :
 			                    message.get("user-message",
 			                                "There was an issue with the age and date of birth you provided. Please try again."),
 			                    ephemeral=True)
-			lobbymod = interaction.guild.get_channel(ConfigData().get_key_int_or_zero(interaction.guild.id, 'lobbymod'))
+			lobbymod = interaction.guild.get_channel(
+				ConfigData().get_key_int_or_zero(interaction.guild.id, "approval_channel"))
 			await lobbymod.send(f"Lobby Debug] Age: {age} dob {dob} userid: {interaction.user.mention}\n" + message.get('channel-message', "Message not found."))
 			await IdCheck.auto_kick(interaction.user, m_key, interaction.guild, channel)
 
@@ -90,7 +90,7 @@ class IdCheck(ABC) :
 
 		try :
 			await send_message(channel,
-			                   f"{f'{interaction.guild.owner.mention}' if ConfigData().get_key(interaction.guild.id, 'PINGOWNER') == 'ENABLED' else ''} -# Lobby Debug] Age: {age} dob {dob} userid: {interaction.user.mention}",
+			                   f"{f'{interaction.guild.owner.mention}' if ConfigData().get_key(interaction.guild.id, "ping_owner_on_failure") == 'ENABLED' else ''} -# Lobby Debug] Age: {age} dob {dob} userid: {interaction.user.mention}",
 			                   embed=embed,
 			                   view=view)
 			await send_response(interaction, interaction.user.mention + " " + message.get("user-message",
@@ -160,7 +160,7 @@ class IdCheck(ABC) :
 		if m_key in ['mismatch', 'age_too_high', 'below_minimum_age'] :
 			await send_message(user, message.get("user-message",
 			                                     "There was an issue with the age and date of birth you provided. Please try again."))
-			lobbymod = guild.get_channel(ConfigData().get_key_int_or_zero(guild.id, 'lobbymod'))
+			lobbymod = guild.get_channel(ConfigData().get_key_int_or_zero(guild.id, "approval_channel"))
 			if lobbymod :
 				await lobbymod.send(
 					f"Lobby Debug] Age: {age} dob {dob} userid: {user.mention}\n" + message.get('channel-message'))
@@ -178,7 +178,7 @@ class IdCheck(ABC) :
 
 		try :
 			await send_message(channel,
-			                   f"{f'{guild.owner.mention}' if ConfigData().get_key(guild.id, 'PINGOWNER') == 'ENABLED' else ''} -# Lobby Debug] Age: {age} dob {dob} userid: {user.mention}",
+			                   f"{f'{guild.owner.mention}' if ConfigData().get_key(guild.id, "ping_owner_on_failure") == 'ENABLED' else ''} -# Lobby Debug] Age: {age} dob {dob} userid: {user.mention}",
 			                   embed=embed,
 			                   view=view)
 			await send_message(user, user.mention + " " + message.get("user-message",
@@ -221,7 +221,7 @@ class IdCheck(ABC) :
 	async def auto_kick(member: discord.Member, discrepancy, guild: discord.Guild, channel) :
 		if discrepancy not in ['underage', 'below_minimum_age'] :
 			return
-		config_state = ConfigData().get_toggle(guild.id, "Autokick")
+		config_state = ConfigData().get_toggle(guild.id, "autokick_underaged_users")
 		if not config_state :
 			logging.info(f'{guild.name} Autokick disabled, skipping autokick.')
 			return

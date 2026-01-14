@@ -3,9 +3,9 @@ from datetime import datetime, timezone
 
 from databases.Generators.guildgenerator import guildgenerator
 from databases.Generators.uidgenerator import uidgenerator
-from databases.transactions.HistoryTransactions import JoinHistoryTransactions
 from databases.current import create_bot_database, drop_bot_database
 from databases.enums.joinhistorystatus import JoinHistoryStatus
+from databases.transactions.HistoryTransactions import JoinHistoryTransactions
 
 
 # Assuming the following are defined elsewhere in your project
@@ -51,7 +51,7 @@ class TestJoinHistoryTransactions(unittest.TestCase):
 
     def test_add_or_update_existing_entry(self):
         """
-        Tests that calling 'add' on an existing entry updates it instead of creating a new one.
+        Tests that calling "VERIFICATION_ADD_ROLE" on an existing entry updates it instead of creating a new one.
         """
         controller = JoinHistoryTransactions()
         # First add

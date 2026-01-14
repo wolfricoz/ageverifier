@@ -18,12 +18,13 @@ import api
 from classes import whitelist
 from classes.access import AccessControl
 from classes.blacklist import blacklist_check
+from classes.dashboard.Servers import Servers as DashServers
 from classes.jsonmaker import Configer
 from classes.support.queue import Queue
 from databases import current as db
+from databases.current import Servers
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.ServerTransactions import ServerTransactions
-from databases.current import Servers
 from project.data import VERSION
 from views.buttons.approvalbuttons import ApprovalButtons
 from views.buttons.dobentrybutton import dobentry
@@ -32,7 +33,6 @@ from views.buttons.idsubmitbutton import IdSubmitButton
 from views.buttons.idverifybutton import IdVerifyButton
 from views.buttons.reverifybutton import ReVerifyButton
 from views.buttons.verifybutton import VerifyButton
-from classes.dashboard.Servers import Servers as DashServers
 
 # Creating database
 db.database.create()
@@ -143,7 +143,6 @@ async def on_ready() :
 	bot.add_view(IdReviewButton())
 	logging.info("Loaded routers: " + ", ".join(routers))
 	Queue().add(check_guilds(devroom))
-	await dump_app_commands(bot)
 
 
 async def check_guilds(devroom: discord.TextChannel) :

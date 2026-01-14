@@ -3,15 +3,15 @@ import logging
 import discord
 from discord_py_utilities.messages import send_message
 
-from databases.transactions.ConfigData import ConfigData
 from classes.support.queue import Queue
+from databases.transactions.ConfigData import ConfigData
 
 
 def change_age_roles(guild: discord.Guild, user: discord.Member, age, remove = False, reverify=False) :
 	"""Adds the age roles to the user and removes the age roles that are not in the range if remove is True."""
-	roles = ConfigData().get_key(guild.id, "ADD")
+	roles = ConfigData().get_key(guild.id, "VERIFICATION_ADD_ROLE", {})
 	if reverify :
-		rev_roles = ConfigData().get_key(guild.id, "REVERIFY")
+		rev_roles = ConfigData().get_key(guild.id, "reverification_role")
 		if isinstance(rev_roles, str):
 			roles[rev_roles] = {'MIN': 18, 'MAX': 200}
 		if isinstance(rev_roles, list):
@@ -21,7 +21,7 @@ def change_age_roles(guild: discord.Guild, user: discord.Member, age, remove = F
 
 	exluded_roles = []
 	if remove :
-		exluded_roles = ConfigData().get_key(guild.id, "EXCLUDE")
+		exluded_roles = ConfigData().get_key(guild.id, "auto_update_excluded_roles")
 	roles = {key: value for key, value in roles.items() if key not in exluded_roles}
 	logging.info(roles)
 	add_roles = []
@@ -54,7 +54,7 @@ def change_age_roles(guild: discord.Guild, user: discord.Member, age, remove = F
 	if len(remove_roles) < 1 :
 		return
 	Queue().add(user.remove_roles(*remove_roles), priority=0)
-	mod_lobby = guild.get_channel(ConfigData().get_key_int(guild.id, "lobbymod"))
+	mod_lobby = guild.get_channel(ConfigData().get_key_int(guild.id, "approval_channel"))
 	if mod_lobby is None:
 		return
 	Queue().add(send_message(mod_lobby, f"[AGE ROLES UPDATED] {user.mention} has been given the roles: {', '.join([role.name for role in add_roles])} and removed the roles: {', '.join([role.name for role in remove_roles])}"), priority=0)

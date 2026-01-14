@@ -10,7 +10,9 @@ from discord import app_commands
 from discord.app_commands import Choice
 from discord.ext import commands
 from discord_py_utilities.messages import send_message, send_response
+from discord_py_utilities.permissions import check_missing_channel_permissions
 
+from classes.config.utils import ConfigUtils
 from classes.configsetup import ConfigSetup
 from classes.support.queue import Queue
 from databases.transactions.AgeRoleTransactions import AgeRoleTransactions
@@ -19,8 +21,6 @@ from databases.transactions.ConfigTransactions import ConfigTransactions
 from resources.data.config_variables import available_toggles, channelchoices, lobby_approval_toggles, messagechoices, \
 	rolechoices
 from views.modals.configinput import ConfigInputUnique
-from classes.config.utils import ConfigUtils
-from discord_py_utilities.permissions import check_missing_channel_permissions
 
 
 class Config(commands.GroupCog, name="config") :
@@ -52,7 +52,7 @@ class Config(commands.GroupCog, name="config") :
 				return await send_response(interaction, f"You can access the dashboard here: {os.getenv("dashboard_url")}")
 			case 'manual' :
 				await send_message(interaction.channel,
-				                   f"You can access the dashboard here for easier setup! {os.getenv("dashboard_url")}")
+				                   f"You can access the dashboard here for easier setup! {os.getenv("DASHBOARD_URL")}")
 				status = await ConfigSetup().manual(self.bot, interaction, self.channelchoices, self.rolechoices,
 				                                    self.messagechoices)
 			case 'auto' :
@@ -110,7 +110,7 @@ class Config(commands.GroupCog, name="config") :
 
 			case "DISABLED" :
 				ConfigTransactions().toggle(interaction.guild.id, key.value, action.value.upper())
-				if key.value == "LobbyWelcome" :
+				if key.value == "send_join_message" :
 					return send_response(interaction,
 					                     f"The lobby welcome message has been disabled. Users will no longer receive a welcome message or the verification button in the lobby channel. To allow users to verify, please use the /lobby command in the channel.",
 					                     ephemeral=True)
@@ -163,7 +163,7 @@ class Config(commands.GroupCog, name="config") :
 
 	@app_commands.command()
 	@app_commands.choices(key=[Choice(name=f"{ke} role", value=ke) for ke, val in rolechoices.items()])
-	@app_commands.choices(action=[Choice(name=x, value=x) for x in ['add', 'Remove']])
+	@app_commands.choices(action=[Choice(name=x, value=x) for x in ["VERIFICATION_ADD_ROLE", 'Remove']])
 	@app_commands.checks.has_permissions(manage_guild=True)
 	async def roles(self, interaction: discord.Interaction, key: Choice[str], action: Choice[str], value: discord.Role,
 	                minimum_age: int = 18, maximum_age: int = 200) :
@@ -171,8 +171,8 @@ class Config(commands.GroupCog, name="config") :
 		await interaction.response.defer(ephemeral=True)
 		value = value.id
 		match action.value.lower() :
-			case 'add' :
-				if key.value == "add" and maximum_age and minimum_age :
+			case "VERIFICATION_ADD_ROLE" :
+				if key.value == "VERIFICATION_ADD_ROLE" and maximum_age and minimum_age :
 					AgeRoleTransactions().add(guild_id=interaction.guild.id, role_id=value, role_type=key.value,
 					                          minimum_age=minimum_age, maximum_age=maximum_age)
 					Queue().add(ConfigUtils.log_change(interaction.guild, {
@@ -191,7 +191,7 @@ class Config(commands.GroupCog, name="config") :
 					return
 				await interaction.followup.send(f"{key.name}: <@&{value}> has been added to the database")
 			case 'remove' :
-				if key.value == "add" :
+				if key.value == "VERIFICATION_ADD_ROLE" :
 					AgeRoleTransactions().permanentdelete(interaction.guild_id, value)
 					Queue().add(ConfigUtils.log_change(interaction.guild, {key.value : f"role id: {value} removed"},
 					                                   user_name=interaction.user.mention))

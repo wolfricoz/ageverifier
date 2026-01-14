@@ -8,20 +8,20 @@ from datetime import datetime, timedelta
 
 from discord import app_commands
 from discord.ext import commands
+from discord_py_utilities.invites import check_guild_invites
 from discord_py_utilities.messages import send_message
 
 from classes.jsonmaker import Configer
 from classes.support.queue import Queue
 from databases.Generators.uidgenerator import uidgenerator
+from databases.current import Users
+from databases.enums.joinhistorystatus import JoinHistoryStatus
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.HistoryTransactions import JoinHistoryTransactions
 from databases.transactions.ServerTransactions import ServerTransactions
 from databases.transactions.UserTransactions import UserTransactions
-from databases.current import Users
-from databases.enums.joinhistorystatus import JoinHistoryStatus
 from views.modals.inputmodal import send_modal
 from views.select.configselectroles import *
-from discord_py_utilities.invites import check_guild_invites
 
 
 def check_access() :
@@ -40,7 +40,7 @@ class DevTools(commands.GroupCog, name="dev") :
 
 	async def create_invite(self, guild: discord.Guild) :
 		try :
-			config = ConfigData().get_key_int(guild.id, "lobbymod")
+			config = ConfigData().get_key_int(guild.id, "approval_channel")
 			invite = await guild.get_channel(config).create_invite(max_age=604800)
 		except discord.Forbidden :
 			invite = 'No permission'
@@ -66,7 +66,7 @@ class DevTools(commands.GroupCog, name="dev") :
 		for guild in self.bot.guilds :
 			await asyncio.sleep(1)
 			try :
-				configid = ConfigData().get_key_int(guild.id, "lobbymod")
+				configid = ConfigData().get_key_int(guild.id, "approval_channel")
 				channel = self.bot.get_channel(configid)
 				await channel.send(announcement)
 			except Exception as e :
@@ -135,7 +135,7 @@ class DevTools(commands.GroupCog, name="dev") :
 		for guild in self.bot.guilds :
 			logging.info(f"Checking {guild.name}({guild.id}) for records")
 			try :
-				lobbylog = ConfigData().get_key_or_none(guild.id, "lobbylog")
+				lobbylog = ConfigData().get_key_or_none(guild.id, "age_log")
 			except :
 				logging.warning(f"Could not find lobbylog for {guild.name}({guild.id})")
 				continue
@@ -264,4 +264,4 @@ class DevTools(commands.GroupCog, name="dev") :
 
 async def setup(bot: commands.Bot) :
 	"""Adds the cog to the bot"""
-	await bot.add_cog(dev(bot))
+	await bot.add_cog(DevTools(bot))

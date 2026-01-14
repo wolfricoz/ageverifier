@@ -5,10 +5,10 @@ import os
 from datetime import UTC, datetime, timedelta
 
 import discord
-from discord_py_utilities.invites import check_guild_invites
-from discord_py_utilities.messages import send_message, send_response
 from discord import app_commands
 from discord.ext import commands, tasks
+from discord_py_utilities.invites import check_guild_invites
+from discord_py_utilities.messages import send_message, send_response
 
 from classes.AgeCalculations import AgeCalculations
 from classes.access import AccessControl
@@ -16,11 +16,11 @@ from classes.ageroles import change_age_roles
 from classes.dashboard.Servers import Servers
 from classes.encryption import Encryption
 from classes.support.queue import Queue
+from databases.current import Servers as servers_DB
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.DatabaseTransactions import DatabaseTransactions
 from databases.transactions.ServerTransactions import ServerTransactions
 from databases.transactions.UserTransactions import UserTransactions
-from databases.current import Servers as servers_DB
 
 OLDLOBBY = int(os.getenv("OLDLOBBY"))
 DEBUG = os.getenv("DEBUG")
@@ -117,8 +117,8 @@ class Tasks(commands.GroupCog) :
 		logging.info(f"cleaning lobby for {guild.name}")
 		count_messages = 0
 		kicked_users = []
-		lobby_channel = guild.get_channel(ConfigData().get_key_int_or_zero(guild.id, "lobby"))
-		mod_lobby = guild.get_channel(ConfigData().get_key_int_or_zero(guild.id, "lobbymod"))
+		lobby_channel = guild.get_channel(ConfigData().get_key_int_or_zero(guild.id, "server_join_channel"))
+		mod_lobby = guild.get_channel(ConfigData().get_key_int_or_zero(guild.id, "approval_channel"))
 		days = ConfigData().get_key_int_or_zero(guild.id, "clean_lobby_days")
 		guild_db: servers_DB = ServerTransactions().get(guild.id)
 		removal_message = (
@@ -246,9 +246,9 @@ class Tasks(commands.GroupCog) :
 			return
 		for guild in self.bot.guilds :
 			await asyncio.sleep(0.001)
-			rem_roles = (ConfigData().get_key_or_none(guild.id, "REM") or []) + (
-					ConfigData().get_key_or_none(guild.id, "JOIN") or [])
-			mod_lobby = guild.get_channel(ConfigData().get_key_int_or_zero(guild.id, "lobbymod"))
+			rem_roles = (ConfigData().get_key_or_none(guild.id, "verification_remove_role") or []) + (
+					ConfigData().get_key_or_none(guild.id, "server_join_role") or [])
+			mod_lobby = guild.get_channel(ConfigData().get_key_int_or_zero(guild.id, "approval_channel"))
 			if mod_lobby is None :
 				logging.info(f"Mod lobby not found in {guild.name}, skipping age role update.")
 				continue
@@ -257,7 +257,7 @@ class Tasks(commands.GroupCog) :
 				                         f"Your server does not have any removal roles or on join roles setup, because of this automatic age role updates are disabled to prevent users in the lobby from getting age roles."),
 				            priority=0)
 				return
-			if ConfigData().get_key_or_none(guild.id, "UPDATEROLES") != "ENABLED" :
+			if ConfigData().get_key_or_none(guild.id, "auto_update_age_roles") != "ENABLED" :
 				logging.info(f"Skipping {guild.name} age role update.")
 				continue
 			for member in guild.members :

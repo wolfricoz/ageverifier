@@ -14,10 +14,10 @@ from classes.AgeCalculations import AgeCalculations
 from classes.encryption import Encryption
 from classes.lobbyprocess import LobbyProcess
 from classes.whitelist import check_whitelist
+from databases.current import Users
 from databases.transactions.ServerTransactions import ServerTransactions
 from databases.transactions.UserTransactions import UserTransactions
 from databases.transactions.VerificationTransactions import VerificationTransactions
-from databases.current import Users
 from resources.data.responses import StringStorage
 
 
@@ -27,7 +27,7 @@ class Database(commands.GroupCog) :
 		self.index = 0
 
 	#     @app_commands.choices(operation=[Choice(name=x, value=x) for x in
-	#                                      ['add', 'update', 'delete', 'get']])
+	#                                      ["VERIFICATION_ADD_ROLE", 'update', 'delete', 'get']])
 	async def whitelist(self, interaction) :
 		if not check_whitelist(interaction.guild.id) and not permissions.check_dev(interaction.user.id) :
 			logging.info('not whitelisted')

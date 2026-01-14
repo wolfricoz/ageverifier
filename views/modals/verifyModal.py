@@ -109,7 +109,7 @@ class VerifyModal(discord.ui.Modal) :
 		raise error
 
 	async def autokick(self, interaction, mod_channel, age, minimum_age) :
-		if ConfigData().get_key(interaction.guild.id, "AUTOKICK") == "ENABLED" :
+		if ConfigData().get_key(interaction.guild.id, "autokick_underaged_users") == "ENABLED" :
 			await send_message(interaction.user,
 			                   f"Thank you for submitting your date of birth, unfortunately you are too young for this server; you must be {minimum_age} years old.")
 			await send_message(mod_channel,

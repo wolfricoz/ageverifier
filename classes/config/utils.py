@@ -2,8 +2,8 @@ import logging
 from abc import ABC, abstractmethod
 
 import discord
-
 from discord_py_utilities.messages import send_message
+
 from databases.transactions.ConfigData import ConfigData
 
 
@@ -14,12 +14,12 @@ class ConfigUtils(ABC):
 	async def log_change(guild:discord.Guild, changes: dict, user_name: str = None, channel: discord.TextChannel = None) :
 		guild_id = guild.id
 		logging.info(f"Configuration changed in guild {guild_id}: {changes} by user {user_name}")
-		if not ConfigData().get_toggle(guild_id, "logchanges") :
+		if not ConfigData().get_toggle(guild_id, "log_config_changes") :
 			logging.info("Logging of configuration changes is disabled.")
 			return
 		logging.info("Logging of configuration changes is enabled.")
 		if not channel:
-			modlobby = ConfigData().get_key_int_or_zero(guild_id, "lobbymod")
+			modlobby = ConfigData().get_key_int_or_zero(guild_id, "approval_channel")
 			channel = guild.get_channel(modlobby)
 		if channel is None :
 			logging.info("No modlobby channel found for logging configuration changes.")

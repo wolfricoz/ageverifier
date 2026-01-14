@@ -13,7 +13,7 @@ class DocGenerator() :
 
 	def start(self) :
 		sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-		count = 9
+		count = 1
 		for file in glob(os.path.join(os.path.dirname(os.path.abspath(__file__)), "modules", "*.py")) :
 			self.load_file(file, nav=count)
 			count += 1
@@ -53,13 +53,16 @@ nav_order: 8
 			docstring = "Missing Documentation"
 		param_string = ""
 		try :
-			sig = inspect.signature(func_obj)
+			# Use the callback if it exists, otherwise use the function object itself
+			target_func = func_obj.callback if hasattr(func_obj, 'callback') else func_obj
+			sig = inspect.signature(target_func)
 			# Filter out 'self' and 'interaction' from the parameters
 			params = [p for p in sig.parameters if p not in ('self', 'interaction')]
 			if params :
 				# Format parameters like: <param1> <param2>
-				param_string = " " + " ".join([f"<{p}:>" for p in params])
+				param_string = " " + " ".join([f"<{p}>" for p in params])
 		except (ValueError, TypeError) :
+			print("Could not retrieve signature for function:", function)
 			# This can happen for objects that are not inspectable
 			pass
 
@@ -70,16 +73,18 @@ nav_order: 8
 		              f"> {docstring}\n\n"
 		              f"---\n\n")
 
-
-	def load_file(self, file, nav = 9) :
+	def load_file(self, file, nav=1) :
 		name = os.path.splitext(os.path.basename(file))[0]
-		document = f"docs/{name}.md"
+		document = f"docs/commands/{name}.md"
 		if name == "__init__" :
 			return
 		# create the document
+		for dirc in ["docs", "docs/commands"] :
+			if not os.path.exists(dirc) :
+				os.mkdir(dirc)
+
 		if os.path.exists(document) :
 			os.remove(document)
-
 		with open(document, "w", encoding="utf-8") as docfile :
 			docfile.write(self.document_header(name))
 

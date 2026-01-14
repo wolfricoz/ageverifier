@@ -1,11 +1,9 @@
 import logging
-import os
 
 import discord
 from discord_py_utilities.messages import send_response
 
 from classes.AgeCalculations import AgeCalculations
-from classes.access import AccessControl
 from classes.encryption import Encryption
 from classes.helpers import fetch_member
 from classes.lobbyprocess import LobbyProcess
@@ -13,17 +11,16 @@ from classes.lobbytimers import LobbyTimers
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.UserTransactions import UserTransactions
 from databases.transactions.VerificationTransactions import VerificationTransactions
-from databases.transactions.WebsiteDataTransactions import WebsiteDataTransactions
 from views.buttons.approvalbuttons import ApprovalButtons
 from views.buttons.tosbutton import TOSButton
-from views.buttons.websitebutton import WebsiteButton
 
 
 class ReVerifyButton(discord.ui.View) :
 	def __init__(self) :
 		super().__init__(timeout=None)
 
-	@discord.ui.button(label="Start ReVerification here!", style=discord.ButtonStyle.green, custom_id="reverify")
+	@discord.ui.button(label="Start ReVerification here!", style=discord.ButtonStyle.green,
+	                   custom_id="reverification_role")
 	async def verify(self, interaction: discord.Interaction, button: discord.ui.Button) :
 		if cooldown := LobbyTimers().check_cooldown(interaction.guild.id, interaction.user.id) :
 			await send_response(interaction,
@@ -56,7 +53,8 @@ class ReVerifyButton(discord.ui.View) :
 
 	async def id_verified_check(self, interaction: discord.Interaction, reverify= False) -> bool :
 		try :
-			modlobby = interaction.guild.get_channel(ConfigData().get_key_int_or_zero(interaction.guild.id, 'lobbymod'))
+			modlobby = interaction.guild.get_channel(
+				ConfigData().get_key_int_or_zero(interaction.guild.id, "approval_channel"))
 			if modlobby is None :
 				await send_response(interaction, f"Lobbymod not set, inform the server staff to setup the server.",
 				                    ephemeral=True)
@@ -76,14 +74,15 @@ class ReVerifyButton(discord.ui.View) :
 				message = f'Due to prior ID verification, you do not need to re-enter your date of birth and age. You will be granted access once the staff completes the verification process.'
 				LobbyTimers().add_cooldown(interaction.guild.id, interaction.user.id,
 				                           ConfigData().get_key_int_or_zero(interaction.guild.id, 'COOLDOWN'))
-				automatic_status = ConfigData().get_key_or_none(interaction.guild.id, "automatic")
+				automatic_status = ConfigData().get_key_or_none(interaction.guild.id, "automatic_verification")
 				if automatic_status and automatic_status == "enabled".upper() or reverify:
-					await LobbyProcess.approve_user(interaction.guild, interaction.user, dob, age, "Automatic", reverify=reverify)
+					await LobbyProcess.approve_user(interaction.guild, interaction.user, dob, age, "automatic_verification",
+					                                reverify=reverify)
 					await send_response(interaction,
 					                    f'Thank you for submitting your age and dob! You will be let through immediately!',
 					                    ephemeral=True)
 					return True
-				mod_lobby = ConfigData().get_key_int(interaction.guild.id, "lobbymod")
+				mod_lobby = ConfigData().get_key_int(interaction.guild.id, "approval_channel")
 				mod_channel = interaction.guild.get_channel(mod_lobby)
 
 				# Ensure we are working with a Member object, this reduces issues with guild-specific actions
