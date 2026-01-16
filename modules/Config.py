@@ -24,6 +24,12 @@ from views.modals.configinput import ConfigInputUnique
 
 
 class Config(commands.GroupCog, name="config") :
+	"""
+	Commands for configuring the bot's settings in the server.
+	This includes setting up channels, roles, custom messages, and feature toggles.
+	Most commands require 'Manage Server' permissions.
+	"""
+
 
 	def __init__(self, bot: commands.Bot) :
 		self.bot = bot
@@ -37,7 +43,16 @@ class Config(commands.GroupCog, name="config") :
 	@app_commands.checks.has_permissions(manage_guild=True)
 	@app_commands.choices(setup_type=[Choice(name=x, value=x) for x in ['dashboard', 'manual', 'auto']])
 	async def configsetup(self, interaction: discord.Interaction, setup_type: Choice[str]) :
-		"""Sets up the config for the bot."""
+		"""
+        This command helps you get the bot set up on your server. You have a few options to choose from:
+        'dashboard' will give you a link to our web dashboard for an easy, graphical setup experience.
+        'manual' will guide you step-by-step through the setup process using Discord commands.
+        'auto' will automatically create the necessary roles and channels to get the bot running quickly.
+
+        **Permissions:**
+        - You'll need the `Manage Server` permission to use this command.
+        - The bot needs `Send Messages`, `Embed Links`, and `View Channel` permissions in the channel where you run this command.
+        """
 		if check_missing_channel_permissions(interaction.channel, ['send_messages', 'embed_links', 'view_channel']) :
 			return await send_response(interaction,
 			                           "I do not have permission to send messages or embed links in this channel. Please fix this and try again.",
@@ -69,7 +84,13 @@ class Config(commands.GroupCog, name="config") :
 	@app_commands.command()
 	@app_commands.checks.has_permissions(manage_guild=True)
 	async def permissioncheck(self, interaction: discord.Interaction) :
-		"""Checks the permissions of the bot."""
+		"""
+        This command triggers a check to ensure the bot has all the necessary permissions in the channels you've configured for it.
+        It's a great way to diagnose problems if the bot isn't behaving as expected. Any issues found will be reported, usually in your log channel.
+
+        **Permissions:**
+        - You'll need the `Manage Server` permission to use this command.
+        """
 		await send_response(interaction, f"Starting to check permissions for all the channels!", ephemeral=True)
 		await ConfigSetup().check_channel_permissions(interaction.guild)
 
@@ -79,7 +100,14 @@ class Config(commands.GroupCog, name="config") :
 	@app_commands.choices(action=[Choice(name=x, value=x) for x in ['set', 'Remove']])
 	@app_commands.checks.has_permissions(manage_guild=True)
 	async def messages(self, interaction: discord.Interaction, key: Choice[str], action: Choice[str]) :
-		"""Sets the messages such as welcome, lobby welcome and reminder messages."""
+		"""
+        Lets you customize the various messages the bot sends. You can either set a new custom message or remove an existing one to revert it back to the default.
+        When you choose to 'set' a message, a pop-up will appear for you to enter your new text.
+
+
+        **Permissions:**
+        - You'll need the `Manage Server` permission to use this command.
+        """
 		match action.value.lower() :
 			case 'set' :
 				# noinspection PyUnresolvedReferences
@@ -103,7 +131,13 @@ class Config(commands.GroupCog, name="config") :
 	                      key=[Choice(name=x, value=x) for x in available_toggles])
 	@app_commands.checks.has_permissions(manage_guild=True)
 	async def toggles(self, interaction: discord.Interaction, key: Choice[str], action: Choice[str]) :
-		"""Enables/Disables the welcome message for the general channel."""
+		"""
+        This command allows you to enable or disable various features of the bot.
+        You can turn things on or off to best suit your server's needs.
+
+        **Permissions:**
+        - You'll need the `Manage Server` permission to use this command.
+        """
 		match action.value.upper() :
 			case "ENABLED" :
 				ConfigTransactions().toggle(interaction.guild.id, key.value, action.value.upper())
@@ -124,7 +158,15 @@ class Config(commands.GroupCog, name="config") :
 	                      key=[Choice(name=x, value=x) for x in lobby_approval_toggles])
 	@app_commands.checks.has_permissions(manage_guild=True)
 	async def approval_toggles(self, interaction: discord.Interaction, key: Choice[str], action: Choice[str]) :
-		"""Customize the approval buttons."""
+		"""
+        Use this command to customize the buttons that appear on the verification approval message in your log channel.
+        This allows you to enable or disable specific actions your moderators can take, like banning or noting a user's ID.
+
+        I highly recommend using the website, as it provides a more user-friendly interface for configuring these settings. You can see the changes in real-time and understand the impact of each toggle better.
+
+        **Permissions:**
+        - You'll need the `Manage Server` permission to use this command.
+        """
 		match action.value.upper() :
 			case "ENABLED" :
 				ConfigTransactions().toggle(interaction.guild.id, key.value, action.value.upper())
@@ -141,7 +183,14 @@ class Config(commands.GroupCog, name="config") :
 	@app_commands.checks.has_permissions(manage_guild=True)
 	async def channels(self, interaction: discord.Interaction, key: Choice[str], action: Choice[str],
 	                   value: discord.TextChannel = None) :
-		"""adds the channels to the config, you can only add 1 value per option."""
+		"""
+        This command is for assigning specific channels for the bot's functions, like a channel for logging or a lobby for new members.
+        You can either 'set' a new channel or 'remove' an existing assignment.
+
+
+        **Permissions:**
+        - You'll need the `Manage Server` permission to use this command.
+        """
 		await interaction.response.defer(ephemeral=True)
 		if value is not None :
 			value = value.id
@@ -167,7 +216,14 @@ class Config(commands.GroupCog, name="config") :
 	@app_commands.checks.has_permissions(manage_guild=True)
 	async def roles(self, interaction: discord.Interaction, key: Choice[str], action: Choice[str], value: discord.Role,
 	                minimum_age: int = 18, maximum_age: int = 200) :
-		"""Add roles to the database, for the bot to use."""
+		"""
+        Use this command to manage which roles the bot interacts with. You can configure roles to be assigned upon verification,
+        including setting minimum and maximum age requirements for specific roles.
+
+
+        **Permissions:**
+        - You'll need the `Manage Server` permission to use this command.
+        """
 		await interaction.response.defer(ephemeral=True)
 		value = value.id
 		match action.value.lower() :
@@ -211,7 +267,13 @@ class Config(commands.GroupCog, name="config") :
 
 	@app_commands.command(name="cooldown")
 	async def cooldown(self, interaction: discord.Interaction, cooldown: int) :
-		"""set the cooldown (in minutes) for the lobby verification process. 0 to disable"""
+		"""
+        Set a cooldown period for how often a user can attempt verification in the lobby.
+        This can help prevent spam. The cooldown is set in minutes. You can set it to 0 to disable the cooldown entirely.
+
+        **Permissions:**
+        - You'll need the `Manage Server` permission to use this command.
+        """
 		ConfigTransactions().config_unique_add(interaction.guild.id, "cooldown", cooldown, overwrite=True)
 		Queue().add(
 			ConfigUtils.log_change(interaction.guild, {"cooldown" : cooldown}, user_name=interaction.user.mention,
@@ -221,7 +283,14 @@ class Config(commands.GroupCog, name="config") :
 	@app_commands.command()
 	@app_commands.checks.has_permissions(manage_guild=True)
 	async def view(self, interaction: discord.Interaction, guild: str = None) :
-		"""Prints all the config options"""
+		"""
+        This command provides a complete overview of the bot's current configuration for your server.
+        It's a handy way to see all your settings at a glance. The configuration will be sent as a text file.
+
+        **Permissions:**
+        - You'll need the `Manage Server` permission to use this command.
+        - Only the bot developer can view the configuration of other guilds.
+        """
 		if guild and interaction.user.id != int(os.getenv('DEVELOPER')):
 			return await send_response(interaction, "You do not have permission to view other guilds' configs.", ephemeral=True)
 		roles: list = [x for x in rolechoices.values()]
@@ -241,6 +310,15 @@ class Config(commands.GroupCog, name="config") :
 	@commands.command()
 	@commands.is_owner()
 	async def cache(self, ctx: commands.Context) :
+		"""
+        This is a developer-only command used for internal purposes, specifically for caching message history from a channel.
+        It is not intended for regular server administrators.
+
+				-- RMR LEGACY COMMAND, ONE TIME USE --
+
+        **Permissions:**
+        - This command can only be used by the bot's owner.
+        """
 		if ctx.author.id != 188647277181665280 :
 			return await ctx.send("This is a DEV command; you do not have permission to use it.")
 		count = 0

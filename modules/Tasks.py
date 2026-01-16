@@ -18,7 +18,6 @@ from classes.encryption import Encryption
 from classes.support.queue import Queue
 from databases.current import Servers as servers_DB
 from databases.transactions.ConfigData import ConfigData
-from databases.transactions.DatabaseTransactions import DatabaseTransactions
 from databases.transactions.ServerTransactions import ServerTransactions
 from databases.transactions.UserTransactions import UserTransactions
 
@@ -26,7 +25,13 @@ OLDLOBBY = int(os.getenv("OLDLOBBY"))
 DEBUG = os.getenv("DEBUG")
 
 
-class Tasks(commands.GroupCog) :
+class Tasks(commands.Cog) :
+	"""
+	This is the bot's engine room! This module handles all the automated, behind-the-scenes tasks that keep everything running smoothly.
+	You'll find tasks for cleaning up old messages, updating user data, refreshing server configurations, and much more.
+	Most of these functions run on a schedule and don't require any user interaction.
+	There is one command available for administrators to manually trigger a specific task.
+	"""
 	def __init__(self, bot: commands.AutoShardedBot) :
 		"""loads tasks"""
 		self.bot = bot
@@ -281,16 +286,21 @@ class Tasks(commands.GroupCog) :
 					logging.error(f"Error calculating age for {member.name}: {e}", exc_info=True)
 					continue
 
-	@tasks.loop(minutes=1)
-	async def database_ping(self) :
-		"""pings the database to keep the connection alive"""
-		logging.debug("Pinging database.")
-		DatabaseTransactions().ping_db()
+	# Disabled, since the status page pings the bot every 5 minutes anyway.
+	# @tasks.loop(minutes=1)
+	# async def database_ping(self) :
+	# 	"""pings the database to keep the connection alive"""
+	# 	logging.debug("Pinging database.")
+	# 	DatabaseTransactions().ping_db()
 
 	@app_commands.command(name="expirecheck")
 	@app_commands.checks.has_permissions(administrator=True)
 	async def expirecheck(self, interaction: discord.Interaction) :
-		"""forces the automatic search ban check to start; normally runs every 30 minutes"""
+		"""
+		This command allows an administrator to manually start the process of checking for expired user data.
+		Normally, this check runs automatically every 12 hours. This is useful if you want to force an immediate data cleanup.
+		You must have Administrator permissions to use this command.
+		"""
 		await send_response(interaction, "[Debug]Checking all entries.")
 		self.check_users_expiration.restart()
 		await interaction.followup.send("check-up finished.")
@@ -314,10 +324,10 @@ class Tasks(commands.GroupCog) :
 	async def before_serverhcheck(self) :
 		await self.bot.wait_until_ready()
 
-	@database_ping.before_loop
-	async def before_ping(self) :
-		"""stops event from starting before the bot has fully loaded"""
-		await self.bot.wait_until_ready()
+	# @database_ping.before_loop
+	# async def before_ping(self) :
+	# 	"""stops event from starting before the bot has fully loaded"""
+	# 	await self.bot.wait_until_ready()
 
 	@clean_guilds.before_loop
 	async def before_cleanup(self) :

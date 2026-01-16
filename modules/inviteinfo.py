@@ -9,12 +9,21 @@ from classes.helpers import invite_info
 
 
 class inviteInfo(commands.Cog) :
+	"""
+	This part of the bot works in the background to keep track of how users join your server.
+	It logs which invite was used when a new member arrives.
+
+	You can skip this topic since it's automatic and doesn't require any commands.
+	"""
 	def __init__(self, bot: commands.Bot) :
 		self.bot = bot
 
 	@commands.Cog.listener('on_member_join')
 	async def on_member_join(self, member) :
-		"""reads invite dictionary, and outputs user info"""
+		"""
+		When a new member joins the server, this event fires to figure out which invite they used.
+		It then logs this information, helping you track your server's growth and invitation sources.
+		"""
 		try:
 			await invite_info(self.bot, member)
 		except NoChannelException:
@@ -22,7 +31,10 @@ class inviteInfo(commands.Cog) :
 			pass
 	@commands.Cog.listener()
 	async def on_member_remove(self, member) :
-		"""removes member's invites"""
+		"""
+		When a member leaves or is removed, this event updates the server's internal list of active invites.
+		This helps keep the invite tracking accurate.
+		"""
 		try :
 			self.bot.invites[member.guild.id] = await member.guild.invites()
 		except discord.Forbidden:

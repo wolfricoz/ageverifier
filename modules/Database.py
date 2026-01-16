@@ -1,7 +1,6 @@
 """this module handles the lobby."""
 import datetime
 import logging
-import os
 from datetime import datetime, timedelta
 
 import discord
@@ -13,7 +12,7 @@ import classes.permissions as permissions
 from classes.AgeCalculations import AgeCalculations
 from classes.encryption import Encryption
 from classes.lobbyprocess import LobbyProcess
-from classes.whitelist import check_whitelist
+from classes.whitelist import whitelist
 from databases.current import Users
 from databases.transactions.ServerTransactions import ServerTransactions
 from databases.transactions.UserTransactions import UserTransactions
@@ -21,25 +20,30 @@ from databases.transactions.VerificationTransactions import VerificationTransact
 from resources.data.responses import StringStorage
 
 
-class Database(commands.GroupCog) :
+class Database(commands.GroupCog, name="database") :
+	"""
+	Commands for interacting with the user database.
+	Most of these commands are restricted to whitelisted servers and require elevated permissions.
+	"""
 	def __init__(self, bot: commands.Bot) :
 		self.bot = bot
 		self.index = 0
 
 	#     @app_commands.choices(operation=[Choice(name=x, value=x) for x in
 	#                                      ["VERIFICATION_ADD_ROLE", 'update', 'delete', 'get']])
-	async def whitelist(self, interaction) :
-		if not check_whitelist(interaction.guild.id) and not permissions.check_dev(interaction.user.id) :
-			logging.info('not whitelisted')
-			await send_response(interaction,
-			                    f"[NOT_WHITELISTED] This command is limited to whitelisted servers. Please join our [support server]({os.getenv('INVITE')}) and open a ticket to edit or send a message to `ricostryker`")
-			return True
-		logging.info('whitelisted')
-		return False
+
 
 	@app_commands.command()
 	@app_commands.checks.has_permissions(manage_messages=True)
 	async def stats(self, interaction: discord.Interaction) :
+		"""
+        Displays various statistics from the bot's database.
+        This provides a general overview of things like the number of user records, verifications, and active servers.
+        This information is maintained for administrative purposes and transparency.
+
+        **Permissions:**
+        - You'll need the `Manage Messages` permission to use this command.
+        """
 		records = UserTransactions().get_all_users()
 		servers = ServerTransactions().get_all(id_only=False)
 		verifications = VerificationTransactions().get_all()
@@ -63,8 +67,16 @@ class Database(commands.GroupCog) :
 	@app_commands.command()
 	@app_commands.checks.has_permissions(manage_messages=True)
 	async def get(self, interaction: discord.Interaction, user: discord.User) :
-		"""[manage_messages] Gets the date of birth of the specified user."""
-		if await self.whitelist(interaction) :
+		"""
+        Looks up and displays the database entry for a specific user.
+        This includes their stored date of birth and verification status. This command is restricted to whitelisted servers for privacy and security reasons.
+        The information provided is sensitive and should be handled with care - Do not share it with non-whitelisted parties; they should use the verification system instead or contact support.
+
+        **Permissions:**
+        - You'll need the `Manage Messages` permission.
+        - Your server must be whitelisted to use this feature.
+        """
+		if await whitelist(interaction) :
 			logging.info(f"{interaction.user.name} tried to look up {user.name} but wasn't whitelisted")
 			return
 		await send_response(interaction, f"⌛ Looking up {user.mention}", ephemeral=True)
@@ -99,9 +111,19 @@ class Database(commands.GroupCog) :
 	@app_commands.command()
 	@app_commands.checks.has_permissions(manage_messages=True)
 	async def create(self, interaction: discord.Interaction, user: discord.User, dob: str) :
-		"""[manage_messages] Add the date of birth of the specified user to the database"""
+		"""
+        Manually creates a new database entry for a user with their date of birth.
+        This is useful for adding users who may have had issues with the automated system. The date of birth should be in `mm/dd/yyyy` format.
+        This command is restricted to whitelisted servers.
+
+        Non-whitelisted servers can use the buttons in the verification system to achieve the same result.
+
+        **Permissions:**
+        - You'll need the `Manage Messages` permission.
+        - Your server must be whitelisted to use this feature.
+        """
 		await send_response(interaction, f"⌛ adding {user.mention} to the database", ephemeral=True)
-		if await self.whitelist(interaction) :
+		if await whitelist(interaction) :
 			return send_response(interaction, f"Server not whitelisted", ephemeral=True)
 
 		dob = await AgeCalculations.validatedob(dob, interaction)
@@ -114,16 +136,27 @@ class Database(commands.GroupCog) :
 	@app_commands.command()
 	@app_commands.checks.has_permissions(manage_messages=True)
 	async def update(self, interaction: discord.Interaction, user: discord.User, dob: str) :
-		"""[manage_messages] updates the date of birth of a specified user."""
+		"""
+        Updates the date of birth for a user who is already in the database.
+        Use this to correct any errors in a user's stored information. The date of birth should be in `mm/dd/yyyy` format.
+        This command is restricted to whitelisted servers.
+
+        Non-whitelisted servers can open a ticket in the support server to have a developer update the user's information.
+
+
+        **Permissions:**
+        - You'll need the `Manage Messages` permission.
+        - Your server must be whitelisted to use this feature.
+        """
 		await send_response(interaction, f"⌛ updating {user.mention}'s entry", ephemeral=True)
 
 		if UserTransactions().get_user(user.id) is None :
 			return await send_response(interaction, "User not found.")
-		if await self.whitelist(interaction) :
+		if await whitelist(interaction) :
 			return
 		dob = await AgeCalculations.validatedob(dob, interaction)
 		if dob is False :
-			return
+			return None
 		UserTransactions().update_user_dob(user.id, dob, interaction.guild.name)
 		await send_response(interaction, f"Updated ({user.name}){user.id}'s dob to {dob}")
 		await LobbyProcess.age_log(user.id, dob, interaction, "updated")
@@ -131,10 +164,20 @@ class Database(commands.GroupCog) :
 	@app_commands.command()
 	@app_commands.checks.has_permissions(administrator=True)
 	async def delete(self, interaction: discord.Interaction, user: discord.User, reason: str) :
-		"""[administrator] Deletes the date of birth of a specified user. Only use this to correct mistakes."""
+		"""
+        Deletes a user's entry from the database.
+        This should only be used to correct significant mistakes or for privacy requests. A reason for the deletion is required for logging purposes.
+        This command is restricted to whitelisted servers.
+
+        Non-whitelisted servers can open a ticket in the support server to have a developer delete the user's information.
+
+        **Permissions:**
+        - You'll need the `Administrator` permission.
+        - Your server must be whitelisted to use this feature.
+        """
 
 		await send_response(interaction, f"⌛ deleting {user.mention} from the database", ephemeral=True)
-		if await self.whitelist(interaction) :
+		if await whitelist(interaction) :
 			return
 		if UserTransactions().soft_delete(user.id, interaction.guild.name) is False :
 			await interaction.followup.send(f"Can't find entry: ({user.name}){user.id}")

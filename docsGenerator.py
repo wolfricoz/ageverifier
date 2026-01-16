@@ -3,6 +3,8 @@ import os
 import sys
 from glob import glob
 
+from discord.ext import commands
+
 from project.data import VERSION
 
 
@@ -14,12 +16,21 @@ class DocGenerator() :
 	def start(self) :
 		sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 		count = 1
+
+		if os.path.exists('docs/commands/'):
+			for f in os.listdir('docs/commands/'):
+				os.remove(os.path.join('docs/commands/', f))
+
 		for file in glob(os.path.join(os.path.dirname(os.path.abspath(__file__)), "modules", "*.py")) :
+
+			if file.split("\\")[-1].lower() in ['logs.py', 'lobbyevents.py', 'queuetask.py', 'whitelist.py', 'devtools.py', 'inviteinfo.py', 'tasks.py'] :
+				continue
+
 			self.load_file(file, nav=count)
 			count += 1
 
 
-	def document_header(self, module_name: str) :
+	def document_header(self, module, module_name: str) :
 
 
 		return f"""
@@ -33,14 +44,17 @@ nav_order: 8
 <h6>version: {VERSION}</h6>
 <h6>Documentation automatically generated from docstrings.</h6>
 
+{inspect.getdoc(module)}
+
 
 """
-	def command_line(self, docfile, function, tclass):
-		if function.startswith("_") or function.startswith('cog') or function.startswith('cog') :
+	def command_line(self, docfile, function, tclass, domain: str = "") :
+		if function.startswith("_") or function.startswith('cog') or function.startswith('cog') or function.startswith('before_') :
 			return
 
 		func_obj = getattr(tclass, function)
-
+		if not (hasattr(func_obj, 'callback') or callable(func_obj)) :
+			return
 		docstring = ""
 		# Check if it's a decorated command with a callback
 		if hasattr(func_obj, 'callback') :
@@ -69,7 +83,7 @@ nav_order: 8
 
 
 		docfile.write(f"### `{function}`\n\n"
-		              f"**Usage:** `/{function}{param_string}`\n\n"
+		              f"**Usage:** `/{domain.lower()} {function}{param_string}`\n\n"
 		              f"> {docstring}\n\n"
 		              f"---\n\n")
 
@@ -83,14 +97,15 @@ nav_order: 8
 			if not os.path.exists(dirc) :
 				os.mkdir(dirc)
 
-		if os.path.exists(document) :
-			os.remove(document)
-		with open(document, "w", encoding="utf-8") as docfile :
-			docfile.write(self.document_header(name))
+
+
 
 			# add package prefix to name
-			module_name = f"modules.{name}"
-			module = __import__(module_name, fromlist=[name])
+		module_name = f"modules.{name}"
+		module = __import__(module_name, fromlist=[name])
+		with open(document, "w", encoding="utf-8") as docfile :
+
+
 			for member in dir(module) :
 				# do something with the member named ``member``
 				if member.startswith("_") :
@@ -102,8 +117,18 @@ nav_order: 8
 						continue
 
 					print(tclass)
+					docfile.write(self.document_header(tclass, name))
+
+					for _, member_obj in inspect.getmembers(module, inspect.isclass) :
+						# Check if the class is defined in the module we are inspecting
+						if member_obj.__module__ == module_name :
+							# Correctly check for inheritance using the class objects
+							if issubclass(member_obj, (commands.Cog, commands.GroupCog)) :
+								domain = name
+								break
+
 					for function in tclass.__dict__ :
-						self.command_line(docfile, function, tclass)
+						self.command_line(docfile, function, tclass, domain)
 
 
 

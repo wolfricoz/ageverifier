@@ -13,12 +13,26 @@ from views.buttons.gdprremoval import GDPRRemoval
 
 
 class gdpr(commands.GroupCog) :
+	"""
+	Commands related to your data and privacy.
+	Here you can request a copy of your data or ask for it to be removed, in compliance with GDPR.
+	These commands are available to all users.
+	"""
 	def __init__(self, bot: commands.Bot) :
 		self.bot = bot
 
 	@app_commands.command(name="removal", description="Request removal of your data")
 	async def removal(self, interaction: discord.Interaction) :
-		"""Removes user data"""
+		"""
+		Starts the process to have your personal data removed from our database.
+		When you use this command, we'll walk you through the next steps. Your data will be marked for deletion and permanently removed after a 30-day grace period.
+		This action is in accordance with your rights under GDPR.
+
+		Verifying your age will cancel the removal process, abuse of this feature may result in blacklisting.
+
+		**Permissions:**
+		- No special permissions are needed. This command can be used by anyone to manage their own data.
+		"""
 		user = UserTransactions().get_user(interaction.user.id)
 		if user is None or user.date_of_birth is None :
 			await send_response(interaction, "No data found for you.")
@@ -37,7 +51,13 @@ If you want to continue, please confirm your request."""
 
 	@app_commands.command(name="data", description="Request your data")
 	async def data(self, interaction: discord.Interaction) :
-		"""Returns user data"""
+		"""
+		Use this command to request a copy of all the personal data we have stored about you.
+		For your privacy and security, the bot will send this information directly to your DMs.
+
+		**Permissions:**
+		- No special permissions are needed. This command can be used by anyone to request their own data.
+		"""
 		dev = os.getenv('DEV')
 		supportguild = os.getenv("SUPPORTGUILD")
 		user_data = UserTransactions().get_user(interaction.user.id)

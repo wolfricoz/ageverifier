@@ -229,7 +229,7 @@ class ConfigSetup :
 	async def set_messages(self, guild, messagechoices) :
 		for messagekey, messagevalue in messagechoices.items() :
 			message_dict = {
-				'"server_join_message"'          : f"Please read the rules in the rules channel and click the verify button below to get started.",
+				'server_join_message'          : f"Please read the rules in the rules channel and click the verify button below to get started.",
 				'verification_completed_message' : "Be sure to get some roles in the roles channel and if you need help be sure to ask the staff!",
 			}
 			self.changes[messagekey] = messagevalue
