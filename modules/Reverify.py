@@ -31,6 +31,10 @@ class Reverify(GroupCog, name="reverify", description="Commands for setting up a
 
 		This command creates a button in the specified channel that users can click to start the secondary verification process, which assigns them the reverification role upon successful verification.
 
+		**Permissions:**
+		- You need to have the `Manage Guild` permission to use this command.
+		- Premium access is required to use this feature.
+
 		"""
 		await send_response(interaction, f"creating reverification button in {channel.name}", ephemeral=True)
 		view = ReVerifyButton()

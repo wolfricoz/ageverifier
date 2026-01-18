@@ -132,7 +132,7 @@ bot.invites = {}
 @bot.event
 async def on_ready() :
 	logging.info(f"{bot.user} has connected to Discord!")
-	Queue().add(ConfigData().load_all_guilds(), 2)
+	# Queue().add(ConfigData().load_all_guilds(), 2)
 	AccessControl().reload()
 	logging.info("Bot starting up")
 	devroom = bot.get_channel(bot.DEV)
