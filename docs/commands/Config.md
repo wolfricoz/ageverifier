@@ -14,6 +14,14 @@ This includes setting up channels, roles, custom messages, and feature toggles.
 Most commands require 'Manage Server' permissions.
 
 
+### `help`
+
+**Usage:** `/config help`
+
+> If you're feeling stuck or need assistance with configuring the bot, this command will provide you with helpful information and guidance.
+
+---
+
 ### `configsetup`
 
 **Usage:** `/config configsetup <setup_type>`
