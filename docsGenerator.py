@@ -1,19 +1,26 @@
 import inspect
+import json
 import os
 import sys
 from glob import glob
 
 from discord.ext import commands
 
-from project.data import VERSION
+from project.data import CACHE, VERSION
 
 
 class DocGenerator() :
 
+
 	def __init__(self) :
+		self.command_cache = {}
 		self.start()
+		self.create_cache_File()
+
+
 
 	def start(self) :
+		print("===Generating Documentation===")
 		sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 		count = 1
 
@@ -30,6 +37,49 @@ class DocGenerator() :
 			count += 1
 
 
+	def load_file(self, file, nav=1) :
+		name = os.path.splitext(os.path.basename(file))[0]
+		document = f"docs/commands/{name}.md"
+		if name == "__init__" :
+			return
+		# create the document
+		for dirc in ["docs", "docs/commands"] :
+			if not os.path.exists(dirc) :
+				os.mkdir(dirc)
+
+
+
+
+			# add package prefix to name
+		module_name = f"modules.{name}"
+		module = __import__(module_name, fromlist=[name])
+
+		with open(document, "w", encoding="utf-8") as docfile :
+
+
+			for member in dir(module) :
+				# do something with the member named ``member``
+				if member.startswith("_") :
+					continue
+
+				if member == name :
+					tclass = getattr(module, member)
+					if inspect.ismodule(tclass) :
+						continue
+
+					print(f"- Documenting Module: {name}")
+					docfile.write(self.document_header(tclass, name))
+
+					for _, member_obj in inspect.getmembers(module, inspect.isclass) :
+						# Check if the class is defined in the module we are inspecting
+						if member_obj.__module__ == module_name :
+							# Correctly check for inheritance using the class objects
+							if issubclass(member_obj, (commands.Cog, commands.GroupCog)) :
+								domain = name
+								break
+
+					for function in tclass.__dict__ :
+						self.command_line(docfile, function, tclass, domain,)
 	def document_header(self, module, module_name: str) :
 
 
@@ -48,7 +98,8 @@ nav_order: 8
 
 
 """
-	def command_line(self, docfile, function, tclass, domain: str = "") :
+
+	def command_line(self, docfile, function, tclass, domain, cachefile=None) :
 		if function.startswith("_") or function.startswith('cog') or function.startswith('cog') or function.startswith('before_') :
 			return
 
@@ -79,6 +130,7 @@ nav_order: 8
 			print("Could not retrieve signature for function:", function)
 			# This can happen for objects that are not inspectable
 			pass
+		self.add_command_to_cache(domain, function, docstring)
 
 
 
@@ -87,49 +139,18 @@ nav_order: 8
 		              f"> {docstring}\n\n"
 		              f"---\n\n")
 
-	def load_file(self, file, nav=1) :
-		name = os.path.splitext(os.path.basename(file))[0]
-		document = f"docs/commands/{name}.md"
-		if name == "__init__" :
-			return
-		# create the document
-		for dirc in ["docs", "docs/commands"] :
-			if not os.path.exists(dirc) :
-				os.mkdir(dirc)
 
+	def add_command_to_cache(self, domain, function, docstring) :
+		# if domain not in self.command_cache :
+		# 	self.command_cache[domain] = {}
+		# self.command_cache[domain][function] = docstring
+		self.command_cache[function] = docstring
 
-
-
-			# add package prefix to name
-		module_name = f"modules.{name}"
-		module = __import__(module_name, fromlist=[name])
-		with open(document, "w", encoding="utf-8") as docfile :
-
-
-			for member in dir(module) :
-				# do something with the member named ``member``
-				if member.startswith("_") :
-					continue
-
-				if member == name :
-					tclass = getattr(module, member)
-					if inspect.ismodule(tclass) :
-						continue
-
-					print(tclass)
-					docfile.write(self.document_header(tclass, name))
-
-					for _, member_obj in inspect.getmembers(module, inspect.isclass) :
-						# Check if the class is defined in the module we are inspecting
-						if member_obj.__module__ == module_name :
-							# Correctly check for inheritance using the class objects
-							if issubclass(member_obj, (commands.Cog, commands.GroupCog)) :
-								domain = name
-								break
-
-					for function in tclass.__dict__ :
-						self.command_line(docfile, function, tclass, domain)
-
+	def create_cache_File(self):
+		print(f"===Creating command cache file===")
+		with open(CACHE, "w", encoding="utf-8") as cachefile:
+			json.dump(self.command_cache, cachefile, indent=4)
+		print("===Command cache file created===")
 
 
 DocGenerator()
