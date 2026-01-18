@@ -9,7 +9,7 @@ import discord
 import sentry_sdk
 from discord.ext import commands
 from discord_py_utilities.invites import check_guild_invites
-from discord_py_utilities.messages import send_message
+from discord_py_utilities.permissions import find_first_accessible_text_channel
 # IMPORT LOAD_DOTENV FUNCTION FROM DOTENV MODULE.
 from dotenv import load_dotenv
 from fastapi import FastAPI
@@ -20,6 +20,7 @@ from classes.access import AccessControl
 from classes.blacklist import blacklist_check
 from classes.dashboard.Servers import Servers as DashServers
 from classes.jsonmaker import Configer
+from classes.onboarding import Onboarding
 from classes.support.queue import Queue
 from databases import current as db
 from databases.current import Servers
@@ -33,6 +34,7 @@ from views.buttons.idsubmitbutton import IdSubmitButton
 from views.buttons.idverifybutton import IdVerifyButton
 from views.buttons.reverifybutton import ReVerifyButton
 from views.buttons.verifybutton import VerifyButton
+from views.v2.OnboardingLayout import OnboardingLayout
 
 # Creating database
 db.database.create()
@@ -71,13 +73,19 @@ sentry_sdk.init(
 async def lifespan(app: FastAPI) :
 	async def run_bot() :
 		try :
+
+			print(DISCORD_TOKEN)
 			await bot.start(DISCORD_TOKEN)
 		except asyncio.CancelledError :
 			# Graceful cancellation
 			await bot.close()
 			raise
+		except Exception as e:
+			logging.error(f"Bot encountered an error: {e}", exc_info=True)
+			print(f"Bot encountered an error: {e}")
+			raise
 
-	logging.info("Starting bot...")
+	print("Starting bot...")
 	bot_task = asyncio.create_task(run_bot())
 	logging.info("Bot started.")
 	app.state.bot = bot
@@ -141,6 +149,7 @@ async def on_ready() :
 	bot.add_view(dobentry())
 	bot.add_view(IdSubmitButton())
 	bot.add_view(IdReviewButton())
+	bot.add_view(OnboardingLayout())
 	logging.info("Loaded routers: " + ", ".join(routers))
 	Queue().add(check_guilds(devroom))
 
@@ -210,9 +219,10 @@ async def on_guild_join(guild) :
 		except discord.errors.Forbidden :
 			print(f"Unable to send message to {guild.owner.name} in {guild.name}")
 		pass
-	Queue().add(send_message(guild.owner,
-	                         f"Thank you for inviting Ageverifier. To help you get started, please read the documentation: https://wolfricoz.github.io/ageverifier/ and visit our [dashboard]({os.getenv("dashboard_url")}) to setup the bot with ease!\n\n"
-	                         "Please make sure the bot has permission to post in the channels where you try to run the commands!"))
+	channel = find_first_accessible_text_channel(guild)
+	if not channel:
+		channel = guild.owner
+	await Onboarding().join_message(channel)
 	ServerTransactions().add(guild.id, active=True)
 	dbserver = ServerTransactions().get(guild.id)
 	Queue().add(DashServers().update_server(dbserver), 0)
@@ -272,14 +282,11 @@ async def leave_server(ctx, guildid: int) :
 
 # EXECUTES THE BOT WITH THE SPECIFIED TOKEN.
 # EXECUTES THE BOT WITH THE SPECIFIED TOKEN.
-async def run() :
-	try :
-		await bot.start(DISCORD_TOKEN)
-	except KeyboardInterrupt :
-		exit(0)
+
 
 
 # @app.on_event("startup")
 # async def app_startup() :
 # 	# Start Discord bot in a separate thread
 # 	threading.Thread(target=lambda : asyncio.run(run())).start()
+# bot.run(DISCORD_TOKEN)
