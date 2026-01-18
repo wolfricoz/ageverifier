@@ -13,6 +13,7 @@ from discord_py_utilities.messages import send_message
 from discord_py_utilities.permissions import find_first_accessible_text_channel
 
 from classes.jsonmaker import Configer
+from classes.onboarding import Onboarding
 from classes.support.queue import Queue
 from databases.Generators.uidgenerator import uidgenerator
 from databases.current import Users
@@ -34,7 +35,7 @@ def check_access() :
 	return app_commands.check(pred)
 
 
-class DevTools(commands.GroupCog, name="dev") :
+class DevTools(commands.GroupCog, name="dev", description="A set of commands for bot developers to manage and diagnose the bot.") :
 	"""
 	A set of commands for bot developers to manage and diagnose the bot.
 	These commands are powerful and restricted to maintain the bot's health and security.
@@ -83,7 +84,7 @@ class DevTools(commands.GroupCog, name="dev") :
 				except Exception as e :
 					await interaction.channel.send(f"Error sending to {guild}({guild.owner}): {e}")
 
-	@app_commands.command(name="servers", description="[DEV] Send an announcement to all guild owners")
+	@app_commands.command(name="servers", description="[DEV] Lists all the servers the bot is currently a member of.")
 	@check_access()
 	async def show_servers(self, interaction: discord.Interaction) :
 		"""
@@ -103,7 +104,7 @@ class DevTools(commands.GroupCog, name="dev") :
 		server_message = "\n".join(servers)
 		await send_message(interaction.channel, server_message)
 
-	@app_commands.command(name="fill_queue")
+	@app_commands.command(name="fill_queue", description="[DEV] A testing command to populate the bot's background task queue.")
 	@check_access()
 	async def fill_queue(self, interaction: discord.Interaction):
 		"""
@@ -124,7 +125,7 @@ class DevTools(commands.GroupCog, name="dev") :
 		await send_message(interaction.channel, f"Filled the queue with {count} tasks")
 
 
-	@app_commands.command(name="test_invite")
+	@app_commands.command(name="test_invite", description="[DEV] Checks the validity and information of a given Discord invite link.")
 	@check_access()
 	async def test_invite(self, interaction: discord.Interaction, invite: str) -> None:
 		"""
@@ -137,7 +138,7 @@ class DevTools(commands.GroupCog, name="dev") :
 		result = await check_guild_invites(self.bot, interaction.guild, invite)
 		await send_response(interaction, "Result: " + str(result))
 
-	@app_commands.command(name="create_stats")
+	@app_commands.command(name="create_stats", description="[DEV] Generates a specified amount of fake join history records.")
 	@check_access()
 	async def test_stats(self, interaction: discord.Interaction, amount: int) -> None:
 		"""
@@ -156,7 +157,7 @@ class DevTools(commands.GroupCog, name="dev") :
 			count += 1
 		await send_response(interaction, "Finished generating records")
 
-	@app_commands.command(name="import_origin")
+	@app_commands.command(name="import_origin", description="[DEV] A data migration and analysis tool.")
 	@check_access()
 	async def origin(self, interaction: discord.Interaction, create_records: bool = False) :
 		"""
@@ -315,6 +316,12 @@ class DevTools(commands.GroupCog, name="dev") :
 		embed.set_footer(text=f"This data should not be shared outside of the support server.")
 		await send_message(interaction.channel, embed=embed)
 
+	@app_commands.command(name="test_start_onboarding", description="[DEV] Test start onboarding for server")
+	@check_access()
+	async def test_start_onboarding(self, interaction: discord.Interaction) :
+		await Onboarding().join_message(interaction.channel)
+
+
 # @app_commands.command(name="migrate", description="Migrates data")
 # async def test(self, interaction: discord.Interaction):
 # 	await send_response(interaction, f"Migrating IDverification table...")
@@ -336,6 +343,8 @@ class DevTools(commands.GroupCog, name="dev") :
 # 	StaffDbTransactions.delete(user.id)
 # 	await send_response(interaction, f"Staff member {user.mention} successfully removed!")
 # 	AccessControl().reload()
+
+
 
 
 async def setup(bot: commands.Bot) :

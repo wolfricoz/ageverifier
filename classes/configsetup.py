@@ -174,10 +174,18 @@ class ConfigSetup :
 						channel = await self.create_channel(guild, category, "id-check",
 						                                    "This channel is where age discrepancies are flagged for ID verification. This channel should never be public.")
 					# await self.add_roles_to_channel(channel, roles)
+					case _ :
+						continue
+
 
 				try :
+					if channel is None :
+						await send_message(interaction.channel, f"Failed to create or find channel for {channelkey}, please set it up manually.")
+						continue
+
 					self.changes[channelkey] = channel.id
 					ConfigTransactions().config_unique_add(guild.id, channelkey, channel.id, overwrite=True)
+					await send_message(interaction.channel, f"Channel for {channelkey} set to {channel.mention}")
 					continue
 				except Exception as e :
 					logging.error(e, exc_info=True)
@@ -188,9 +196,10 @@ class ConfigSetup :
 		return True
 
 	async def create_roles(self, guild, rolechoices, interaction=None) :
-		skip_roles = ["return_remove_role", "VERIFICATION_ADD_ROLE"]
+		skip_roles = ["RETURN_REMOVE_ROLE", "VERIFICATION_ADD_ROLE"]
 		for key, value in rolechoices.items() :
-			if key == "return_remove_role" :
+			key = key.upper()
+			if key == "RETURN_REMOVE_ROLE" :
 				continue
 			if key in skip_roles :
 				if key == "VERIFICATION_ADD_ROLE" :
@@ -362,8 +371,7 @@ class ConfigSetup :
 	async def add_role_field(self, embed, key, status: bool, failed: list = None):
 
 		if failed and len(failed) > 0 :
-			embed.add_field(name=f"**{key}**", value=f"❌ I don't have permission to assign roles: {', '.join(failed)}",
-			                inline=False)
+			embed.add_field(name=f"**{key}**", value=f"❌ I don't have permission to assign roles: {', '.join(failed) if isinstance(failed, list) else failed}", inline=False)
 			return
 		if not status :
 			embed.add_field(name=f"**{key}**", value=f"❌ I don't have permission to assign this role" ,

@@ -20,7 +20,7 @@ from views.buttons.dobentrybutton import dobentry
 from views.buttons.verifybutton import VerifyButton
 
 
-class Lobby(commands.GroupCog) :
+class Lobby(commands.GroupCog, description="Commands for managing the new member lobby and verification process.") :
 	"""
 	Commands for managing the new member lobby and verification process.
 	This includes tools for manual verification, age checks, and purging inactive users from the lobby.
@@ -32,7 +32,7 @@ class Lobby(commands.GroupCog) :
 		self.bot.add_view(ApprovalButtons())
 		self.bot.add_view(dobentry())
 
-	@app_commands.command(name="button")
+	@app_commands.command(name="button", description="Creates the main verification button in your lobby channel.")
 	@app_commands.checks.has_permissions(administrator=True)
 	async def verify_button(self, interaction: discord.Interaction, text: str) :
 		"""
@@ -44,7 +44,7 @@ class Lobby(commands.GroupCog) :
         """
 		await interaction.channel.send(f"{text}\n-# GDPR AND INFORMATION USE DISCLOSURE: By entering your birth date (MM/DD/YYYY) and age, you consent to having this information about you stored by Age Verifier and used to verify that you are the age that you say you are, including sharing to relevant parties for age verification. This information will be stored for a maximum of 1 year if you are no longer in a server using Ageverifier.", view=VerifyButton())
 
-	@app_commands.command()
+	@app_commands.command(description="Manually verifies a user with their ID and date of birth.")
 	@app_commands.checks.has_permissions(administrator=True)
 	async def idverify(self, interaction: discord.Interaction, process: bool,
 	                   user: discord.Member, dob: str) :
@@ -68,7 +68,7 @@ class Lobby(commands.GroupCog) :
 		await AgeCalculations.validatedob(dob, interaction)
 		await verify(user, interaction, dob, process)
 
-	@app_commands.command()
+	@app_commands.command(description="Moves a user who has already been verified back into the lobby.")
 	@app_commands.checks.has_permissions(manage_messages=True)
 	@app_commands.guild_only()
 	async def returnlobby(self, interaction: discord.Interaction, user: discord.Member) :
@@ -102,7 +102,7 @@ class Lobby(commands.GroupCog) :
 		return await interaction.followup.send(
 			f"{user.mention} has been moved back to the lobby by {interaction.user.mention}")
 
-	@app_commands.command()
+	@app_commands.command(description="Quickly calculates the age based on a given date of birth.")
 	@app_commands.checks.has_permissions(manage_messages=True)
 	async def agecheck(self, interaction: discord.Interaction, dob: str) :
 		"""
@@ -129,7 +129,7 @@ class Lobby(commands.GroupCog) :
 		await LobbyProcess.approve_user(ctx.guild, user, dob, age, ctx.author.name)
 		await ctx.message.delete()
 
-	@app_commands.command()
+	@app_commands.command(description="Kicks all users who joined during a suspected raid.")
 	@app_commands.checks.has_permissions(administrator=True)
 	async def raid_purge(self, interaction: discord.Interaction, days: int = 30) :
 		"""
@@ -173,7 +173,7 @@ class Lobby(commands.GroupCog) :
 		                               file=discord.File(file.name, "kicked.txt"))
 		os.remove("config/kicked.txt")
 
-	@app_commands.command()
+	@app_commands.command(description="Kicks users who have been waiting in the lobby for too long.")
 	@app_commands.checks.has_permissions(administrator=True)
 	async def lobby_purge(self, interaction: discord.Interaction, days: int = 30) :
 		"""

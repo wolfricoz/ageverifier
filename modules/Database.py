@@ -20,7 +20,7 @@ from databases.transactions.VerificationTransactions import VerificationTransact
 from resources.data.responses import StringStorage
 
 
-class Database(commands.GroupCog, name="database") :
+class Database(commands.GroupCog, name="database", description="Commands for interacting with the user database.") :
 	"""
 	Commands for interacting with the user database.
 	Most of these commands are restricted to whitelisted servers and require elevated permissions.
@@ -33,7 +33,7 @@ class Database(commands.GroupCog, name="database") :
 	#                                      ["VERIFICATION_ADD_ROLE", 'update', 'delete', 'get']])
 
 
-	@app_commands.command()
+	@app_commands.command(description="Displays various statistics from the bot's database.")
 	@app_commands.checks.has_permissions(manage_messages=True)
 	async def stats(self, interaction: discord.Interaction) :
 		"""
@@ -64,7 +64,7 @@ class Database(commands.GroupCog, name="database") :
 			embed.add_field(name=title, value=value, inline=False)
 		await send_response(interaction, StringStorage.NO_SHARE_REMINDER, embed=embed, ephemeral=True)
 
-	@app_commands.command()
+	@app_commands.command(description="Looks up and displays the database entry for a specific user.")
 	@app_commands.checks.has_permissions(manage_messages=True)
 	async def get(self, interaction: discord.Interaction, user: discord.User) :
 		"""
@@ -108,7 +108,7 @@ class Database(commands.GroupCog, name="database") :
 			embed.add_field(name=title, value=value, inline=False)
 		await send_response(interaction, StringStorage.NO_SHARE_REMINDER, embed=embed, ephemeral=True)
 
-	@app_commands.command()
+	@app_commands.command(description="Manually creates a new database entry for a user with their date of birth.")
 	@app_commands.checks.has_permissions(manage_messages=True)
 	async def create(self, interaction: discord.Interaction, user: discord.User, dob: str) :
 		"""
@@ -133,7 +133,7 @@ class Database(commands.GroupCog, name="database") :
 		await send_response(interaction, f"{user.name}({user.id}) added to the database with dob: {dob}")
 		await LobbyProcess.age_log(user.id, dob, interaction)
 
-	@app_commands.command()
+	@app_commands.command(description="Updates the date of birth for a user who is already in the database.")
 	@app_commands.checks.has_permissions(manage_messages=True)
 	async def update(self, interaction: discord.Interaction, user: discord.User, dob: str) :
 		"""
@@ -161,7 +161,7 @@ class Database(commands.GroupCog, name="database") :
 		await send_response(interaction, f"Updated ({user.name}){user.id}'s dob to {dob}")
 		await LobbyProcess.age_log(user.id, dob, interaction, "updated")
 
-	@app_commands.command()
+	@app_commands.command(description="Deletes a user's entry from the database.")
 	@app_commands.checks.has_permissions(administrator=True)
 	async def delete(self, interaction: discord.Interaction, user: discord.User, reason: str) :
 		"""

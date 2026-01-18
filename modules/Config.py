@@ -21,15 +21,16 @@ from databases.transactions.ConfigTransactions import ConfigTransactions
 from resources.data.config_variables import available_toggles, channelchoices, lobby_approval_toggles, messagechoices, \
 	rolechoices
 from views.modals.configinput import ConfigInputUnique
+from views.v2.HelpLayout import HelpLayout
 
 
-class Config(commands.GroupCog, name="config") :
+class Config(commands.GroupCog, name="config",
+             description="Commands for configuring the bot's settings in the server.") :
 	"""
 	Commands for configuring the bot's settings in the server.
 	This includes setting up channels, roles, custom messages, and feature toggles.
 	Most commands require 'Manage Server' permissions.
 	"""
-
 
 	def __init__(self, bot: commands.Bot) :
 		self.bot = bot
@@ -39,7 +40,15 @@ class Config(commands.GroupCog, name="config") :
 	messagechoices = messagechoices
 	available_toggles = available_toggles
 
-	@app_commands.command(name='setup')
+	@app_commands.command(name="help", description="Are you stuck? This command will help you.")
+	async def help(self, interaction: discord.Interaction) :
+		"""
+				If you're feeling stuck or need assistance with configuring the bot, this command will provide you with helpful information and guidance.
+
+		"""
+		await send_response(interaction, " ", view=HelpLayout())
+
+	@app_commands.command(name='setup', description="Helps you get the bot set up on your server.")
 	@app_commands.checks.has_permissions(manage_guild=True)
 	@app_commands.choices(setup_type=[Choice(name=x, value=x) for x in ['dashboard', 'manual', 'auto']])
 	async def configsetup(self, interaction: discord.Interaction, setup_type: Choice[str]) :
@@ -81,7 +90,7 @@ class Config(commands.GroupCog, name="config") :
 		await ConfigSetup().check_channel_permissions(interaction.guild)
 		return None
 
-	@app_commands.command()
+	@app_commands.command(description="Triggers a check to ensure the bot has all the necessary permissions.")
 	@app_commands.checks.has_permissions(manage_guild=True)
 	async def permissioncheck(self, interaction: discord.Interaction) :
 		"""
@@ -94,8 +103,7 @@ class Config(commands.GroupCog, name="config") :
 		await send_response(interaction, f"Starting to check permissions for all the channels!", ephemeral=True)
 		await ConfigSetup().check_channel_permissions(interaction.guild)
 
-
-	@app_commands.command()
+	@app_commands.command(description="Lets you customize the various messages the bot sends.")
 	@app_commands.choices(key=[Choice(name=x, value=x) for x, _ in messagechoices.items()])
 	@app_commands.choices(action=[Choice(name=x, value=x) for x in ['set', 'Remove']])
 	@app_commands.checks.has_permissions(manage_guild=True)
@@ -126,7 +134,7 @@ class Config(commands.GroupCog, name="config") :
 			case _ :
 				raise NotImplementedError
 
-	@app_commands.command()
+	@app_commands.command(description="Allows you to enable or disable various features of the bot.")
 	@app_commands.choices(action=[Choice(name=x, value=x) for x in ["enabled", "disabled"]],
 	                      key=[Choice(name=x, value=x) for x in available_toggles])
 	@app_commands.checks.has_permissions(manage_guild=True)
@@ -153,7 +161,7 @@ class Config(commands.GroupCog, name="config") :
 			                       ))
 		return await send_response(interaction, f"{key.value} has been set to {action.value}", ephemeral=True)
 
-	@app_commands.command()
+	@app_commands.command(description="Customize the buttons that appear on the verification approval message.")
 	@app_commands.choices(action=[Choice(name=x, value=x) for x in ["enabled", "disabled"]],
 	                      key=[Choice(name=x, value=x) for x in lobby_approval_toggles])
 	@app_commands.checks.has_permissions(manage_guild=True)
@@ -177,7 +185,7 @@ class Config(commands.GroupCog, name="config") :
 			                       ))
 		return await send_response(interaction, f"{key.value} has been set to {action.value}", ephemeral=True)
 
-	@app_commands.command()
+	@app_commands.command(description="Assigning specific channels for the bot's functions.")
 	@app_commands.choices(key=[Choice(name=f"{x} channel", value=x) for x, _ in channelchoices.items()])
 	@app_commands.choices(action=[Choice(name=x, value=x) for x in ["set", "remove"]])
 	@app_commands.checks.has_permissions(manage_guild=True)
@@ -210,7 +218,7 @@ class Config(commands.GroupCog, name="config") :
 			case _ :
 				raise NotImplementedError
 
-	@app_commands.command()
+	@app_commands.command(description="Manage which roles the bot interacts with.")
 	@app_commands.choices(key=[Choice(name=f"{ke} role", value=ke) for ke, val in rolechoices.items()])
 	@app_commands.choices(action=[Choice(name=x, value=x) for x in ["VERIFICATION_ADD_ROLE", 'Remove']])
 	@app_commands.checks.has_permissions(manage_guild=True)
@@ -265,7 +273,7 @@ class Config(commands.GroupCog, name="config") :
 			case _ :
 				raise NotImplementedError
 
-	@app_commands.command(name="cooldown")
+	@app_commands.command(name="cooldown", description="Set a cooldown for how often a user can attempt verification.")
 	async def cooldown(self, interaction: discord.Interaction, cooldown: int) :
 		"""
         Set a cooldown period for how often a user can attempt verification in the lobby.
@@ -280,7 +288,7 @@ class Config(commands.GroupCog, name="config") :
 			                       ))
 		await send_response(interaction, f"The cooldown has been set to {cooldown} minutes", ephemeral=True)
 
-	@app_commands.command()
+	@app_commands.command(description="Provides a complete overview of the bot's current configuration for your server.")
 	@app_commands.checks.has_permissions(manage_guild=True)
 	async def view(self, interaction: discord.Interaction, guild: str = None) :
 		"""
@@ -291,8 +299,9 @@ class Config(commands.GroupCog, name="config") :
         - You'll need the `Manage Server` permission to use this command.
         - Only the bot developer can view the configuration of other guilds.
         """
-		if guild and interaction.user.id != int(os.getenv('DEVELOPER')):
-			return await send_response(interaction, "You do not have permission to view other guilds' configs.", ephemeral=True)
+		if guild and interaction.user.id != int(os.getenv('DEVELOPER')) :
+			return await send_response(interaction, "You do not have permission to view other guilds' configs.",
+			                           ephemeral=True)
 		roles: list = [x for x in rolechoices.values()]
 		other = ["FORUM", "SEARCH"]
 		optionsall = list(messagechoices) + list(channelchoices) + list(available_toggles) + list(
@@ -303,7 +312,8 @@ class Config(commands.GroupCog, name="config") :
 			for item in optionsall :
 				info = ConfigData().get_key_or_none(interaction.guild.id if guild is None else int(guild), item)
 				file.write(f"{item}: {info}\n")
-		await interaction.followup.send(f"Config for {interaction.guild.name if guild is None else guild}", file=discord.File(file.name))
+		await interaction.followup.send(f"Config for {interaction.guild.name if guild is None else guild}",
+		                                file=discord.File(file.name))
 		os.remove(file.name)
 		return None
 

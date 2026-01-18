@@ -8,7 +8,7 @@ from databases.transactions.ConfigData import ConfigData
 from views.buttons.SurveyButton import SurveyButton
 
 
-class Surveys(GroupCog) :
+class Surveys(GroupCog, description="This module helps you gather valuable feedback from members who decide to leave your server.") :
 	"""
 	This module helps you gather valuable feedback from members who decide to leave your server.
 	When a member leaves, this system can automatically send them a direct message with a link to a feedback survey.

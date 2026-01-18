@@ -1,21 +1,20 @@
-import asyncio
 import datetime
 import logging
 
 import discord
 from sqlalchemy import Select
 
+from databases.current import Servers
 from databases.transactions.ConfigTransactions import ConfigTransactions
 from databases.transactions.DatabaseTransactions import DatabaseTransactions
 from databases.transactions.UserTransactions import UserTransactions
-from databases.current import Servers
 from resources.data.config_variables import available_toggles, enabled_toggles, lobby_approval_toggles
 
 
 class ServerTransactions(DatabaseTransactions) :
 
 	def add(self, guildid: int, active: bool = True, name: str = "", owner: discord.Member = None, member_count: int = 0,
-	        invite: str = "", reload=True) -> "Servers" :
+	        invite: str = "", reload=True) :
 		with self.createsession() as session :
 
 			guild = self.get(guildid, session=session)
@@ -64,7 +63,7 @@ class ServerTransactions(DatabaseTransactions) :
 				return session.query(Servers).all()
 			return [sid[0] for sid in session.query(Servers.guild).all()]
 
-	def get(self, guild_id: int, session=None) :
+	def get(self, guild_id: int, session=None)  -> "Servers"  :
 		if session :
 			return session.scalar(Select(Servers).where(Servers.guild == guild_id))
 		with self.createsession() as session :

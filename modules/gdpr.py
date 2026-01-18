@@ -12,7 +12,7 @@ from databases.transactions.VerificationTransactions import VerificationTransact
 from views.buttons.gdprremoval import GDPRRemoval
 
 
-class gdpr(commands.GroupCog) :
+class gdpr(commands.GroupCog, description="Commands related to your data and privacy.") :
 	"""
 	Commands related to your data and privacy.
 	Here you can request a copy of your data or ask for it to be removed, in compliance with GDPR.

@@ -16,7 +16,7 @@ from views.buttons.confirm import Confirm
 from views.modals.inputmodal import send_modal
 
 
-class idcheck(commands.GroupCog) :
+class idcheck(commands.GroupCog, description="Commands for managing manual ID verification requests.") :
 	"""
 	Commands for managing manual ID verification requests.
 	These tools are for server staff to flag users who require a manual ID check and to manage that status.
@@ -27,7 +27,7 @@ class idcheck(commands.GroupCog) :
 		self.index = 0
 
 
-	@app_commands.command()
+	@app_commands.command(description="Retrieves the ID check status for a specific user.")
 	@app_commands.checks.has_permissions(manage_messages=True)
 	async def get(self, interaction: discord.Interaction,
 	              user: discord.User) :
@@ -58,7 +58,7 @@ class idcheck(commands.GroupCog) :
 			embed.add_field(name=title, value=value, inline=False)
 		await send_response(interaction, StringStorage.NO_SHARE_REMINDER, embed=embed, ephemeral=True)
 
-	@app_commands.command()
+	@app_commands.command(description="Updates a user's ID check status.")
 	@app_commands.checks.has_permissions(administrator=True)
 	async def update(self, interaction: discord.Interaction, idcheck: bool,
 	                 user: discord.User, reason: str = None) :
@@ -79,7 +79,7 @@ class idcheck(commands.GroupCog) :
 		await interaction.followup.send(
 			f"{user.mention}'s userid entry has been updated with reason: {reason} and idcheck: {idcheck}")
 
-	@app_commands.command()
+	@app_commands.command(description="Removes a user's ID check entry from the database.")
 	@app_commands.checks.has_permissions(administrator=True)
 	async def delete(self, interaction: discord.Interaction,
 	                 user: discord.User) :
@@ -100,7 +100,7 @@ class idcheck(commands.GroupCog) :
 		                         f"{interaction.user.name} in {interaction.guild.name} removed id check for {user.global_name}"),
 		            0)
 
-	@app_commands.command()
+	@app_commands.command(description="Flags a user and adds them to the manual ID check list.")
 	@app_commands.checks.has_permissions(manage_messages=True)
 	async def create(self, interaction: discord.Interaction, user: discord.User,
 	                 reason: str = None) :
@@ -127,7 +127,7 @@ class idcheck(commands.GroupCog) :
 		await send_response(interaction,
 			f"<@{user.id}>'s userid entry has been added with reason: {reason} and idcheck: {True}")
 
-	@app_commands.command()
+	@app_commands.command(description="Sends a direct message to a user requesting they provide their ID.")
 	@app_commands.checks.has_permissions(manage_messages=True)
 	async def send(self, interaction: discord.Interaction, user: discord.Member) :
 		"""

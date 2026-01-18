@@ -11,7 +11,7 @@ matplotlib.use('Agg')
 from databases.transactions.HistoryTransactions import JoinHistoryTransactions
 
 
-class Stats(commands.GroupCog, name="stats") :
+class Stats(commands.GroupCog, name="stats", description="Commands for visualizing server statistics.") :
 	"""
 	Welcome to the Statistics Zone!
 	This set of commands allows you to visualize various server statistics, such as member activity and age demographics.

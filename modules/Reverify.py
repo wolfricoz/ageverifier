@@ -8,7 +8,7 @@ from classes.access import AccessControl
 from views.buttons.reverifybutton import ReVerifyButton
 
 
-class Reverify(GroupCog, name="reverify") :
+class Reverify(GroupCog, name="reverify", description="Commands for setting up and managing the reverification process.") :
 	"""
 	<h3>Premium Feature: Reverify</h3>
 
