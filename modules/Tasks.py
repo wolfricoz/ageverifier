@@ -40,7 +40,7 @@ class Tasks(commands.Cog) :
 		self.check_users_expiration.start()
 		self.check_active_servers.start()
 		self.update_age_roles.start()
-		self.database_ping.start()
+		# self.database_ping.start()
 		self.refresh_invites.start()
 		self.clean_guilds.start()
 
@@ -50,7 +50,7 @@ class Tasks(commands.Cog) :
 		self.check_users_expiration.cancel()
 		self.check_active_servers.cancel()
 		self.update_age_roles.cancel()
-		self.database_ping.cancel()
+		# self.database_ping.cancel()
 		self.refresh_invites.cancel()
 		self.clean_guilds.cancel()
 
