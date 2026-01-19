@@ -58,11 +58,11 @@ class Tasks(commands.Cog) :
 	@tasks.loop(minutes=10)
 	async def config_reload(self) :
 		"""Reloads the config for the latest data."""
-		AccessControl().reload()
-		for guild in self.bot.guilds :
-			ConfigData().load_guild(guild.id)
-		print("config reload")
+		# Storing old config for debugging
 		ConfigData().output_to_json()
+		ConfigData().cleanup()
+		AccessControl().reload()
+		print("config reload")
 		for guild in self.bot.guilds :
 			try :
 				self.bot.invites[guild.id] = await guild.invites()
@@ -241,7 +241,6 @@ class Tasks(commands.Cog) :
 		guilds = ServerTransactions().get_all(id_only=False)
 		for guild in guilds :
 			Queue().add(Servers().update_server(guild), 0)
-		await ConfigData().reload()
 
 	@tasks.loop(hours=24 * 7)
 	async def update_age_roles(self) :

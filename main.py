@@ -84,8 +84,6 @@ async def lifespan(app: FastAPI) :
 			logging.error(f"Bot encountered an error: {e}", exc_info=True)
 			print(f"Bot encountered an error: {e}")
 			raise
-
-	print("Starting bot...")
 	bot_task = asyncio.create_task(run_bot())
 	logging.info("Bot started.")
 	app.state.bot = bot

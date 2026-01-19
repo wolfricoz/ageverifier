@@ -371,7 +371,10 @@ class ConfigSetup :
 	async def add_role_field(self, embed, key, status: bool, failed: list = None):
 
 		if failed and len(failed) > 0 :
-			embed.add_field(name=f"**{key}**", value=f"❌ I don't have permission to assign roles: {', '.join(failed) if isinstance(failed, list) else failed}", inline=False)
+			if len(failed) > 0 :
+				failed_names = ', '.join([str(r) for r in failed])
+
+			embed.add_field(name=f"**{key}**", value=f"❌ I don't have permission to assign roles: {failed_names}", inline=False)
 			return
 		if not status :
 			embed.add_field(name=f"**{key}**", value=f"❌ I don't have permission to assign this role" ,

@@ -52,11 +52,19 @@ class ConfigData(metaclass=singleton) :
 			logging.info(f"Loaded guild {server_id} in {dt.now() - server_start}")
 		logging.info(f"Loaded all guild configurations in {dt.now() - start}")
 
+	def cleanup(self) :
+		"""
+
+		"""
+		self.conf = {}
+
 	def load_guild(self, guild_id: int) :
 		"""
 
 		:param guild_id: 
 		"""
+		logging.info(f"Loading guild {guild_id}")
+		print(f"Loading guild {guild_id}")
 		# Regardless if the guild exists, we add it to the config to avoid KeyErrors
 		self.conf[guild_id] = {}
 
@@ -82,9 +90,9 @@ class ConfigData(metaclass=singleton) :
 				reload = True
 				continue
 			if conf_key in add_list :
-				self.conf[guild_id][x.key].append(int(x.value))
+				self.conf[guild_id][conf_key].append(int(x.value))
 				continue
-			self.conf[guild_id][x.key] = x.value
+			self.conf[guild_id][conf_key] = x.value
 		for x in role :
 			self.conf[guild_id]["VERIFICATION_ADD_ROLE"][x.role_id] = {
 				"MAX" : x.maximum_age,
