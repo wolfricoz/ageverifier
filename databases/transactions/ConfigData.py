@@ -167,7 +167,14 @@ class ConfigData(metaclass=singleton) :
 		:param default: 
 		:return: 
 		"""
-		return str(self.get_key(guildid, key, default)).upper() == expected.upper()
+		value = str(self.get_key(guildid, key, default)).upper()
+
+		# Due the database field being a string, it allows for multiple ways to represent enabled/disabled. In legacy we used ENABLED/DISABLED but we're slowly moving to TRUE/FALSE; to ensure backwards compatibility we check for all options we check for all options here.
+		if value in ["ENABLED", "TRUE", "1", "ON"] :
+			return expected.upper() == "ENABLED"
+		if value in ["DISABLED", "FALSE", "0", "OFF"] :
+			return expected.upper() == "DISABLED"
+		return value == expected.upper()
 
 	def get_key(self, guildid: int, key: str, default=None) :
 		try :
