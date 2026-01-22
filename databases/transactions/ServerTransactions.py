@@ -44,7 +44,6 @@ class ServerTransactions(DatabaseTransactions) :
 
 			# Apply configurations to new servers
 
-			enabled = enabled_toggles
 			for toggle in available_toggles + list(lobby_approval_toggles.keys()):
 				if toggle.upper() in enabled_toggles:
 					ConfigTransactions().toggle_add(guildid, toggle, "ENABLED")
@@ -115,5 +114,21 @@ class ServerTransactions(DatabaseTransactions) :
 			if not guild :
 				return False
 			session.delete(guild)
+			self.commit(session)
+			return True
+
+	def delete_all_user(self, user_id: int, only_delete_owner: bool = False) :
+		with self.createsession() as session :
+			if only_delete_owner :
+				guilds = session.query(Servers).filter(Servers.owner_id == user_id).all()
+				for guild in guilds :
+					guild.owner_id = None
+				self.commit(session)
+				return True
+
+
+			guilds = session.query(Servers).filter(Servers.owner_id == user_id).all()
+			for guild in guilds :
+				session.delete(guild)
 			self.commit(session)
 			return True

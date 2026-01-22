@@ -203,12 +203,18 @@ class Tasks(commands.Cog) :
 				logging.warning(f"Could not refresh invites for {guild.name}: {e}")
 				continue
 
-	@tasks.loop(hours=2)
+	@tasks.loop(minutes=30)
 	async def check_active_servers(self) :
 		guild_ids = ServerTransactions().get_all()
+		count = 0
 		for guild in self.bot.guilds :
+			if count % 10 == 0 :
+				logging.info(f"updating active servers: processed {count} guilds so far.")
+				await asyncio.sleep(0)
+
 			if guild.id in guild_ids :
 				guild_ids.remove(guild.id)
+				count += 1
 				continue
 			try:
 				ServerTransactions().add(guild.id,
@@ -218,9 +224,13 @@ class Tasks(commands.Cog) :
 				                         member_count=guild.member_count,
 				                         invite=await check_guild_invites(self.bot, guild)
 				                         )
+				count += 1
 			except:
 				logging.error(f"Error adding guild {guild.name} ({guild.id}) to the database", exc_info=True)
+				count += 1
 				continue
+
+
 
 		for gid in guild_ids :
 			try :
