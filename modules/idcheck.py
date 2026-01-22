@@ -145,6 +145,7 @@ class idcheck(commands.GroupCog, description="Commands for managing manual ID ve
 		if reason is None :
 			return None
 		id_check: IdVerification = VerificationTransactions().update_check(user.id, str(reason), True, server=interaction.guild.name)
+		await IdCheck.send_id_log(interaction, user, reason)
 		await IdCheck.send_id_check(interaction, user, id_check)
 		return None
 

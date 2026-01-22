@@ -237,6 +237,29 @@ class IdCheck(ABC) :
 
 	@staticmethod
 	@abstractmethod
+	async def send_id_log(guild: discord.Guild, user: discord.User | discord.Member, message: str) :
+		idlog = ConfigData().get_channel(guild, "verification_failure_log")
+		if not idlog:
+			logging.warning("ID log channel not set.")
+			return
+		embed = discord.Embed(title="ID Check Required",
+		                      description=message)
+		embed.add_field(name="Staff Notice",
+		                value="Please contact the user to complete their ID check. They must submit a valid ID. Do not share or store the ID outside of authorized verification staff. Any abuse results in immediate blacklisting. If the issue may be a typo, you may allow a retry by removing them from the ID check list.", )
+		embed.set_footer(text=f"{user.id}")
+
+
+		from views.buttons.idverifybutton import IdVerifyButton
+		view = IdVerifyButton()
+
+		await send_message(idlog,
+		                   f"{f'{guild.owner.mention}' if ConfigData().get_key(guild.id, "ping_owner_on_failure") == 'ENABLED' else ''} -# Custom idcheck for {user.mention}",
+		                   embed=embed,
+		                   view=view)
+
+
+	@staticmethod
+	@abstractmethod
 	async def send_id_check(interaction: discord.Interaction, user: discord.User | discord.Member, idcheck: IdVerification):
 		try:
 			embed = discord.Embed(title="ID Verification", description=create_message(interaction, min_age=AgeRoleTransactions().get_minimum_age(interaction.guild.id)))

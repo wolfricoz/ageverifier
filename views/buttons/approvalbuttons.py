@@ -8,6 +8,7 @@ from discord_py_utilities.messages import send_message, send_response
 
 from classes.banwatch import BanWatch
 from classes.encryption import Encryption
+from classes.idcheck import IdCheck
 from classes.lobbyprocess import LobbyProcess
 from classes.whitelist import check_whitelist
 from databases.enums.joinhistorystatus import JoinHistoryStatus
@@ -15,7 +16,6 @@ from databases.transactions.ButtonTransactions import LobbyDataTransactions
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.HistoryTransactions import JoinHistoryTransactions
 from databases.transactions.VerificationTransactions import VerificationTransactions
-from views.buttons.idverifybutton import IdVerifyButton
 from views.modals.inputmodal import send_modal
 
 
@@ -135,19 +135,13 @@ class ApprovalButtons(discord.ui.View) :
 				'The bot has restarted and the data of this button is missing. Please manually report user to admins',
 				ephemeral=True)
 		await send_response(interaction,'User flagged for manual ID.', ephemeral=True)
-		idcheck = ConfigData().get_key_int(interaction.guild.id, "verification_failure_log")
-		idlog = interaction.guild.get_channel(idcheck)
 		VerificationTransactions().set_idcheck_to_true(self.user.id,
 		                                               f"manually flagged by {interaction.user.name} with reason: {reason}",
 		                                               server=interaction.guild.name)
 		JoinHistoryTransactions().update(self.user.id, interaction.guild.id, JoinHistoryStatus.IDCHECK)
+		await IdCheck.send_id_log(interaction.guild, self.user, reason)
 		await interaction.message.edit(view=self)
 
-		await idlog.send(
-			f"{interaction.user.mention} has flagged {self.user.mention} for manual ID with reason:\n"
-			f"```{reason}```",
-			view=IdVerifyButton()
-		)
 
 		return
 
