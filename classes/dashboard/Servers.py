@@ -24,7 +24,6 @@ class Servers:
 			"Authorization": f"Basic {self.encoded}",
 			"Content-Type": "application/json"
 		}
-		logging.info(f"headers: {headers}")
 		if guilds is None:
 			return None
 
