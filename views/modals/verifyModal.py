@@ -87,6 +87,15 @@ class VerifyModal(discord.ui.Modal) :
 
 			if verification_process.discrepancy in ["age_too_high", "mismatch", "below_minimum_age"] :
 				id_check = False
+			server = None
+			if verification_process.id_check_info :
+				server = verification_process.id_check_info.server
+			if verification_process.user_record and not server:
+				server = verification_process.user_record.server
+			if not server:
+				server = interaction.guild.name
+
+
 			return await IdCheck.send_check(interaction,
 			                                verification_process.id_channel,
 			                                verification_process.discrepancy,
@@ -99,7 +108,7 @@ class VerifyModal(discord.ui.Modal) :
 			                                years=verification_process.years if verification_process.years else None,
 			                                id_check=id_check,
 			                                id_check_reason=verification_process.id_check_info.reason if verification_process.id_check_info else verification_process.discrepancy,
-			                                server=verification_process.id_check_info.server if verification_process.id_check_info else interaction.guild.name)
+			                                server=server)
 
 		return await send_response(interaction, message, ephemeral=True)
 

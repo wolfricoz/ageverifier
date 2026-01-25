@@ -223,7 +223,7 @@ async def on_guild_join(guild) :
 	await Onboarding().join_message(channel)
 	ServerTransactions().add(guild.id, active=True)
 	dbserver = ServerTransactions().get(guild.id)
-	Queue().add(DashServers().update_server(dbserver), 0)
+	Queue().add(DashServers().update_servers([dbserver]), 0)
 
 
 @bot.event

@@ -245,12 +245,22 @@ class Tasks(commands.Cog) :
 			                         name=guild.name,
 			                         owner=guild.owner,
 			                         member_count=guild.member_count,
-			                         invite=await check_guild_invites(self.bot, guild)
+			                         invite=await check_guild_invites(self.bot, guild),
 			                         )
 
 		guilds = ServerTransactions().get_all(id_only=False)
+
+		guild_list= []
 		for guild in guilds :
-			Queue().add(Servers().update_server(guild), 0)
+			guild_list.append(guild)
+			if len(guild_list) >= 100  :
+				Queue().add(Servers().update_servers(guilds), 0)
+				guild_list.clear()
+				await asyncio.sleep(0)
+		else:
+			Queue().add(Servers().update_servers(guilds), 0)
+			guild_list.clear()
+		AccessControl().reload()
 
 	@tasks.loop(hours=24 * 7)
 	async def update_age_roles(self) :

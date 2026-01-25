@@ -7,10 +7,14 @@ from classes.support.queue import Queue
 
 
 class queueTask(commands.Cog):
+    status_changed = False
+
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.queue.start()
         self.display_status.start()
+
+
 
     def cog_unload(self):
         self.queue.cancel()
@@ -27,9 +31,13 @@ class queueTask(commands.Cog):
         await self.bot.wait_until_ready()
         status = "Keeping the community safe!"
         if not Queue().empty():
+            self.status_changed = True
             status = Queue().status()
 
-        await self.bot.change_presence(activity=discord.CustomActivity(name=status, emoji='🖥️'))
+        if self.status_changed:
+            await self.bot.change_presence(activity=discord.CustomActivity(name=status, emoji='🖥️'))
+            if Queue().empty():
+                self.status_changed = False
 
     @queue.before_loop
     async def before_queue(self):
