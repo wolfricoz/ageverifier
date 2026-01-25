@@ -2,9 +2,10 @@ import base64
 import logging
 import os
 
-from databases.transactions.ServerTransactions import ServerTransactions
-from databases.current import Servers as dbServers
 import requests
+
+from databases.current import Servers as dbServers
+from databases.transactions.ServerTransactions import ServerTransactions
 
 
 class Servers:
@@ -12,21 +13,23 @@ class Servers:
 	key = os.getenv('DASHBOARD_KEY')
 	secret = os.getenv('DASHBOARD_SECRET')
 
+	def __init__(self):
+		self.path = "/api/server/create"
+		self.url = f"{self.ip_address}{self.path}"
+		self.encoded = base64.b64encode(f"{self.key}:{self.secret}".encode('ascii')).decode()
 
-	async def update_server(self, guild: dbServers):
-		path = "/api/server/create"
-		url = f"{self.ip_address}{path}"
-		encoded = base64.b64encode(f"{self.key}:{self.secret}".encode('ascii')).decode()
+	async def update_servers(self, guilds: list[dbServers]):
 
 		headers = {
-			"Authorization": f"Basic {encoded}",
+			"Authorization": f"Basic {self.encoded}",
 			"Content-Type": "application/json"
 		}
-		logging.info(f"headers: {headers}")
-		if guild.guild is None:
-			return
+		if guilds is None:
+			return None
 
-		data = {
+
+
+		data = [{
 			"id": guild.guild,
 			"ageverifier": guild.active,
 			"name": guild.name,
@@ -34,22 +37,26 @@ class Servers:
 			"owner_id": guild.owner_id,
 			"member_count": guild.member_count,
 			"invite": guild.invite
-		}
+		} for guild in guilds]
 		try:
-			result = requests.post(url, headers=headers, json=data, timeout=5)
+			result = requests.post(self.url, headers=headers, json={"servers": data}, timeout=5)
 			if result.status_code != 200:
-				logging.info(f"Server {guild.guild} could not be updated: {result.status_code}: {result.text}")
-
+				logging.info(f"server group {[g.guild for g in guilds]} could not be updated: {result.status_code}: {result.text}")
+				print(f"server group {[g.guild for g in guilds]} could not be updated: {result.status_code}: {result.text}")
 				# logging.info(f"Variables:\npath: {path}\nurl: {url}\nheaders: {headers}, key: {self.key}\nsecret: {self.secret}")
 				return None
-			result = result.json()
-			ServerTransactions().update(guild.guild, premium=result.get('premium', None) )
 
-			logging.info(f"Server {guild.guild} updated successfully: {result}")
+			results = result.json()
+			for result in results:
+				server_id = result.get('id', 0)
+				if server_id == 0:
+					logging.info("No server id returned, skipping")
+					continue
+				ServerTransactions().update(server_id, premium=result.get('premium', None) )
 
-
-
-			logging.info(f"Server {guild.guild} updated")
+				logging.info(f"Server {server_id} updated successfully: {result}")
+				print(f"Server {server_id} updated successfully: {result}")
+			logging.info(f"{len(guilds)} Servers updated")
 		except Exception as e:
-			logging.warning(f"Error updating server {guild.guild}: {e}")
+			logging.warning(f"Error updating server {[g.guild for g in guilds]}: {e}", exc_info=True)
 

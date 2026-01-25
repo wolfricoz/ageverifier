@@ -7,11 +7,11 @@ import databases.current
 from classes.AgeCalculations import AgeCalculations
 from classes.lobbyprocess import LobbyProcess
 from classes.lobbytimers import LobbyTimers
+from databases.enums.joinhistorystatus import JoinHistoryStatus
 from databases.transactions.AgeRoleTransactions import AgeRoleTransactions
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.HistoryTransactions import JoinHistoryTransactions
 from databases.transactions.UserTransactions import UserTransactions
-from databases.enums.joinhistorystatus import JoinHistoryStatus
 from views.buttons.approvalbuttons import ApprovalButtons
 
 
@@ -79,9 +79,10 @@ class VerificationProcess :
 			if self.discrepancy:
 				return self.discrepancy
 			# === Validation finished, we now start processing the member ===
-			automatic_status = ConfigData().get_key_or_none(self.guild.id, "automatic")
+			automatic_status = ConfigData().get_key_or_none(self.guild.id, "automatic_verification")
 			if automatic_status and automatic_status == "enabled".upper() or self.reverify :
-				await LobbyProcess.approve_user(self.guild, self.member, dob, self.age, "Automatic", reverify=self.reverify)
+				await LobbyProcess.approve_user(self.guild, self.member, dob, self.age, "automatic_verification",
+				                                reverify=self.reverify)
 				return "Thank you for submitting your age and date of birth! You’ve been automatically verified and granted access."
 
 			await AgeCalculations.check_history(self.guild.id, self.member, self.mod_channel)
@@ -111,9 +112,9 @@ class VerificationProcess :
 			raise Exception("Missing data for verification: " +
 			                f"age: {self.age}, day: {self.day}, month: {self.month}, year: {self.year}, member: {self.member}, guild: {self.guild}")
 		self.user_record: databases.current.Users = UserTransactions().get_user(self.member.id)
-		mod_lobby = ConfigData().get_key_int_or_zero(self.guild.id, "lobbymod")
-		id_log = ConfigData().get_key_int_or_zero(self.guild.id, "idlog")
-		if mod_lobby is None or id_log is None :
+		mod_lobby = ConfigData().get_key_int_or_zero(self.guild.id, "approval_channel")
+		id_log = ConfigData().get_key_int_or_zero(self.guild.id, "verification_failure_log")
+		if mod_lobby == 0 or id_log == 0 :
 			raise Exception("Lobbymod or id_channel not set, inform the server staff to setup the server.")
 		self.mod_channel = self.guild.get_channel(mod_lobby)
 		self.id_channel = self.guild.get_channel(id_log)

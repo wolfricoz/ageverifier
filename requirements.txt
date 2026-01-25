@@ -5,7 +5,7 @@ SQLAlchemy>=2.0.40
 python-dotenv>=1.0.1
 asyncio>=3.4.3
 PyMySQL>=1.1.1
-discord.py==2.4.0
+discord.py==2.6.4.0
 cryptography>=43.0.3
 SQLAlchemy-Utils>=0.41.2
 zipp>=3.19.1 # not directly required, pinned by Snyk to avoid a vulnerability

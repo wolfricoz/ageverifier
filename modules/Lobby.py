@@ -5,22 +5,26 @@ import os
 import discord
 from discord import app_commands
 from discord.ext import commands
+from discord_py_utilities.messages import send_message, send_response
 
 import classes.permissions as permissions
 from classes.AgeCalculations import AgeCalculations
-from databases.transactions.ConfigData import ConfigData
 from classes.idverify import verify
 from classes.lobbyprocess import LobbyProcess
-from discord_py_utilities.messages import send_message, send_response
 from classes.support.queue import Queue
 from classes.whitelist import check_whitelist
+from databases.transactions.ConfigData import ConfigData
 from views.buttons.approvalbuttons import ApprovalButtons
 from views.buttons.confirmButtons import confirmAction
 from views.buttons.dobentrybutton import dobentry
 from views.buttons.verifybutton import VerifyButton
 
 
-class Lobby(commands.GroupCog) :
+class Lobby(commands.GroupCog, description="Commands for managing the new member lobby and verification process.") :
+	"""
+	Commands for managing the new member lobby and verification process.
+	This includes tools for manual verification, age checks, and purging inactive users from the lobby.
+	"""
 	def __init__(self, bot: commands.Bot) :
 		self.bot = bot
 		self.index = 0
@@ -28,17 +32,31 @@ class Lobby(commands.GroupCog) :
 		self.bot.add_view(ApprovalButtons())
 		self.bot.add_view(dobentry())
 
-	@app_commands.command(name="button")
+	@app_commands.command(name="button", description="Creates the main verification button in your lobby channel.")
 	@app_commands.checks.has_permissions(administrator=True)
 	async def verify_button(self, interaction: discord.Interaction, text: str) :
-		"""Verification button for the lobby; initiates the whole process"""
+		"""
+        Creates the main verification button in your lobby channel.
+        When new users click this button, it kicks off the entire age verification process. You can customize the message that appears above the button.
+
+        **Permissions:**
+        - You'll need `Administrator` permission to use this command.
+        """
 		await interaction.channel.send(f"{text}\n-# GDPR AND INFORMATION USE DISCLOSURE: By entering your birth date (MM/DD/YYYY) and age, you consent to having this information about you stored by Age Verifier and used to verify that you are the age that you say you are, including sharing to relevant parties for age verification. This information will be stored for a maximum of 1 year if you are no longer in a server using Ageverifier.", view=VerifyButton())
 
-	@app_commands.command()
+	@app_commands.command(description="Manually verifies a user with their ID and date of birth.")
 	@app_commands.checks.has_permissions(administrator=True)
 	async def idverify(self, interaction: discord.Interaction, process: bool,
 	                   user: discord.Member, dob: str) :
-		"""ID verifies user. process True will put the user through the lobby."""
+		"""
+        Manually verifies a user with their ID and date of birth.
+        This is a powerful tool for whitelisted servers to bypass the standard flow for trusted users.
+        You can choose whether to put them through the full lobby process or just verify them instantly.
+
+        **Permissions:**
+        - You'll need `Administrator` permission.
+        - Your server must be whitelisted to use this command.
+        """
 		if check_whitelist(interaction.guild.id) is False and not permissions.check_dev(interaction.user.id) :
 			await send_response(interaction,
 			                    "[NOT_WHITELISTED] This command is limited to whitelisted servers. Please contact the developer `ricostryker` to verify the user.")
@@ -50,18 +68,24 @@ class Lobby(commands.GroupCog) :
 		await AgeCalculations.validatedob(dob, interaction)
 		await verify(user, interaction, dob, process)
 
-	@app_commands.command()
+	@app_commands.command(description="Moves a user who has already been verified back into the lobby.")
 	@app_commands.checks.has_permissions(manage_messages=True)
 	@app_commands.guild_only()
 	async def returnlobby(self, interaction: discord.Interaction, user: discord.Member) :
-		"""returns user to lobby; removes the roles."""
+		"""
+        Moves a user who has already been verified back into the lobby.
+        This command will remove their verified roles and re-assign the unverified roles, effectively resetting their verification status on this server.
+
+        **Permissions:**
+        - You'll need the `Manage Messages` permission to use this command.
+        """
 		await interaction.response.defer()
 		if interaction.guild is None:
 			return await send_response(interaction, "This command is limited to a server.")
-		add_roles: list = ConfigData().get_key(interaction.guild.id, "add")
+		add_roles: list = ConfigData().get_key(interaction.guild.id, "VERIFICATION_ADD_ROLE")
 		add = list(add_roles)
-		rem: list = ConfigData().get_key(interaction.guild.id, "rem")
-		returns: list = ConfigData().get_key(interaction.guild.id, "return")
+		rem: list = ConfigData().get_key(interaction.guild.id, "verification_remove_role")
+		returns: list = ConfigData().get_key(interaction.guild.id, "return_remove_role")
 		print('data retrieved')
 		rm = []
 		ra = []
@@ -78,26 +102,45 @@ class Lobby(commands.GroupCog) :
 		return await interaction.followup.send(
 			f"{user.mention} has been moved back to the lobby by {interaction.user.mention}")
 
-	@app_commands.command()
+	@app_commands.command(description="Quickly calculates the age based on a given date of birth.")
 	@app_commands.checks.has_permissions(manage_messages=True)
 	async def agecheck(self, interaction: discord.Interaction, dob: str) :
-		"""Checks the age of a dob"""
+		"""
+        Quickly calculates the age based on a given date of birth.
+        This is a simple utility to check how old someone is without going through the full verification process.
+
+        **Permissions:**
+        - You'll need the `Manage Messages` permission to use this command.
+        """
 		age = AgeCalculations.dob_to_age(dob)
 		await send_response(interaction, f"As of today {dob} is {age} years old", ephemeral=True)
 
 	@commands.command(name="approve")
 	@commands.has_permissions(manage_messages=True)
 	async def approve(self, ctx: commands.Context, user: discord.Member, age: int, dob: str) :
-		"""allows user to enter"""
+		"""
+        Manually approves a user and grants them access to the server.
+        This is a prefix command used by moderators to approve a user after a manual review. It logs the approval and assigns the correct roles.
+
+        **Permissions:**
+        - You'll need the `Manage Messages` permission to use this command.
+        """
 		dob = AgeCalculations.dob_regex(dob)
 		await LobbyProcess.approve_user(ctx.guild, user, dob, age, ctx.author.name)
 		await ctx.message.delete()
 
-	@app_commands.command()
+	@app_commands.command(description="Kicks all users who joined during a suspected raid.")
 	@app_commands.checks.has_permissions(administrator=True)
 	async def raid_purge(self, interaction: discord.Interaction, days: int = 30) :
-		"""This command will kick all the users that have not been processed through the lobby with the given days."""
-		lobby_config = ConfigData().get_key_int(interaction.guild.id, "lobby")
+		"""
+        Kicks all users who joined during a suspected raid.
+        This command looks at the join messages in the lobby channel within a specified number of days and kicks all mentioned users.
+        You will be asked for confirmation before the purge begins.
+
+        **Permissions:**
+        - You'll need `Administrator` permission to use this command.
+        """
+		lobby_config = ConfigData().get_key_int(interaction.guild.id, "server_join_channel")
 		lobby_channel = interaction.guild.get_channel(lobby_config)
 		if days > 30 :
 			days = 30
@@ -130,11 +173,18 @@ class Lobby(commands.GroupCog) :
 		                               file=discord.File(file.name, "kicked.txt"))
 		os.remove("config/kicked.txt")
 
-	@app_commands.command()
+	@app_commands.command(description="Kicks users who have been waiting in the lobby for too long.")
 	@app_commands.checks.has_permissions(administrator=True)
 	async def lobby_purge(self, interaction: discord.Interaction, days: int = 30) :
-		"""Kick users who have been in the lobby longer than the given days (based on message age)."""
-		lobby_config = ConfigData().get_key_int(interaction.guild.id, "lobby")
+		"""
+        Kicks users who have been waiting in the lobby for too long.
+        This command checks the age of the welcome messages in the lobby. If a message is older than the specified number of days, the mentioned user will be kicked.
+        This helps keep your lobby clean and removes inactive accounts.
+
+        **Permissions:**
+        - You'll need `Administrator` permission to use this command.
+        """
+		lobby_config = ConfigData().get_key_int(interaction.guild.id, "server_join_channel")
 		lobby_channel = interaction.guild.get_channel(lobby_config)
 		if days > 30 :
 			days = 30

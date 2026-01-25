@@ -1,14 +1,20 @@
 import logging
 
 import discord
-from discord.ext.commands import Cog, GroupCog, Bot
+from discord.ext.commands import Bot, Cog, GroupCog
 
 from classes.access import AccessControl
 from databases.transactions.ConfigData import ConfigData
 from views.buttons.SurveyButton import SurveyButton
 
 
-class Surveys(GroupCog) :
+class Surveys(GroupCog, description="This module helps you gather valuable feedback from members who decide to leave your server.") :
+	"""
+	This module helps you gather valuable feedback from members who decide to leave your server.
+	When a member leaves, this system can automatically send them a direct message with a link to a feedback survey.
+	This feature is only active for premium servers and can be enabled or disabled through the configuration settings.
+	There are no user-runnable commands in this module; it all works in the background!
+	"""
 
 	def __init__(self, bot: Bot) :
 		self.bot = bot

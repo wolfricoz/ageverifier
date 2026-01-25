@@ -23,19 +23,19 @@ def verify_token(request: Request) :
 	return request.headers.get('token') != os.getenv("API_KEY")
 
 
-@router.post("/config/refresh")
+@router.post("/config/refresh/{guildid}")
 async def refresh_config(request: Request, guildid: Optional[int]= None) :
 	if verify_token(request) :
 		logging.warning(f"Invalid token for config refresh request from ip {request.client.host}")
 
 		return None
 	logging.info("Website Request: Reload Config")
-	if guildid is not None :
-		ConfigData().load_guild(guildid)
-		return {"message" : f"Config refresh queued for {guildid}"}
-	ConfigData().reloading = True
-	Queue().add(ConfigData().reload())
-	return {"message" : "Config refresh queued"}
+	print("Website Request: Reload Config")
+	if guildid is None :
+		logging.info("[Config API] guildid not provided")
+		return {"error" : "Guild ID is required"}
+	ConfigData().load_guild(guildid)
+	return {"message" : f"Config refresh queued for {guildid}"}
 
 
 @router.post("/config/{guildid}/autosetup")

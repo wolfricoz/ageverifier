@@ -6,8 +6,8 @@ import discord
 
 from classes.AgeCalculations import AgeCalculations
 from databases.transactions.ConfigData import ConfigData
-from databases.transactions.VerificationTransactions import VerificationTransactions
 from databases.transactions.UserTransactions import UserTransactions
+from databases.transactions.VerificationTransactions import VerificationTransactions
 
 
 class NsfwFunctions(ABC):
@@ -66,7 +66,7 @@ class NsfwVerifyModal(discord.ui.Modal):
 
     async def on_submit(self, interaction: discord.Interaction):
         userdata = UserTransactions().get_user(interaction.user.id)
-        modlobby = ConfigData().get_key_int(interaction.guild.id, "lobbymod")
+        modlobby = ConfigData().get_key_int(interaction.guild.id, "approval_channel")
         channel = interaction.guild.get_channel(modlobby)
         age = self.age.value
         # validates inputs with regex
@@ -107,7 +107,7 @@ class NsfwVerifyModal(discord.ui.Modal):
             return
 
         # Check if user needs to ID or has previously ID'd
-        if await AgeCalculations.id_check_or_id_verified(interaction.user, interaction.guild, channel):
+        if await AgeCalculations.id_check_or_id_verified(interaction.user) :
             await send_response(interaction, 
                     f'A staff member will contact you within 24 hours, please wait patiently.', ephemeral=True)
             return

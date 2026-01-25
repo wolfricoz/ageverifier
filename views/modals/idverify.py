@@ -32,7 +32,7 @@ class IdVerifyModal(discord.ui.Modal) :
 		if AgeCalculations.validate_dob(self.dateofbirth.value) is None :
 			return await send_response(interaction, f"Please fill in the date of birth as with the format: mm/dd/yyyy.")
 
-		idcheckchannel = ConfigData().get_key_int_or_zero(interaction.guild.id,"idlog")
+		idcheckchannel = ConfigData().get_key_int_or_zero(interaction.guild.id, "verification_failure_log")
 		return await send_response(interaction,
 		                           f"Please confirm the Date of Birth matches the user's ID you viewed via DMs and that you personally reviewed the ID. Submitting a DOB without viewing the ID or maliciously adding a false date of births may result in blacklisting. If `{self.dateofbirth.value}` is correct for {self.user.mention}, please click `Confirm & Proceed`.",
 		                           view=IDConfirm(self.dateofbirth.value, self.user, self.message),

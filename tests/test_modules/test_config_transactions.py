@@ -1,7 +1,7 @@
 import unittest
 
-from databases.transactions.ConfigTransactions import ConfigTransactions
 from databases.current import create_bot_database, drop_bot_database
+from databases.transactions.ConfigTransactions import ConfigTransactions
 
 
 class TestAgeRoleTransactions(unittest.TestCase) :
@@ -85,8 +85,8 @@ class TestAgeRoleTransactions(unittest.TestCase) :
 		keys = {cfg.key for cfg in configs}
 		expected_keys = {
 			"KEY1", "KEY2",
-			"UPDATEROLES", "COOLDOWN", "WELCOME",
-			"LOBBYWELCOME", "AUTOKICK", "AUTOMATIC", "PINGOWNER",
+			"auto_update_age_roles", "COOLDOWN", "send_verification_completed_message",
+			"send_join_message", "autokick_underaged_users", "automatic_verification", "ping_owner_on_failure",
 			                                         'JOINED_AT',
 			                                         'CREATED_AT',
 			                                         'USER_ID',

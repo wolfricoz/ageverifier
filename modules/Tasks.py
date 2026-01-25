@@ -5,10 +5,10 @@ import os
 from datetime import UTC, datetime, timedelta
 
 import discord
-from discord_py_utilities.invites import check_guild_invites
-from discord_py_utilities.messages import send_message, send_response
 from discord import app_commands
 from discord.ext import commands, tasks
+from discord_py_utilities.invites import check_guild_invites
+from discord_py_utilities.messages import send_message, send_response
 
 from classes.AgeCalculations import AgeCalculations
 from classes.access import AccessControl
@@ -16,17 +16,22 @@ from classes.ageroles import change_age_roles
 from classes.dashboard.Servers import Servers
 from classes.encryption import Encryption
 from classes.support.queue import Queue
+from databases.current import Servers as servers_DB
 from databases.transactions.ConfigData import ConfigData
-from databases.transactions.DatabaseTransactions import DatabaseTransactions
 from databases.transactions.ServerTransactions import ServerTransactions
 from databases.transactions.UserTransactions import UserTransactions
-from databases.current import Servers as servers_DB
 
 OLDLOBBY = int(os.getenv("OLDLOBBY"))
 DEBUG = os.getenv("DEBUG")
 
 
-class Tasks(commands.GroupCog) :
+class Tasks(commands.Cog) :
+	"""
+	This is the bot's engine room! This module handles all the automated, behind-the-scenes tasks that keep everything running smoothly.
+	You'll find tasks for cleaning up old messages, updating user data, refreshing server configurations, and much more.
+	Most of these functions run on a schedule and don't require any user interaction.
+	There is one command available for administrators to manually trigger a specific task.
+	"""
 	def __init__(self, bot: commands.AutoShardedBot) :
 		"""loads tasks"""
 		self.bot = bot
@@ -35,7 +40,7 @@ class Tasks(commands.GroupCog) :
 		self.check_users_expiration.start()
 		self.check_active_servers.start()
 		self.update_age_roles.start()
-		self.database_ping.start()
+		# self.database_ping.start()
 		self.refresh_invites.start()
 		self.clean_guilds.start()
 
@@ -45,7 +50,7 @@ class Tasks(commands.GroupCog) :
 		self.check_users_expiration.cancel()
 		self.check_active_servers.cancel()
 		self.update_age_roles.cancel()
-		self.database_ping.cancel()
+		# self.database_ping.cancel()
 		self.refresh_invites.cancel()
 		self.clean_guilds.cancel()
 
@@ -53,11 +58,11 @@ class Tasks(commands.GroupCog) :
 	@tasks.loop(minutes=10)
 	async def config_reload(self) :
 		"""Reloads the config for the latest data."""
-		AccessControl().reload()
-		for guild in self.bot.guilds :
-			ConfigData().load_guild(guild.id)
-		print("config reload")
+		# Storing old config for debugging
 		ConfigData().output_to_json()
+		ConfigData().cleanup()
+		AccessControl().reload()
+		print("config reload")
 		for guild in self.bot.guilds :
 			try :
 				self.bot.invites[guild.id] = await guild.invites()
@@ -117,8 +122,8 @@ class Tasks(commands.GroupCog) :
 		logging.info(f"cleaning lobby for {guild.name}")
 		count_messages = 0
 		kicked_users = []
-		lobby_channel = guild.get_channel(ConfigData().get_key_int_or_zero(guild.id, "lobby"))
-		mod_lobby = guild.get_channel(ConfigData().get_key_int_or_zero(guild.id, "lobbymod"))
+		lobby_channel = guild.get_channel(ConfigData().get_key_int_or_zero(guild.id, "server_join_channel"))
+		mod_lobby = guild.get_channel(ConfigData().get_key_int_or_zero(guild.id, "approval_channel"))
 		days = ConfigData().get_key_int_or_zero(guild.id, "clean_lobby_days")
 		guild_db: servers_DB = ServerTransactions().get(guild.id)
 		removal_message = (
@@ -198,12 +203,18 @@ class Tasks(commands.GroupCog) :
 				logging.warning(f"Could not refresh invites for {guild.name}: {e}")
 				continue
 
-	@tasks.loop(hours=2)
+	@tasks.loop(minutes=30)
 	async def check_active_servers(self) :
 		guild_ids = ServerTransactions().get_all()
+		count = 0
 		for guild in self.bot.guilds :
+			if count % 10 == 0 :
+				logging.info(f"updating active servers: processed {count} guilds so far.")
+				await asyncio.sleep(0)
+
 			if guild.id in guild_ids :
 				guild_ids.remove(guild.id)
+				count += 1
 				continue
 			try:
 				ServerTransactions().add(guild.id,
@@ -213,9 +224,13 @@ class Tasks(commands.GroupCog) :
 				                         member_count=guild.member_count,
 				                         invite=await check_guild_invites(self.bot, guild)
 				                         )
+				count += 1
 			except:
 				logging.error(f"Error adding guild {guild.name} ({guild.id}) to the database", exc_info=True)
+				count += 1
 				continue
+
+
 
 		for gid in guild_ids :
 			try :
@@ -230,13 +245,22 @@ class Tasks(commands.GroupCog) :
 			                         name=guild.name,
 			                         owner=guild.owner,
 			                         member_count=guild.member_count,
-			                         invite=await check_guild_invites(self.bot, guild)
+			                         invite=await check_guild_invites(self.bot, guild),
 			                         )
 
 		guilds = ServerTransactions().get_all(id_only=False)
+
+		guild_list= []
 		for guild in guilds :
-			Queue().add(Servers().update_server(guild), 0)
-		await ConfigData().reload()
+			guild_list.append(guild)
+			if len(guild_list) >= 100  :
+				Queue().add(Servers().update_servers(guilds), 0)
+				guild_list.clear()
+				await asyncio.sleep(0)
+		else:
+			Queue().add(Servers().update_servers(guilds), 0)
+			guild_list.clear()
+		AccessControl().reload()
 
 	@tasks.loop(hours=24 * 7)
 	async def update_age_roles(self) :
@@ -246,9 +270,9 @@ class Tasks(commands.GroupCog) :
 			return
 		for guild in self.bot.guilds :
 			await asyncio.sleep(0.001)
-			rem_roles = (ConfigData().get_key_or_none(guild.id, "REM") or []) + (
-					ConfigData().get_key_or_none(guild.id, "JOIN") or [])
-			mod_lobby = guild.get_channel(ConfigData().get_key_int_or_zero(guild.id, "lobbymod"))
+			rem_roles = (ConfigData().get_key_or_none(guild.id, "verification_remove_role") or []) + (
+					ConfigData().get_key_or_none(guild.id, "server_join_role") or [])
+			mod_lobby = guild.get_channel(ConfigData().get_key_int_or_zero(guild.id, "approval_channel"))
 			if mod_lobby is None :
 				logging.info(f"Mod lobby not found in {guild.name}, skipping age role update.")
 				continue
@@ -257,7 +281,7 @@ class Tasks(commands.GroupCog) :
 				                         f"Your server does not have any removal roles or on join roles setup, because of this automatic age role updates are disabled to prevent users in the lobby from getting age roles."),
 				            priority=0)
 				return
-			if ConfigData().get_key_or_none(guild.id, "UPDATEROLES") != "ENABLED" :
+			if ConfigData().get_key_or_none(guild.id, "auto_update_age_roles") != "ENABLED" :
 				logging.info(f"Skipping {guild.name} age role update.")
 				continue
 			for member in guild.members :
@@ -281,16 +305,21 @@ class Tasks(commands.GroupCog) :
 					logging.error(f"Error calculating age for {member.name}: {e}", exc_info=True)
 					continue
 
-	@tasks.loop(minutes=1)
-	async def database_ping(self) :
-		"""pings the database to keep the connection alive"""
-		logging.debug("Pinging database.")
-		DatabaseTransactions().ping_db()
+	# Disabled, since the status page pings the bot every 5 minutes anyway.
+	# @tasks.loop(minutes=1)
+	# async def database_ping(self) :
+	# 	"""pings the database to keep the connection alive"""
+	# 	logging.debug("Pinging database.")
+	# 	DatabaseTransactions().ping_db()
 
 	@app_commands.command(name="expirecheck")
 	@app_commands.checks.has_permissions(administrator=True)
 	async def expirecheck(self, interaction: discord.Interaction) :
-		"""forces the automatic search ban check to start; normally runs every 30 minutes"""
+		"""
+		This command allows an administrator to manually start the process of checking for expired user data.
+		Normally, this check runs automatically every 12 hours. This is useful if you want to force an immediate data cleanup.
+		You must have Administrator permissions to use this command.
+		"""
 		await send_response(interaction, "[Debug]Checking all entries.")
 		self.check_users_expiration.restart()
 		await interaction.followup.send("check-up finished.")
@@ -314,10 +343,10 @@ class Tasks(commands.GroupCog) :
 	async def before_serverhcheck(self) :
 		await self.bot.wait_until_ready()
 
-	@database_ping.before_loop
-	async def before_ping(self) :
-		"""stops event from starting before the bot has fully loaded"""
-		await self.bot.wait_until_ready()
+	# @database_ping.before_loop
+	# async def before_ping(self) :
+	# 	"""stops event from starting before the bot has fully loaded"""
+	# 	await self.bot.wait_until_ready()
 
 	@clean_guilds.before_loop
 	async def before_cleanup(self) :

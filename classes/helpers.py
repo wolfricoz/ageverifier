@@ -2,16 +2,15 @@ import logging
 from datetime import datetime
 
 import discord
+from discord_py_utilities.messages import send_message
 from discord_py_utilities.permissions import find_first_accessible_text_channel
 
 import databases.exceptions.KeyNotFound
 from classes.retired.discord_tools import create_embed
+from databases.enums.joinhistorystatus import JoinHistoryStatus
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.HistoryTransactions import JoinHistoryTransactions
 from databases.transactions.UserTransactions import UserTransactions
-from discord_py_utilities.messages import send_message
-
-from databases.enums.joinhistorystatus import JoinHistoryStatus
 from views.buttons.verifybutton import VerifyButton
 
 
@@ -21,23 +20,25 @@ async def has_onboarding(guild: discord.Guild) -> bool :
 
 
 async def welcome_user(member) :
+	logging.info("Welcoming user " + str(member.id) + " to " + str(member.guild.id))
 	JoinHistoryTransactions().add(member.id, member.guild.id, JoinHistoryStatus.NEW)
 	warning = ""
-	lobby = ConfigData().get_key_int_or_zero(member.guild.id, "lobby")
+	lobby = ConfigData().get_key_int_or_zero(member.guild.id, "server_join_channel")
 	channel = member.guild.get_channel(lobby)
 	if channel is None:
 		warning = "WARNING: Lobby channel not set, please configure your lobby with `/config channels`"
 		channel = find_first_accessible_text_channel(member.guild)
 	await add_join_roles(member)
-	welcome_enabled = ConfigData().get_key(member.guild.id, "lobbywelcome", "enabled")
+	welcome_enabled = ConfigData().get_key(member.guild.id, "send_join_message", "enabled")
 	if welcome_enabled.lower() == "disabled" :
 		return
 	try :
-		lobby_welcome = ConfigData().get_key(member.guild.id, "LOBBYWELCOMEMESSAGE", "Lobby message not setup, please use `/config messages key:LOBBYWELCOMEMESSAGE action:set` to set it up. You can click the button below to verify!")
+		lobby_welcome = ConfigData().get_key(member.guild.id, "server_join_message",
+		                                     "Lobby message not setup, please use `/config messages key:server_join_message action:set` to set it up. You can click the button below to verify!")
 	except databases.exceptions.KeyNotFound.KeyNotFound :
 		print(f"lobbywelcome not found for {member.guild.name}(id: {member.guild.id})")
 		logging.error(f"lobbywelcome not found for {member.guild.name}(id: {member.guild.id})")
-		lobby_welcome = "Lobby message not setup, please use `/config messages key:LOBBYWELCOMEMESSAGE action:set` to set it up. You can click the button below to verify!"
+		lobby_welcome = "Lobby message not setup, please use `/config messages key:server_join_message action:set` to set it up. You can click the button below to verify!"
 	if channel is None :
 		channel = find_first_accessible_text_channel(member.guild)
 		if channel is None :
@@ -55,7 +56,8 @@ async def welcome_user(member) :
 
 async def add_join_roles(member) -> bool:
 	try :
-		roles = [member.guild.get_role(int(role)) for role in ConfigData().get_key_or_none(member.guild.id, "join")]
+		roles = [member.guild.get_role(int(role)) for role in
+		         ConfigData().get_key_or_none(member.guild.id, "server_join_role")]
 		if roles is None or len(roles) <= 0 :
 			return False
 		await member.add_roles(*roles)
@@ -77,7 +79,7 @@ def find_invite_by_code(invite_list, code) :
 	return None
 
 async def invite_info(bot, member: discord.Member) :
-	infochannel = ConfigData().get_key_or_none(member.guild.id, 'inviteinfo')
+	infochannel = ConfigData().get_key_or_none(member.guild.id, 'invite_log')
 	if infochannel is None :
 		logging.info(f"{member.guild.name} doesn't have invite info setup")
 		return

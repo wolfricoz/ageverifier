@@ -8,10 +8,10 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from classes.encryption import Encryption
 from databases import current as db
+from databases.current import IdVerification, Users, Warnings
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.ConfigTransactions import ConfigTransactions
 from databases.transactions.DatabaseTransactions import DatabaseTransactions
-from databases.current import IdVerification, Users, Warnings
 
 
 class UserTransactions(DatabaseTransactions) :
@@ -108,8 +108,11 @@ class UserTransactions(DatabaseTransactions) :
 
 	def permanent_delete(self, userid: int, guildname: str) :
 		with self.createsession() as session :
+			from databases.transactions.ServerTransactions import ServerTransactions
 
 			try :
+				ServerTransactions().delete_all_user(user_id=userid, only_delete_owner=True)
+
 				userdata: Users = self.get_user(userid, deleted=True)
 				if userdata is None :
 					return False

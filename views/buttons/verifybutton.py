@@ -55,7 +55,8 @@ class VerifyButton(discord.ui.View) :
 
 	async def id_verified_check(self, interaction: discord.Interaction) -> bool :
 		try :
-			modlobby = interaction.guild.get_channel(ConfigData().get_key_int_or_zero(interaction.guild.id, 'lobbymod'))
+			modlobby = interaction.guild.get_channel(
+				ConfigData().get_key_int_or_zero(interaction.guild.id, "approval_channel"))
 			if modlobby is None :
 				await send_response(interaction, f"Lobbymod not set, inform the server staff to setup the server.",
 				                    ephemeral=True)
@@ -77,14 +78,14 @@ class VerifyButton(discord.ui.View) :
 				message = f'Due to prior ID verification, you do not need to re-enter your date of birth and age. You will be granted access once the staff completes the verification process.'
 				LobbyTimers().add_cooldown(interaction.guild.id, interaction.user.id,
 				                           ConfigData().get_key_int_or_zero(interaction.guild.id, 'COOLDOWN'))
-				automatic_status = ConfigData().get_key_or_none(interaction.guild.id, "automatic")
+				automatic_status = ConfigData().get_key_or_none(interaction.guild.id, "automatic_verification")
 				if automatic_status and automatic_status == "enabled".upper() :
-					await LobbyProcess.approve_user(interaction.guild, interaction.user, dob, age, "Automatic")
+					await LobbyProcess.approve_user(interaction.guild, interaction.user, dob, age, "automatic_verification")
 					await send_response(interaction,
 					                    f'Thank you for submitting your age and dob! You will be let through immediately!',
 					                    ephemeral=True)
 					return True
-				mod_lobby = ConfigData().get_key_int(interaction.guild.id, "lobbymod")
+				mod_lobby = ConfigData().get_key_int(interaction.guild.id, "approval_channel")
 				mod_channel = interaction.guild.get_channel(mod_lobby)
 
 

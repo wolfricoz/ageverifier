@@ -69,7 +69,7 @@ class SurveyModal(discord.ui.Modal) :
 
 	async def on_submit(self, interaction: discord.Interaction) -> None :
 		try :
-			modchannel = self.guild.get_channel(ConfigData().get_key_int_or_zero(self.guild.id, 'lobbymod'))
+			modchannel = self.guild.get_channel(ConfigData().get_key_int_or_zero(self.guild.id, "approval_channel"))
 			if modchannel is None :
 				return await self.send_message(interaction, "Could not find the mod channel to send the survey results to.")
 			embed = discord.Embed(title=f"Survey from {interaction.user.name}", description=f"This survey is to help your server improve; please remain cordial with the user.", color=discord.Color.green())

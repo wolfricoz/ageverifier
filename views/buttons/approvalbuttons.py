@@ -8,14 +8,14 @@ from discord_py_utilities.messages import send_message, send_response
 
 from classes.banwatch import BanWatch
 from classes.encryption import Encryption
+from classes.idcheck import IdCheck
 from classes.lobbyprocess import LobbyProcess
 from classes.whitelist import check_whitelist
+from databases.enums.joinhistorystatus import JoinHistoryStatus
 from databases.transactions.ButtonTransactions import LobbyDataTransactions
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.HistoryTransactions import JoinHistoryTransactions
 from databases.transactions.VerificationTransactions import VerificationTransactions
-from databases.enums.joinhistorystatus import JoinHistoryStatus
-from views.buttons.idverifybutton import IdVerifyButton
 from views.modals.inputmodal import send_modal
 
 
@@ -135,19 +135,13 @@ class ApprovalButtons(discord.ui.View) :
 				'The bot has restarted and the data of this button is missing. Please manually report user to admins',
 				ephemeral=True)
 		await send_response(interaction,'User flagged for manual ID.', ephemeral=True)
-		idcheck = ConfigData().get_key_int(interaction.guild.id, "idlog")
-		idlog = interaction.guild.get_channel(idcheck)
 		VerificationTransactions().set_idcheck_to_true(self.user.id,
 		                                               f"manually flagged by {interaction.user.name} with reason: {reason}",
 		                                               server=interaction.guild.name)
 		JoinHistoryTransactions().update(self.user.id, interaction.guild.id, JoinHistoryStatus.IDCHECK)
+		await IdCheck.send_id_log(interaction.guild, self.user, reason)
 		await interaction.message.edit(view=self)
 
-		await idlog.send(
-			f"{interaction.user.mention} has flagged {self.user.mention} for manual ID with reason:\n"
-			f"```{reason}```",
-			view=IdVerifyButton()
-		)
 
 		return
 
@@ -179,13 +173,14 @@ Once you've made these changes you may resubmit your age and date of birth. Than
 
 		return
 
-	@discord.ui.button(label="User Left (stores DOB)", style=discord.ButtonStyle.primary, custom_id="add")
+	@discord.ui.button(label="User Left (stores DOB)", style=discord.ButtonStyle.primary,
+	                   custom_id="VERIFICATION_ADD_ROLE")
 	async def add_to_db(self, interaction: discord.Interaction, button: discord.ui.Button) :
 		"""Adds user to db"""
 		await self.load_data(interaction)
 		if not interaction.user.guild_permissions.manage_roles :
 			return await send_response(interaction, "You must have the \"manage_roles\" permission to execute this action!", ephemeral=True)
-		age_log = ConfigData().get_key_int(interaction.guild.id, "lobbylog")
+		age_log = ConfigData().get_key_int(interaction.guild.id, "age_log")
 		await self.disable_buttons(interaction, button, disable_add=True)
 		if self.user is None :
 			await send_response(interaction,

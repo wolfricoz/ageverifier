@@ -87,6 +87,15 @@ class VerifyModal(discord.ui.Modal) :
 
 			if verification_process.discrepancy in ["age_too_high", "mismatch", "below_minimum_age"] :
 				id_check = False
+			server = None
+			if verification_process.id_check_info :
+				server = verification_process.id_check_info.server
+			if verification_process.user_record and not server:
+				server = verification_process.user_record.server
+			if not server:
+				server = interaction.guild.name
+
+
 			return await IdCheck.send_check(interaction,
 			                                verification_process.id_channel,
 			                                verification_process.discrepancy,
@@ -99,7 +108,7 @@ class VerifyModal(discord.ui.Modal) :
 			                                years=verification_process.years if verification_process.years else None,
 			                                id_check=id_check,
 			                                id_check_reason=verification_process.id_check_info.reason if verification_process.id_check_info else verification_process.discrepancy,
-			                                server=verification_process.id_check_info.server if verification_process.id_check_info else interaction.guild.name)
+			                                server=server)
 
 		return await send_response(interaction, message, ephemeral=True)
 
@@ -109,7 +118,7 @@ class VerifyModal(discord.ui.Modal) :
 		raise error
 
 	async def autokick(self, interaction, mod_channel, age, minimum_age) :
-		if ConfigData().get_key(interaction.guild.id, "AUTOKICK") == "ENABLED" :
+		if ConfigData().get_key(interaction.guild.id, "autokick_underaged_users") == "ENABLED" :
 			await send_message(interaction.user,
 			                   f"Thank you for submitting your date of birth, unfortunately you are too young for this server; you must be {minimum_age} years old.")
 			await send_message(mod_channel,

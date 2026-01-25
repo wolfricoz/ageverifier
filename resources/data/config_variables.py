@@ -1,24 +1,24 @@
 messagechoices = {
-	'welcomemessage' : 'This is the welcome message that will be posted in the general channel This starts with: `Welcome to {server name} {user}! This is where the message goes`',
-	"lobbywelcomemessage"   : 'This is the welcome message that will be posted in the lobby channel, and be the first message new users see. This starts with: `Welcome {user}! This is where the message goes`',
+	"verification_completed_message" : 'This is the welcome message that will be posted in the verification_completed_channel channel This starts with: `Welcome to {server name} {user}! This is where the message goes`',
+	"server_join_message"            : 'This is the welcome message that will be posted in the lobby channel, and be the first message new users see. This starts with: `Welcome {user}! This is where the message goes`',
 	# "idmessage"    : 'This message will be sent to the user when using the id request method along with the default.',
 }
 channelchoices = {
-	'inviteinfo' : 'This channel will be used to log invite information',
-	'general'    : 'This is your general channel, where the welcome message will be posted',
-	"lobby"      : 'This is your lobby channel, where the lobby welcome message will be posted. This is also where the verification process will start; this is where new users should interact with the bot.',
-	"lobbylog"   : 'This is the channel where the lobby logs will be posted, this channel has to be hidden from the users; failure to do so will result in the bot leaving.',
-	"lobbymod"   : 'This is where the verification approval happens, this channel should be hidden from the users.',
-	"idlog"      : 'This is where failed verification logs will be posted, this channel should be hidden from the users.',
-	"reverifylog" : 'This is the channel where the reverification logs will be posted, this channel has to be hidden from the users; failure to do so will result in the bot leaving.'
+	'invite_log'                     : 'This channel will be used to log invite information',
+	'verification_completed_channel' : 'This is your verification_completed_channel channel, where the welcome message will be posted',
+	"server_join_channel"            : 'This is your lobby channel, where the lobby welcome message will be posted. This is also where the verification process will start; this is where new users should interact with the bot.',
+	"age_log"                        : 'This is the channel where the lobby logs will be posted, this channel has to be hidden from the users; failure to do so will result in the bot leaving.',
+	"approval_channel"               : 'This is where the verification approval happens, this channel should be hidden from the users.',
+	"verification_failure_log"       : 'This is where failed verification logs will be posted, this channel should be hidden from the users.',
+	"reverify_age_log"               : 'This is the channel where the reverification logs will be posted, this channel has to be hidden from the users; failure to do so will result in the bot leaving.'
 }
 rolechoices = {
-	'add'    : 'These roles will be added to the user after a successful verification',
-	"rem"    : 'These roles will be removed from the user after a successful verification',
-	"return" : "These roles will be removed from the user when running the /lobby return command.",
-	"join"   : "These roles will be added to the user when they join the server and removed when they verify their age.",
-	"exclude" : "These roles are excluded from the automated age update system, ensuring the bot does not assign unnecessary roles to users.",
-	"reverify" : "These roles are added to the user when they reverify their age."
+	"verification_add_role"      : 'These roles will be added to the user after a successful verification',
+	"verification_remove_role"   : 'These roles will be removed from the user after a successful verification',
+	"return_remove_role"         : "These roles will be removed from the user when running the /lobby return command.",
+	"server_join_role"           : "These roles will be added to the user when they join the server and removed when they verify their age.",
+	"auto_update_excluded_roles" : "These roles are excluded from the automated age update system, ensuring the bot does not assign unnecessary roles to users.",
+	"reverification_role"        : "These roles are added to the user when they reverify their age."
 }
 
 lobby_approval_toggles = {
@@ -37,7 +37,9 @@ int_options = {
 	'clean_lobby_days': 'Inactive member cleanup threshold from the lobby (days).'
 }
 
-
-available_toggles = ["LobbyWelcome", "Welcome", "Automatic", "Autokick", "Updateroles", 'Pingowner', "online_verification", "survey", "logchanges", "cleanup"]
-enabled_toggles = ['WELCOME', 'LOBBYWELCOME', 'BANS', 'JOINED_AT', 'CREATED_AT', 'USER_ID', 'PICTURE_SMALL',
-                   'LOGCHANGES', "CLEANUP"]
+available_toggles = ["send_join_message", "send_verification_completed_message", "automatic_verification",
+                     "autokick_underaged_users", "auto_update_age_roles", "ping_owner_on_failure",
+                     "online_verification", "survey", "log_config_changes", "cleanup_messages"]
+enabled_toggles = ["send_verification_completed_message", "send_join_message", 'BANS', 'JOINED_AT', 'CREATED_AT',
+                   'USER_ID', 'PICTURE_SMALL',
+                   "log_config_changes", "cleanup_messages"]

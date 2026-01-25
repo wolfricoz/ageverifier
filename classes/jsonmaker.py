@@ -357,7 +357,7 @@ class guildconfiger(ABC) :
 			"addrole"      : [],
 			"remrole"      : [],
 			"welcomeusers" : True,
-			"welcome"      : "This can be changed with /config welcome",
+			"send_verification_completed_message" : "This can be changed with /config welcome",
 			"waitingrole"  : [],
 			"forums"       : []
 		}
@@ -461,7 +461,8 @@ class guildconfiger(ABC) :
 				"addrole"      : data.get('addrole', []),
 				"remrole"      : data.get('remrole', []),
 				"welcomeusers" : data.get("welcomeusers", False),
-				"welcome"      : data.get('welcome', "This can be changed with /config welcome"),
+				"send_verification_completed_message" : data.get("send_verification_completed_message",
+				                                                 "This can be changed with /config welcome"),
 				"waitingrole"  : data.get('waitingrole', []),
 				"forums"       : data.get('forums', []),
 				"roulette"     : data.get('roulette', None),
@@ -481,7 +482,7 @@ Name: {data['Name']}
 addrole: {data['addrole']}
 remrole: {data['remrole']}
 welcomeusers: {data['welcomeusers']},
-welcome: {data['welcome']}
+welcome: {data["send_verification_completed_message"]}
 waitingrole: {data['waitingrole']}
                 """
 				return vdict

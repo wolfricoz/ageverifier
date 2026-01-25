@@ -1,12 +1,12 @@
 import logging
 
 import discord
+from discord_py_utilities.messages import send_message, send_response
 
+from classes.support.queue import Queue
+from databases.exceptions.KeyNotFound import KeyNotFound
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.UserTransactions import UserTransactions
-from databases.exceptions.KeyNotFound import KeyNotFound
-from discord_py_utilities.messages import send_message, send_response
-from classes.support.queue import Queue
 
 
 class GDPRRemoval(discord.ui.View) :
@@ -30,7 +30,7 @@ class GDPRRemoval(discord.ui.View) :
 			await self.delete_lobby_entry(interaction, guild)
 			if interaction.user in guild.members:
 				try:
-					mod_lobby = guild.get_channel(ConfigData().get_key_int(guild.id, "lobbymod"))
+					mod_lobby = guild.get_channel(ConfigData().get_key_int(guild.id, "approval_channel"))
 					await send_message(mod_lobby, embed=embed)
 				except KeyNotFound:
 					pass
@@ -40,7 +40,7 @@ class GDPRRemoval(discord.ui.View) :
 
 	async def delete_lobby_entry(self, interaction: discord.Interaction, guild: discord.Guild):
 		try:
-			lobby_age: discord.TextChannel = guild.get_channel(ConfigData().get_key_int(guild.id, "lobbylog"))
+			lobby_age: discord.TextChannel = guild.get_channel(ConfigData().get_key_int(guild.id, "age_log"))
 			async for message in lobby_age.history(limit=None):
 				if str(interaction.user.id) in message.content:
 					logging.info(f"[GDPR] Deleting LobbyLog message in {guild.name}")

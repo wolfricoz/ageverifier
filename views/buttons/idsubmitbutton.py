@@ -38,7 +38,8 @@ class IdSubmitButton(discord.ui.View) :
 			return
 		if len(message.attachments) > 1:
 			await send_response(interaction, "Too many attachments attached to this message, please send only 1 image.")
-		mod_channel: discord.TextChannel = self.guild.get_channel(ConfigData().get_key_int_or_zero(self.guild.id, "lobbymod"))
+		mod_channel: discord.TextChannel = self.guild.get_channel(
+			ConfigData().get_key_int_or_zero(self.guild.id, "approval_channel"))
 		if mod_channel is None:
 			await send_response(interaction, "Lobbymod channel not set, please contact the server staff.", ephemeral=True)
 			return
@@ -78,7 +79,7 @@ class IdSubmitButton(discord.ui.View) :
 			await send_response(interaction, "You are not a member of this server.", ephemeral=True)
 			return
 		await send_response(interaction, f"{interaction.user.mention} You have declined to submit ID verification. You will not be able to proceed with verification without submitting ID. If you change your mind, you can click the 'Submit ID' button again.", ephemeral=True)
-		mod_channel = self.guild.get_channel(ConfigData().get_key_int_or_zero(self.guild.id, "lobbymod"))
+		mod_channel = self.guild.get_channel(ConfigData().get_key_int_or_zero(self.guild.id, "approval_channel"))
 		if mod_channel is None:
 			await send_response(interaction, "Lobbymod channel not set, please contact the server staff.", ephemeral=True)
 			return

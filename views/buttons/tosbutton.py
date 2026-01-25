@@ -49,7 +49,7 @@ class TOSButton(discord.ui.View) :
 	                   custom_id="decline",
 	                   row=4)
 	async def button(self, interaction: discord.Interaction, button: discord.ui.Button) :
-		modlobby = interaction.guild.get_channel(ConfigData().get_key_int(interaction.guild.id, 'lobbymod'))
+		modlobby = interaction.guild.get_channel(ConfigData().get_key_int(interaction.guild.id, "approval_channel"))
 		if modlobby is None :
 			return
 

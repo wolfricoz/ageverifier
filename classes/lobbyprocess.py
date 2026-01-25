@@ -6,20 +6,19 @@ from abc import ABC, abstractmethod
 
 import discord
 from discord.utils import get
+from discord_py_utilities.messages import send_message
 from discord_py_utilities.permissions import find_first_accessible_text_channel
-from pytz.reference import first_sunday_on_or_after
 
 from classes.AgeCalculations import AgeCalculations
 from classes.ageroles import change_age_roles
-from databases.transactions.ConfigData import ConfigData
-from databases.transactions.ConfigTransactions import ConfigTransactions
-from databases.transactions.HistoryTransactions import JoinHistoryTransactions
-from databases.transactions.UserTransactions import UserTransactions
-from discord_py_utilities.messages import send_message
 from classes.support.queue import Queue
 from classes.whitelist import check_whitelist
 from databases.enums.joinhistorystatus import JoinHistoryStatus
 from databases.exceptions.KeyNotFound import KeyNotFound
+from databases.transactions.ConfigData import ConfigData
+from databases.transactions.ConfigTransactions import ConfigTransactions
+from databases.transactions.HistoryTransactions import JoinHistoryTransactions
+from databases.transactions.UserTransactions import UserTransactions
 
 
 class LobbyProcess(ABC) :
@@ -44,7 +43,7 @@ class LobbyProcess(ABC) :
 			id_msg = "**ID VERIFIED**\n"
 		Queue().add(LobbyProcess.log(user, guild, age, dob, staff, exists, id_verify=id_msg , reverify=reverify), priority=2)
 		if not reverify :
-		# fetches welcoming message and welcomes them in general channel
+			# fetches welcoming message and welcomes them in verification_completed_channel channel
 
 			Queue().add(LobbyProcess.welcome(user, guild), priority=2)
 
@@ -67,8 +66,8 @@ class LobbyProcess(ABC) :
 				except Exception as e:
 					logging.warning(f"Could not get user {id}: {e}")
 					return
-		config_rem_roles = ConfigData().get_key(guild.id, "REM")
-		rem_roles = await LobbyProcess.get_roles(guild, config_rem_roles, "REM")
+		config_rem_roles = ConfigData().get_key(guild.id, "verification_remove_role")
+		rem_roles = await LobbyProcess.get_roles(guild, config_rem_roles, "verification_remove_role")
 		if user is None :
 			logging.info('user is none in remove_user_roles')
 			return
@@ -95,16 +94,26 @@ class LobbyProcess(ABC) :
 	@abstractmethod
 	async def log(user, guild, age, dob, staff, exists, id_verify = "", reverify=False) :
 		# Empty variables, these may be filled based on the type of verification
+
+
+
 		dob_field = ""
 		reverify_field = ""
 
-		lobbylog = ConfigData().get_key(guild.id, "lobbylog")
+		lobbylog = ConfigData().get_key(guild.id, "age_log")
 		if reverify:
-			revlog = ConfigData().get_key(guild.id, "reverifylog")
+			revlog = ConfigData().get_key(guild.id, "reverify_age_log")
 			if revlog is not None:
 				lobbylog = revlog
 
 		channel = guild.get_channel(int(lobbylog))
+
+		viewers = [member for member in channel.members if member.bot is False]
+		if len(viewers) > 20:
+			await send_message(channel, f"[SECURITY NOTICE] More than 20 non-bot users have access to the lobby log channel. Ageverifier will not log verifications here to protect user privacy. Please reduce the number of users with access to under 20 to re-enable logging.")
+			return
+
+
 		if check_whitelist(guild.id) :
 			dob_field = f"DOB: {dob} \n"
 		if reverify:
@@ -135,13 +144,13 @@ class LobbyProcess(ABC) :
 	@staticmethod
 	@abstractmethod
 	async def clean_up(guild, user) :
-		lobby = ConfigData().get_key(guild.id, "lobby")
-		lobbymod = ConfigData().get_key(guild.id, "lobbymod")
+		lobby = ConfigData().get_key(guild.id, "server_join_channel")
+		lobbymod = ConfigData().get_key(guild.id, "approval_channel")
 		channel = guild.get_channel(int(lobby))
 		messages = channel.history(limit=100)
 		notify = re.compile(r"Info", flags=re.IGNORECASE)
 		count = 0
-		if ConfigData().get_toggle(guild.id, "cleanup", "DISABLED", "ENABLED"):
+		if ConfigData().get_toggle(guild.id, "cleanup_messages", "DISABLED", "ENABLED") :
 			return
 
 		async for message in messages :
@@ -165,13 +174,13 @@ class LobbyProcess(ABC) :
 	@staticmethod
 	@abstractmethod
 	async def welcome(user: discord.Member, guild: discord.Guild) :
-		if ConfigData().get_key(guild.id, "welcome") == "DISABLED" :
+		if ConfigData().get_key(guild.id, "send_verification_completed_message") == "DISABLED" :
 			return
-		general = ConfigData().get_key(guild.id, "general")
-		message = ConfigData().get_key(guild.id, "welcomemessage")
-		channel = guild.get_channel(int(general))
+		verification_completed_channel = ConfigData().get_key(guild.id, "verification_completed_channel")
+		message = ConfigData().get_key(guild.id, "verification_completed_message")
+		channel = guild.get_channel(int(verification_completed_channel))
 		if channel is None:
-			channel = await guild.fetch_channel(int(general))
+			channel = await guild.fetch_channel(int(verification_completed_channel))
 
 		async for cmessage in channel.history(limit=20) :
 			if cmessage.author.bot and user in cmessage.mentions :
@@ -182,7 +191,7 @@ class LobbyProcess(ABC) :
 	@abstractmethod
 	async def age_log(userid, dob, interaction, operation="added", log=True, reason="") :
 		try:
-			age_log = interaction.guild.get_channel(ConfigData().get_key_int(interaction.guild.id, "lobbylog"))
+			age_log = interaction.guild.get_channel(ConfigData().get_key_int(interaction.guild.id, "age_log"))
 		except KeyNotFound:
 			age_log = find_first_accessible_text_channel(interaction.guild)
 			await send_message(age_log, f"Could not find age log channel, using {age_log.mention} instead. Please set one up with `/config channels`")
