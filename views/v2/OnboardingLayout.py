@@ -19,7 +19,7 @@ class OnboardingLayout(discord.ui.LayoutView) :
 	messagechoices = messagechoices
 	available_toggles = available_toggles
 
-	support_server = ServerTransactions().get(int(os.getenv("supportguild")))
+	support_server = ServerTransactions().get(int(os.getenv("SUPPORTGUILD")))
 
 
 

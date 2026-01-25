@@ -85,7 +85,7 @@ class HelpLayout(discord.ui.LayoutView) :
 			discord.ui.Button(label="Dashboard Setup", style=discord.ButtonStyle.link, url=os.getenv("DASHBOARD_URL")))
 		self.links.add_item(discord.ui.Button(label="Documentation", style=discord.ButtonStyle.link,
 		                                      url="https://wolfricoz.github.io/ageverifier/"))
-		support_server = ServerTransactions().get(int(os.getenv("supportguild")))
+		support_server = ServerTransactions().get(int(os.getenv("SUPPORTGUILD")))
 		if support_server is not None :
 			self.links.add_item(
 				discord.ui.Button(label="Support Server", style=discord.ButtonStyle.link, url=support_server.invite))
