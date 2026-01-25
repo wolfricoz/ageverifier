@@ -1,8 +1,8 @@
-
 ---
 layout: default
-title: Whitelisting
-nav_order: 8
+title: Surveys
+parent: Commands
+nav_order: 9
 ---		
 		
 <h1>Surveys</h1>

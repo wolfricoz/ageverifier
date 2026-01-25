@@ -1,8 +1,8 @@
-
 ---
 layout: default
-title: Whitelisting
-nav_order: 8
+title: Reverify
+parent: Commands
+nav_order: 7
 ---		
 		
 <h1>Reverify</h1>

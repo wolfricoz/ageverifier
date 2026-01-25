@@ -1,8 +1,8 @@
-
 ---
 layout: default
-title: Whitelisting
-nav_order: 8
+title: Database
+parent: Commands
+nav_order: 2
 ---		
 		
 <h1>Database</h1>

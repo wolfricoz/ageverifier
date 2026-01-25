@@ -68,7 +68,7 @@ class DocGenerator() :
 						continue
 
 					print(f"- Documenting Module: {name}")
-					docfile.write(self.document_header(tclass, name))
+					docfile.write(self.document_header(tclass, name, nav))
 
 					for _, member_obj in inspect.getmembers(module, inspect.isclass) :
 						# Check if the class is defined in the module we are inspecting
@@ -80,14 +80,14 @@ class DocGenerator() :
 
 					for function in tclass.__dict__ :
 						self.command_line(docfile, function, tclass, domain,)
-	def document_header(self, module, module_name: str) :
+	def document_header(self, module, module_name: str, nav) :
 
 
-		return f"""
----
+		return f"""---
 layout: default
-title: Whitelisting
-nav_order: 8
+title: {module_name}
+parent: Commands
+nav_order: {nav}
 ---		
 		
 <h1>{module_name}</h1>

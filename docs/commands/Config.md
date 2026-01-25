@@ -1,8 +1,8 @@
-
 ---
 layout: default
-title: Whitelisting
-nav_order: 8
+title: Config
+parent: Commands
+nav_order: 1
 ---		
 		
 <h1>Config</h1>

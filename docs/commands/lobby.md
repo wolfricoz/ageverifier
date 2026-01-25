@@ -1,8 +1,8 @@
-
 ---
 layout: default
-title: Whitelisting
-nav_order: 8
+title: Lobby
+parent: Commands
+nav_order: 6
 ---		
 		
 <h1>Lobby</h1>

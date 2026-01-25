@@ -1,7 +1,7 @@
-
 ---
 layout: default
-title: Whitelisting
+title: Stats
+parent: Commands
 nav_order: 8
 ---		
 		

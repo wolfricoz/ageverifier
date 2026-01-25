@@ -1,8 +1,8 @@
-
 ---
 layout: default
-title: Whitelisting
-nav_order: 8
+title: gdpr
+parent: Commands
+nav_order: 3
 ---		
 		
 <h1>gdpr</h1>

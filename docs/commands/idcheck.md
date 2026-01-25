@@ -1,8 +1,8 @@
-
 ---
 layout: default
-title: Whitelisting
-nav_order: 8
+title: idcheck
+parent: Commands
+nav_order: 5
 ---		
 		
 <h1>idcheck</h1>
