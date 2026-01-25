@@ -34,12 +34,12 @@ lobby_approval_toggles = {
 }
 
 int_options = {
-	'clean_lobby_days': 'Inactive member cleanup threshold from the lobby (days).'
+	'CLEAN_LOBBY_DAYS': 'Inactive member cleanup threshold from the lobby (days).'
 }
 
-available_toggles = ["send_join_message", "send_verification_completed_message", "automatic_verification",
-                     "autokick_underaged_users", "auto_update_age_roles", "ping_owner_on_failure",
-                     "online_verification", "survey", "log_config_changes", "cleanup_messages"]
-enabled_toggles = ["send_verification_completed_message", "send_join_message", 'BANS', 'JOINED_AT', 'CREATED_AT',
+available_toggles = ["SEND_JOIN_MESSAGE", "SEND_VERIFICATION_COMPLETED_MESSAGE", "AUTOMATIC_VERIFICATION",
+                     "AUTOKICK_UNDERAGED_USERS", "AUTO_UPDATE_AGE_ROLES", "PING_OWNER_ON_FAILURE",
+                     "ONLINE_VERIFICATION", "SURVEY", "LOG_CONFIG_CHANGES", "CLEANUP_MESSAGES"]
+enabled_toggles = ["SEND_VERIFICATION_COMPLETED_MESSAGE", "SEND_JOIN_MESSAGE", 'BANS', 'JOINED_AT', 'CREATED_AT',
                    'USER_ID', 'PICTURE_SMALL',
-                   "log_config_changes", "cleanup_messages"]
+                   "LOG_CONFIG_CHANGES", "CLEANUP_MESSAGES"]

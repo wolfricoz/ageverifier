@@ -220,7 +220,7 @@ class Config(commands.GroupCog, name="config",
 
 	@app_commands.command(description="Manage which roles the bot interacts with.")
 	@app_commands.choices(key=[Choice(name=f"{ke} role", value=ke) for ke, val in rolechoices.items()])
-	@app_commands.choices(action=[Choice(name=x, value=x) for x in ["VERIFICATION_ADD_ROLE", 'Remove']])
+	@app_commands.choices(action=[Choice(name=x, value=x) for x in ["verification_add_role", 'verification_remove_role']])
 	@app_commands.checks.has_permissions(manage_guild=True)
 	async def roles(self, interaction: discord.Interaction, key: Choice[str], action: Choice[str], value: discord.Role,
 	                minimum_age: int = 18, maximum_age: int = 200) :
@@ -235,7 +235,7 @@ class Config(commands.GroupCog, name="config",
 		await interaction.response.defer(ephemeral=True)
 		value = value.id
 		match action.value.lower() :
-			case "VERIFICATION_ADD_ROLE" :
+			case "verification_add_role" :
 				if key.value == "VERIFICATION_ADD_ROLE" and maximum_age and minimum_age :
 					AgeRoleTransactions().add(guild_id=interaction.guild.id, role_id=value, role_type=key.value,
 					                          minimum_age=minimum_age, maximum_age=maximum_age)
@@ -254,7 +254,7 @@ class Config(commands.GroupCog, name="config",
 					await interaction.followup.send(f"{key.name}: <@&{value}> already exists")
 					return
 				await interaction.followup.send(f"{key.name}: <@&{value}> has been added to the database")
-			case 'remove' :
+			case 'verification_remove_role' :
 				if key.value == "VERIFICATION_ADD_ROLE" :
 					AgeRoleTransactions().permanentdelete(interaction.guild_id, value)
 					Queue().add(ConfigUtils.log_change(interaction.guild, {key.value : f"role id: {value} removed"},
