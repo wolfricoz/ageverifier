@@ -16,10 +16,10 @@ from classes.ageroles import change_age_roles
 from classes.dashboard.Servers import Servers
 from classes.encryption import Encryption
 from classes.support.queue import Queue
-from databases.controllers.ConfigData import ConfigData
-from databases.controllers.DatabaseTransactions import DatabaseTransactions
-from databases.controllers.ServerTransactions import ServerTransactions
-from databases.controllers.UserTransactions import UserTransactions
+from databases.transactions.ConfigData import ConfigData
+from databases.transactions.DatabaseTransactions import DatabaseTransactions
+from databases.transactions.ServerTransactions import ServerTransactions
+from databases.transactions.UserTransactions import UserTransactions
 from databases.current import Servers as servers_DB
 
 OLDLOBBY = int(os.getenv("OLDLOBBY"))
@@ -192,7 +192,11 @@ class Tasks(commands.GroupCog) :
 	async def refresh_invites(self) :
 		self.bot.invites = {}
 		for guild in self.bot.guilds :
-			self.bot.invites[guild.id] = await guild.invites()
+			try:
+				self.bot.invites[guild.id] = await guild.invites()
+			except Exception as e :
+				logging.warning(f"Could not refresh invites for {guild.name}: {e}")
+				continue
 
 	@tasks.loop(hours=2)
 	async def check_active_servers(self) :
@@ -201,13 +205,17 @@ class Tasks(commands.GroupCog) :
 			if guild.id in guild_ids :
 				guild_ids.remove(guild.id)
 				continue
-			ServerTransactions().add(guild.id,
-			                         active=True,
-			                         name=guild.name,
-			                         owner=guild.owner,
-			                         member_count=guild.member_count,
-			                         invite=await check_guild_invites(self.bot, guild)
-			                         )
+			try:
+				ServerTransactions().add(guild.id,
+				                         active=True,
+				                         name=guild.name,
+				                         owner=guild.owner,
+				                         member_count=guild.member_count,
+				                         invite=await check_guild_invites(self.bot, guild)
+				                         )
+			except:
+				logging.error(f"Error adding guild {guild.name} ({guild.id}) to the database", exc_info=True)
+				continue
 
 		for gid in guild_ids :
 			try :

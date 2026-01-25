@@ -8,7 +8,7 @@ from discord.ext import commands
 
 import classes.permissions as permissions
 from classes.AgeCalculations import AgeCalculations
-from databases.controllers.ConfigData import ConfigData
+from databases.transactions.ConfigData import ConfigData
 from classes.idverify import verify
 from classes.lobbyprocess import LobbyProcess
 from discord_py_utilities.messages import send_message, send_response
@@ -37,7 +37,7 @@ class Lobby(commands.GroupCog) :
 	@app_commands.command()
 	@app_commands.checks.has_permissions(administrator=True)
 	async def idverify(self, interaction: discord.Interaction, process: bool,
-	                   user: discord.User, dob: str) :
+	                   user: discord.Member, dob: str) :
 		"""ID verifies user. process True will put the user through the lobby."""
 		if check_whitelist(interaction.guild.id) is False and not permissions.check_dev(interaction.user.id) :
 			await send_response(interaction,

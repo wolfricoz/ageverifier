@@ -21,8 +21,8 @@ from classes.blacklist import blacklist_check
 from classes.jsonmaker import Configer
 from classes.support.queue import Queue
 from databases import current as db
-from databases.controllers.ConfigData import ConfigData
-from databases.controllers.ServerTransactions import ServerTransactions
+from databases.transactions.ConfigData import ConfigData
+from databases.transactions.ServerTransactions import ServerTransactions
 from databases.current import Servers
 from views.buttons.approvalbuttons import ApprovalButtons
 from views.buttons.dobentrybutton import dobentry

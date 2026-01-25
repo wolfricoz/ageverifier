@@ -1,14 +1,8 @@
-import logging
-
 import discord
 from discord_py_utilities.messages import send_response
 
 from classes.AgeCalculations import AgeCalculations
-from classes.idcheck import IdCheck
-from classes.idverify import verify
-from classes.support.queue import Queue
-from databases.controllers.ConfigData import ConfigData
-from databases.controllers.VerificationTransactions import VerificationTransactions
+from databases.transactions.ConfigData import ConfigData
 from views.buttons.IDConfirm import IDConfirm
 
 
@@ -16,8 +10,8 @@ class IdVerifyModal(discord.ui.Modal) :
 	# Our modal classes MUST subclass `discord.ui.Modal`,
 	# but the title can be whatever you want.
 
-	def __init__(self, user, message: discord.Message) :
-		self.user: discord.User = user
+	def __init__(self, user: discord.Member, message: discord.Message) :
+		self.user: discord.Member = user
 		self.message = message
 		super().__init__()
 

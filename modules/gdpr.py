@@ -7,8 +7,8 @@ from discord.ext import commands
 from discord_py_utilities.messages import send_response
 
 from classes.encryption import Encryption
-from databases.controllers.UserTransactions import UserTransactions
-from databases.controllers.VerificationTransactions import VerificationTransactions
+from databases.transactions.UserTransactions import UserTransactions
+from databases.transactions.VerificationTransactions import VerificationTransactions
 from views.buttons.gdprremoval import GDPRRemoval
 
 

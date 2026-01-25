@@ -3,8 +3,8 @@ from datetime import datetime
 
 from sqlalchemy import Select, desc, text
 
-from databases.controllers.DatabaseTransactions import DatabaseTransactions
-from databases.controllers.UserTransactions import UserTransactions
+from databases.transactions.DatabaseTransactions import DatabaseTransactions
+from databases.transactions.UserTransactions import UserTransactions
 from databases.current import JoinHistory
 from databases.enums.joinhistorystatus import JoinHistoryStatus
 

@@ -1,4 +1,5 @@
 import datetime
+import logging
 import os
 import re
 from abc import ABC, abstractmethod
@@ -10,10 +11,10 @@ from pytz.reference import first_sunday_on_or_after
 
 from classes.AgeCalculations import AgeCalculations
 from classes.ageroles import change_age_roles
-from databases.controllers.ConfigData import ConfigData
-from databases.controllers.ConfigTransactions import ConfigTransactions
-from databases.controllers.HistoryTransactions import JoinHistoryTransactions
-from databases.controllers.UserTransactions import UserTransactions
+from databases.transactions.ConfigData import ConfigData
+from databases.transactions.ConfigTransactions import ConfigTransactions
+from databases.transactions.HistoryTransactions import JoinHistoryTransactions
+from databases.transactions.UserTransactions import UserTransactions
 from discord_py_utilities.messages import send_message
 from classes.support.queue import Queue
 from classes.whitelist import check_whitelist
@@ -25,9 +26,9 @@ class LobbyProcess(ABC) :
 
 	@staticmethod
 	@abstractmethod
-	async def approve_user(guild, user, dob, age, staff, idverify = False, reverify=False) :
+	async def approve_user(guild: discord.Guild, user: discord.Member, dob: str, age: int, staff: str, idverify: bool = False, reverify: bool =False) :
 		# checks if user is on the id list
-
+		id_msg = ""
 		if await AgeCalculations.id_check(guild, user) :
 			return
 		# updates user's age if it exists, otherwise makes a new entry
@@ -39,8 +40,9 @@ class LobbyProcess(ABC) :
 		Queue().add(change_age_roles(guild, user, age, remove=reverify, reverify=reverify), priority=2)
 
 		# Log age and dob to lobbylog
-		if not idverify:
-			Queue().add(LobbyProcess.log(user, guild, age, dob, staff, exists, reverify=reverify), priority=2)
+		if idverify:
+			id_msg = "**ID VERIFIED**\n"
+		Queue().add(LobbyProcess.log(user, guild, age, dob, staff, exists, id_verify=id_msg , reverify=reverify), priority=2)
 		if not reverify :
 		# fetches welcoming message and welcomes them in general channel
 
@@ -55,11 +57,21 @@ class LobbyProcess(ABC) :
 
 	@staticmethod
 	@abstractmethod
-	async def remove_user_roles(user, guild: discord.Guild) :
+	async def remove_user_roles(user: discord.Member, guild: discord.Guild) :
+		id = user.id
 		if isinstance(user, discord.User) :
-			user = guild.get_member(user.id)
+			user = guild.get_member(id)
+			if user is None :
+				try:
+					user = await guild.fetch_member(id)
+				except Exception as e:
+					logging.warning(f"Could not get user {id}: {e}")
+					return
 		config_rem_roles = ConfigData().get_key(guild.id, "REM")
 		rem_roles = await LobbyProcess.get_roles(guild, config_rem_roles, "REM")
+		if user is None :
+			logging.info('user is none in remove_user_roles')
+			return
 		Queue().add(user.remove_roles(*rem_roles), priority=2)
 
 
@@ -129,7 +141,11 @@ class LobbyProcess(ABC) :
 		messages = channel.history(limit=100)
 		notify = re.compile(r"Info", flags=re.IGNORECASE)
 		count = 0
+		if ConfigData().get_toggle(guild.id, "cleanup", "DISABLED", "ENABLED"):
+			return
+
 		async for message in messages :
+
 			if message.author == user or user in message.mentions and count < 10 :
 				count += 1
 				Queue().add(message.delete(), priority=0)

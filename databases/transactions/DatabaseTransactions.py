@@ -14,7 +14,7 @@ class DatabaseTransactions(metaclass=singleton) :
 	sessionmanager = sessionmaker(bind=engine)
 
 	def reload_guild(self, guild_id: int) :
-		from databases.controllers.ConfigData import ConfigData
+		from databases.transactions.ConfigData import ConfigData
 		ConfigData().load_guild(guild_id)
 
 	def createsession(self) :

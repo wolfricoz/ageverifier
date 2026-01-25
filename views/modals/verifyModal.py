@@ -6,7 +6,7 @@ from discord_py_utilities.messages import send_message, send_response
 from classes.encryption import Encryption
 from classes.idcheck import IdCheck
 from classes.verification.process import VerificationProcess
-from databases.controllers.ConfigData import ConfigData
+from databases.transactions.ConfigData import ConfigData
 
 
 class VerifyModal(discord.ui.Modal) :

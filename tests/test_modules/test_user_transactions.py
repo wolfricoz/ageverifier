@@ -1,7 +1,7 @@
 import unittest
 
 from databases.Generators.uidgenerator import uidgenerator
-from databases.controllers.UserTransactions import UserTransactions
+from databases.transactions.UserTransactions import UserTransactions
 from databases.current import create_bot_database, drop_bot_database
 
 

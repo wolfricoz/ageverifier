@@ -4,7 +4,7 @@ import logging
 import discord
 from discord_py_utilities.messages import send_message, send_response
 
-from databases.controllers.ConfigData import ConfigData
+from databases.transactions.ConfigData import ConfigData
 
 
 class SurveyModal(discord.ui.Modal) :

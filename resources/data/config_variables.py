@@ -38,4 +38,6 @@ int_options = {
 }
 
 
-available_toggles = ["LobbyWelcome", "Welcome", "Automatic", "Autokick", "Updateroles", 'Pingowner', "online_verification", "survey", "logchanges"]
+available_toggles = ["LobbyWelcome", "Welcome", "Automatic", "Autokick", "Updateroles", 'Pingowner', "online_verification", "survey", "logchanges", "cleanup"]
+enabled_toggles = ['WELCOME', 'LOBBYWELCOME', 'BANS', 'JOINED_AT', 'CREATED_AT', 'USER_ID', 'PICTURE_SMALL',
+                   'LOGCHANGES', "CLEANUP"]

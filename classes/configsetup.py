@@ -6,9 +6,9 @@ from discord_py_utilities.exceptions import NoPermissionException
 from discord_py_utilities.permissions import check_missing_channel_permissions, find_first_accessible_text_channel
 
 from classes.config.utils import ConfigUtils
-from databases.controllers.AgeRoleTransactions import AgeRoleTransactions
-from databases.controllers.ConfigData import ConfigData
-from databases.controllers.ConfigTransactions import ConfigTransactions
+from databases.transactions.AgeRoleTransactions import AgeRoleTransactions
+from databases.transactions.ConfigData import ConfigData
+from databases.transactions.ConfigTransactions import ConfigTransactions
 from discord_py_utilities.messages import send_message
 from classes.support.queue import Queue
 from views.buttons.confirmButtons import confirmAction

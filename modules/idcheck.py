@@ -5,11 +5,15 @@ from discord import app_commands
 from discord.ext import commands
 from discord_py_utilities.messages import send_message, send_response
 
+from classes.access import AccessControl
 from classes.encryption import Encryption
+from classes.idcheck import IdCheck
 from classes.support.queue import Queue
-from databases.controllers.VerificationTransactions import VerificationTransactions
+from databases.transactions.VerificationTransactions import VerificationTransactions
+from databases.current import IdVerification
 from resources.data.responses import StringStorage
 from views.buttons.confirm import Confirm
+from views.modals.inputmodal import send_modal
 
 
 class idcheck(commands.GroupCog) :
@@ -90,6 +94,19 @@ class idcheck(commands.GroupCog) :
 
 		await send_response(interaction,
 			f"<@{user.id}>'s userid entry has been added with reason: {reason} and idcheck: {True}")
+
+	@app_commands.command()
+	@app_commands.checks.has_permissions(manage_messages=True)
+	async def send(self, interaction: discord.Interaction, user: discord.Member) :
+		"""[manage_messages][premium] Sends an ID check request to the specified user."""
+		if not AccessControl().is_premium(interaction.guild.id):
+			return await send_response(interaction, "This feature is only for premium servers, please reach out to the user and verify manually.", ephemeral=True)
+		reason = await send_modal(interaction, f"Adding reason to the ID check for {user.name}", "ID Check Request")
+		if reason is None :
+			return None
+		id_check: IdVerification = VerificationTransactions().update_check(user.id, str(reason), True, server=interaction.guild.name)
+		await IdCheck.send_id_check(interaction, user, id_check)
+		return None
 
 
 async def setup(bot) :

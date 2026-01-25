@@ -14,9 +14,9 @@ from classes.AgeCalculations import AgeCalculations
 from classes.encryption import Encryption
 from classes.lobbyprocess import LobbyProcess
 from classes.whitelist import check_whitelist
-from databases.controllers.ServerTransactions import ServerTransactions
-from databases.controllers.UserTransactions import UserTransactions
-from databases.controllers.VerificationTransactions import VerificationTransactions
+from databases.transactions.ServerTransactions import ServerTransactions
+from databases.transactions.UserTransactions import UserTransactions
+from databases.transactions.VerificationTransactions import VerificationTransactions
 from databases.current import Users
 from resources.data.responses import StringStorage
 

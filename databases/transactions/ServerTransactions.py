@@ -5,10 +5,11 @@ import logging
 import discord
 from sqlalchemy import Select
 
-from databases.controllers.ConfigTransactions import ConfigTransactions
-from databases.controllers.DatabaseTransactions import DatabaseTransactions
+from databases.transactions.ConfigTransactions import ConfigTransactions
+from databases.transactions.DatabaseTransactions import DatabaseTransactions
+from databases.transactions.UserTransactions import UserTransactions
 from databases.current import Servers
-from resources.data.config_variables import available_toggles, lobby_approval_toggles
+from resources.data.config_variables import available_toggles, enabled_toggles, lobby_approval_toggles
 
 
 class ServerTransactions(DatabaseTransactions) :
@@ -19,10 +20,14 @@ class ServerTransactions(DatabaseTransactions) :
 
 			guild = self.get(guildid, session=session)
 			owner_name = owner.name if owner else ""
-			owner_id = owner.id if owner else None
+			owner_id = owner.id if owner else 0
+			owner = UserTransactions().user_exists(owner_id)
+			if not owner and owner_id != 0 :
+				UserTransactions().add_user_empty(owner_id)
+
 			if guild is not None :
 
-				self.update(guildid, active, name, owner_name, member_count, invite, owner_id=owner_id)
+				self.update(guildid, active, name, owner_name, member_count, invite, owner_id=owner_id if owner_id != 0 else None)
 			else :
 				session = self.createsession()
 				g = Servers(
@@ -40,7 +45,7 @@ class ServerTransactions(DatabaseTransactions) :
 
 			# Apply configurations to new servers
 
-			enabled_toggles = ['WELCOME', 'LOBBYWELCOME', 'BANS', 'JOINED_AT', 'CREATED_AT', 'USER_ID', 'PICTURE_SMALL', 'LOGCHANGES']
+			enabled = enabled_toggles
 			for toggle in available_toggles + list(lobby_approval_toggles.keys()):
 				if toggle.upper() in enabled_toggles:
 					ConfigTransactions().toggle_add(guildid, toggle, "ENABLED")
@@ -48,7 +53,7 @@ class ServerTransactions(DatabaseTransactions) :
 			ConfigTransactions().config_unique_add(guildid, "COOLDOWN", 5)
 
 		if reload :
-			from databases.controllers.ConfigData import ConfigData
+			from databases.transactions.ConfigData import ConfigData
 			ConfigData().load_guild(guildid)
 
 		return guild
@@ -99,7 +104,7 @@ class ServerTransactions(DatabaseTransactions) :
 			self.commit(session)
 
 			if reload :
-				from databases.controllers.ConfigData import ConfigData
+				from databases.transactions.ConfigData import ConfigData
 
 				ConfigData().load_guild(guild_id)
 

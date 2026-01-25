@@ -6,9 +6,9 @@ from discord_py_utilities.permissions import find_first_accessible_text_channel
 
 import databases.exceptions.KeyNotFound
 from classes.retired.discord_tools import create_embed
-from databases.controllers.ConfigData import ConfigData
-from databases.controllers.HistoryTransactions import JoinHistoryTransactions
-from databases.controllers.UserTransactions import UserTransactions
+from databases.transactions.ConfigData import ConfigData
+from databases.transactions.HistoryTransactions import JoinHistoryTransactions
+from databases.transactions.UserTransactions import UserTransactions
 from discord_py_utilities.messages import send_message
 
 from databases.enums.joinhistorystatus import JoinHistoryStatus
@@ -116,3 +116,14 @@ async def invite_info(bot, member: discord.Member) :
 		pass
 	channel = bot.get_channel(int(infochannel))
 	await send_message(channel, embed=embed, error_mode="ignore")
+
+
+async def fetch_member(guild: discord.Guild, user_id:int) -> discord.Member | None:
+	member = guild.get_member(user_id)
+	if member is None :
+		try :
+			member = await guild.fetch_member(user_id)
+		except Exception as e :
+			logging.error(e, exc_info=True)
+			return None
+	return member

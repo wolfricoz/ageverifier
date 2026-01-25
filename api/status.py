@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-from databases.controllers.DatabaseTransactions import DatabaseTransactions
+from databases.transactions.DatabaseTransactions import DatabaseTransactions
 from classes.support.queue import Queue
 
 router = APIRouter()

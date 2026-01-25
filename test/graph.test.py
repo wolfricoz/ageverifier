@@ -1,5 +1,5 @@
 from classes.charts import AgeCharts, JoinHistoryCharts
-from databases.controllers.HistoryTransactions import JoinHistoryTransactions
+from databases.transactions.HistoryTransactions import JoinHistoryTransactions
 
 # age graph test
 

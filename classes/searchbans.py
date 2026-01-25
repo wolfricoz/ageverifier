@@ -3,7 +3,7 @@ import logging
 
 import discord
 
-from databases.controllers.TimersTransactions import TimersTransactions
+from databases.transactions.TimersTransactions import TimersTransactions
 
 
 async def remove(member: discord.Member, role, timer):

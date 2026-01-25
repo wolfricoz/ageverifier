@@ -6,8 +6,8 @@ import discord
 from discord.app_commands import AppCommandError
 
 import databases.exceptions.KeyNotFound
-from databases.controllers.ConfigData import ConfigData
-from databases.controllers.VerificationTransactions import VerificationTransactions
+from databases.transactions.ConfigData import ConfigData
+from databases.transactions.VerificationTransactions import VerificationTransactions
 
 
 class ModUser(ABC):

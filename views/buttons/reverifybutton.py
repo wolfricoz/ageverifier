@@ -7,12 +7,13 @@ from discord_py_utilities.messages import send_response
 from classes.AgeCalculations import AgeCalculations
 from classes.access import AccessControl
 from classes.encryption import Encryption
+from classes.helpers import fetch_member
 from classes.lobbyprocess import LobbyProcess
 from classes.lobbytimers import LobbyTimers
-from databases.controllers.ConfigData import ConfigData
-from databases.controllers.UserTransactions import UserTransactions
-from databases.controllers.VerificationTransactions import VerificationTransactions
-from databases.controllers.WebsiteDataTransactions import WebsiteDataTransactions
+from databases.transactions.ConfigData import ConfigData
+from databases.transactions.UserTransactions import UserTransactions
+from databases.transactions.VerificationTransactions import VerificationTransactions
+from databases.transactions.WebsiteDataTransactions import WebsiteDataTransactions
 from views.buttons.approvalbuttons import ApprovalButtons
 from views.buttons.tosbutton import TOSButton
 from views.buttons.websitebutton import WebsiteButton
@@ -65,6 +66,10 @@ class ReVerifyButton(discord.ui.View) :
 			userinfo = VerificationTransactions().get_id_info(interaction.user.id)
 			if userinfo is None :
 				return False
+			member = await fetch_member(interaction.guild, interaction.user.id)
+			if member is None :
+				return False
+
 			if userinfo.idverified :
 				logging.info("user is id verified")
 				dob, age = self.get_user_data(interaction.user.id)
@@ -80,10 +85,12 @@ class ReVerifyButton(discord.ui.View) :
 					return True
 				mod_lobby = ConfigData().get_key_int(interaction.guild.id, "lobbymod")
 				mod_channel = interaction.guild.get_channel(mod_lobby)
-				approval_buttons = ApprovalButtons(age=age, dob=dob, user=interaction.user)
+
+				# Ensure we are working with a Member object, this reduces issues with guild-specific actions
+				approval_buttons = ApprovalButtons(age=age, dob=dob, user=member)
 				await send_response(interaction, message,
 				                    ephemeral=True)
-				await approval_buttons.send_message(interaction.guild, interaction.user , mod_channel, id_verified=True)
+				await approval_buttons.send_message(interaction.guild, interaction.user , mod_channel, id_verified=True, )
 
 				return True
 			return False

@@ -10,16 +10,17 @@ from classes.banwatch import BanWatch
 from classes.encryption import Encryption
 from classes.lobbyprocess import LobbyProcess
 from classes.whitelist import check_whitelist
-from databases.controllers.ButtonTransactions import LobbyDataTransactions
-from databases.controllers.ConfigData import ConfigData
-from databases.controllers.HistoryTransactions import JoinHistoryTransactions
-from databases.controllers.VerificationTransactions import VerificationTransactions
+from databases.transactions.ButtonTransactions import LobbyDataTransactions
+from databases.transactions.ConfigData import ConfigData
+from databases.transactions.HistoryTransactions import JoinHistoryTransactions
+from databases.transactions.VerificationTransactions import VerificationTransactions
 from databases.enums.joinhistorystatus import JoinHistoryStatus
+from views.buttons.idverifybutton import IdVerifyButton
 from views.modals.inputmodal import send_modal
 
 
 class ApprovalButtons(discord.ui.View) :
-	def __init__(self, age: int = None, dob: str = None, user: discord.Member | discord.User = None, reverify=False) :
+	def __init__(self, age: int = None, dob: str = None, user: discord.Member = None, reverify=False) :
 		self.age = age
 		self.dob = dob
 		self.user = user
@@ -141,9 +142,12 @@ class ApprovalButtons(discord.ui.View) :
 		                                               server=interaction.guild.name)
 		JoinHistoryTransactions().update(self.user.id, interaction.guild.id, JoinHistoryStatus.IDCHECK)
 		await interaction.message.edit(view=self)
+
 		await idlog.send(
 			f"{interaction.user.mention} has flagged {self.user.mention} for manual ID with reason:\n"
-			f"```{reason}```")
+			f"```{reason}```",
+			view=IdVerifyButton()
+		)
 
 		return
 

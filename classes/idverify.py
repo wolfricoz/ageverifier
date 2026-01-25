@@ -1,9 +1,11 @@
+import discord
+
 from classes.AgeCalculations import AgeCalculations
-from databases.controllers.VerificationTransactions import VerificationTransactions
+from databases.transactions.VerificationTransactions import VerificationTransactions
 from classes.lobbyprocess import LobbyProcess
 
 
-async def verify(user, interaction, dob, process=True):
+async def verify(user: discord.Member, interaction: discord.Interaction, dob: str, process=True):
 	if not interaction.user.guild_permissions.administrator:
 		return False
 	VerificationTransactions().idverify_update(user.id, dob, interaction.guild.name, server=interaction.guild.name)
@@ -15,5 +17,8 @@ async def verify(user, interaction, dob, process=True):
 		f"{user.mention} has been ID verified with `{dob}` by {interaction.user.mention}")
 	if not process :
 		return None
+	if interaction.guild is None:
+		return None
+
 	await LobbyProcess.approve_user(interaction.guild, user, dob, age, interaction.user.name, idverify=True)
 	return None

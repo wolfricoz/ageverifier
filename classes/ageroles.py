@@ -3,11 +3,11 @@ import logging
 import discord
 from discord_py_utilities.messages import send_message
 
-from databases.controllers.ConfigData import ConfigData
+from databases.transactions.ConfigData import ConfigData
 from classes.support.queue import Queue
 
 
-def change_age_roles(guild: discord.Guild, user: discord.Member, age, remove = False, reverify=True) :
+def change_age_roles(guild: discord.Guild, user: discord.Member, age, remove = False, reverify=False) :
 	"""Adds the age roles to the user and removes the age roles that are not in the range if remove is True."""
 	roles = ConfigData().get_key(guild.id, "ADD")
 	if reverify :

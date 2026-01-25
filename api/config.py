@@ -9,7 +9,7 @@ from fastapi import APIRouter, Request
 from classes.config.utils import ConfigUtils
 from classes.configsetup import ConfigSetup
 from classes.support.queue import Queue
-from databases.controllers.ConfigData import ConfigData
+from databases.transactions.ConfigData import ConfigData
 
 router = APIRouter()
 

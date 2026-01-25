@@ -4,8 +4,8 @@ import discord
 from discord.ext import commands
 
 from classes.helpers import has_onboarding, welcome_user
-from databases.controllers.HistoryTransactions import JoinHistoryTransactions
-from databases.controllers.UserTransactions import UserTransactions
+from databases.transactions.HistoryTransactions import JoinHistoryTransactions
+from databases.transactions.UserTransactions import UserTransactions
 from databases.enums.joinhistorystatus import JoinHistoryStatus
 
 

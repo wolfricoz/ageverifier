@@ -8,9 +8,9 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from classes.encryption import Encryption
 from databases import current as db
-from databases.controllers.ConfigData import ConfigData
-from databases.controllers.ConfigTransactions import ConfigTransactions
-from databases.controllers.DatabaseTransactions import DatabaseTransactions
+from databases.transactions.ConfigData import ConfigData
+from databases.transactions.ConfigTransactions import ConfigTransactions
+from databases.transactions.DatabaseTransactions import DatabaseTransactions
 from databases.current import IdVerification, Users, Warnings
 
 

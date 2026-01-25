@@ -5,8 +5,8 @@ from uuid import uuid4
 
 from sqlalchemy import Select
 
-from databases.controllers.DatabaseTransactions import DatabaseTransactions
-from databases.controllers.UserTransactions import UserTransactions
+from databases.transactions.DatabaseTransactions import DatabaseTransactions
+from databases.transactions.UserTransactions import UserTransactions
 from databases.current import WebsiteData
 
 

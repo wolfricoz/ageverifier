@@ -8,7 +8,7 @@ from classes.retired.discord_tools import send_message
 
 matplotlib.use('Agg')
 
-from databases.controllers.HistoryTransactions import JoinHistoryTransactions
+from databases.transactions.HistoryTransactions import JoinHistoryTransactions
 
 
 class Stats(commands.GroupCog, name="stats") :

@@ -4,7 +4,7 @@ from discord_py_utilities.messages import send_response
 
 from classes.config.utils import ConfigUtils
 from classes.support.queue import Queue
-from databases.controllers.ConfigTransactions import ConfigTransactions
+from databases.transactions.ConfigTransactions import ConfigTransactions
 
 
 class ConfigInputUnique(discord.ui.Modal, title='set config message'):

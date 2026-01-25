@@ -6,12 +6,14 @@ import discord
 from discord_py_utilities.messages import send_message, send_response
 
 from classes.AgeCalculations import AgeCalculations
-from databases.controllers.AgeRoleTransactions import AgeRoleTransactions
-from databases.controllers.ConfigData import ConfigData
-from databases.controllers.HistoryTransactions import JoinHistoryTransactions
-from databases.controllers.VerificationTransactions import VerificationTransactions
+from databases.transactions.AgeRoleTransactions import AgeRoleTransactions
+from databases.transactions.ConfigData import ConfigData
+from databases.transactions.HistoryTransactions import JoinHistoryTransactions
+from databases.transactions.VerificationTransactions import VerificationTransactions
 from databases.current import IdVerification
 from databases.enums.joinhistorystatus import JoinHistoryStatus
+from resources.data.IDVerificationMessage import create_message
+from views.buttons.idsubmitbutton import IdSubmitButton
 
 
 class IdCheck(ABC) :
@@ -66,13 +68,15 @@ class IdCheck(ABC) :
 		view = None
 		m_key = message
 		message = messages.get(message, message)
-		if m_key in ['mismatch', 'age_too_high', 'below_minimum_age'] :
+		if m_key in ['underage', 'mismatch', 'age_too_high', 'below_minimum_age'] :
 			await send_response(interaction,
 			                    message.get("user-message",
 			                                "There was an issue with the age and date of birth you provided. Please try again."),
 			                    ephemeral=True)
 			lobbymod = interaction.guild.get_channel(ConfigData().get_key_int_or_zero(interaction.guild.id, 'lobbymod'))
-			await lobbymod.send(f"Lobby Debug] Age: {age} dob {dob} userid: {interaction.user.mention}\n" + message.get('channel-message'))
+			await lobbymod.send(f"Lobby Debug] Age: {age} dob {dob} userid: {interaction.user.mention}\n" + message.get('channel-message', "Message not found."))
+			await IdCheck.auto_kick(interaction.user, m_key, interaction.guild, channel)
+
 			return
 		if verify_button :
 			from views.buttons.idverifybutton import IdVerifyButton
@@ -102,7 +106,6 @@ class IdCheck(ABC) :
 			JoinHistoryTransactions().update(interaction.user.id, interaction.guild.id, JoinHistoryStatus.IDCHECK)
 			await IdCheck.add_check(interaction.user, interaction.guild,
 			                        message.get("channel-message", f"No message set for {message}"))
-		await IdCheck.auto_kick(interaction.user, m_key, interaction.guild, channel)
 
 	@staticmethod
 	@abstractmethod
@@ -231,3 +234,18 @@ class IdCheck(ABC) :
 		await send_message(member, kick_message)
 		await member.kick(reason=kick_message)
 		await channel.send(f"[Autokick] {member.mention} doesn't meet the minimum age requirement and has been kicked.")
+
+	@staticmethod
+	@abstractmethod
+	async def send_id_check(interaction: discord.Interaction, user: discord.User | discord.Member, idcheck: IdVerification):
+		try:
+			embed = discord.Embed(title="ID Verification", description=create_message(interaction, min_age=AgeRoleTransactions().get_minimum_age(interaction.guild.id)))
+			embed.set_footer(text=f"{interaction.guild.id}")
+			embed.add_field(name="ID Check", value=idcheck.reason, inline=False)
+
+			await send_message(user, embed=embed, view=IdSubmitButton())
+			await send_response(interaction, "Successfully sent ID verification request!", ephemeral=True)
+		except discord.Forbidden or discord.NotFound:
+			await send_response(interaction, "Could not DM user.", ephemeral=True)
+		except Exception as e :
+			await send_response(interaction, f"Could not DM user due to an error: {e}", ephemeral=True)

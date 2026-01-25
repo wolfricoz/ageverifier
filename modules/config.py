@@ -13,13 +13,14 @@ from discord_py_utilities.messages import send_message, send_response
 
 from classes.configsetup import ConfigSetup
 from classes.support.queue import Queue
-from databases.controllers.AgeRoleTransactions import AgeRoleTransactions
-from databases.controllers.ConfigData import ConfigData
-from databases.controllers.ConfigTransactions import ConfigTransactions
+from databases.transactions.AgeRoleTransactions import AgeRoleTransactions
+from databases.transactions.ConfigData import ConfigData
+from databases.transactions.ConfigTransactions import ConfigTransactions
 from resources.data.config_variables import available_toggles, channelchoices, lobby_approval_toggles, messagechoices, \
 	rolechoices
 from views.modals.configinput import ConfigInputUnique
 from classes.config.utils import ConfigUtils
+from discord_py_utilities.permissions import check_missing_channel_permissions
 
 
 class Config(commands.GroupCog, name="config") :
@@ -37,6 +38,11 @@ class Config(commands.GroupCog, name="config") :
 	@app_commands.choices(setup_type=[Choice(name=x, value=x) for x in ['dashboard', 'manual', 'auto']])
 	async def configsetup(self, interaction: discord.Interaction, setup_type: Choice[str]) :
 		"""Sets up the config for the bot."""
+		if check_missing_channel_permissions(interaction.channel, ['send_messages', 'embed_links', 'view_channel']) :
+			return await send_response(interaction,
+			                           "I do not have permission to send messages or embed links in this channel. Please fix this and try again.",
+			                           ephemeral=True)
+
 		await send_message(interaction.channel,
 		                   "For more information about setting up the bot, visit our [Documentation](<https://wolfricoz.github.io/ageverifier/config.html>)")
 		logging.info(f"{interaction.guild.name} started {setup_type.value}")
@@ -196,6 +202,7 @@ class Config(commands.GroupCog, name="config") :
 				                                                value=value)
 				if result is False :
 					await interaction.followup.send(f"{key.name}: <@&{value}> could not be found in database")
+					return
 				Queue().add(ConfigUtils.log_change(interaction.guild, {key.value : f"role id: {value} removed"},
 				                                   user_name=interaction.user.mention))
 				await interaction.followup.send(f"{key.name}: <@&{value}> has been removed from the database")
@@ -225,10 +232,11 @@ class Config(commands.GroupCog, name="config") :
 		with open('config.txt', 'w') as file :
 			file.write(f"Config for {interaction.guild.name}: \n\n")
 			for item in optionsall :
-				info = ConfigData().get_key_or_none(interaction.guild.id if guild is None else guild, item)
+				info = ConfigData().get_key_or_none(interaction.guild.id if guild is None else int(guild), item)
 				file.write(f"{item}: {info}\n")
 		await interaction.followup.send(f"Config for {interaction.guild.name if guild is None else guild}", file=discord.File(file.name))
 		os.remove(file.name)
+		return None
 
 	@commands.command()
 	@commands.is_owner()

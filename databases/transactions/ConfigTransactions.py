@@ -4,7 +4,7 @@ import sqlalchemy.exc
 from sqlalchemy import Select
 
 from databases import current as db
-from databases.controllers.DatabaseTransactions import DatabaseTransactions
+from databases.transactions.DatabaseTransactions import DatabaseTransactions
 from databases.current import Config, Servers
 
 
@@ -14,7 +14,7 @@ class ConfigTransactions(DatabaseTransactions) :
 		# This function should check if the item already exists, if so it will override it or throw an error.
 		with self.createsession() as session :
 			# Check if guild exists
-			from databases.controllers.ServerTransactions import ServerTransactions
+			from databases.transactions.ServerTransactions import ServerTransactions
 			db_guild = ServerTransactions().get(guildid)
 			if not db_guild :
 				ServerTransactions().add(guildid, active=True, name="fetch error", owner=None, member_count=0, invite="")
@@ -78,7 +78,7 @@ class ConfigTransactions(DatabaseTransactions) :
 	def key_multiple_exists_check(self, guildid: int, key: str, value) :
 		with self.createsession() as session :
 			exists = session.scalar(
-				Select(db.Config).where(db.Config.guild == guildid, db.Config.key == key, db.Config.value == value))
+				Select(db.Config).where(db.Config.guild == guildid, db.Config.key == key, db.Config.value == str(value)))
 			session.close()
 			if exists is not None :
 				return True
@@ -90,7 +90,7 @@ class ConfigTransactions(DatabaseTransactions) :
 			if not ConfigTransactions().key_multiple_exists_check(guildid, key, value) :
 				return False
 			exists = session.scalar(
-				Select(db.Config).where(db.Config.guild == guildid, db.Config.key == key, db.Config.value == value))
+				Select(db.Config).where(db.Config.guild == guildid, db.Config.key == key, db.Config.value == str(value)))
 			session.delete(exists)
 			self.commit(session)
 			self.reload_guild(guildid)

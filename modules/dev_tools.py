@@ -13,10 +13,10 @@ from discord_py_utilities.messages import send_message
 from classes.jsonmaker import Configer
 from classes.support.queue import Queue
 from databases.Generators.uidgenerator import uidgenerator
-from databases.controllers.ConfigData import ConfigData
-from databases.controllers.HistoryTransactions import JoinHistoryTransactions
-from databases.controllers.ServerTransactions import ServerTransactions
-from databases.controllers.UserTransactions import UserTransactions
+from databases.transactions.ConfigData import ConfigData
+from databases.transactions.HistoryTransactions import JoinHistoryTransactions
+from databases.transactions.ServerTransactions import ServerTransactions
+from databases.transactions.UserTransactions import UserTransactions
 from databases.current import Users
 from databases.enums.joinhistorystatus import JoinHistoryStatus
 from views.modals.inputmodal import send_modal

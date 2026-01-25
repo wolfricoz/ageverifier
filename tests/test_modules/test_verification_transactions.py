@@ -2,8 +2,8 @@ import unittest
 
 from classes.encryption import Encryption
 from databases.Generators.uidgenerator import uidgenerator
-from databases.controllers.UserTransactions import UserTransactions
-from databases.controllers.VerificationTransactions import VerificationTransactions
+from databases.transactions.UserTransactions import UserTransactions
+from databases.transactions.VerificationTransactions import VerificationTransactions
 from databases.current import create_bot_database, drop_bot_database
 
 

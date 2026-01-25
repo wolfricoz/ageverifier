@@ -4,7 +4,7 @@ import re
 import discord
 from discord_py_utilities.messages import send_response
 
-from databases.controllers.UserTransactions import UserTransactions
+from databases.transactions.UserTransactions import UserTransactions
 from classes.encryption import Encryption
 
 

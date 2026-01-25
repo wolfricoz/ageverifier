@@ -4,8 +4,9 @@ from typing import Optional
 from sqlalchemy import Select
 
 from classes.encryption import Encryption
-from databases.controllers.DatabaseTransactions import DatabaseTransactions
+from databases.transactions.DatabaseTransactions import DatabaseTransactions
 from databases.current import LobbyData
+from databases.transactions.UserTransactions import UserTransactions
 
 
 class LobbyDataTransactions(DatabaseTransactions):
@@ -26,6 +27,9 @@ class LobbyDataTransactions(DatabaseTransactions):
             The newly created LobbyData object.
         """
         with self.createsession() as session:
+            if not UserTransactions().user_exists(user_id):
+                UserTransactions().add_user_empty(user_id, True)
+
             new_entry = LobbyData(
                 uuid=uuid,
                 uid=user_id,
