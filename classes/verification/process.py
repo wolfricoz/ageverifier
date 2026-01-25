@@ -103,7 +103,7 @@ class VerificationProcess :
 		except Exception as e :
 
 			self.error = e
-			logging.error(e, exc_info=True)
+			logging.warning(e)
 
 
 	async def load_data(self) :
