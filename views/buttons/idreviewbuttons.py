@@ -5,7 +5,7 @@ from discord_py_utilities.messages import send_response
 
 from classes.retired.discord_tools import send_message
 from databases.transactions.VerificationTransactions import VerificationTransactions
-from views.modals.inputmodal import InputModal, send_modal
+from views.modals.inputmodal import send_modal
 
 
 #
@@ -21,6 +21,9 @@ class IdReviewButton(discord.ui.View) :
 		if not interaction.user.guild_permissions.administrator :
 			return await send_response(interaction, "You must have the administrator permission to execute this action!",
 			                           ephemeral=True)
+		if self.member.guild_permissions.manage_guild or self.member.guild_permissions.manage_permissions or self.member.guild_permissions.manage_messages:
+			await send_response(interaction, f"[CANNOT_VERIFY_STAFF] You cannot verify staff members using this command, if they wish to be verified they can open a ticket on the support guild.",)
+
 		idcheck = VerificationTransactions().get_id_info(self.member.id)
 		if not idcheck :
 			return await send_response(interaction, f"No ID verification request found for <@{self.member.id}>",

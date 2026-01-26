@@ -2,9 +2,10 @@ import discord
 from discord_py_utilities.messages import send_message, send_response
 
 from classes.access import AccessControl
+from classes.idcheck import IdCheck as IdCheckClass
 from databases.transactions.VerificationTransactions import VerificationTransactions
 from views.modals.idverify import IdVerifyModal
-from classes.idcheck import IdCheck as IdCheckClass
+
 
 #
 class IdVerifyButton(discord.ui.View) :
@@ -38,6 +39,8 @@ class IdVerifyButton(discord.ui.View) :
 			return await send_response(interaction, "You must have the administrator permission to execute this action!", ephemeral=True)
 		if not await self.load_data(interaction) :
 			return await send_response(interaction, "Could not load user data from message!", ephemeral=True)
+		if self.user.guild_permissions.manage_guild or self.user.guild_permissions.manage_permissions or self.user.guild_permissions.manage_messages:
+			await send_response(interaction, f"[CANNOT_VERIFY_STAFF] You cannot verify staff members using this command, if they wish to be verified they can open a ticket on the support guild.",)
 
 		await interaction.response.send_modal(IdVerifyModal(self.user, interaction.message))
 		return None

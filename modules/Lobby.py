@@ -61,6 +61,9 @@ class Lobby(commands.GroupCog, description="Commands for managing the new member
 			await send_response(interaction,
 			                    "[NOT_WHITELISTED] This command is limited to whitelisted servers. Please contact the developer `ricostryker` to verify the user.")
 			return
+		if user.guild_permissions.manage_guild or user.guild_permissions.manage_permissions or user.guild_permissions.manage_messages:
+			await send_response(interaction, f"[CANNOT_VERIFY_STAFF] You cannot verify staff members using this command, if they wish to be verified they can open a ticket on the support guild.",)
+
 		try :
 			await interaction.response.defer(ephemeral=True)
 		except discord.InteractionResponded :
