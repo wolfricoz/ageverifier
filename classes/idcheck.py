@@ -238,7 +238,7 @@ class IdCheck(ABC) :
 	@staticmethod
 	@abstractmethod
 	async def send_id_log(guild: discord.Guild, user: discord.User | discord.Member, message: str) :
-		idlog = ConfigData().get_channel(guild, "verification_failure_log")
+		idlog = await ConfigData().get_channel(guild, "verification_failure_log")
 		if not idlog:
 			logging.warning("ID log channel not set.")
 			return
