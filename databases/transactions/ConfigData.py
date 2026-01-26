@@ -143,11 +143,6 @@ class ConfigData(metaclass=singleton) :
 		:param key: 
 		:return: 
 		"""
-		if guildid not in self.conf :
-			return 0
-		if key.upper() not in self.conf[guildid] :
-			return 0
-
 		result = self.get_guild(guildid).get(key.upper(), 0)
 		if isinstance(result, int) :
 			return result
