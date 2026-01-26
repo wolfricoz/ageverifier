@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import logging
 import os
@@ -47,11 +48,18 @@ class Servers:
 				return None
 
 			results = result.json()
+			count = 0
 			for result in results:
 				server_id = result.get('id', 0)
+				if count % 10 == 0:
+					logging.info(f"Updating server {count}/{len(guilds)}")
+					print(f"Updating server {count}/{len(guilds)}")
+					await asyncio.sleep(0)
+
 				if server_id == 0:
 					logging.info("No server id returned, skipping")
 					continue
+				count +=1
 				ServerTransactions().update(server_id, premium=result.get('premium', None) )
 
 				logging.info(f"Server {server_id} updated successfully: {result}")
