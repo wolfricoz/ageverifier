@@ -30,7 +30,7 @@ class UserTransactions(DatabaseTransactions) :
 			else:
 				session.add(item)
 			self.commit(session)
-			return True
+			return item
 
 
 	def add_user_full(self, userid, dob, guildname, override=False) :
