@@ -253,7 +253,8 @@ class IdCheck(ABC) :
 		view = IdVerifyButton()
 
 		await send_message(idlog,
-		                   f"{f'{guild.owner.mention}' if ConfigData().get_toggle(guild.id, "ping_owner_on_failure", "ENABLED", "DISABLED" ) else ''} -# Custom idcheck for {user.mention}",
+		                   f"{f'{guild.owner.mention}\n' if ConfigData().get_toggle(guild.id, "ping_owner_on_failure", "ENABLED", "DISABLED" ) else ''}"
+		                   f"-# Custom idcheck for {user.mention}",
 		                   embed=embed,
 		                   view=view)
 

@@ -33,11 +33,11 @@ class Servers:
 		data = [{
 			"id": guild.guild,
 			"ageverifier": guild.active,
-			"name": guild.name,
-			"owner": guild.owner,
-			"owner_id": guild.owner_id,
-			"member_count": guild.member_count,
-			"invite": guild.invite
+			"name": guild.name if guild.name else "Unknown",
+			"owner": guild.owner if guild.owner else "Unknown",
+			"owner_id": guild.owner_id if guild.owner_id else 0,
+			"member_count": guild.member_count if guild.member_count else 0,
+			"invite": guild.invite if guild.invite else "Unknown"
 		} for guild in guilds]
 		try:
 			result = requests.post(self.url, headers=headers, json={"servers": data}, timeout=5)

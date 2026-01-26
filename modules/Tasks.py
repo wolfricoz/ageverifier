@@ -250,16 +250,11 @@ class Tasks(commands.Cog) :
 
 		guilds = ServerTransactions().get_all(id_only=False)
 
-		guild_list= []
-		for guild in guilds :
-			guild_list.append(guild)
-			if len(guild_list) >= 100  :
-				Queue().add(Servers().update_servers(guilds), 0)
-				guild_list.clear()
-				await asyncio.sleep(0)
-		else:
-			Queue().add(Servers().update_servers(guilds), 0)
-			guild_list.clear()
+
+
+		Queue().add(Servers().update_servers(guilds), 0)
+		await asyncio.sleep(0)
+
 		AccessControl().reload()
 
 	@tasks.loop(hours=24 * 7)
