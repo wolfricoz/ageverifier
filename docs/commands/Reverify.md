@@ -3,7 +3,7 @@ layout: default
 title: Reverify
 parent: Commands
 nav_order: 7
----		
+---
 		
 <h1>Reverify</h1>
 <h6>version: 3.2</h6>

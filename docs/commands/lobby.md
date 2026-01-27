@@ -3,7 +3,7 @@ layout: default
 title: Lobby
 parent: Commands
 nav_order: 6
----		
+---
 		
 <h1>Lobby</h1>
 <h6>version: 3.2</h6>

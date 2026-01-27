@@ -88,7 +88,7 @@ layout: default
 title: {module_name}
 parent: Commands
 nav_order: {nav}
----		
+---
 		
 <h1>{module_name}</h1>
 <h6>version: {VERSION}</h6>

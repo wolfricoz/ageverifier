@@ -3,7 +3,7 @@ layout: default
 title: Stats
 parent: Commands
 nav_order: 8
----		
+---
 		
 <h1>Stats</h1>
 <h6>version: 3.2</h6>

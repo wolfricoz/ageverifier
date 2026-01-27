@@ -3,7 +3,7 @@ layout: default
 title: idcheck
 parent: Commands
 nav_order: 5
----		
+---
 		
 <h1>idcheck</h1>
 <h6>version: 3.2</h6>

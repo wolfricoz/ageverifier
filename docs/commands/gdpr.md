@@ -3,7 +3,7 @@ layout: default
 title: gdpr
 parent: Commands
 nav_order: 3
----		
+---
 		
 <h1>gdpr</h1>
 <h6>version: 3.2</h6>

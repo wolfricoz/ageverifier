@@ -3,7 +3,7 @@ layout: default
 title: General
 parent: Commands
 nav_order: 4
----		
+---
 		
 <h1>General</h1>
 <h6>version: 3.2</h6>
