@@ -140,14 +140,7 @@ async def on_ready() :
 	Queue().add(bot.tree.sync(), 2)
 	Queue().add(devroom.send(f"AgeVerifier is in {len(bot.guilds)} guilds. Ageverifier {VERSION}"), 2)
 	logging.info(f"Commands synced, start up done! Connected to {len(bot.guilds)} guilds and {bot.shard_count} shards.")
-	bot.add_view(IdVerifyButton())
-	bot.add_view(VerifyButton())
-	bot.add_view(ReVerifyButton())
-	bot.add_view(ApprovalButtons())
-	bot.add_view(dobentry())
-	bot.add_view(IdSubmitButton())
-	bot.add_view(IdReviewButton())
-	bot.add_view(OnboardingLayout())
+
 	logging.info("Loaded routers: " + ", ".join(routers))
 	Queue().add(check_guilds(devroom))
 
@@ -254,6 +247,14 @@ async def setup_hook() :
 			os.mkdir(directory)
 			pass
 	logging.info(f'Loaded {len(loaded)} modules: {", ".join(loaded)}')
+	bot.add_view(IdVerifyButton())
+	bot.add_view(VerifyButton())
+	bot.add_view(ReVerifyButton())
+	bot.add_view(ApprovalButtons())
+	bot.add_view(dobentry())
+	bot.add_view(IdSubmitButton())
+	bot.add_view(IdReviewButton())
+	bot.add_view(OnboardingLayout())
 
 @bot.command(aliases=["cr", "reload"])
 @commands.has_permissions(administrator=True)

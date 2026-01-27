@@ -18,6 +18,7 @@ from views.buttons.tosbutton import TOSButton
 class ReVerifyButton(discord.ui.View) :
 	def __init__(self) :
 		super().__init__(timeout=None)
+	custom_id = "Reverification_button_view"
 
 	@discord.ui.button(label="Start ReVerification here!", style=discord.ButtonStyle.green,
 	                   custom_id="Reverification_button_start")
