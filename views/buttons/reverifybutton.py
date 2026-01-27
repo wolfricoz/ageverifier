@@ -20,7 +20,7 @@ class ReVerifyButton(discord.ui.View) :
 		super().__init__(timeout=None)
 
 	@discord.ui.button(label="Start ReVerification here!", style=discord.ButtonStyle.green,
-	                   custom_id="reverification_role")
+	                   custom_id="Reverification_button_start")
 	async def verify(self, interaction: discord.Interaction, button: discord.ui.Button) :
 		if cooldown := LobbyTimers().check_cooldown(interaction.guild.id, interaction.user.id) :
 			await send_response(interaction,
