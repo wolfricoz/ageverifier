@@ -27,3 +27,5 @@
 /test/.env
 */*.env
 /test/
+/.venv
+
