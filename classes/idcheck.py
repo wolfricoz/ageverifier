@@ -266,7 +266,7 @@ class IdCheck(ABC) :
 			embed = discord.Embed(title="ID Verification", description=create_message(interaction, min_age=AgeRoleTransactions().get_minimum_age(interaction.guild.id)))
 			embed.set_footer(text=f"{interaction.guild.id}")
 			embed.add_field(name="ID Check", value=idcheck.reason, inline=False)
-
+			await user.create_dm()
 			await send_message(user, embed=embed, view=IdSubmitButton())
 			await send_response(interaction, "Successfully sent ID verification request!", ephemeral=True)
 		except discord.Forbidden or discord.NotFound:
