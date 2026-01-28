@@ -35,7 +35,14 @@ class IdReviewButton(discord.ui.View) :
 			                           f"ID verification message expired for <@{self.member.id}>, we hold these up to 7 days.",
 			                           ephemeral=True)
 
+		if not self.member:
+			return await send_response(interaction, "Could not find the member in the guild!", ephemeral=True)
+
 		# fetch the image from DMs
+		if not self.member.dm_channel :
+			await self.member.create_dm()
+
+
 		message = await self.member.dm_channel.fetch_message(idcheck.idmessage)
 		await send_response(interaction, f"Here is the ID verification request for <@{self.member.id}>\n"
 		                                 f"{message.attachments[0].url}", ephemeral=True)
