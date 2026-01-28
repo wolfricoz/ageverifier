@@ -13,6 +13,8 @@ class IdVerifyButton(discord.ui.View) :
 		super().__init__(timeout=None)
 		self.user = None
 
+	custom_id = "id_verify_buttons"
+
 	@discord.ui.button(label="Request ID", style=discord.ButtonStyle.blurple, custom_id="id_request")
 	async def idverify(self, interaction: discord.Interaction, button: discord.ui.Button) :
 		if not interaction.user.guild_permissions.administrator :

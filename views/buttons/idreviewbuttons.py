@@ -14,6 +14,8 @@ class IdReviewButton(discord.ui.View) :
 		super().__init__(timeout=None)
 		self.member: discord.Member = None
 
+	custom_id = "id_review_buttons"
+
 	@discord.ui.button(label="Review ID", style=discord.ButtonStyle.blurple, custom_id="id_review")
 	async def idverify(self, interaction: discord.Interaction, button: discord.ui.Button) :
 		if not await self.load_data(interaction) :

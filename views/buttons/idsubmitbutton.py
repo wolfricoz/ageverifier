@@ -12,6 +12,9 @@ class IdSubmitButton(discord.ui.View) :
 		super().__init__(timeout=None)
 		self.guild = None
 
+	custom_id = "id_submit_buttons"
+
+
 
 
 	@discord.ui.button(label="Submit ID", style=discord.ButtonStyle.blurple, custom_id="id_answer")

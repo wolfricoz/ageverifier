@@ -1,5 +1,5 @@
 import discord
-from discord_py_utilities.messages import send_message, send_response
+from discord_py_utilities.messages import send_response
 
 from views.modals.SurveyModal import SurveyModal
 
@@ -9,6 +9,7 @@ class SurveyButton(discord.ui.View) :
 		self.guild: discord.Guild = None
 		super().__init__(timeout=None)
 		pass
+	custom_id = "Survey_buttons"
 
 	@discord.ui.button(label="Answer Survey", style=discord.ButtonStyle.green, custom_id="Asurvey")
 	async def allow(self, interaction: discord.Interaction, button: discord.ui.Button) :
