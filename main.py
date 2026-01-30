@@ -172,6 +172,10 @@ async def update_guild(guild: discord.Guild, devroom) :
 		except discord.errors.Forbidden :
 			print(f"Unable to send message to {guild.owner.name} in {guild.name}")
 		pass
+	except discord.HTTPException:
+		print(f"HTTP Exception when getting invites for {guild.name}, sleeping for 60 seconds.")
+		await asyncio.sleep(60)
+		pass
 
 
 # This can become its own cog.

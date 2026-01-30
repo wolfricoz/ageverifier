@@ -3,7 +3,7 @@ import logging
 from datetime import datetime, timezone
 
 import sqlalchemy.exc
-from sqlalchemy import Select, and_
+from sqlalchemy import Select, and_, text
 from sqlalchemy.exc import SQLAlchemyError
 
 from classes.encryption import Encryption
@@ -224,3 +224,17 @@ class UserTransactions(DatabaseTransactions) :
 			warning = session.scalar(Select(Warnings).where(Warnings.id == warning_id))
 			session.delete(warning)
 			self.commit(session)
+
+	def get_all_expired(self):
+		with self.createsession() as session:
+			# Fetches users that have not updated their entry in over 365 days
+			return session.execute(text("select uid, entry from users where entry < NOW() - INTERVAL '365' DAY")).all()
+
+	def get_all_soft_deleted(self, expired=False):
+		with self.createsession() as session:
+			if expired:
+				# Fetches users that have been soft deleted over 30 days ago
+				return session.scalars(text("select uid from users where deleted_at < NOW() - INTERVAL '30' DAY")).all()
+
+			# Fetches users that have been soft deleted
+			return session.scalars(Select(Users).where(Users.deleted_at.is_not(None))).all()

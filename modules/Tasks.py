@@ -32,6 +32,7 @@ class Tasks(commands.Cog) :
 	Most of these functions run on a schedule and don't require any user interaction.
 	There is one command available for administrators to manually trigger a specific task.
 	"""
+
 	def __init__(self, bot: commands.AutoShardedBot) :
 		"""loads tasks"""
 		self.bot = bot
@@ -53,7 +54,6 @@ class Tasks(commands.Cog) :
 		# self.database_ping.cancel()
 		self.refresh_invites.cancel()
 		self.clean_guilds.cancel()
-
 
 	@tasks.loop(minutes=10)
 	async def config_reload(self) :
@@ -91,21 +91,45 @@ class Tasks(commands.Cog) :
 		logging.debug(f"Updating entry time for {member.id}")
 		UserTransactions().update_entry_date(member.id)
 
-	async def user_expiration_remove(self, userdata) :
+	async def user_expiration_remove(self) :
 		"""removes expired entries."""
-		for entry in userdata :
-			await asyncio.sleep(0.001)
-			await self.expiration_check(entry)
 
-	async def expiration_check(self, entry) :
-		if entry.entry < datetime.now(entry.entry.tzinfo) - timedelta(days=365) :
-			UserTransactions().permanent_delete(entry.uid, "Expiration Check (Entry Expired)")
+		await self.dob_expiration_check()
+		await self.clean_deleted_users()
+
+	async def dob_expiration_check(self) :
+		"""
+		removes expired entries based on dob expiration
+		:return:
+		"""
+		records = UserTransactions().get_all_expired()
+		count = 0
+		for entry in records :
+			if count % 10 == 0 :
+				logging.info(f"Processed {count} expired entries so far.")
+				await asyncio.sleep(0)
+			UserTransactions().permanent_delete(entry[0], "Expiration Check (Entry Expired)")
 			# logging.info("DEV: EXPIRATION CHECK DISABLED")
-			logging.info(f"Database record: {entry.uid} expired with date: {entry.entry}")
-		if entry.deleted_at and entry.deleted_at < datetime.now() - timedelta(days=30) :
-			UserTransactions().permanent_delete(entry.uid, "GDPR Removal (30 days passed)")
+			logging.info(f"Database record: {entry[0]} expired with date: {entry[1]}")
+			count += 1
+		logging.info(f"Finished checking all expired entries, total removed: {count}")
+
+	async def clean_deleted_users(self) :
+		"""
+		removes expired entries based on GDPR deletion expiration
+		:return:
+		"""
+		records = UserTransactions().get_all_soft_deleted(expired=True)
+		count = 0
+		for entry in records :
+			if count % 10 == 0 :
+				logging.info(f"Processed {count} expired entries so far.")
+				await asyncio.sleep(0)
+
+				UserTransactions().permanent_delete(entry, "GDPR Removal (30 days passed)")
+				count += 1
 			# logging.info("DEV: EXPIRATION CHECK DISABLED")
-			logging.info(f"Database record: {entry.uid} GDPR deleted with date: {entry.deleted_at}")
+		logging.info(f"Finished checking all GDPR expired entries, total removed: {count}")
 
 	@tasks.loop(hours=12)
 	async def check_users_expiration(self) :
@@ -114,7 +138,7 @@ class Tasks(commands.Cog) :
 		userdata = UserTransactions().get_all_users()
 		userids = [x.uid for x in userdata]
 		await self.user_expiration_update(userids)
-		await self.user_expiration_remove(userdata)
+		await self.user_expiration_remove()
 		logging.info("Finished checking all entries")
 
 	async def clean_lobby(self, guild: discord.Guild) :
@@ -134,37 +158,36 @@ class Tasks(commands.Cog) :
 		if not lobby_channel :
 			logging.warning(f"[clean-up] No lobby channel found for {guild.name}")
 			return
-		if days == 0:
+		if days == 0 :
 			logging.info(f"[clean-up] Days are set to 0, skipping {guild.name}")
 			return
 		removal_date = datetime.now(tz=UTC) - timedelta(days=days)
 
-		async for message in lobby_channel.history(limit=None, before=removal_date):
+		async for message in lobby_channel.history(limit=None, before=removal_date) :
 			logging.debug(f"Message: {message.content}")
-			if message.author != self.bot.user:
+			if message.author != self.bot.user :
 				Queue().add(message.delete(), 0)
 				count_messages += 1
-			if message.author.guild_permissions.manage_messages:
+			if message.author.guild_permissions.manage_messages :
 				continue
-			if message.author != self.bot.user or len(message.mentions) < 1:
+			if message.author != self.bot.user or len(message.mentions) < 1 :
 				continue
 			user = message.mentions[0]
 
 			if user.guild_permissions.manage_messages :
 				continue
-			count_messages +=1
+			count_messages += 1
 			if user.global_name not in kicked_users :
 				kicked_users.append(user.global_name)
-			if not DEBUG:
+			if not DEBUG :
 				Queue().add(user.send(removal_message), 0)
-				Queue().add(user.kick(reason=f"In lobby for more than {days} days"),0)
-				Queue().add(message.delete(),0)
+				Queue().add(user.kick(reason=f"In lobby for more than {days} days"), 0)
+				Queue().add(message.delete(), 0)
 		if count_messages < 1 and len(kicked_users) < 1 :
 			return
 
 		if not os.path.isdir('temp') :
 			os.mkdir('temp')
-
 
 		with open("temp/kicked.txt", "w") as file :
 			str_kicked = "\n".join(kicked_users)
@@ -176,18 +199,16 @@ class Tasks(commands.Cog) :
 		)
 		os.remove("temp/kicked.txt")
 
-
-
 	@tasks.loop(hours=24)
 	async def clean_guilds(self) :
 		"""This function cleans up the guilds from left-over messages, and inactive users"""
 		await asyncio.sleep(15)
 		logging.info("Cleaning up guilds.")
 		access_control = AccessControl()
-		if len(access_control.premium_guilds) < 1:
+		if len(access_control.premium_guilds) < 1 :
 			access_control.add_premium_guilds_to_list()
 		premium_guilds = access_control.premium_guilds
-		for gid in premium_guilds:
+		for gid in premium_guilds :
 			guild = self.bot.get_guild(gid)
 			if not guild :
 				continue
@@ -197,7 +218,7 @@ class Tasks(commands.Cog) :
 	async def refresh_invites(self) :
 		self.bot.invites = {}
 		for guild in self.bot.guilds :
-			try:
+			try :
 				self.bot.invites[guild.id] = await guild.invites()
 			except Exception as e :
 				logging.warning(f"Could not refresh invites for {guild.name}: {e}")
@@ -216,7 +237,7 @@ class Tasks(commands.Cog) :
 				guild_ids.remove(guild.id)
 				count += 1
 				continue
-			try:
+			try :
 				ServerTransactions().add(guild.id,
 				                         active=True,
 				                         name=guild.name,
@@ -225,12 +246,10 @@ class Tasks(commands.Cog) :
 				                         invite=await check_guild_invites(self.bot, guild)
 				                         )
 				count += 1
-			except:
+			except :
 				logging.error(f"Error adding guild {guild.name} ({guild.id}) to the database", exc_info=True)
 				count += 1
 				continue
-
-
 
 		for gid in guild_ids :
 			try :
@@ -249,8 +268,6 @@ class Tasks(commands.Cog) :
 			                         )
 
 		guilds = ServerTransactions().get_all(id_only=False)
-
-
 
 		Queue().add(Servers().update_servers(guilds), 0)
 		await asyncio.sleep(0)
@@ -347,7 +364,6 @@ class Tasks(commands.Cog) :
 	async def before_cleanup(self) :
 		"""stops event from starting before the bot has fully loaded"""
 		await self.bot.wait_until_ready()
-
 
 
 async def setup(bot) :
