@@ -43,16 +43,6 @@ def change_age_roles(guild: discord.Guild, user: discord.Member, age, remove = F
 			Queue().add(user.add_roles(*add_roles, reason="Verification Successful!"), priority=2 if not remove else 0)
 		except Exception as e:
 			logging.error(f"Failed to add roles to {user.mention} in {guild.name}: {e}", exc_info=True)
-	if not remove :
-		return
-	if len(remove_roles) < 1 :
-		return
-	Queue().add(user.remove_roles(*remove_roles), priority=0)
-	mod_lobby = guild.get_channel(ConfigData().get_key_int(guild.id, "approval_channel"))
-	if mod_lobby is None:
-		return
-	Queue().add(send_message(mod_lobby, f"[AGE ROLES UPDATED] {user.mention} has been given the roles: {', '.join([role.name for role in add_roles])} and removed the roles: {', '.join([role.name for role in remove_roles])}"), priority=0)
-
 	# now handle reverification roles
 	if not reverify :
 		return
@@ -75,6 +65,18 @@ def change_age_roles(guild: discord.Guild, user: discord.Member, age, remove = F
 		reverify_roles.append(role)
 	if len(reverify_roles) > 0 :
 		Queue().add(user.add_roles(*reverify_roles, reason="Reverification Roles Added"), priority=2)
+
+
+	if not remove :
+		return
+	if len(remove_roles) < 1 :
+		return
+	Queue().add(user.remove_roles(*remove_roles), priority=0)
+	mod_lobby = guild.get_channel(ConfigData().get_key_int(guild.id, "approval_channel"))
+	if mod_lobby is None:
+		return
+	Queue().add(send_message(mod_lobby, f"[AGE ROLES UPDATED] {user.mention} has been given the roles: {', '.join([role.name for role in add_roles])} and removed the roles: {', '.join([role.name for role in remove_roles])}"), priority=0)
+
 
 
 
