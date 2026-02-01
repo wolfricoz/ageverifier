@@ -57,6 +57,8 @@ class Lobby(commands.GroupCog, description="Commands for managing the new member
         - You'll need `Administrator` permission.
         - Your server must be whitelisted to use this command.
         """
+
+
 		if check_whitelist(interaction.guild.id) is False and not permissions.check_dev(interaction.user.id) :
 			await send_response(interaction,
 			                    "[NOT_WHITELISTED] This command is limited to whitelisted servers. Please contact the developer `ricostryker` to verify the user.")
@@ -115,6 +117,7 @@ class Lobby(commands.GroupCog, description="Commands for managing the new member
         **Permissions:**
         - You'll need the `Manage Messages` permission to use this command.
         """
+		await AgeCalculations.validatedob(dob, interaction)
 		age = AgeCalculations.dob_to_age(dob)
 		await send_response(interaction, f"As of today {dob} is {age} years old", ephemeral=True)
 
