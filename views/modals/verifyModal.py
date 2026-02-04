@@ -20,9 +20,11 @@ class VerifyModal(discord.ui.Modal) :
 	# By default, it is required and is a short-style input which is exactly
 	# what we want.
 
-	def __init__(self, month=2, day=3, year=4, reverify=False) :
+	def __init__(self, *, month=1, day=2, year=3, reverify=False) :
 		super().__init__()
 		self.reverify = reverify
+		logging.info(f"Initializing VerifyModal with month={month}, day={day}, year={year}, reverify={reverify}")
+
 		self.age = discord.ui.TextInput(
 			label='Current Age (Do not round up or down)',
 			placeholder='99',
@@ -32,38 +34,39 @@ class VerifyModal(discord.ui.Modal) :
 			row=0
 
 		)
-		self.month = discord.ui.TextInput(
-			label='month',
-			placeholder='mm',
-			max_length=2,
-			style=discord.TextStyle.short,
-			row=month,
-			required=True
+		self.fields = {
+			month : discord.ui.TextInput(
+				label='month',
+				placeholder='mm',
+				max_length=2,
+				style=discord.TextStyle.short,
+				row=month,
+				required=True),
+			day   : discord.ui.TextInput(
+				label='day',
+				placeholder='dd',
+				max_length=2,
+				style=discord.TextStyle.short,
+				row=day,
+				required=True
 
-		)
+			),
+			year  : discord.ui.TextInput(
+				label='year',
+				placeholder='yyyy',
+				max_length=4,
+				style=discord.TextStyle.short,
+				row=year,
+				required=True
+			)}
 
-		self.day = discord.ui.TextInput(
-			label='day',
-			placeholder='dd',
-			max_length=2,
-			style=discord.TextStyle.short,
-			row=day,
-			required=True
-
-		)
-
-		self.year = discord.ui.TextInput(
-			label='year',
-			placeholder='yyyy',
-			max_length=4,
-			style=discord.TextStyle.short,
-			row=year,
-			required=True
-		)
+		# Since 'row' no longer works, adding them manually. Thanks discord.py! :eyeroll:
 		self.add_item(self.age)
-		self.add_item(self.day)
-		self.add_item(self.month)
-		self.add_item(self.year)
+		# Sort the fields by their row number to maintain order
+		self.fields = dict(sorted(self.fields.items()))
+
+		for key, field in self.fields.items() :
+			self.add_item(field)
 
 	async def on_submit(self, interaction: discord.Interaction) :
 		# await interaction.response.defer(ephemeral=True)
@@ -90,11 +93,10 @@ class VerifyModal(discord.ui.Modal) :
 			server = None
 			if verification_process.id_check_info :
 				server = verification_process.id_check_info.server
-			if verification_process.user_record and not server:
+			if verification_process.user_record and not server :
 				server = verification_process.user_record.server
-			if not server:
+			if not server :
 				server = interaction.guild.name
-
 
 			return await IdCheck.send_check(interaction,
 			                                verification_process.id_channel,
