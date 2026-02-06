@@ -22,6 +22,9 @@ class VerifyModal(discord.ui.Modal) :
 
 	def __init__(self, *, month=1, day=2, year=3, reverify=False) :
 		super().__init__()
+		self.year = None
+		self.day = None
+		self.month = None
 		self.reverify = reverify
 		logging.info(f"Initializing VerifyModal with month={month}, day={day}, year={year}, reverify={reverify}")
 
@@ -41,14 +44,18 @@ class VerifyModal(discord.ui.Modal) :
 				max_length=2,
 				style=discord.TextStyle.short,
 				row=month,
-				required=True),
+				required=True,
+				custom_id="month"
+			
+			),
 			day   : discord.ui.TextInput(
 				label='day',
 				placeholder='dd',
 				max_length=2,
 				style=discord.TextStyle.short,
 				row=day,
-				required=True
+				required=True,
+				custom_id="day"
 
 			),
 			year  : discord.ui.TextInput(
@@ -57,7 +64,8 @@ class VerifyModal(discord.ui.Modal) :
 				max_length=4,
 				style=discord.TextStyle.short,
 				row=year,
-				required=True
+				required=True,
+				custom_id="year"
 			)}
 
 		# Since 'row' no longer works, adding them manually. Thanks discord.py! :eyeroll:
@@ -69,14 +77,24 @@ class VerifyModal(discord.ui.Modal) :
 			self.add_item(field)
 
 	async def on_submit(self, interaction: discord.Interaction) :
+		for key, field in self.fields.items() :
+			if field.custom_id == "month" :
+				self.month = int(field.value)
+			elif field.custom_id == "day" :
+				self.day = int(field.value)
+			elif field.custom_id == "year" :
+				self.year = int(field.value)
+		
+		
+		
 		# await interaction.response.defer(ephemeral=True)
 		verification_process = VerificationProcess(
 			interaction.client,
 			interaction.user,
 			interaction.guild,
-			self.day.value,
-			self.month.value,
-			self.year.value,
+			self.day,
+			self.month,
+			self.year,
 			self.age.value,
 			reverify=self.reverify
 		)
