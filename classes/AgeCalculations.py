@@ -11,6 +11,7 @@ from discord_py_utilities.messages import send_message
 
 import databases.current
 from classes.encryption import Encryption
+from classes.retired.discord_tools import send_response
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.VerificationTransactions import VerificationTransactions
 
@@ -160,9 +161,9 @@ class AgeCalculations(ABC) :
 		except ValueError :
 			dob = "ValueError"
 		if dob == "AttributeError" :
-			await interaction.followup.send("Please fill in the date of birth field.")
+			await send_response(interaction, "Please fill in the date of birth field.")
 			return False
 		if dob == "ValueError" :
-			await interaction.followup.send("Please fill the dob in with the format: mm/dd/yyyy")
+			await send_response(interaction, "Please fill the dob in with the format: mm/dd/yyyy")
 			return False
 		return dob
