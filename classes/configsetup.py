@@ -3,7 +3,7 @@ import logging
 import discord
 from discord.utils import get
 from discord_py_utilities.exceptions import NoPermissionException
-from discord_py_utilities.messages import send_message
+from discord_py_utilities.messages import send_message, send_response
 from discord_py_utilities.permissions import check_missing_channel_permissions, find_first_accessible_text_channel
 
 from classes.config.utils import ConfigUtils
@@ -37,7 +37,7 @@ class ConfigSetup :
 				if view.value == "next" :
 					continue
 				if view.value is None :
-					await interaction.followup.send("Setup cancelled")
+					await send_response(interaction, "Setup has been cancelled")
 					return
 			except AttributeError :
 				logging.info("No value found, message was deleted")
@@ -54,7 +54,7 @@ class ConfigSetup :
 				if view.value == "next" :
 					continue
 				if view.value is None :
-					await interaction.followup.send("Setup cancelled")
+					await send_response(interaction, "Setup has been cancelled")
 					return
 			except AttributeError :
 				logging.info("No value found, message was deleted")
@@ -66,7 +66,7 @@ class ConfigSetup :
 			                                     f"Type `cancel` to cancel, or `next` to go to the next message")
 			result = await bot.wait_for('message', check=lambda m : m.author == interaction.user)
 			if result.content.lower() == "cancel" :
-				await interaction.followup.send("Setup cancelled")
+				await send_response(interaction, "Setup has been cancelled")
 				return
 			if result.content.lower() == "next" :
 				continue
@@ -83,7 +83,7 @@ class ConfigSetup :
 		await confirmation.wait()
 
 		if not confirmation.confirmed :
-			await interaction.followup.send("Setup Cancelled")
+			await send_response(interaction, "Setup has been cancelled")
 			return None
 		category = get(interaction.guild.categories, name="Lobby")
 		if not category :
@@ -137,7 +137,7 @@ class ConfigSetup :
 							if view.value == "next" :
 								continue
 							if view.value is None :
-								await interaction.followup.send("Setup cancelled")
+								await send_response(interaction, "Setup has been cancelled")
 								return False
 						except AttributeError :
 							logging.info("No value found, message was deleted")
@@ -226,7 +226,7 @@ class ConfigSetup :
 				if view.value == "next" :
 					continue
 				if view.value is None :
-					await interaction.followup.send("Setup cancelled")
+					await send_response(interaction, "Setup has been cancelled")
 					return False
 			except AttributeError :
 				logging.info("No value found, message was deleted")
