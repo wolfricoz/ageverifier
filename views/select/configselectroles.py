@@ -18,7 +18,7 @@ class ConfigSelectChannels(ui.View) :
 		super().__init__(timeout=1800)
 		self.value = None
 		button = discord.ui.Button(label='Help', style=discord.ButtonStyle.url,
-		                           url='https://wolfricoz.github.io/ageverifier/config.html', emoji="❓")
+		                           url='https://wolfricoz.github.io/ageverifier/commands/Config.html', emoji="❓")
 		self.add_item(button)
 
 	# @ui.select(cls=type_we_want, **other_things)
@@ -52,7 +52,7 @@ class ConfigSelectRoles(ui.View) :
 		super().__init__(timeout=1800)
 		self.value = None
 		button = discord.ui.Button(label='Help', style=discord.ButtonStyle.url,
-		                           url='https://wolfricoz.github.io/ageverifier/config.html', emoji="❓")
+		                           url='`https://wolfricoz.github.io/ageverifier/commands/Config.html`', emoji="❓")
 		self.add_item(button)
 
 	# @ui.select(cls=type_we_want, **other_things)

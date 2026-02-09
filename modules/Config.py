@@ -68,7 +68,7 @@ class Config(commands.GroupCog, name="config",
 			                           ephemeral=True)
 
 		await send_message(interaction.channel,
-		                   "For more information about setting up the bot, visit our [Documentation](<https://wolfricoz.github.io/ageverifier/config.html>)")
+		                   "For more information about setting up the bot, visit our [Documentation](<https://wolfricoz.github.io/ageverifier/commands/Config.html>)")
 		logging.info(f"{interaction.guild.name} started {setup_type.value}")
 		status: bool = True
 		match setup_type.value.lower() :
