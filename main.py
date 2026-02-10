@@ -184,8 +184,8 @@ async def on_guild_join(guild) :
 	# adds user to database
 	devroom = bot.get_channel(bot.DEV)
 	await devroom.send(f"Ageverifier is now in {len(bot.guilds)}! It just joined:"
-	                   f"\nGuild: {guild}({guild.id})"
-	                   f"\nOwner: {guild.owner}({guild.owner.id})"
+	                   f"\nGuild: `{guild}({guild.id})`"
+	                   f"\nOwner: `{guild.owner}({guild.owner.id})`"
 	                   f"\nMember count: {guild.member_count}"
 	                   f"\n\nThank you for choosing Ageverifier to keep your server safe.")
 	if await blacklist_check(guild, devroom) :
