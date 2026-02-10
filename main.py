@@ -226,7 +226,7 @@ async def on_guild_join(guild) :
 @bot.event
 async def on_guild_remove(guild) :
 	devroom = bot.get_channel(bot.DEV)
-	await devroom.send(f"Left {guild.name}({guild.id})")
+	await devroom.send(f"Left `{guild.name}({guild.id})`")
 
 
 # cogloader
