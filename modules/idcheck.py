@@ -49,7 +49,8 @@ class idcheck(commands.GroupCog, description="Commands for managing manual ID ve
 			"Reason"      : user.reason,
 			"idcheck"     : user.idcheck,
 			"idverified"  : user.idverified,
-			"verifieddob" : Encryption().decrypt(user.verifieddob) if user.verifieddob else ""
+			"verifieddob" : Encryption().decrypt(user.verifieddob) if user.verifieddob else "",
+			"server"      : user.server if user.server else "",
 		}
 
 		embed = discord.Embed(title="USER INFO",
