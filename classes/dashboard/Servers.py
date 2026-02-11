@@ -22,7 +22,7 @@ class Servers:
 	async def update_servers(self, guilds: list[dbServers]):
 
 		headers = {
-			"Authorization": f"Basic {self.encoded}",
+			"Authorization": f"Bearer {self.key}",
 			"Content-Type": "application/json"
 		}
 		if guilds is None:
