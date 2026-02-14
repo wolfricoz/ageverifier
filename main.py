@@ -168,7 +168,9 @@ async def update_guild(guild: discord.Guild, devroom) :
 	                         name=guild.name,
 	                         owner=guild.owner,
 	                         member_count=guild.member_count,
-	                         invite=await check_guild_invites(bot, guild, invite))
+	                         invite=await check_guild_invites(bot, guild, invite),
+	                         reload=False
+	                         )
 	try :
 		bot.invites[guild.id] = await guild.invites()
 	except discord.errors.Forbidden :
