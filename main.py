@@ -146,8 +146,14 @@ async def on_ready() :
 
 
 async def check_guilds(devroom: discord.TextChannel) :
+	count = 0
+	total= len(bot.guilds)
 	for guild in bot.guilds :
-		Queue().add(update_guild(guild, devroom), 0)
+		if count % 50:
+			logging.info(f"Checked {count}/{total} guilds")
+			await asyncio.sleep(0)
+		await update_guild(guild, devroom)
+		count += 1
 
 
 async def update_guild(guild: discord.Guild, devroom) :
