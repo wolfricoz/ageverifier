@@ -1,5 +1,6 @@
+import os
+
 import discord
-from torch.distributed.argparse_util import env
 
 from classes.AgeCalculations import AgeCalculations
 from classes.lobbyprocess import LobbyProcess
@@ -16,9 +17,9 @@ async def verify(user: discord.Member, interaction: discord.Interaction, dob: st
 		return False
 	VerificationTransactions().idverify_update(user.id, dob, interaction.guild.name, server=interaction.guild.name)
 	age = AgeCalculations.dob_to_age(dob)
-	dev_log = interaction.client.get_channel(env("DEV", 1022319186950758472))
+	dev_log = interaction.client.get_channel(int(os.getenv("DEV", 1022319186950758472)))
 	if dev_log is None:
-		dev_log = interaction.client.fetch_channel(env("DEV", 1022319186950758472))
+		dev_log = interaction.client.fetch_channel(int(os.getenv("DEV", 1022319186950758472)))
 	id_message = f"**USER ID VERIFICATION**\n**ID VERIFIED BY:** {interaction.user}\n"
 
 	await LobbyProcess.log(user, interaction.guild, age, dob, interaction.user, True, id_verify=id_message)
