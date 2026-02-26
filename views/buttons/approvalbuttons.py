@@ -174,7 +174,7 @@ Once you've made these changes you may resubmit your age and date of birth. Than
 		return
 
 	@discord.ui.button(label="User Left (stores DOB)", style=discord.ButtonStyle.primary,
-	                   custom_id="VERIFICATION_ADD_ROLE")
+	                   custom_id="store_dob_left")
 	async def add_to_db(self, interaction: discord.Interaction, button: discord.ui.Button) :
 		"""Adds user to db"""
 		await self.load_data(interaction)
@@ -194,21 +194,18 @@ Once you've made these changes you may resubmit your age and date of birth. Than
 		await interaction.message.delete()
 		return
 
+	@discord.ui.button(label="reactivate buttons", custom_id="reactivate_buttons", style=discord.ButtonStyle.secondary)
+	async def reactivate_buttons(self, interaction: discord.Interaction, button: button) :
+		for child in self.children :
+			child.disabled = False
+		await interaction.message.edit(view=self)
+
 	async def disable_buttons(self, interaction, button: discord.ui.Button = None, update=True, disable_add=False) :
 		"""disables buttons"""
-		self.manual_id.disabled = True
-		self.manual_id.style = discord.ButtonStyle.grey
-
-		self.allow.disabled = True
-		self.allow.style = discord.ButtonStyle.grey
-
-		self.nsfw_warning.disabled = True
-		self.nsfw_warning.style = discord.ButtonStyle.grey
-
-		button.style = discord.ButtonStyle.green
-		if disable_add :
-			self.add_to_db.disabled = True
-			self.add_to_db.style = discord.ButtonStyle.grey
+		for child in self.children :
+			if child.custom_id in ["reactivate_buttons", "store_dob_left"] :
+				continue
+			child.disabled = True
 
 		if not update :
 			return
