@@ -195,7 +195,7 @@ Once you've made these changes you may resubmit your age and date of birth. Than
 		return
 
 	@discord.ui.button(label="reactivate buttons", custom_id="reactivate_buttons", style=discord.ButtonStyle.secondary)
-	async def reactivate_buttons(self, interaction: discord.Interaction, button: button) :
+	async def reactivate_buttons(self, interaction: discord.Interaction, button: discord.ui.button) :
 		for child in self.children :
 			child.disabled = False
 		await interaction.message.edit(view=self)
