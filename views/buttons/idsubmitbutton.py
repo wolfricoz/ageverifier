@@ -42,7 +42,7 @@ class IdSubmitButton(discord.ui.View) :
 		if len(message.attachments) > 1:
 			await send_response(interaction, "Too many attachments attached to this message, please send only 1 image.")
 		mod_channel: discord.TextChannel = self.guild.get_channel(
-			ConfigData().get_key_int_or_zero(self.guild.id, "approval_channel"))
+			ConfigData().get_key_int_or_zero(self.guild.id, "verification_failure_log"))
 		if mod_channel is None:
 			await send_response(interaction, "Lobbymod channel not set, please contact the server staff.", ephemeral=True)
 			return
