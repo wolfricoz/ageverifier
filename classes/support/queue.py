@@ -1,6 +1,7 @@
 import asyncio
 import inspect
 import logging
+import math
 
 import discord
 from discord_py_utilities.exceptions import NoPermissionException
@@ -23,8 +24,8 @@ class Queue(metaclass=Singleton):
     low_priority_queue = []
     task_finished = True
 
-    def status(self):
-        return f"Remaining queue: High: {len(self.high_priority_queue)} Normal: {len(self.normal_priority_queue)} Low: {len(self.low_priority_queue)}"
+    def status(self) :
+        return f"Remaining queue: High: {len(self.high_priority_queue)} Normal: {len(self.normal_priority_queue)} Low: {len(self.low_priority_queue)} Estimated time: {round(math.ceil(self.get_queue_time()) / 60, 2)} minutes"
 
     def empty(self):
         return len(self.high_priority_queue) == 0 and len(self.normal_priority_queue) == 0 and len(self.low_priority_queue) == 0
@@ -61,45 +62,49 @@ class Queue(metaclass=Singleton):
         return None
 
     async def start(self):
-        if self.task_finished and not self.empty():
-            self.task_finished = False
-            task = self.process()
+        if not self.task_finished or self.empty() :
+            return
+        self.task_finished = False
+        task = self.process()
 
-            try:
+        try:
 
 
-                if not task:
-                    self.low_priority_queue = [i for i in self.low_priority_queue if i is not None]
-                    self.normal_priority_queue = [i for i in self.normal_priority_queue if i is not None]
-                    self.high_priority_queue = [i for i in self.high_priority_queue if i is not None]
-                    print(self.status())
-                    self.task_finished = True
-                    return
-                if not inspect.iscoroutine(task):
-                    task()
-                    self.task_finished = True
-                    logging.info(f"Processing task: {task.__name__}")
-
-                    print(self.status())
-                    return
+            if not task:
+                self.low_priority_queue = [i for i in self.low_priority_queue if i is not None]
+                self.normal_priority_queue = [i for i in self.normal_priority_queue if i is not None]
+                self.high_priority_queue = [i for i in self.high_priority_queue if i is not None]
+                print(self.status())
+                self.task_finished = True
+                return
+            if not inspect.iscoroutine(task):
+                task()
+                self.task_finished = True
                 logging.info(f"Processing task: {task.__name__}")
-                if task.__name__.lower() in ["delete"]:
-                    await asyncio.sleep(1)
-                await task
 
-            except KeyNotFound as e:
-                logging.warning(f"Key not found: {task.__name__}: {e}")
-            except NoPermissionException as e:
-                logging.warning(f"Not enough permissions to perform task: {task.__name__}: {e}")
-            except discord.Forbidden as e:
-                logging.warning(f"Discord Forbidden: {task.__name__}: {e}")
+                print(self.status())
+                return
+            logging.info(f"Processing task: {task.__name__}")
+            if task.__name__.lower() in ["delete"]:
+                await asyncio.sleep(1)
+            await task
 
-            except discord.NotFound:
-              logging.warning(f"Discord NotFound: {task.__name__}")
-            except Exception as e:
-              logging.error(f"Error in queue: {e}", exc_info=True)
-            self.task_finished = True
-            logging.info(f"Remaining queue: High: {len(self.high_priority_queue)} Normal: {len(self.normal_priority_queue)} Low: {len(self.low_priority_queue)}")
+        except KeyNotFound as e:
+            logging.warning(f"Key not found: {task.__name__}: {e}")
+        except NoPermissionException as e:
+            logging.warning(f"Not enough permissions to perform task: {task.__name__}: {e}")
+        except discord.Forbidden as e:
+            logging.warning(f"Discord Forbidden: {task.__name__}: {e}")
+
+        except discord.NotFound:
+          logging.warning(f"Discord NotFound: {task.__name__}")
+        except Exception as e:
+          logging.error(f"Error in queue: {e}", exc_info=True)
+        self.task_finished = True
+        logging.info(self.status())
+
+
 
     def get_queue_time(self) -> float:
-        return len(self.high_priority_queue) + len(self.normal_priority_queue) * 0.3
+        return (len(self.high_priority_queue) + len(self.normal_priority_queue) + len(self.low_priority_queue)) * 0.3
+
