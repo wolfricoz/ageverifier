@@ -11,9 +11,9 @@ from discord_py_utilities.messages import send_message
 
 import databases.current
 from classes.encryption import Encryption
-from classes.retired.discord_tools import send_response
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.VerificationTransactions import VerificationTransactions
+from resources.data.DobPatterns import DobPatterns
 
 
 class AgeCalculations(ABC) :
@@ -108,11 +108,22 @@ class AgeCalculations(ABC) :
 	@staticmethod
 	@abstractmethod
 	def add_slashes_to_dob(dateofbirth) :
-		if "/" not in dateofbirth or "-" not in dateofbirth or "." not in dateofbirth :
-			deconstruct = re.search(
-				r"(((0[0-9])|(1[012])|(0?[0-9]))((0[1-9])|([12][0-9])|(3[01])|(0?[1-9]))((20[012]\d|19\d\d)|(1\d|2[0123])))",
-				dateofbirth)
-			dateofbirth = f"{deconstruct.group(3)}/{deconstruct.group(6)}/{deconstruct.group(10)}"
+		# Check if any common separator already exists
+		if not any(sep in dateofbirth.strip() for sep in [r"/", r"-", r"."]) :
+			# Group 1: Month (01-12 or 1-12)
+			# Group 2: Day (01-31 or 1-31)
+			# Group 3: Year (4 digits starting with 19 or 20)
+			pattern = DobPatterns.MANIPULATE
+
+			deconstruct = re.search(pattern, dateofbirth)
+
+			if deconstruct :
+				# Now we can reliably use groups 1, 2, and 3
+				month = deconstruct.group(1)
+				day = deconstruct.group(2)
+				year = deconstruct.group(3)
+				return f"{month}/{day}/{year}"
+
 		return dateofbirth
 
 	@staticmethod
@@ -139,7 +150,7 @@ class AgeCalculations(ABC) :
 			date_of_birth = date_of_birth.replace("-", "/").replace(".", "/")
 			datetime.strptime(date_of_birth, "%m/%d/%Y")
 			dob = str(date_of_birth)
-			dob_object = re.search(r"([0-1]?[0-9])/([0-3]?[0-9])/([0-2][0-9][0-9][0-9])", dob)
+			dob_object = re.search(DobPatterns.VALIDATE, dob)
 			month = dob_object.group(1).zfill(2)
 			day = dob_object.group(2).zfill(2)
 			year = dob_object.group(3)
@@ -161,9 +172,11 @@ class AgeCalculations(ABC) :
 		except ValueError :
 			dob = "ValueError"
 		if dob == "AttributeError" :
-			await send_response(interaction, "Please fill in the date of birth field.")
+			# await send_response(interaction, "Please fill in the date of birth field.")
+			print( "Please fill in the date of birth field.")
 			return False
 		if dob == "ValueError" :
-			await send_response(interaction, "Please fill the dob in with the format: mm/dd/yyyy")
+			# await send_response(interaction, "Please fill the dob in with the format: mm/dd/yyyy")
+			print("Please fill the dob in with the format: mm/dd/yyyy")
 			return False
 		return dob
