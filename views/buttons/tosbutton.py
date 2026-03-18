@@ -1,3 +1,5 @@
+import logging
+
 import discord
 from discord_py_utilities.messages import send_message, send_response
 
@@ -11,6 +13,7 @@ class TOSButton(discord.ui.View) :
 	def __init__(self, reverify=False) :
 		super().__init__(timeout=None)
 		self.reverify = reverify
+		logging.info(f"TOSButton: {reverify}"  )
 
 	@discord.ui.button(label="I accept the privacy policy (MM/DD/YYYY)",
 	                   style=discord.ButtonStyle.green,

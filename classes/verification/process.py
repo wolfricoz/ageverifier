@@ -87,6 +87,7 @@ class VerificationProcess :
 
 			await AgeCalculations.check_history(self.guild.id, self.member, self.mod_channel)
 			LobbyTimers().add_cooldown(self.guild.id, self.member.id, ConfigData().get_key_int_or_zero(self.guild.id, 'COOLDOWN'))
+			logging.info(f"Verification validated: {self.member.id} with reverify: {self.reverify}")
 			approval_buttons = ApprovalButtons(age=self.age, dob=dob, user=self.member, reverify=self.reverify)
 			await approval_buttons.send_message(self.guild, self.member, self.mod_channel)
 

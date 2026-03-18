@@ -85,7 +85,8 @@ class VerifyModal(discord.ui.Modal) :
 			elif field.custom_id == "year" :
 				self.year = int(field.value)
 		
-		
+		logging.info(f"user: {interaction.user}, Reverify: {self.reverify}")
+
 		
 		# await interaction.response.defer(ephemeral=True)
 		verification_process = VerificationProcess(
@@ -115,6 +116,7 @@ class VerifyModal(discord.ui.Modal) :
 				server = verification_process.user_record.server
 			if not server :
 				server = interaction.guild.name
+
 
 			return await IdCheck.send_check(interaction,
 			                                verification_process.id_channel,

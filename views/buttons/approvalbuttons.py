@@ -26,6 +26,7 @@ class ApprovalButtons(discord.ui.View) :
 		self.user = user
 		self.reverify = reverify
 		super().__init__(timeout=None)
+		logging.info(f"approval buttons: {self.reverify}")
 		button = discord.ui.Button(label='Help', style=discord.ButtonStyle.url,
 		                           url='https://wolfricoz.github.io/ageverifier/lobby.html', emoji="❓")
 		self.add_item(button)
