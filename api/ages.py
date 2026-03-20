@@ -1,7 +1,6 @@
 # my_discord_bot/routes/example_routes.py
 import logging
 import os
-from datetime import datetime
 
 import discord
 from discord.ext import commands
@@ -13,10 +12,9 @@ from starlette.responses import JSONResponse
 from classes.encryption import Encryption
 from classes.support.queue import Queue
 from classes.verification.process import VerificationProcess
-from databases.transactions.UserTransactions import UserTransactions
-from databases.transactions.VerificationTransactions import VerificationTransactions
-from databases.transactions.WebsiteDataTransactions import WebsiteDataTransactions
 from databases.current import Users
+from databases.transactions.UserTransactions import UserTransactions
+from databases.transactions.WebsiteDataTransactions import WebsiteDataTransactions
 
 router = APIRouter()
 
@@ -71,7 +69,7 @@ async def verify_age(request: Request, guild_id: int, user_id: int, verification
 		if not user :
 			user = await guild.fetch_member(user_id)
 	except discord.NotFound :
-		logging.warning("Member not found, may have left the server", exc_info=True)
+		logging.warning(f"Member not found, may have left the server: {user_id} in {guild.name}", exc_info=True)
 		return JSONResponse(
 			status_code=404,
 			content={"success" : False, "message" : "Member not found"},
