@@ -163,7 +163,7 @@ class Tasks(commands.Cog) :
 			return
 		removal_date = datetime.now(tz=UTC) - timedelta(days=days)
 
-		async for message in lobby_channel.history(limit=None, before=removal_date) :
+		async for message in lobby_channel.history(limit=None, after=removal_date) :
 			logging.debug(f"Message: {message.content}")
 			if message.author != self.bot.user :
 				Queue().add(message.delete(), 0)
