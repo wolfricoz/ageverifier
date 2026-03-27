@@ -165,12 +165,9 @@ class Tasks(commands.Cog) :
 
 		async for message in lobby_channel.history(limit=None, before=removal_date) :
 			logging.debug(f"Message: {message.content}")
-			if message.author == self.bot.user :
-				Queue().add(message.delete(), 0)
-				count_messages += 1
-			if message.author.guild_permissions.manage_messages :
+			if message.author != self.bot.user and message.author.guild_permissions.manage_messages :
 				continue
-			if message.author != self.bot.user or len(message.mentions) < 1 :
+			if not message.author.bot or len(message.mentions) < 1 :
 				continue
 			user = message.mentions[0]
 
