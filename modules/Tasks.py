@@ -164,7 +164,7 @@ class Tasks(commands.Cog) :
 		removal_date = datetime.now(tz=UTC) - timedelta(days=days)
 
 		async for message in lobby_channel.history(limit=None, before=removal_date) :
-			logging.debug(f"Message: {message.content}")
+			logging.info(f"Message: {message.content}")
 			if message.author != self.bot.user and message.author.guild_permissions.manage_messages :
 				continue
 			if not message.author.bot or len(message.mentions) < 1 :
