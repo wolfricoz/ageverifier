@@ -1,11 +1,11 @@
 # my_discord_bot/routes/example_routes.py
 import logging
-import os
 from typing import Optional
 
 from discord.ext import commands
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, HTTPException, Request
 
+from api.auth.auth import Auth
 from classes.config.utils import ConfigUtils
 from classes.configsetup import ConfigSetup
 from classes.support.queue import Queue
@@ -18,17 +18,16 @@ router = APIRouter()
 async def example_route() :
 	return {"message" : "Hello from the example route!"}
 
+logger = logging.getLogger(__name__)
 
-def verify_token(request: Request) :
-	return request.headers.get('token') != os.getenv("API_KEY")
 
 
 @router.post("/config/refresh/{guildid}")
 async def refresh_config(request: Request, guildid: Optional[int]= None) :
-	if verify_token(request) :
-		logging.warning(f"Invalid token for config refresh request from ip {request.client.host}")
+	if not await Auth(request).verify() :
+		# the error is usually raised in the verify function, but this is just a final catch.
+		raise HTTPException(status_code=403)
 
-		return None
 	logging.info("Website Request: Reload Config")
 	print("Website Request: Reload Config")
 	if guildid is None :
@@ -40,9 +39,9 @@ async def refresh_config(request: Request, guildid: Optional[int]= None) :
 
 @router.post("/config/{guildid}/autosetup")
 async def auto_setup(request: Request, guildid: int) :
-	if verify_token(request) :
-		logging.warning(f"Invalid token for auto setup request for {guildid} with ip {request.client.host}")
-		return None
+	if not await Auth(request).verify() :
+		# the error is usually raised in the verify function, but this is just a final catch.
+		raise HTTPException(status_code=403)
 
 	bot: commands.Bot = request.app.state.bot
 	guild = bot.get_guild(guildid)
@@ -57,10 +56,9 @@ async def auto_setup(request: Request, guildid: int) :
 
 @router.post("/config/{guildid}/permissioncheck")
 async def permission_check(request: Request, guildid: int) :
-	if verify_token(request) :
-		logging.warning(f"Invalid token for permission check request for {guildid} with ip {request.client.host}")
-
-		return None
+	if not await Auth(request).verify() :
+		# the error is usually raised in the verify function, but this is just a final catch.
+		raise HTTPException(status_code=403)
 
 	bot: commands.Bot = request.app.state.bot
 	guild = bot.get_guild(guildid)
@@ -71,9 +69,9 @@ async def permission_check(request: Request, guildid: int) :
 
 @router.post("/config/{guildid}/changes/log")
 async def log_config_changes(request: Request, guildid: int, changes: dict, user_name: str = "dashboard_api") :
-	if verify_token(request) :
-		logging.warning(f"Invalid token for config change log request for {guildid} with ip {request.client.host}")
-		return None
+	if not await Auth(request).verify() :
+		# the error is usually raised in the verify function, but this is just a final catch.
+		raise HTTPException(status_code=403)
 
 	bot: commands.Bot = request.app.state.bot
 	guild = bot.get_guild(guildid)
