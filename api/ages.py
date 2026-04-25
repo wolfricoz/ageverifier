@@ -1,14 +1,14 @@
 # my_discord_bot/routes/example_routes.py
 import logging
-import os
 
 import discord
 from discord.ext import commands
 from discord_py_utilities.messages import send_message
-from fastapi import APIRouter, Body, Request
+from fastapi import APIRouter, Body, HTTPException, Request
 from pydantic import BaseModel, Field
 from starlette.responses import JSONResponse
 
+from api.auth.auth import Auth
 from classes.encryption import Encryption
 from classes.support.queue import Queue
 from classes.verification.process import VerificationProcess
@@ -27,9 +27,9 @@ class AgeVerification(BaseModel) :
 
 @router.post("/age/get/{user_id}")
 async def fetch_age(request: Request, user_id: int) :
-	token = request.headers.get('token')
-	if token != os.getenv("API_KEY") :
-		return {"message" : "Invalid token"}
+	if not await Auth(request).verify() :
+		# the error is usually raised in the verify function, but this is just a final catch.
+		raise HTTPException(status_code=403)
 	userinfo: Users = UserTransactions().get_user(user_id)
 	if userinfo is None :
 		return {"message" : "No data found for this user"}
@@ -44,9 +44,9 @@ async def fetch_age(request: Request, user_id: int) :
 
 @router.post("/age/verify/{guild_id}/{user_id}")
 async def verify_age(request: Request, guild_id: int, user_id: int, verification: AgeVerification = Body()) :
-	token = request.headers.get('token')
-	if token != os.getenv("API_KEY") :
-		return {"message" : "Invalid token"}
+	if not await Auth(request).verify() :
+		# the error is usually raised in the verify function, but this is just a final catch.
+		raise HTTPException(status_code=403)
 
 	# === Preparing the data ===
 	dob = verification.dob.split('/')  # this should always be mm/dd/yyyy
