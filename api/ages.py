@@ -13,6 +13,7 @@ from classes.encryption import Encryption
 from classes.support.queue import Queue
 from classes.verification.process import VerificationProcess
 from databases.current import Users
+from databases.transactions.ConfigData import ConfigData
 from databases.transactions.UserTransactions import UserTransactions
 from databases.transactions.WebsiteDataTransactions import WebsiteDataTransactions
 
@@ -47,70 +48,84 @@ async def verify_age(request: Request, guild_id: int, user_id: int, verification
 	if not await Auth(request).verify() :
 		# the error is usually raised in the verify function, but this is just a final catch.
 		raise HTTPException(status_code=403)
-
+	guild = None
 	# === Preparing the data ===
 	dob = verification.dob.split('/')  # this should always be mm/dd/yyyy
 	age = verification.age
 	bot: commands.Bot = request.app.state.bot
-
 	try :
-		guild = bot.get_guild(int(guild_id))
-		if not guild :
-			guild = await bot.fetch_guild(guild_id)
-	except discord.NotFound :
-		logging.error("guild not found", exc_info=True)
-		return JSONResponse(
-			status_code=404,
-			content={"success" : False, "message" : "Guild not found"},
-		)
-
-	try :
-		user = guild.get_member(int(user_id))
-		if not user :
-			user = await guild.fetch_member(user_id)
-	except discord.NotFound :
-		logging.warning(f"Member not found, may have left the server: {user_id} in {guild.name}", exc_info=True)
-		return JSONResponse(
-			status_code=404,
-			content={"success" : False, "message" : "Member not found"},
-		)
-
-	vp = VerificationProcess(bot, user, guild, dob[1], dob[0], dob[2], age)
-	msg = await vp.verify()
-
-	if vp.error is not None :
 		try :
-			await send_message(user, f"Verification failed: {vp.error}")
-		except discord.Forbidden or discord.NotFound :
-			logging.warning(f"Unable to send message to {user.name}")
+			guild = bot.get_guild(int(guild_id))
+			if not guild :
+				guild = await bot.fetch_guild(guild_id)
+		except discord.NotFound :
+			logging.error("guild not found", exc_info=True)
+			return JSONResponse(
+				status_code=404,
+				content={"success" : False, "message" : "Guild not found"},
+			)
 
-		return {"success" : False, "message" : vp.discrepancy}
-	if verification.guid :
-		WebsiteDataTransactions().set_verified(verification.guid)
+		try :
+			user = guild.get_member(int(user_id))
+			if not user :
+				user = await guild.fetch_member(user_id)
+		except discord.NotFound :
+			logging.warning(f"Member not found, may have left the server: {user_id} in {guild.name}", exc_info=True)
+			return JSONResponse(
+				status_code=404,
+				content={"success" : False, "message" : "Member not found"},
+			)
 
-	if vp.discrepancy is not None :
-		id_check = True
+		vp = VerificationProcess(bot, user, guild, dob[1], dob[0], dob[2], age)
+		msg = await vp.verify()
 
-		if vp.discrepancy in ["age_too_high", "mismatch", "below_minimum_age"] :
-			id_check = False
+		if vp.error is not None :
+			try :
+				await send_message(user, f"Verification failed: {vp.error}")
+			except discord.Forbidden or discord.NotFound :
+				logging.warning(f"Unable to send message to {user.name}")
 
-		from classes.idcheck import IdCheck
-		Queue().add(IdCheck.send_check_api(user, guild,
-		                                   vp.id_channel,
-		                                   vp.discrepancy,
-		                                   vp.age,
-		                                   vp.dob,
-		                                   date_of_birth=Encryption().decrypt(
-			                                   vp.user_record.date_of_birth)
-		                                   if vp.user_record is not None
-		                                   else None,
-		                                   years=vp.years if vp.years else None,
-		                                   id_check=id_check,
-		                                   id_check_reason=vp.id_check_info.reason if vp.id_check_info else vp.discrepancy,
-		                                   server=vp.id_check_info.server if vp.id_check_info else guild.name
-		                                   ), priority=1)
+			return {"success" : False, "message" : vp.discrepancy}
+		if verification.guid :
+			WebsiteDataTransactions().set_verified(verification.guid)
 
-		if id_check :
-			return {"success" : True, "message" : vp.discrepancy}
+		if vp.discrepancy is not None :
+			id_check = True
 
-	return {"success" : True, "message" : msg}
+			if vp.discrepancy in ["age_too_high", "mismatch", "below_minimum_age"] :
+				id_check = False
+
+			from classes.idcheck import IdCheck
+			Queue().add(IdCheck.send_check_api(user, guild,
+			                                   vp.id_channel,
+			                                   vp.discrepancy,
+			                                   vp.age,
+			                                   vp.dob,
+			                                   date_of_birth=Encryption().decrypt(
+				                                   vp.user_record.date_of_birth)
+			                                   if vp.user_record is not None
+			                                   else None,
+			                                   years=vp.years if vp.years else None,
+			                                   id_check=id_check,
+			                                   id_check_reason=vp.id_check_info.reason if vp.id_check_info else vp.discrepancy,
+			                                   server=vp.id_check_info.server if vp.id_check_info else guild.name
+			                                   ), priority=1)
+
+			if id_check :
+				return {"success" : True, "message" : vp.discrepancy}
+
+		return {"success" : True, "message" : msg}
+	except Exception as e :
+		try :
+			guild = bot.get_guild(int(guild_id))
+			if not guild :
+				guild = await bot.fetch_guild(guild_id)
+		except discord.NotFound :
+			logging.error("guild not found", exc_info=True)
+		if not guild :
+			logging.error("guild not found", exc_info=True)
+			raise HTTPException(500)
+		channel = await ConfigData().get_channel(guild, "approval_channel")
+		await send_message(channel, f"Website verification failed for {user_id} with error: {e}")
+
+		raise HTTPException(500)
