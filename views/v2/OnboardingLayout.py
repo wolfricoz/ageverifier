@@ -36,6 +36,9 @@ To get started with ageverifier there are a few ways to setup the bot:
 3. Dashboard Setup, this will allow you to configure the bot using the web dashboard. (recommended for easier manual setup)
 
 Below you'll see a button for each setup method, they will start the respective setup process for you.
+
+-# Note: This server is not yet whitelisted. To protect user privacy, the bot will display ages only and hide specific birth dates. Premium servers may apply for whitelisting to unlock full details.
+
 """
 		),
 		discord.ui.Separator(visible=True),

@@ -33,7 +33,7 @@ class InputModal(discord.ui.Modal):
             logging.error(e)
 
 
-async def send_modal(interaction: discord.Interaction, confirmation, title = 'Input Modal', max_length=500):
+async def send_modal(interaction: discord.Interaction, confirmation, title = 'Input Modal', max_length=500) -> str:
     """Sends the modal to the channel."""
     view = InputModal(confirmation, title)
     view.reason.max_length = max_length

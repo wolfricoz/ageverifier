@@ -3,7 +3,7 @@ import base64
 import logging
 import os
 
-import requests
+import aiohttp
 
 from databases.current import Servers as dbServers
 from databases.transactions.ServerTransactions import ServerTransactions
@@ -39,32 +39,44 @@ class Servers:
 			"member_count": guild.member_count if guild.member_count else 0,
 			"invite": guild.invite if guild.invite else "Unknown"
 		} for guild in guilds]
-		try:
-			result = requests.post(self.url, headers=headers, json={"servers": data}, timeout=5)
-			if result.status_code != 200:
-				logging.info(f"server group {[g.guild for g in guilds]} could not be updated: {result.status_code}: {result.text}")
-				print(f"server group {[g.guild for g in guilds]} could not be updated: {result.status_code}: {result.text}")
-				# logging.info(f"Variables:\npath: {path}\nurl: {url}\nheaders: {headers}, key: {self.key}\nsecret: {self.secret}")
-				return None
 
-			results = result.json()
-			count = 0
-			for result in results:
-				server_id = result.get('id', 0)
-				if count % 10 == 0:
-					logging.info(f"Updating server {count}/{len(guilds)}")
-					print(f"Updating server {count}/{len(guilds)}")
-					await asyncio.sleep(0)
+		try :
+			# 'async with' ensures the connection closes properly even if it fails
+			async with aiohttp.ClientSession() as session :
+				async with session.post(
+						self.url,
+						headers=headers,
+						json={"servers" : data},
+						timeout=aiohttp.ClientTimeout(total=5)  # 5s total timeout
+				) as response :
 
-				if server_id == 0:
-					logging.info("No server id returned, skipping")
-					continue
-				count +=1
-				ServerTransactions().update(server_id, premium=result.get('premium', None) )
+					if response.status != 200 :
+						error_text = await response.text()
+						logging.info(f"Server group update failed: {response.status}: {error_text}")
+						return None
 
-				logging.info(f"Server {server_id} updated successfully: {result}")
-				print(f"Server {server_id} updated successfully: {result}")
-			logging.info(f"{len(guilds)} Servers updated")
-		except Exception as e:
-			logging.warning(f"Error updating server {[g.guild for g in guilds]}: {e}", exc_info=True)
+					# 'await' here is key! It yields control back to the loop
+					results = await response.json()
 
+					for res in results :
+						server_id = res.get('id', 0)
+						if server_id == 0 :
+							continue
+
+						# Offload the DB update to a thread if it's a blocking DB call
+						await asyncio.to_thread(
+							ServerTransactions().update,
+							server_id,
+							premium=res.get('premium')
+						)
+
+						logging.info(f"Server {server_id} updated: {res}")
+
+					logging.info(f"{len(guilds)} Servers updated successfully.")
+
+		except aiohttp.ClientConnectorError :
+			logging.warning("Could not connect to the API server. Is it running?")
+		except asyncio.TimeoutError :
+			logging.warning("The API request timed out.")
+		except Exception as e :
+			logging.error(f"Error updating servers: {e}", exc_info=True)

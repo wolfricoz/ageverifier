@@ -199,12 +199,7 @@ async def on_guild_join(guild) :
 	if await blacklist_check(guild, devroom) :
 		await guild.owner.send("This server is blacklisted. If this is a mistake then please contact the developer.")
 		return
-	if whitelist.check_whitelist(guild.id) is False :
-		try :
-			await guild.owner.send(
-				"This server is not whitelisted and the bot will run in a limited mode. Date of births will not be shown.")
-		except discord.errors.Forbidden :
-			print(f"Unable to send message to {guild.owner.name} in {guild.name}")
+
 	ServerTransactions().add(guild.id,
 	                         active=True,
 	                         name=guild.name,

@@ -8,9 +8,9 @@ nav_order: 8
 
 # Requirements
 
-_Last Updated: 14/02/2025_
+_Last Updated: 29/04/2026_
 
-* Your server must at least have 1000 members
+* Your server must at least have 500 members
 * Your server must be 6 months old.
 * You must have a staff team consisting of at least two administrators.
 * A valid reason to need access the database and view non-sensitive personal identifiable information (Date of Births)
