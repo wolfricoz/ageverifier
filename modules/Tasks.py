@@ -165,9 +165,12 @@ class Tasks(commands.Cog) :
 
 		async for message in lobby_channel.history(limit=None, before=removal_date) :
 			logging.info(f"Message: {message.content}")
-			if message.author != self.bot.user and message.author.guild_permissions.manage_messages :
-				continue
+			if not message.author:
+				logging.warning(f"[clean-up] No author in {message.author}")
+				Queue().add(message.delete())
 			if not message.author.bot or len(message.mentions) < 1 :
+				continue
+			if message.author != self.bot.user and message.author.guild_permissions.manage_messages :
 				continue
 			user = message.mentions[0]
 
