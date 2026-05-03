@@ -26,9 +26,9 @@ class TOSButton(discord.ui.View) :
 
 		suffix = "_reverify" if reverify else "_standard"
 
-		if ConfigData().get_key(guild_id, VERIFICATION_KEY, "basic") in [VerificationMethods.BASIC, VerificationMethods.ALL]:
+		if ConfigData().get_key(guild_id, VERIFICATION_KEY, "basic") in [VerificationMethods.BASIC, VerificationMethods.ALL] or reverify:
 			self.add_basic_verification(suffix)
-		if ConfigData().get_key(guild_id, VERIFICATION_KEY, "basic") in [VerificationMethods.IDVERIFY, VerificationMethods.ALL]:
+		if ConfigData().get_key(guild_id, VERIFICATION_KEY, "basic") in [VerificationMethods.IDVERIFY, VerificationMethods.ALL] and not reverify:
 			self.add_id_verification(suffix)
 		self.add_decline_verification(suffix)
 
