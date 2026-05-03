@@ -259,13 +259,22 @@ class Tasks(commands.Cog) :
 			except discord.errors.NotFound :
 				ServerTransactions().delete(gid)
 				continue
-			ServerTransactions().add(gid,
-			                         active=False,
-			                         name=guild.name,
-			                         owner=guild.owner,
-			                         member_count=guild.member_count,
-			                         invite=await check_guild_invites(self.bot, guild),
-			                         )
+			try:
+				ServerTransactions().add(gid,
+				                         active=False,
+				                         name=guild.name,
+				                         owner=guild.owner,
+				                         member_count=guild.member_count,
+				                         invite=await check_guild_invites(self.bot, guild),
+				                         )
+			except AttributeError:
+				ServerTransactions().add(gid,
+				                         active=False,
+				                         name=guild.name,
+				                         owner=guild.owner,
+				                         member_count=guild.member_count,
+				                         invite="No Permission",
+				                         )
 
 		guilds = ServerTransactions().get_all(id_only=False)
 

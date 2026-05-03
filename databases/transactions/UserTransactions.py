@@ -19,7 +19,7 @@ class UserTransactions(DatabaseTransactions) :
 
 	def add_user_empty(self, userid: int, overwrite=False) :
 		with self.createsession() as session :
-			userdata: Users = self.get_user(userid, deleted=True)
+			userdata: Users = self.get_user(userid, deleted=True, session=session)
 
 			if userdata:
 				#to fix error, overwrite was removed.

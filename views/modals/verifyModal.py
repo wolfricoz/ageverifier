@@ -78,6 +78,8 @@ class VerifyModal(discord.ui.Modal) :
 
 	async def on_submit(self, interaction: discord.Interaction) :
 		for key, field in self.fields.items() :
+			if isinstance(field.value, str) and not field.value.isnumeric():
+				return await send_response(interaction, f"Field {key} is not a valid number", ephemeral=True)
 			if field.custom_id == "month" :
 				self.month = int(field.value)
 			elif field.custom_id == "day" :
