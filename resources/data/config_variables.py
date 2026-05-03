@@ -1,3 +1,5 @@
+from enum import StrEnum
+
 messagechoices = {
 	"verification_completed_message" : 'This is the welcome message that will be posted in the verification_completed_channel channel This starts with: `Welcome to {server name} {user}! This is where the message goes`',
 	"server_join_message"            : 'This is the welcome message that will be posted in the lobby channel, and be the first message new users see. This starts with: `Welcome {user}! This is where the message goes`',
@@ -21,25 +23,36 @@ rolechoices = {
 	"reverification_role"        : "These roles are added to the user when they reverify their age."
 }
 
+# Verification choices
+VERIFICATION_KEY = "VERIFICATION_METHOD"
+
+
+class VerificationMethods(StrEnum) :
+	BASIC = "BASIC"
+	IDVERIFY = "IDVERIFY"
+	ALL = "ALL"
+	WEBSITE = "WEBSITE"
+
+
 lobby_approval_toggles = {
-	'picture_large': 'Show large profile picture in approval modal',
-	'picture_small': 'Show small profile picture (hides large)',
-	'bans': 'Display user’s ban records before approving',
-	'joined_at': 'Show when user joined this server',
-	'created_at': 'Show when the account was created',
-	'legacy_message': 'Use the old approval message style',
-	'user_id': 'Show the user id of the account',
-	'show_previous_servers': 'Show previous servers',
-	'debug': 'shows debug approval message'
+	'picture_large'         : 'Show large profile picture in approval modal',
+	'picture_small'         : 'Show small profile picture (hides large)',
+	'bans'                  : 'Display user’s ban records before approving',
+	'joined_at'             : 'Show when user joined this server',
+	'created_at'            : 'Show when the account was created',
+	'legacy_message'        : 'Use the old approval message style',
+	'user_id'               : 'Show the user id of the account',
+	'show_previous_servers' : 'Show previous servers',
+	'debug'                 : 'shows debug approval message'
 }
 
 int_options = {
-	'CLEAN_LOBBY_DAYS': 'Inactive member cleanup threshold from the lobby (days).'
+	'CLEAN_LOBBY_DAYS' : 'Inactive member cleanup threshold from the lobby (days).'
 }
 
 available_toggles = ["SEND_JOIN_MESSAGE", "SEND_VERIFICATION_COMPLETED_MESSAGE", "AUTOMATIC_VERIFICATION",
-                     "AUTOKICK_UNDERAGED_USERS", "AUTO_UPDATE_AGE_ROLES", "PING_OWNER_ON_FAILURE",
-                     "ONLINE_VERIFICATION", "SURVEY", "LOG_CONFIG_CHANGES", "CLEANUP_MESSAGES"]
+                     "AUTOKICK_UNDERAGED_USERS", "AUTO_UPDATE_AGE_ROLES", "PING_OWNER_ON_FAILURE", "SURVEY",
+                     "LOG_CONFIG_CHANGES", "CLEANUP_MESSAGES"]
 enabled_toggles = ["SEND_VERIFICATION_COMPLETED_MESSAGE", "SEND_JOIN_MESSAGE", 'BANS', 'JOINED_AT', 'CREATED_AT',
                    'USER_ID', 'PICTURE_SMALL',
                    "LOG_CONFIG_CHANGES", "CLEANUP_MESSAGES"]

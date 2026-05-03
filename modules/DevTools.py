@@ -13,15 +13,16 @@ from discord_py_utilities.messages import send_message
 from discord_py_utilities.permissions import find_first_accessible_text_channel
 
 from classes.jsonmaker import Configer
-from classes.onboarding import Onboarding
 from classes.support.queue import Queue
 from databases.Generators.uidgenerator import uidgenerator
 from databases.current import Users
 from databases.enums.joinhistorystatus import JoinHistoryStatus
 from databases.transactions.ConfigData import ConfigData
+from databases.transactions.ConfigTransactions import ConfigTransactions
 from databases.transactions.HistoryTransactions import JoinHistoryTransactions
 from databases.transactions.ServerTransactions import ServerTransactions
 from databases.transactions.UserTransactions import UserTransactions
+from resources.data.config_variables import VERIFICATION_KEY, VerificationMethods
 from views.modals.inputmodal import send_modal
 from views.select.configselectroles import *
 
@@ -315,12 +316,30 @@ class DevTools(commands.GroupCog, name="dev", description="A set of commands for
 			embed.add_field(name=key, value=value, inline=False)
 		embed.set_footer(text=f"This data should not be shared outside of the support server.")
 		await send_message(interaction.channel, embed=embed)
+	#
+	# @app_commands.command(name="test_start_onboarding", description="[DEV] Test start onboarding for server")
+	# @check_access()
+	# async def test_start_onboarding(self, interaction: discord.Interaction) :
+	# 	await Onboarding().join_message(interaction.channel)
 
-	@app_commands.command(name="test_start_onboarding", description="[DEV] Test start onboarding for server")
+	@app_commands.command(name="migrate", description="[DEV] updates bot to the latest version")
 	@check_access()
-	async def test_start_onboarding(self, interaction: discord.Interaction) :
-		await Onboarding().join_message(interaction.channel)
+	async def serverinfo(self, interaction: discord.Interaction) :
+		"""
+				Command to update the bots config to the latest version.
 
+        **Permissions:**
+        - This is a developer-only command.
+        """
+		await send_response(interaction, "Updating bot config")
+		for guild in self.bot.guilds:
+			logging.info(f"Updating bot config for guild {guild.id}")
+			if ConfigData().get_key(guild.id, "VERIFICATION_KEY", "None") == "none":
+				ConfigTransactions().config_unique_add(guild.id, VERIFICATION_KEY, VerificationMethods.BASIC)
+			if ConfigData().get_toggle(guild.id, "ONLINE_VERIFICATION"):
+				ConfigTransactions().config_unique_add(guild.id, VERIFICATION_KEY, VerificationMethods.WEBSITE)
+				ConfigTransactions().config_unique_remove(guild.id, "ONLINE_VERIFICATION")
+		await send_response(interaction, "Updated bot config")
 
 # @app_commands.command(name="migrate", description="Migrates data")
 # async def test(self, interaction: discord.Interaction):

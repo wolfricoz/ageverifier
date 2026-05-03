@@ -12,13 +12,15 @@ from discord.ext import commands
 from discord_py_utilities.messages import send_message, send_response
 from discord_py_utilities.permissions import check_missing_channel_permissions
 
+from classes.access import AccessControl
 from classes.config.utils import ConfigUtils
 from classes.configsetup import ConfigSetup
 from classes.support.queue import Queue
 from databases.transactions.AgeRoleTransactions import AgeRoleTransactions
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.ConfigTransactions import ConfigTransactions
-from resources.data.config_variables import available_toggles, channelchoices, lobby_approval_toggles, messagechoices, \
+from resources.data.config_variables import VERIFICATION_KEY, VerificationMethods, available_toggles, channelchoices, \
+	lobby_approval_toggles, messagechoices, \
 	rolechoices
 from views.modals.configinput import ConfigInputUnique
 from views.v2.HelpLayout import HelpLayout
@@ -274,6 +276,8 @@ class Config(commands.GroupCog, name="config",
 				raise NotImplementedError
 
 	@app_commands.command(name="cooldown", description="Set a cooldown for how often a user can attempt verification.")
+	@app_commands.checks.has_permissions(manage_guild=True)
+
 	async def cooldown(self, interaction: discord.Interaction, cooldown: int) :
 		"""
         Set a cooldown period for how often a user can attempt verification in the lobby.
@@ -287,6 +291,33 @@ class Config(commands.GroupCog, name="config",
 			ConfigUtils.log_change(interaction.guild, {"cooldown" : cooldown}, user_name=interaction.user.mention,
 			                       ))
 		await send_response(interaction, f"The cooldown has been set to {cooldown} minutes", ephemeral=True)
+
+
+	@app_commands.command(name="verification_mode", description="Set the verification mode for the bot.")
+	@app_commands.choices(mode=[Choice(name=method.name, value=method.value) for method in VerificationMethods
+	])
+	@AccessControl().check_premium()
+	@app_commands.checks.has_permissions(manage_guild=True)
+	async def verification_mode(self, interaction: discord.Interaction, mode: Choice['str']) -> None:
+		"""
+			Allows you to change the verification mode for the bot. Options:
+			- Basic (dob)
+			- ID verification
+			- Basic + ID verification
+			- Website verification
+
+			**Permissions:**
+			- You'll need the `Manage Server` permission to use this command.
+			- premium required
+
+		"""
+		ConfigTransactions().config_unique_add(interaction.guild.id, VERIFICATION_KEY, mode.value, overwrite=True)
+		Queue().add(
+			ConfigUtils.log_change(interaction.guild, {VERIFICATION_KEY : mode.value}, user_name=interaction.user.mention,
+			                       ))
+		await send_response(interaction, f"The verification mode has been set to {mode.value}", ephemeral=True)
+
+
 
 	@app_commands.command(description="Provides a complete overview of the bot's current configuration for your server.")
 	@app_commands.checks.has_permissions(manage_guild=True)

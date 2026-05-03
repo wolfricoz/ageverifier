@@ -23,6 +23,8 @@ class ReVerifyButton(discord.ui.View) :
 	@discord.ui.button(label="Start ReVerification here!", style=discord.ButtonStyle.green,
 	                   custom_id="Reverification_button_start")
 	async def verify(self, interaction: discord.Interaction, button: discord.ui.Button) :
+		logging.info(f"Reverification button pressed by {interaction.user.name}")
+
 		if cooldown := LobbyTimers().check_cooldown(interaction.guild.id, interaction.user.id) :
 			await send_response(interaction,
 			                    f"{interaction.user.mention} You are on cooldown for verification. Please wait {discord.utils.format_dt(cooldown, style='R')} before trying again.",
@@ -32,19 +34,12 @@ class ReVerifyButton(discord.ui.View) :
 		idcheck = await self.id_verified_check(interaction, True)
 		if idcheck :
 			return
-		# if AccessControl().is_premium(interaction.guild.id) and ConfigData().get_toggle(interaction.guild.id, "ONLINE_VERIFICATION") :
-		#
-		# 	uuid = WebsiteDataTransactions().create(user_id=interaction.user.id, guild_id=interaction.guild.id)
-		# 	website_base = os.getenv("DASHBOARD_URL")
-		# 	url = f"{website_base}/ageverifier/verification/{interaction.guild.id}/{uuid}"
-		#
-		# 	await send_response(interaction, f"This server uses our online verification system. Please use the button below to visit our verification page.", ephemeral=True, view=WebsiteButton(url))
-		# 	return
 
+		logging.info(f"Preparing TOSButton for {interaction.user.name} with True")
 
 		await send_response(interaction,
 		                    f"{interaction.user.mention} To verify using AgeVerifier, you must accept our [Privacy Policy](https://wolfricoz.github.io/ageverifier/privacypolicy.html). By accepting, you consent to your date of birth being stored for verification purposes. Please review the policy and if you accept our privacy policy, please click 'I accept.'",
-		                    view=TOSButton(reverify=True), ephemeral=True)
+		                    view=TOSButton(interaction.guild_id, reverify=True), ephemeral=True)
 
 	def get_user_data(self, user_id: int) :
 		user = UserTransactions().get_user(user_id)

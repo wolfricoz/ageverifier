@@ -8,9 +8,10 @@ from views.buttons.idreviewbuttons import IdReviewButton
 
 #
 class IdSubmitButton(discord.ui.View) :
-	def __init__(self) :
+	def __init__(self, user_initiated: bool = False) :
 		super().__init__(timeout=None)
 		self.guild = None
+		self.user_initiated = user_initiated
 
 	custom_id = "id_submit_buttons"
 
@@ -41,8 +42,13 @@ class IdSubmitButton(discord.ui.View) :
 			return
 		if len(message.attachments) > 1:
 			await send_response(interaction, "Too many attachments attached to this message, please send only 1 image.")
-		mod_channel: discord.TextChannel = self.guild.get_channel(
-			ConfigData().get_key_int_or_zero(self.guild.id, "verification_failure_log"))
+
+		if self.user_initiated:
+			mod_channel: discord.TextChannel = self.guild.get_channel(
+				ConfigData().get_key_int_or_zero(self.guild.id, "approval_channel"))
+		else:
+			mod_channel: discord.TextChannel = self.guild.get_channel(
+				ConfigData().get_key_int_or_zero(self.guild.id, "verification_failure_log"))
 		if mod_channel is None:
 			await send_response(interaction, "Lobbymod channel not set, please contact the server staff.", ephemeral=True)
 			return

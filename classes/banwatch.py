@@ -35,7 +35,7 @@ class BanWatch :
 			async with aiohttp.ClientSession() as session :
 				async with session.get(target_url, headers=headers) as response :
 					if response.status != 200 :
-						logging.info(f"BanWatch returned {response.status}: {response.reason}")
+						logging.error(f"BanWatch returned {response.status}: {response.reason}")
 						return None
 
 					data = await response.json()

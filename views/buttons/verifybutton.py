@@ -13,6 +13,7 @@ from databases.transactions.ConfigData import ConfigData
 from databases.transactions.UserTransactions import UserTransactions
 from databases.transactions.VerificationTransactions import VerificationTransactions
 from databases.transactions.WebsiteDataTransactions import WebsiteDataTransactions
+from resources.data.config_variables import VERIFICATION_KEY, VerificationMethods
 from views.buttons.approvalbuttons import ApprovalButtons
 from views.buttons.tosbutton import TOSButton
 from views.buttons.websitebutton import WebsiteButton
@@ -33,7 +34,7 @@ class VerifyButton(discord.ui.View) :
 		idcheck = await self.id_verified_check(interaction)
 		if idcheck :
 			return
-		if AccessControl().is_premium(interaction.guild.id) and ConfigData().get_toggle(interaction.guild.id, "ONLINE_VERIFICATION") :
+		if AccessControl().is_premium(interaction.guild.id) and ConfigData().get_key(interaction.guild.id, VERIFICATION_KEY, "basic") == VerificationMethods.WEBSITE :
 
 			uuid = WebsiteDataTransactions().create(user_id=interaction.user.id, guild_id=interaction.guild.id)
 			website_base = os.getenv("DASHBOARD_URL")
@@ -45,7 +46,7 @@ class VerifyButton(discord.ui.View) :
 
 		await send_response(interaction,
 		                    f"{interaction.user.mention} To verify using AgeVerifier, you must accept our [Privacy Policy](https://wolfricoz.github.io/ageverifier/privacypolicy.html). By accepting, you consent to your date of birth being stored for verification purposes. Please review the policy and if you accept our privacy policy, please click 'I accept.'",
-		                    view=TOSButton(), ephemeral=True)
+		                    view=TOSButton(interaction.guild_id), ephemeral=True)
 
 	def get_user_data(self, user_id: int) :
 		user = UserTransactions().get_user(user_id)
