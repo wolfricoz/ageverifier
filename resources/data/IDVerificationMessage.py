@@ -15,18 +15,24 @@ def create_message(interaction: discord.Interaction, min_age, user_init=False) :
 			"You are seeing this because you requested to verify your identity using ID. "
 			"Please follow the prompts below to complete the secure verification system and unlock the rest of the server.\n"
 		)
+		# Note/Decline Section
+		message += (
+			"\nIf you feel uncomfortable you may press the decline button to do so; "
+			"you can choose another way to verify in the lobby or reach out to the server's staff.\n\n"
+		)
 	else :
 		message += (
 			"**Why do I have to ID?**\n"
 			f"There has been a discrepancy with your date of birth and/or age which we feel requires additional verification, "
 			f"this is to verify that you are above the age minimum age of the server ({min_age}).\n"
 		)
+		# Note/Decline Section
+		message += (
+			"\nIf you feel uncomfortable you may press the decline button to do so; "
+			"however we reserve the right to decline you access to our server.\n\n"
+		)
 
-	# Note/Decline Section
-	message += (
-		"\nIf you feel uncomfortable you may press the decline button to do so; "
-		"however we reserve the right to decline you access to our server.\n\n"
-	)
+
 
 	# Instructions Section
 	message += (

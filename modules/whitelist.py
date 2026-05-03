@@ -42,7 +42,7 @@ class whitelist(commands.GroupCog, name="whitelist") :
 
 		requirements = {
 			'premium': AccessControl().is_premium(interaction.guild.id),
-			'members': len(interaction.guild.member_count) > 500,
+			'members': interaction.guild.member_count > 500,
 			'guild_age' : interaction.guild.created_at.astimezone(timezone.utc) < (
 						datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=180)),
 			'owner': interaction.guild.owner.global_name,
