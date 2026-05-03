@@ -28,7 +28,7 @@ VERIFICATION_KEY = "VERIFICATION_METHOD"
 
 
 class VerificationMethods(StrEnum) :
-	BASIC = "BASIC"
+	BASIC = VerificationMethods.BASIC
 	IDVERIFY = "IDVERIFY"
 	ALL = "ALL"
 	WEBSITE = "WEBSITE"

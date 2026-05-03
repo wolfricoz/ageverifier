@@ -34,7 +34,7 @@ class VerifyButton(discord.ui.View) :
 		idcheck = await self.id_verified_check(interaction)
 		if idcheck :
 			return
-		if AccessControl().is_premium(interaction.guild.id) and ConfigData().get_key(interaction.guild.id, VERIFICATION_KEY, "basic") == VerificationMethods.WEBSITE :
+		if AccessControl().is_premium(interaction.guild.id) and ConfigData().get_key(interaction.guild.id, VERIFICATION_KEY, VerificationMethods.BASIC) == VerificationMethods.WEBSITE :
 
 			uuid = WebsiteDataTransactions().create(user_id=interaction.user.id, guild_id=interaction.guild.id)
 			website_base = os.getenv("DASHBOARD_URL")
