@@ -173,8 +173,7 @@ class Tasks(commands.Cog) :
 			if message.author != self.bot.user and message.author.guild_permissions.manage_messages :
 				continue
 			user = message.mentions[0]
-
-			if user.guild_permissions.manage_messages :
+			if isinstance(user, discord.Member) and user.guild_permissions.manage_messages :
 				continue
 			count_messages += 1
 			if user.global_name not in kicked_users :
@@ -239,15 +238,25 @@ class Tasks(commands.Cog) :
 				continue
 			try :
 				ServerTransactions().add(guild.id,
-				                         active=True,
+				                         active=False,
 				                         name=guild.name,
 				                         owner=guild.owner,
 				                         member_count=guild.member_count,
-				                         invite=await check_guild_invites(self.bot, guild)
+				                         invite=await check_guild_invites(self.bot, guild),
 				                         )
 				count += 1
+			except AttributeError :
+				ServerTransactions().add(guild.id,
+				                         active=False,
+				                         name=guild.name,
+				                         owner=guild.owner,
+				                         member_count=guild.member_count,
+				                         invite="No Permission",
+				                         )
+				count += 1
+
 			except :
-				logging.error(f"Error adding guild {guild.name} ({guild.id}) to the database", exc_info=True)
+				logging.warning(f"Error adding guild {guild.name} ({guild.id}) to the database", exc_info=True)
 				count += 1
 				continue
 

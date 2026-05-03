@@ -62,6 +62,8 @@ class Servers:
 						server_id = res.get('id', 0)
 						if server_id == 0 :
 							continue
+						if res.get('premium') is None:
+							continue
 
 						# Offload the DB update to a thread if it's a blocking DB call
 						await asyncio.to_thread(
