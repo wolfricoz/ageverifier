@@ -58,7 +58,7 @@ class whitelist(commands.GroupCog, name="whitelist") :
 			return
 
 		reason = await send_modal(interaction, "Thank you for submitting your reason")
-		embed.description = reason
+		embed.description = reason.value
 
 		await send_response(interaction, "Thank you for submitting your whitelisting application. The developer will reach out to you.\n\nPlease read this article to prepare for your inspection: https://wolfricoz.github.io/ageverifier/whitelisting.html", embed=embed)
 		gid = os.getenv('SUPPORTGUILD')
