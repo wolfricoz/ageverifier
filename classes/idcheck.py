@@ -3,7 +3,9 @@ import logging
 from abc import ABC, abstractmethod
 
 import discord
+from discord_py_utilities.exceptions import NoPermissionException
 from discord_py_utilities.messages import send_message, send_response
+from discord_py_utilities.permissions import find_first_accessible_text_channel
 
 from databases.current import IdVerification
 from databases.enums.joinhistorystatus import JoinHistoryStatus
@@ -89,6 +91,8 @@ class IdCheck(ABC) :
 		embed.set_footer(text=f"{interaction.user.id}")
 
 		try :
+
+
 			await send_message(channel,
 			                   f"{f'{interaction.guild.owner.mention}' if ConfigData().get_key(interaction.guild.id, "ping_owner_on_failure") == 'ENABLED' else ''} -# Lobby Debug] Age: {age} dob {dob} userid: {interaction.user.mention}",
 			                   embed=embed,
@@ -98,9 +102,13 @@ class IdCheck(ABC) :
 			                    ,
 			                    ephemeral=True)
 		except discord.Forbidden :
-			await send_response(interaction,
-			                    f"I don't have permission to send messages in {channel.mention}. Please contact a server administrator to resolve this issue.",
-			                    ephemeral=True)
+			try:
+				await send_response(interaction,
+				                    f"I don't have permission to send messages in {channel.mention}. Please contact a server administrator to resolve this issue.",
+				                    ephemeral=True)
+			except discord.Forbidden or NoPermissionException:
+				channel = find_first_accessible_text_channel(interaction.guild)
+				await send_message(channel, f"{f'{interaction.guild.owner.mention}' if ConfigData().get_key(interaction.guild.id, "ping_owner_on_failure") == 'ENABLED' else ''} I don't have permission to send messages in {channel.mention}. Please contact a server administrator to resolve this issue.")
 
 		if id_check and message.get("channel-message", None) :
 			JoinHistoryTransactions().update(interaction.user.id, interaction.guild.id, JoinHistoryStatus.IDCHECK)
