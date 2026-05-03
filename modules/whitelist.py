@@ -45,7 +45,7 @@ class whitelist(commands.GroupCog, name="whitelist") :
 			'members': interaction.guild.member_count > 500,
 			'guild_age' : interaction.guild.created_at.astimezone(timezone.utc) < (
 						datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=180)),
-			'owner': interaction.guild.owner.global_name,
+			'owner': interaction.guild.owner.name,
 
 		}
 		embed = discord.Embed(title=f"{interaction.guild.name}'s whitelist request"
