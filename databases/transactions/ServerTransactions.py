@@ -8,7 +8,8 @@ from databases.current import Servers
 from databases.transactions.ConfigTransactions import ConfigTransactions
 from databases.transactions.DatabaseTransactions import DatabaseTransactions
 from databases.transactions.UserTransactions import UserTransactions
-from resources.data.config_variables import available_toggles, enabled_toggles, lobby_approval_toggles
+from resources.data.config_variables import VERIFICATION_KEY, VerificationMethods, available_toggles, enabled_toggles, \
+	lobby_approval_toggles
 
 
 class ServerTransactions(DatabaseTransactions) :
@@ -49,6 +50,7 @@ class ServerTransactions(DatabaseTransactions) :
 					ConfigTransactions().toggle_add(guildid, toggle, "ENABLED")
 				ConfigTransactions().toggle_add(guildid, toggle)
 			ConfigTransactions().config_unique_add(guildid, "COOLDOWN", 5)
+			ConfigTransactions().config_unique_add(guildid,  VERIFICATION_KEY, VerificationMethods.BASIC)
 
 		if reload :
 			from databases.transactions.ConfigData import ConfigData
