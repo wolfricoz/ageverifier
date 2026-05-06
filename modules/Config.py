@@ -222,7 +222,7 @@ class Config(commands.GroupCog, name="config",
 
 	@app_commands.command(description="Manage which roles the bot interacts with.")
 	@app_commands.choices(key=[Choice(name=f"{ke} role", value=ke) for ke, val in rolechoices.items()])
-	@app_commands.choices(action=[Choice(name=x, value=x) for x in ["verification_add_role", 'verification_remove_role']])
+	@app_commands.choices(action=[Choice(name=x, value=x) for x in ["add", 'remove']])
 	@app_commands.checks.has_permissions(manage_guild=True)
 	async def roles(self, interaction: discord.Interaction, key: Choice[str], action: Choice[str], value: discord.Role,
 	                minimum_age: int = 18, maximum_age: int = 200) :
