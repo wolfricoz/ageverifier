@@ -14,6 +14,7 @@ from classes.lobbyprocess import LobbyProcess
 from classes.support.queue import Queue
 from classes.whitelist import check_whitelist
 from databases.transactions.ConfigData import ConfigData
+from databases.transactions.ServerTransactions import ServerTransactions
 from views.buttons.approvalbuttons import ApprovalButtons
 from views.buttons.confirmButtons import confirmAction
 from views.buttons.dobentrybutton import dobentry
@@ -203,7 +204,7 @@ class Lobby(commands.GroupCog, description="Commands for managing the new member
 		if not view.confirmed :
 			await interaction.followup.send("Purge cancelled")
 			return
-
+		dbguild = ServerTransactions().get(interaction.guild.id)
 		cutoff = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=days)
 		kicked = set()
 		async for msg in lobby_channel.history(limit=None, before=cutoff) :
@@ -215,7 +216,9 @@ class Lobby(commands.GroupCog, description="Commands for managing the new member
 					continue
 				try :
 					await send_message(user,
-					                   f"You have been in the lobby for more than {days} days. You have been kicked from {interaction.guild.name}.")
+					                   f"You have been in the lobby for more than {days} days. You have been kicked from {interaction.guild.name}."
+					                   f"\n\n"
+					                   f"You can rejoin using this invite: {dbguild.invite}")
 				except Exception :
 					print(f"Unable to send message to {user} before kicking")
 				try :
