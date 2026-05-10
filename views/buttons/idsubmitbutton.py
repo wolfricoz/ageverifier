@@ -8,10 +8,11 @@ from views.buttons.idreviewbuttons import IdReviewButton
 
 #
 class IdSubmitButton(discord.ui.View) :
-	def __init__(self, user_initiated: bool = False) :
+	def __init__(self, user_initiated: bool = False, reverify = False) :
 		super().__init__(timeout=None)
 		self.guild = None
 		self.user_initiated = user_initiated
+		self.reverify = reverify
 
 	custom_id = "id_submit_buttons"
 
@@ -74,8 +75,10 @@ class IdSubmitButton(discord.ui.View) :
 			value="Do not share this ID outside of staff members responsible for verification or save this ID. Abuse will be grounds for immediate blacklisting.",
 			inline=False
 		)
+		if self.reverify:
+			embed.add_field(name="Reverify", value="true")
 		embed.set_footer(text=interaction.user.id)
-		await mod_channel.send(f"{interaction.user.mention} has submitted an ID for verification.", embed=embed, view=IdReviewButton())
+		await mod_channel.send(f"{interaction.user.mention} has submitted an ID for verification.", embed=embed, view=IdReviewButton(reverify=self.reverify))
 		await send_response(interaction, "Your ID submission has been sent to the server staff for review. You will be notified once the review is complete.", ephemeral=True)
 		await self.disable_buttons(interaction)
 
@@ -105,10 +108,16 @@ class IdSubmitButton(discord.ui.View) :
 	async def load_data(self, interaction: discord.Interaction) -> bool:
 		if len(interaction.message.embeds) < 1:
 			return False
-		self.guild = interaction.client.get_guild(int(interaction.message.embeds[0].footer.text))
+		embed = interaction.message.embeds[0]
+
+		self.guild = interaction.client.get_guild(int(embed.footer.text))
+		for field in embed.fields:
+			if field.name == "Reverify":
+				self.reverify = True
+
 		if not self.guild :
 			try:
-				self.guild = await interaction.client.fetch_guild(int(interaction.message.embeds[0].footer.text))
+				self.guild = await interaction.client.fetch_guild(int(embed.footer.text))
 			except Exception:
 				return False
 		return True

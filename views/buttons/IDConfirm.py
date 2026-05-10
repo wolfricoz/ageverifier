@@ -1,7 +1,7 @@
 import logging
 
 import discord
-from discord_py_utilities.messages import send_message, send_response
+from discord_py_utilities.messages import send_response
 
 from classes.idcheck import IdCheck
 from classes.idverify import verify
@@ -10,11 +10,12 @@ from databases.transactions.VerificationTransactions import VerificationTransact
 
 
 class IDConfirm(discord.ui.View) :
-	def __init__(self, dob: str, member: discord.Member, ogmessage: discord.Message) :
+	def __init__(self, dob: str, member: discord.Member, ogmessage: discord.Message, reverify: bool = False) -> None :
 		super().__init__(timeout=None)
 		self.dateofbirth = dob
 		self.member = member
 		self.ogmessage = ogmessage
+		self.reverify = reverify
 
 	@discord.ui.button(label="Confirm & Proceed", style=discord.ButtonStyle.green, custom_id="confirmID")
 	async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button) :
@@ -24,7 +25,7 @@ class IDConfirm(discord.ui.View) :
 		if not idcheck :
 			await send_response(interaction, f"No ID verification request found for <@{self.member.id}>", ephemeral=True)
 			return None
-		await verify(self.member, interaction, self.dateofbirth, True)
+		await verify(self.member, interaction, self.dateofbirth, True, reverify=self.reverify)
 		if idcheck.idmessage :
 			try :
 

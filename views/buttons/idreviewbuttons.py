@@ -10,9 +10,10 @@ from views.modals.inputmodal import send_modal
 
 #
 class IdReviewButton(discord.ui.View) :
-	def __init__(self) :
+	def __init__(self, reverify: bool =False) :
 		super().__init__(timeout=None)
 		self.member: discord.Member = None
+		self.reverify = reverify
 
 	custom_id = "id_review_buttons"
 
@@ -53,7 +54,7 @@ class IdReviewButton(discord.ui.View) :
 
 		from views.modals.idverify import IdVerifyModal
 
-		await interaction.response.send_modal(IdVerifyModal(self.member, interaction.message))
+		await interaction.response.send_modal(IdVerifyModal(self.member, interaction.message, reverify=self.reverify))
 		return None
 
 	@discord.ui.button(label="Decline ID", style=discord.ButtonStyle.red, custom_id="decline_id")

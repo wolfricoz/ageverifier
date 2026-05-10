@@ -8,7 +8,7 @@ from classes.retired.discord_tools import send_message, send_response
 from databases.transactions.VerificationTransactions import VerificationTransactions
 
 
-async def verify(user: discord.Member, interaction: discord.Interaction, dob: str, process=True):
+async def verify(user: discord.Member, interaction: discord.Interaction, dob: str, process=True, reverify=False) -> None :
 	if await check_staff_status(interaction, user):
 		await send_response(interaction,
 		                    f"[CANNOT_VERIFY_STAFF] You cannot verify staff members using this command, if they wish to be verified they can open a ticket on the support guild. Attempting to circumvent this guideline will result in permanent blacklisting of all users involved.", )
@@ -22,7 +22,7 @@ async def verify(user: discord.Member, interaction: discord.Interaction, dob: st
 		dev_log = interaction.client.fetch_channel(int(os.getenv("DEV", 1022319186950758472)))
 	id_message = f"**USER ID VERIFICATION**\n**ID VERIFIED BY:** {interaction.user}\n"
 
-	await LobbyProcess.log(user, interaction.guild, age, dob, interaction.user, True, id_verify=id_message)
+	await LobbyProcess.log(user, interaction.guild, age, dob, interaction.user, True, id_verify=id_message, reverify=reverify)
 	await interaction.channel.send(
 		f"{user.mention} has been ID verified with `{dob}` by {interaction.user.mention}")
 	if not process :
@@ -30,7 +30,7 @@ async def verify(user: discord.Member, interaction: discord.Interaction, dob: st
 	if interaction.guild is None:
 		return None
 
-	await LobbyProcess.approve_user(interaction.guild, user, dob, age, interaction.user.name, idverify=True)
+	await LobbyProcess.approve_user(interaction.guild, user, dob, age, interaction.user.name, idverify=True, reverify=reverify)
 	if not dev_log:
 		return None
 	await send_message(dev_log, f"{user.global_name} ({user.id}) has been ID verified by {interaction.user} in {interaction.guild.name}!")

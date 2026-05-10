@@ -26,9 +26,9 @@ class TOSButton(discord.ui.View) :
 
 		suffix = "_reverify" if reverify else "_standard"
 
-		if ConfigData().get_key(guild_id, VERIFICATION_KEY, VerificationMethods.BASIC) not in [VerificationMethods.IDVERIFY] or reverify:
+		if ConfigData().get_key(guild_id, VERIFICATION_KEY, VerificationMethods.BASIC) not in [VerificationMethods.IDVERIFY]:
 			self.add_basic_verification(suffix)
-		if ConfigData().get_key(guild_id, VERIFICATION_KEY, VerificationMethods.BASIC) in [VerificationMethods.IDVERIFY, VerificationMethods.ALL] and not reverify:
+		if ConfigData().get_key(guild_id, VERIFICATION_KEY, VerificationMethods.BASIC) in [VerificationMethods.IDVERIFY, VerificationMethods.ALL]:
 			self.add_id_verification(suffix)
 		self.add_decline_verification(suffix)
 
@@ -99,9 +99,11 @@ class TOSButton(discord.ui.View) :
 		embed = discord.Embed(title="ID Verification", description=create_message(interaction,
 		                                                                          min_age=AgeRoleTransactions().get_minimum_age(
 			                                                                          interaction.guild.id), user_init=True))
+		if self.reverify:
+			embed.add_field(name="Reverify", value="true", inline=False)
 		embed.set_footer(text=f"{interaction.guild.id}")
 		await self.disable_buttons(interaction, f"A direct message has been sent with instructions")
-		await send_message(interaction.user, embed=embed, view=IdSubmitButton(user_initiated=True))
+		await send_message(interaction.user, embed=embed, view=IdSubmitButton(user_initiated=True, reverify=self.reverify))
 
 
 	def add_basic_verification(self, suffix):
