@@ -237,7 +237,7 @@ class Config(commands.GroupCog, name="config",
 		await interaction.response.defer(ephemeral=True)
 		value = value.id
 		match action.value.lower() :
-			case "verification_add_role" :
+			case "add" :
 				if key.value == "VERIFICATION_ADD_ROLE" and maximum_age and minimum_age :
 					AgeRoleTransactions().add(guild_id=interaction.guild.id, role_id=value, role_type=key.value,
 					                          minimum_age=minimum_age, maximum_age=maximum_age)
@@ -256,7 +256,7 @@ class Config(commands.GroupCog, name="config",
 					await interaction.followup.send(f"{key.name}: <@&{value}> already exists")
 					return
 				await interaction.followup.send(f"{key.name}: <@&{value}> has been added to the database")
-			case 'verification_remove_role' :
+			case 'remove' :
 				if key.value == "VERIFICATION_ADD_ROLE" :
 					AgeRoleTransactions().permanentdelete(interaction.guild_id, value)
 					Queue().add(ConfigUtils.log_change(interaction.guild, {key.value : f"role id: {value} removed"},
