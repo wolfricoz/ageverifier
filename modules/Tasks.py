@@ -180,7 +180,8 @@ class Tasks(commands.Cog) :
 				kicked_users.append(user.global_name)
 			if not DEBUG :
 				Queue().add(user.send(removal_message), 0)
-				Queue().add(user.kick(reason=f"In lobby for more than {days} days"), 0)
+				if isinstance(user, discord.Member) :
+					Queue().add(user.kick(reason=f"In lobby for more than {days} days"), 0)
 				Queue().add(message.delete(), 0)
 		if count_messages < 1 and len(kicked_users) < 1 :
 			return

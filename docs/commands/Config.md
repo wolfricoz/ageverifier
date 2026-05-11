@@ -126,6 +126,22 @@ This can help prevent spam. The cooldown is set in minutes. You can set it to 0 
 
 ---
 
+### `verification_mode`
+
+**Usage:** `/config verification_mode <mode>`
+
+> Allows you to change the verification mode for the bot. Options:
+- Basic (dob)
+- ID verification
+- Basic + ID verification
+- Website verification
+
+**Permissions:**
+- You'll need the `Manage Server` permission to use this command.
+- premium required
+
+---
+
 ### `view`
 
 **Usage:** `/config view <guild>`

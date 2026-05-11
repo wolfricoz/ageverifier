@@ -22,7 +22,7 @@ class ServerTransactions(DatabaseTransactions) :
 			owner_name = owner.name if owner else ""
 			owner_id = owner.id if owner else 0
 			owner = UserTransactions().user_exists(owner_id)
-			if not owner and owner_id != 0 :
+			if not owner:
 				UserTransactions().add_user_empty(owner_id)
 
 			if guild is not None :

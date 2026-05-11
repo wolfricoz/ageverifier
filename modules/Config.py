@@ -68,7 +68,6 @@ class Config(commands.GroupCog, name="config",
 			return await send_response(interaction,
 			                           "I do not have permission to send messages or embed links in this channel. Please fix this and try again.",
 			                           ephemeral=True)
-
 		await send_message(interaction.channel,
 		                   "For more information about setting up the bot, visit our [Documentation](<https://wolfricoz.github.io/ageverifier/commands/Config.html>)")
 		logging.info(f"{interaction.guild.name} started {setup_type.value}")
