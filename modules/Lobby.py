@@ -5,16 +5,15 @@ import os
 import discord
 from discord import app_commands
 from discord.ext import commands
-from discord_py_utilities.messages import send_message, send_response
+from discord_py_utilities.messages import send_response
 
 import classes.permissions as permissions
 from classes.AgeCalculations import AgeCalculations
 from classes.idverify import verify
+from classes.lobby.Clean import clean_lobby
 from classes.lobbyprocess import LobbyProcess
-from classes.support.queue import Queue
 from classes.whitelist import check_whitelist
 from databases.transactions.ConfigData import ConfigData
-from databases.transactions.ServerTransactions import ServerTransactions
 from views.buttons.approvalbuttons import ApprovalButtons
 from views.buttons.confirmButtons import confirmAction
 from views.buttons.dobentrybutton import dobentry
@@ -193,7 +192,7 @@ class Lobby(commands.GroupCog, description="Commands for managing the new member
 		lobby_channel = interaction.guild.get_channel(lobby_config)
 		if days > 30 :
 			days = 30
-			await interaction.channel.send("Max days is 14, setting to 14")
+			await interaction.channel.send("Max days is 30, setting to 30")
 
 		view = confirmAction()
 		await view.send_message(
@@ -204,39 +203,8 @@ class Lobby(commands.GroupCog, description="Commands for managing the new member
 		if not view.confirmed :
 			await interaction.followup.send("Purge cancelled")
 			return
-		dbguild = ServerTransactions().get(interaction.guild.id)
-		cutoff = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=days)
-		kicked = set()
-		async for msg in lobby_channel.history(limit=None, before=cutoff) :
+		await clean_lobby(self.bot, interaction.guild, days)
 
-			for user in msg.mentions :
-				if user.bot :
-					continue
-				if user.id == interaction.guild.owner_id :
-					continue
-				try :
-					await send_message(user,
-					                   f"You have been in the lobby for more than {days} days. You have been kicked from {interaction.guild.name}."
-					                   f"\n\n"
-					                   f"You can rejoin using this invite: {dbguild.invite}")
-				except Exception :
-					print(f"Unable to send message to {user} before kicking")
-				try :
-					Queue().add(user.kick(reason=f"In lobby for more than {days} days"))
-					kicked.add(f"{user.name}({user.id})")
-				except Exception as e :
-					print(f"Unable to kick {user} because {e}")
-			Queue().add(msg.delete(), 0)
-
-		with open("config/kicked.txt", "w") as file :
-			str_kicked = "\n".join(kicked)
-			file.write("These users were queue'd for removal during the purge:\n")
-			file.write(str_kicked)
-		await interaction.channel.send(
-			f"{interaction.user.mention} Kicked {len(kicked)}",
-			file=discord.File(file.name, "kicked.txt")
-		)
-		os.remove("config/kicked.txt")
 
 
 async def setup(bot) :

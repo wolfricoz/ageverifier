@@ -2,7 +2,7 @@
 import asyncio
 import logging
 import os
-from datetime import UTC, datetime, timedelta
+from datetime import datetime
 
 import discord
 from discord import app_commands
@@ -15,8 +15,8 @@ from classes.access import AccessControl
 from classes.ageroles import change_age_roles
 from classes.dashboard.Servers import Servers
 from classes.encryption import Encryption
+from classes.lobby.Clean import clean_lobby
 from classes.support.queue import Queue
-from databases.current import Servers as servers_DB
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.ServerTransactions import ServerTransactions
 from databases.transactions.UserTransactions import UserTransactions
@@ -141,63 +141,6 @@ class Tasks(commands.Cog) :
 		await self.user_expiration_remove()
 		logging.info("Finished checking all entries")
 
-	async def clean_lobby(self, guild: discord.Guild) :
-		# Setup for the function; preparing the variables.
-		logging.info(f"cleaning lobby for {guild.name}")
-		count_messages = 0
-		kicked_users = []
-		lobby_channel = guild.get_channel(ConfigData().get_key_int_or_zero(guild.id, "server_join_channel"))
-		mod_lobby = guild.get_channel(ConfigData().get_key_int_or_zero(guild.id, "approval_channel"))
-		days = ConfigData().get_key_int_or_zero(guild.id, "clean_lobby_days")
-		guild_db: servers_DB = ServerTransactions().get(guild.id)
-		removal_message = (
-			f"You have been removed from the server due to {days} days of inactivity. "
-			f"If you’d like to rejoin, you’re always welcome back! Here’s a new invite link: {guild_db.invite}"
-		)
-
-		if not lobby_channel :
-			logging.warning(f"[clean-up] No lobby channel found for {guild.name}")
-			return
-		if days == 0 :
-			logging.info(f"[clean-up] Days are set to 0, skipping {guild.name}")
-			return
-		removal_date = datetime.now(tz=UTC) - timedelta(days=days)
-
-		async for message in lobby_channel.history(limit=None, before=removal_date) :
-			logging.info(f"Message: {message.content}")
-			if not message.author:
-				logging.warning(f"[clean-up] No author in {message.author}")
-				Queue().add(message.delete())
-			if not message.author.bot or len(message.mentions) < 1 :
-				continue
-			if message.author != self.bot.user and message.author.guild_permissions.manage_messages :
-				continue
-			user = message.mentions[0]
-			if isinstance(user, discord.Member) and user.guild_permissions.manage_messages :
-				continue
-			count_messages += 1
-			if user.global_name not in kicked_users :
-				kicked_users.append(user.global_name)
-			if not DEBUG :
-				Queue().add(user.send(removal_message), 0)
-				if isinstance(user, discord.Member) :
-					Queue().add(user.kick(reason=f"In lobby for more than {days} days"), 0)
-				Queue().add(message.delete(), 0)
-		if count_messages < 1 and len(kicked_users) < 1 :
-			return
-
-		if not os.path.isdir('temp') :
-			os.mkdir('temp')
-
-		with open("temp/kicked.txt", "w") as file :
-			str_kicked = "\n".join(kicked_users)
-			file.write("These users were queue'd for removal during the purge:\n")
-			file.write(str_kicked)
-		await mod_lobby.send(
-			f"[Automatic Lobby Cleanup] cleaned up {len(kicked_users)} users and {count_messages} messages",
-			file=discord.File(file.name, "autocleanup.txt")
-		)
-		os.remove("temp/kicked.txt")
 
 	@tasks.loop(hours=24)
 	async def clean_guilds(self) :
@@ -212,7 +155,7 @@ class Tasks(commands.Cog) :
 			guild = self.bot.get_guild(gid)
 			if not guild :
 				continue
-			Queue().add(self.clean_lobby(guild))
+			Queue().add(clean_lobby(self.bot, guild))
 
 	@tasks.loop(minutes=10)
 	async def refresh_invites(self) :
