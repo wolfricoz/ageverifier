@@ -63,7 +63,7 @@ class SurveyModal(discord.ui.Modal) :
 		self.add_item(self.like)
 		self.add_item(self.dislike)
 		self.add_item(self.feedback)
-		self.add_item(self.contact)
+		# self.add_item(self.contact)
 
 
 
