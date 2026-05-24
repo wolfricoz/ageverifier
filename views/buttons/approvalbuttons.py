@@ -38,9 +38,14 @@ class ApprovalButtons(discord.ui.View) :
 
 		if whitelisted :
 			message = f"\n{user.mention} has given {self.age} {self.dob}. You can let them through with the buttons below."
+		# Generate the uuid
 		footer = f"{uuid.uuid4()}"
 		previous_guilds = None
-		# loading the config, to since some settings are used multiple times we do it here to prevent the same call being made multiple times
+
+
+		# loading the config, since some settings are used multiple times we do it here to prevent the same call being made multiple times
+
+		approval_ping_role: int | None= ConfigData().get_key_or_none(guild.id, "approval_ping_role")
 		legacy_message: bool = ConfigData().get_toggle(guild.id, "legacy_message", default="DISABLED")
 		show_previous_servers: bool = ConfigData().get_toggle(guild.id, "show_previous_servers",
 		                                                      default="ENABLED")
@@ -52,10 +57,12 @@ class ApprovalButtons(discord.ui.View) :
 		picture_small: bool = ConfigData().get_toggle(guild.id, "picture_small", default="ENABLED")
 		show_inline: bool = ConfigData().get_toggle(guild.id, "show_inline", default="DISABLED")
 		debug: bool = ConfigData().get_toggle(guild.id, "debug", default="DISABLED")
+
 		# fetching previous servers
 		if show_previous_servers :
 			previous_guilds = "\n".join([guild.get('name', 'Failed to fetch name') for guild in
 			                             JoinHistoryTransactions().fetch_previous_verifications(user.id)])
+
 		# filling the fields
 		fields = {
 			"ID Verified"            : id_verified,
@@ -68,6 +75,7 @@ class ApprovalButtons(discord.ui.View) :
 			"User ID"                : user.id if show_user_id else None,
 			"debug"                  : f"?approve {user.mention} {self.age} {self.dob}" if whitelisted and debug else None
 		}
+
 		profile_picture = None
 		if user.avatar:
 			profile_picture = user.avatar.url
@@ -77,6 +85,11 @@ class ApprovalButtons(discord.ui.View) :
 			ConfigData().get_key(guild.id, "legacy_message",
 			                     "DISABLED")).upper() == "ENABLED" else "You can modify this embed with `/config approval_toggles`",
 		                      color=discord.Color.green())
+
+		# create the ping if set
+		ping = ""
+		if approval_ping_role is not None:
+			ping = f"\n<@&{approval_ping_role}> a new verification has been submitted"
 
 		embed.set_footer(text=footer)
 		try :
@@ -93,7 +106,7 @@ class ApprovalButtons(discord.ui.View) :
 			embed.add_field(name=key, value=value, inline=show_inline)
 		# send the content and create the record
 		await send_message(mod_channel,
-		                         f"{user.mention}\n-# All timestamps are (mm/dd/yyyy)",
+		                         f"{user.mention}\n-# All timestamps are (mm/dd/yyyy) {ping}",
 		                         embed=embed,
 		                         view=self)
 		LobbyDataTransactions().create(footer, self.user.id, self.dob, self.age, reverify=self.reverify)

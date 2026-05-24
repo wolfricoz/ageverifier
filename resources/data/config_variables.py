@@ -20,7 +20,8 @@ rolechoices = {
 	"return_remove_role"         : "These roles will be removed from the user when running the /lobby return command.",
 	"server_join_role"           : "These roles will be added to the user when they join the server and removed when they verify their age.",
 	"auto_update_excluded_roles" : "These roles are excluded from the automated age update system, ensuring the bot does not assign unnecessary roles to users.",
-	"reverification_role"        : "These roles are added to the user when they reverify their age."
+	"reverification_role"        : "These roles are added to the user when they reverify their age.",
+	"approval_ping_role"         : "This role is pinged when a user successfully submits their verification and awaits approval. Not compatitable with the automatic mode."
 }
 
 # Verification choices
