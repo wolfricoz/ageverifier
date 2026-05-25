@@ -40,7 +40,7 @@ Requires 'Manage Server' permissions.
 **Usage:** `/joinguard minimum_age <days>`
 
 > Set the minimum age threshold (in days) an account must have to clear the ACCOUNT_AGE check.
-
+Default: 7
 **Permissions:**
 - Requires `Manage Server` permission.
 
