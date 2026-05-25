@@ -3,6 +3,7 @@ from enum import StrEnum
 messagechoices = {
 	"verification_completed_message" : 'This is the welcome message that will be posted in the verification_completed_channel channel This starts with: `Welcome to {server name} {user}! This is where the message goes`',
 	"server_join_message"            : 'This is the welcome message that will be posted in the lobby channel, and be the first message new users see. This starts with: `Welcome {user}! This is where the message goes`',
+	"server_leave_message" : "This is the message that will be sent when a user leaves the server."
 	# "idmessage"    : 'This message will be sent to the user when using the id request method along with the default.',
 }
 channelchoices = {
@@ -12,7 +13,8 @@ channelchoices = {
 	"age_log"                        : 'This is the channel where the lobby logs will be posted, this channel has to be hidden from the users; failure to do so will result in the bot leaving.',
 	"approval_channel"               : 'This is where the verification approval happens, this channel should be hidden from the users.',
 	"verification_failure_log"       : 'This is where failed verification logs will be posted, this channel should be hidden from the users.',
-	"reverify_age_log"               : 'This is the channel where the reverification logs will be posted, this channel has to be hidden from the users; failure to do so will result in the bot leaving.'
+	"reverify_age_log"               : 'This is the channel where the reverification logs will be posted, this channel has to be hidden from the users; failure to do so will result in the bot leaving.',
+	'leave_log': "This channel is where the leaves will be logged."
 }
 rolechoices = {
 	"verification_add_role"      : 'These roles will be added to the user after a successful verification',
@@ -26,6 +28,7 @@ rolechoices = {
 
 # Verification choices
 VERIFICATION_KEY = "VERIFICATION_METHOD"
+REVERIFICATION_KEY = "REVERIFICATION_METHOD"
 
 
 class VerificationMethods(StrEnum) :
@@ -33,6 +36,18 @@ class VerificationMethods(StrEnum) :
 	IDVERIFY = "IDVERIFY"
 	ALL = "ALL"
 	WEBSITE = "WEBSITE"
+
+FAIL_ACTION = "JOIN_FAIL_ACTION"
+
+class JoinRequirementsToggles(StrEnum) :
+	ACCOUNT_AGE = "ACCOUNT_AGE"
+	HAS_AVATAR = "HAS_AVATAR"
+	MUTUAL_GUILDS = "MUTUAL_GUILDS"
+	IS_BOT = "IS_BOT"
+	HAS_BANS = "HAS_BANS"
+	REQUIRE_ACTIVE_PRESENCE = "REQUIRE_ACTIVE_PRESENCE"
+	FILTER_WEB_ONLY_ACCOUNTS = "FILTER_WEB_ONLY_ACCOUNTS"
+
 
 
 lobby_approval_toggles = {
@@ -48,12 +63,15 @@ lobby_approval_toggles = {
 }
 
 int_options = {
-	'CLEAN_LOBBY_DAYS' : 'Inactive member cleanup threshold from the lobby (days).'
+	'CLEAN_LOBBY_DAYS' : 'Inactive member cleanup threshold from the lobby (days).',
+	'MINIMUM_ACCOUNT_AGE' : 'The minimum required account age in days'
 }
 
 available_toggles = ["SEND_JOIN_MESSAGE", "SEND_VERIFICATION_COMPLETED_MESSAGE", "AUTOMATIC_VERIFICATION",
                      "AUTOKICK_UNDERAGED_USERS", "AUTO_UPDATE_AGE_ROLES", "PING_OWNER_ON_FAILURE", "SURVEY",
-                     "LOG_CONFIG_CHANGES", "CLEANUP_MESSAGES"]
+                     "LOG_CONFIG_CHANGES", "CLEANUP_MESSAGES", "SEND_LEAVE_MESSAGE"]
 enabled_toggles = ["SEND_VERIFICATION_COMPLETED_MESSAGE", "SEND_JOIN_MESSAGE", 'BANS', 'JOINED_AT', 'CREATED_AT',
                    'USER_ID', 'PICTURE_SMALL',
-                   "LOG_CONFIG_CHANGES", "CLEANUP_MESSAGES"]
+                   "LOG_CONFIG_CHANGES", "CLEANUP_MESSAGES", "SEND_LEAVE_MESSAGE"]
+
+
