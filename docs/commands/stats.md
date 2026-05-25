@@ -2,7 +2,7 @@
 layout: default
 title: Stats
 parent: Commands
-nav_order: 8
+nav_order: 9
 ---
 		
 <h1>Stats</h1>

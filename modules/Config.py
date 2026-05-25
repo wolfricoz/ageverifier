@@ -19,7 +19,8 @@ from classes.support.queue import Queue
 from databases.transactions.AgeRoleTransactions import AgeRoleTransactions
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.ConfigTransactions import ConfigTransactions
-from resources.data.config_variables import VERIFICATION_KEY, VerificationMethods, available_toggles, channelchoices, \
+from resources.data.config_variables import REVERIFICATION_KEY, VERIFICATION_KEY, VerificationMethods, \
+	available_toggles, channelchoices, \
 	lobby_approval_toggles, messagechoices, \
 	rolechoices
 from views.modals.configinput import ConfigInputUnique
@@ -293,11 +294,17 @@ class Config(commands.GroupCog, name="config",
 
 
 	@app_commands.command(name="verification_mode", description="Set the verification mode for the bot.")
-	@app_commands.choices(mode=[Choice(name=method.name, value=method.value) for method in VerificationMethods
+	@app_commands.choices(verification_type=
+	[
+		Choice(name=VERIFICATION_KEY.replace("_", " ").title(), value=VERIFICATION_KEY),
+		Choice(name=REVERIFICATION_KEY.replace("_", " ").title(), value=REVERIFICATION_KEY),
+
+	],
+		mode=[Choice(name=method.name, value=method.value) for method in VerificationMethods
 	])
 	@AccessControl().check_premium()
 	@app_commands.checks.has_permissions(manage_guild=True)
-	async def verification_mode(self, interaction: discord.Interaction, mode: Choice['str']) -> None:
+	async def verification_mode(self, interaction: discord.Interaction, verification_type: Choice['str'], mode: Choice['str']) -> None:
 		"""
 			Allows you to change the verification mode for the bot. Options:
 			- Basic (dob)
@@ -305,14 +312,18 @@ class Config(commands.GroupCog, name="config",
 			- Basic + ID verification
 			- Website verification
 
+			You can set the verification mode for the following types:
+			- Verification
+			- Reverification
+
 			**Permissions:**
 			- You'll need the `Manage Server` permission to use this command.
 			- premium required
 
 		"""
-		ConfigTransactions().config_unique_add(interaction.guild.id, VERIFICATION_KEY, mode.value, overwrite=True)
+		ConfigTransactions().config_unique_add(interaction.guild.id, verification_type.value, mode.value, overwrite=True)
 		Queue().add(
-			ConfigUtils.log_change(interaction.guild, {VERIFICATION_KEY : mode.value}, user_name=interaction.user.mention,
+			ConfigUtils.log_change(interaction.guild, { verification_type.value: mode.value}, user_name=interaction.user.mention,
 			                       ))
 		await send_response(interaction, f"The verification mode has been set to {mode.value}", ephemeral=True)
 

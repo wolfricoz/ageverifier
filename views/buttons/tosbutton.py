@@ -8,7 +8,7 @@ from classes.lobbytimers import LobbyTimers
 from databases.transactions.AgeRoleTransactions import AgeRoleTransactions
 from databases.transactions.ConfigData import ConfigData
 from resources.data.IDVerificationMessage import create_message
-from resources.data.config_variables import VERIFICATION_KEY, VerificationMethods
+from resources.data.config_variables import REVERIFICATION_KEY, VERIFICATION_KEY, VerificationMethods
 from views.buttons.idsubmitbutton import IdSubmitButton
 from views.modals.verifyModal import VerifyModal
 
@@ -25,10 +25,14 @@ class TOSButton(discord.ui.View) :
 		logging.info(f"TOSButton created with reverify={reverify}. Created by: {caller}")
 
 		suffix = "_reverify" if reverify else "_standard"
+		verification_method = VERIFICATION_KEY
+		if reverify:
+			verification_method = REVERIFICATION_KEY
 
-		if ConfigData().get_key(guild_id, VERIFICATION_KEY, VerificationMethods.BASIC) not in [VerificationMethods.IDVERIFY]:
+
+		if ConfigData().get_key(guild_id, verification_method, VerificationMethods.BASIC) not in [VerificationMethods.IDVERIFY]:
 			self.add_basic_verification(suffix)
-		if ConfigData().get_key(guild_id, VERIFICATION_KEY, VerificationMethods.BASIC) in [VerificationMethods.IDVERIFY, VerificationMethods.ALL]:
+		if ConfigData().get_key(guild_id, verification_method, VerificationMethods.BASIC) in [VerificationMethods.IDVERIFY, VerificationMethods.ALL]:
 			self.add_id_verification(suffix)
 		self.add_decline_verification(suffix)
 

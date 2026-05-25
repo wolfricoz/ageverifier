@@ -89,7 +89,7 @@ class ApprovalButtons(discord.ui.View) :
 		# create the ping if set
 		ping = ""
 		if approval_ping_role is not None:
-			ping = f"\n<@&{approval_ping_role}> a new verification has been submitted"
+			ping = f"<@&{approval_ping_role}> a new verification has been submitted"
 
 		embed.set_footer(text=footer)
 		try :
@@ -106,7 +106,7 @@ class ApprovalButtons(discord.ui.View) :
 			embed.add_field(name=key, value=value, inline=show_inline)
 		# send the content and create the record
 		await send_message(mod_channel,
-		                         f"{user.mention}\n-# All timestamps are (mm/dd/yyyy) {ping}",
+		                         f"{user.mention} {ping}\n-# All timestamps are (mm/dd/yyyy) ",
 		                         embed=embed,
 		                         view=self)
 		LobbyDataTransactions().create(footer, self.user.id, self.dob, self.age, reverify=self.reverify)
