@@ -17,6 +17,7 @@ class LobbyListeners(GroupCog) :
 	async def requirements_check(self, member: Member) -> None:
 		"""Checks if the user has the minimum requirements to join the server, to improve user quality."""
 		logging.info("LobbyListeners: Checking on join")
+
 		checker = JoinRequirements(self.bot, member)
 		await checker.evaluate()
 
@@ -31,7 +32,7 @@ class LobbyListeners(GroupCog) :
 		channel = await ConfigData().get_channel(member.guild, "leave_log")
 		if not channel:
 			return
-		await send_message(channel, f"{member.mention} has left" + leave_message)
+		await send_message(channel, f"{member.mention} has left! " + leave_message)
 
 
 

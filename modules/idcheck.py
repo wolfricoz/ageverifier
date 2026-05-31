@@ -142,7 +142,19 @@ class idcheck(commands.GroupCog, description="Commands for managing manual ID ve
         """
 		if not AccessControl().is_premium(interaction.guild.id):
 			return await send_response(interaction, "This feature is only for premium servers, please reach out to the user and verify manually.", ephemeral=True)
-		reason = await send_modal(interaction, f"Adding reason to the ID check for {user.name}", "ID Check Request")
+
+		idinfo = VerificationTransactions().get_id_info(user.id)
+		if idinfo:
+			confirm_class =  Confirm()
+			confirm_class.save_interaction = True
+			if await confirm_class.send_confirm(interaction, f"{user.name} is on the ID list already with reason: `{idinfo.reason}`, do you want to update it? Select confirm to overwrite and cancel to send the original.", "Using the original reason...", True) is True:
+				reason = await send_modal(confirm_class.interaction, f"Adding reason to the ID check for {user.name}", "ID Check Request")
+
+			else:
+				reason = idinfo.reason
+
+		else:
+			reason = await send_modal(interaction, f"Adding reason to the ID check for {user.name}", "ID Check Request")
 		if reason is None :
 			return None
 		id_check: IdVerification = VerificationTransactions().update_check(user.id, str(reason), True, server=interaction.guild.name)
