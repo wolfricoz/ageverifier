@@ -240,6 +240,7 @@ class ConfigSetup :
 			message_dict = {
 				'server_join_message'          : f"Please read the rules in the rules channel and click the verify button below to get started.",
 				'verification_completed_message' : "Be sure to get some roles in the roles channel and if you need help be sure to ask the staff!",
+				'server_leave_message': 'Thanks for hanging out with us! 👋'
 			}
 			self.changes[messagekey] = messagevalue
 			ConfigTransactions().config_unique_add(guild.id, messagekey, message_dict[messagekey], overwrite=True)
