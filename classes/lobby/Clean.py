@@ -41,7 +41,7 @@ async def clean_lobby(bot, guild: discord.Guild, custom_days = None) :
 			Queue().add(message.delete())
 		if (not message.author.bot and message.author.bot != bot.user) or len(message.mentions) < 1 :
 			continue
-		if message.author != bot.user and message.author.guild_permissions.manage_messages :
+		if message.author != bot.user and isinstance(message.author, discord.Member) and message.author.guild_permissions.manage_messages :
 			continue
 		user = message.mentions[0]
 		if isinstance(user, discord.Member) and user.guild_permissions.manage_messages :
