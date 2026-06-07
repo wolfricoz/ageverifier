@@ -49,8 +49,9 @@ async def clean_lobby(bot, guild: discord.Guild, custom_days = None) :
 			if isinstance(user, discord.Member) and user.guild_permissions.manage_messages :
 				continue
 			count_messages += 1
-			if user.global_name not in kicked_users :
-				kicked_users.append(user.global_name)
+			display_name = user.global_name or user.name
+			if display_name and display_name not in kicked_users:
+				kicked_users.append(display_name)
 			if not DEBUG :
 				Queue().add(user.send(removal_message), 0)
 				if isinstance(user, discord.Member) :
