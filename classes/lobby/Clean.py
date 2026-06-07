@@ -69,7 +69,7 @@ async def clean_lobby(bot, guild: discord.Guild, custom_days = None) :
 		if not kicked_users:
 			kicked_users = ["No users kicked"]
 
-		str_kicked = "\n".join(kicked_users)
+		str_kicked = "\n".join(str(name) if name is not None else "Unknown User" for name in kicked_users)
 		file.write("These users were queue'd for removal during the purge:\n")
 		file.write(str_kicked)
 	await mod_lobby.send(
