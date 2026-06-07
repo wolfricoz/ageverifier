@@ -39,7 +39,7 @@ async def clean_lobby(bot, guild: discord.Guild, custom_days = None) :
 			logging.info(f"Message: {message.content}")
 			if not message.author or not isinstance(message.author, discord.Member) :
 				logging.warning(f"[clean-up] No author in {message.author}")
-				Queue().add(message.delete())
+				Queue().add(message.delete(), 0)
 				continue
 			if not message.author.bot or message.author != bot.user or len(message.mentions) < 1 :
 				continue

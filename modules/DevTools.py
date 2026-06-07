@@ -362,6 +362,23 @@ class DevTools(commands.GroupCog, name="dev", description="A set of commands for
 # 	StaffDbTransactions.delete(user.id)
 # 	await send_response(interaction, f"Staff member {user.mention} successfully removed!")
 # 	AccessControl().reload()
+	@app_commands.command(name="inspect_queue",
+	                      description="[DEV] Looks at the current state of the task queue for debugging purposes.")
+	@check_access()
+	async def inspect_queue(self, interaction: discord.Interaction, guild: str = None) :
+		"""
+		[DEV] Inspects the current state of the task queue for debugging.
+
+		**Permissions:**
+		- `Developer`
+		"""
+		queue_data = Queue().export_queue()
+		queue_text = "Current Queue items:"
+		for item, amount in queue_data.items() :
+			queue_text += f"\n- Task: {item}, Count: {amount} eta: {amount * 0.4} seconds"
+
+		await send_response(interaction, queue_text, ephemeral=True)
+
 
 
 

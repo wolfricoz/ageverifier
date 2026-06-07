@@ -24,6 +24,12 @@ class Queue(metaclass=Singleton):
     low_priority_queue = []
     task_finished = True
 
+    def clear(self) :
+        self.high_priority_queue = []
+        self.normal_priority_queue = []
+        self.low_priority_queue = []
+        self.task_finished = True
+
     def status(self) :
         return f"Remaining queue: High: {len(self.high_priority_queue)} Normal: {len(self.normal_priority_queue)} Low: {len(self.low_priority_queue)} Estimated time: {round(math.ceil(self.get_queue_time()) / 60, 2)} minutes"
 
@@ -108,3 +114,31 @@ class Queue(metaclass=Singleton):
     def get_queue_time(self) -> float:
         return (len(self.high_priority_queue) + len(self.normal_priority_queue) + len(self.low_priority_queue)) * 0.3
 
+    def get_queue_items(self) -> list :
+        return self.high_priority_queue + self.normal_priority_queue + self.low_priority_queue
+
+    def export_queue(self) -> dict :
+        total = {
+
+        }
+
+        for i in self.high_priority_queue :
+            i = i.__name__ + " (high)"
+            if i in total :
+                total[i] += 1
+            else :
+                total[i] = 1
+        for i in self.normal_priority_queue :
+            i = i.__name__ + " (normal)"
+            if i in total :
+                total[i] += 1
+            else :
+                total[i] = 1
+        for i in self.low_priority_queue :
+            i = i.__name__ + " (low)"
+            if i in total :
+                total[i] += 1
+            else :
+                total[i] = 1
+
+        return total

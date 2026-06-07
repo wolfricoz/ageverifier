@@ -1,9 +1,20 @@
 import logging
 
 import discord
+from discord import app_commands
 from discord.ext import commands, tasks
+from discord_py_utilities.messages import send_response
 
 from classes.support.queue import Queue
+
+
+def check_access() :
+	def pred(interaction: discord.Interaction) -> bool :
+		if interaction.user.id == int(os.getenv('DEVELOPER')) :
+			return True
+		return False
+
+	return app_commands.check(pred)
 
 
 class queueTask(commands.Cog):
@@ -14,7 +25,14 @@ class queueTask(commands.Cog):
         self.queue.start()
         self.display_status.start()
 
-
+    @app_commands.command(name="restart_queue", description="[dev command] Restart the bot queue")
+    @check_access()
+    async def restart_queue(self, interaction: discord.Interaction, empty: bool = False) :
+        if empty :
+            Queue().clear()
+        Queue().task_finished = True
+        self.queue.restart()
+        await send_response(interaction, f"Queue restarted. Empty: {empty}", ephemeral=True)
 
     def cog_unload(self):
         self.queue.cancel()
