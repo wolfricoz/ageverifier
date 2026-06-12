@@ -90,14 +90,21 @@ You will be asked for confirmation before the purge begins.
 
 ### `lobby_purge`
 
-**Usage:** `/lobby lobby_purge <days>`
+**Usage:** `/lobby lobby_purge <mode> <days>`
 
-> Kicks users who have been waiting in the lobby for too long.
-This command checks the age of the welcome messages in the lobby. If a message is older than the specified number of days, the mentioned user will be kicked.
-This helps keep your lobby clean and removes inactive accounts.
+>                   Kicks users who have been waiting in the lobby for too long by checking the age of their welcome messages. If a message is older than the specified number of days, the user will be kicked to keep the lobby clean.
+
+**Queue Notice:** Actions are queued and may take 10 minutes to 24 hours to complete depending on message volume.
+
+**Modes:**
+* **Dry Run (`dry`):** Logs what would happen without kicking users or deleting messages.
+* **Clean Only (`clean`):** Deletes the welcome messages and messages of users who have left but keeps the users.
+* **Kick Only (`kick`):** Kicks the users but leaves their welcome messages.
+* **Kick & Clean (`full`):** Kicks the users and deletes their welcome messages.
 
 **Permissions:**
 - You'll need `Administrator` permission to use this command.
+  
 
 ---
 
