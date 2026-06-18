@@ -23,7 +23,7 @@ class VerifyButton(discord.ui.View) :
 	def __init__(self) :
 		super().__init__(timeout=None)
 
-	@discord.ui.button(label="Start Verification here!", style=discord.ButtonStyle.green, custom_id="verify")
+	@discord.ui.button(label="Start Age Verification!", style=discord.ButtonStyle.green, custom_id="verify")
 	async def verify(self, interaction: discord.Interaction, button: discord.ui.Button) :
 		if cooldown := LobbyTimers().check_cooldown(interaction.guild.id, interaction.user.id) :
 			await send_response(interaction,
