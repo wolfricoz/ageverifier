@@ -155,7 +155,9 @@ class Tasks(commands.Cog) :
 			guild = self.bot.get_guild(gid)
 			if not guild :
 				continue
-			Queue().add(clean_lobby(self.bot, guild))
+			kick = ConfigData().get_toggle(guild.id, "KICK_ON_CLEAN")
+
+			Queue().add(clean_lobby(self.bot, guild, kick=kick))
 
 	@tasks.loop(minutes=10)
 	async def refresh_invites(self) :

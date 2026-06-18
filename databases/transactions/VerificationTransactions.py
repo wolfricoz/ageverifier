@@ -4,9 +4,9 @@ from datetime import datetime
 from sqlalchemy import Select
 
 from classes.encryption import Encryption
+from databases.current import IdVerification
 from databases.transactions.DatabaseTransactions import DatabaseTransactions
 from databases.transactions.UserTransactions import UserTransactions
-from databases.current import IdVerification
 
 
 class VerificationTransactions(DatabaseTransactions) :
@@ -97,6 +97,9 @@ class VerificationTransactions(DatabaseTransactions) :
 	                        idverified: bool = None, verifieddob: str = None, server: str = None, idmessage: int = None) :
 		with self.createsession() as session :
 			verification = self.get_id_info(uid, session=session)
+			if not verification:
+				self.add_idcheck(uid, "No check Found, added to allow id verification.", idcheck=False)
+
 			data = {
 				"reason"      : reason,
 				"idcheck"     : idcheck,
