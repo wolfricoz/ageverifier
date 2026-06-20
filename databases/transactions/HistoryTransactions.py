@@ -3,10 +3,10 @@ from datetime import datetime
 
 from sqlalchemy import Select, desc, text
 
-from databases.transactions.DatabaseTransactions import DatabaseTransactions
-from databases.transactions.UserTransactions import UserTransactions
 from databases.current import JoinHistory
 from databases.enums.joinhistorystatus import JoinHistoryStatus
+from databases.transactions.DatabaseTransactions import DatabaseTransactions
+from databases.transactions.UserTransactions import UserTransactions
 
 
 # Assuming the following are defined elsewhere in your project
@@ -245,3 +245,9 @@ ORDER BY
 			), {
 				'gid': gid
 			}).mappings().all()
+
+	def anonymize_data(self, uid: int = None) :
+		with self.createsession() as session :
+			result = session.execute(text("UPDATE join_history set uid = :id where created_date < now() - INTERVAL '90 DAYS' and uid <> :id"), {'id': uid})
+			self.commit(session)
+			return result

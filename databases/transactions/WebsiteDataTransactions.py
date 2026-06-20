@@ -3,11 +3,11 @@ from datetime import datetime
 from typing import Optional
 from uuid import uuid4
 
-from sqlalchemy import Select
+from sqlalchemy import Select, text
 
+from databases.current import WebsiteData
 from databases.transactions.DatabaseTransactions import DatabaseTransactions
 from databases.transactions.UserTransactions import UserTransactions
-from databases.current import WebsiteData
 
 
 class WebsiteDataTransactions(DatabaseTransactions) :
@@ -80,6 +80,12 @@ class WebsiteDataTransactions(DatabaseTransactions) :
 		#         logging.warning(f"Attempted to delete non-existent lobby data for message_id: {uuid}.")
 		#         return False
 		#
+
+	def clean_table(self) :
+		with self.createsession() as session :
+			result = session.execute(text("DELETE FROM website_data WHERE created_date < NOW() - INTERVAL '90 DAYS'"))
+			self.commit(session)
+			return result
 
 	def set_verified(self, guid) :
 		with self.createsession() as session :

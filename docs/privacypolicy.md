@@ -6,7 +6,7 @@ nav_order: 7
 
 <h1 style="text-align: center">Privacy Policy</h1>
 
-_Last Updated: 14/02/2025_
+_Last Updated: 20/06/2026_
 
 # Introduction
 This privacy policy outlines how AgeVerifier ("we," "our," or "us") collects, uses, and protects your (the end user) personal data when you interact with the AgeVerifier bot. By using AgeVerifier, you agree to the terms and conditions of this policy.
@@ -48,6 +48,20 @@ We use the user-submitted data collected for the following purposes:
 
 ## Data Minimization
 We only collect the minimum amount of data required for age verification and do not use user data for purposes other than those explicitly stated in this policy.
+
+## Retention Policy and Data Lifecycles
+To remain compliant with data minimization protocols, avoid unnecessary data storage, and respect user privacy, AgeVerifier enforces specific, time-bounded data lifecycles depending on the classification of the data recorded. These schedules are executed via automated database maintenance routines.
+
+### Operational Tracking and Session Logs
+Data generated from temporary interactions with the verification infrastructure is subject to a rolling execution window:
+- **Website Session Data:** Relational web metadata logs are permanently erased after 90 days.
+- **Lobby Configuration Data:** Interaction and queuing data used during active verification sessions are permanently erased after 90 days.
+
+### Historical Analytical Metrics
+- **Join History Logs:** Relational records tracking user guild join histories are retained for analytical purposes but undergo **irreversible anonymization** after 90 days. During this process, individual user identification markers (`uid`) are unlinked and mapped permanently to a generic anonymous system identifier. This allows member guilds to preserve non-identifiable, aggregate server historical statistics without tracking individual user behavior over time.
+
+### Core Verification Profiles
+- **Inactivity Deletion:** User profile verification records (containing the linked Discord ID and Date of Birth) are completely and permanently erased from the active database after **one year of continuous absence or inactivity** across all member guilds utilizing AgeVerifier.
 
 ## Automated Decision-Making
 AgeVerifier uses automated processes to flag discrepancies in submitted data (e.g., mismatched dates of birth). Flagged cases may require manual review by guild staff. Additionally, guilds can enable automated approvals for correct age and date of birth matches to reduce the strain on the guild's staff.

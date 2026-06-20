@@ -1,11 +1,11 @@
 import logging
 from typing import Optional
 
-from sqlalchemy import Select
+from sqlalchemy import Select, text
 
 from classes.encryption import Encryption
-from databases.transactions.DatabaseTransactions import DatabaseTransactions
 from databases.current import LobbyData
+from databases.transactions.DatabaseTransactions import DatabaseTransactions
 from databases.transactions.UserTransactions import UserTransactions
 
 
@@ -78,3 +78,8 @@ class LobbyDataTransactions(DatabaseTransactions):
             logging.warning(f"Attempted to delete non-existent lobby data for message_id: {uuid}.")
             return False
 
+    def clean_table(self):
+        with self.createsession() as session :
+            result = session.execute(text("DELETE FROM lobby_data WHERE created_date < NOW() - INTERVAL '90 DAYS'"))
+            self.commit(session)
+            return result

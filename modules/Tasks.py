@@ -16,6 +16,7 @@ from classes.ageroles import change_age_roles
 from classes.dashboard.Servers import Servers
 from classes.encryption import Encryption
 from classes.lobby.Clean import clean_lobby
+from classes.support.RetentionPolicy import enforce_data_retention_policy
 from classes.support.queue import Queue
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.ServerTransactions import ServerTransactions
@@ -44,6 +45,7 @@ class Tasks(commands.Cog) :
 		# self.database_ping.start()
 		self.refresh_invites.start()
 		self.clean_guilds.start()
+		self.anonymize_data.start()
 
 	def cog_unload(self) :
 		"""unloads tasks"""
@@ -54,6 +56,7 @@ class Tasks(commands.Cog) :
 		# self.database_ping.cancel()
 		self.refresh_invites.cancel()
 		self.clean_guilds.cancel()
+		self.anonymize_data.cancel()
 
 	@tasks.loop(minutes=10)
 	async def config_reload(self) :
@@ -238,7 +241,7 @@ class Tasks(commands.Cog) :
 
 		AccessControl().reload()
 
-	@tasks.loop(hours=24 * 7)
+	@tasks.loop(hours=24 * 3)
 	async def update_age_roles(self) :
 		logging.info("Updating age roles.")
 		if self.update_age_roles.current_loop == 0 :
@@ -288,6 +291,12 @@ class Tasks(commands.Cog) :
 	# 	logging.debug("Pinging database.")
 	# 	DatabaseTransactions().ping_db()
 
+	@tasks.loop(hours=24)
+	async def anonymize_data(self) :
+		logging.info("Starting data anonymization.")
+		enforce_data_retention_policy()
+		logging.info("Data anonymized.")
+
 	@app_commands.command(name="expirecheck")
 	@app_commands.checks.has_permissions(administrator=True)
 	async def expirecheck(self, interaction: discord.Interaction) :
@@ -326,6 +335,11 @@ class Tasks(commands.Cog) :
 
 	@clean_guilds.before_loop
 	async def before_cleanup(self) :
+		"""stops event from starting before the bot has fully loaded"""
+		await self.bot.wait_until_ready()
+
+	@anonymize_data.before_loop
+	async def before_dataanonymize(self) :
 		"""stops event from starting before the bot has fully loaded"""
 		await self.bot.wait_until_ready()
 
