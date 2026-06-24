@@ -5,6 +5,8 @@ import discord
 from classes.AgeCalculations import AgeCalculations
 from classes.lobbyprocess import LobbyProcess
 from classes.retired.discord_tools import send_message, send_response
+from classes.support.queue import Queue
+from databases.transactions.ConfigData import ConfigData
 from databases.transactions.VerificationTransactions import VerificationTransactions
 
 
@@ -34,6 +36,7 @@ async def verify(user: discord.Member, interaction: discord.Interaction, dob: st
 	if not dev_log:
 		return None
 	await send_message(dev_log, f"{user.global_name} ({user.id}) has been ID verified by {interaction.user} in {interaction.guild.name}!")
+	await check_staff_status(interaction, user)
 	return None
 
 
@@ -43,3 +46,14 @@ async def check_staff_status(interaction: discord.Interaction, member: discord.M
 	if interaction.guild.owner_id == member.id :
 		return True
 	return False
+
+
+
+async def check_servers(interaction: discord.Interaction, member: discord.Member)->bool:
+	for guild in interaction.client.guilds :
+		try:
+			channel =  ConfigData().get_channel(guild, "verification_failure_log")
+			if member in guild.members :
+				Queue().add(send_message(channel, f"{member.global_name} ({member.id}) has been ID verified by {interaction.user} in {interaction.guild.name}!"))
+		except Exception as e:
+			pass

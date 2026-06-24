@@ -46,17 +46,20 @@ class VerificationTransactions(DatabaseTransactions) :
 			self.commit(session)
 			return idcheck
 
-	def set_idcheck_to_true(self, userid: int, reason, server=None) :
+	def set_idcheck_to_true(self, userid: int, reason, server=None) -> bool :
 		with self.createsession() as session :
 			userdata: IdVerification = session.scalar(Select(IdVerification).where(IdVerification.uid == userid))
 			if userdata is None :
 				VerificationTransactions().add_idcheck(userid, reason, idcheck=True, server=server)
-				return
+				return True
 			if userdata.idcheck :
-				return
+				return False
+			if userdata.idverified:
+				return False
 			userdata.idcheck = True
 			userdata.reason = reason
 			self.commit(session)
+			return True
 
 	def set_idcheck_to_false(self, userid: int, server=None) :
 		with self.createsession() as session :
