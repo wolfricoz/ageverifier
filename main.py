@@ -102,7 +102,12 @@ async def lifespan(app: FastAPI) :
 				pass
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan=lifespan,
+              docs_url=None,  # disables /docs (Swagger UI)
+              redoc_url=None,  # disables /redoc
+              openapi_url=None,  # disables /openapi.json — the schema itself
+
+              )
 routers = []
 for router in api.__all__ :
 	try :
