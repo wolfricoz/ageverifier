@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Whitelisting
-nav_order: 8
+nav_order: 12
 ---
 
 <h1 style="text-align: center">Whitelisting Procedure</h1>

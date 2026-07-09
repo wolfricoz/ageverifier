@@ -4,7 +4,7 @@ title: Surveys
 parent: Commands
 nav_order: 10
 ---
-		
+
 <h1>Surveys</h1>
 <h6>version: 3.2</h6>
 <h6>Documentation automatically generated from docstrings.</h6>
@@ -14,12 +14,4 @@ When a member leaves, this system can automatically send them a direct message w
 This feature is only active for premium servers and can be enabled or disabled through the configuration settings.
 There are no user-runnable commands in this module; it all works in the background!
 
-
-### `on_member_remove`
-
-**Usage:** `/surveys on_member_remove <member>`
-
-> This event handler sends the survey to the user when they leave the server.
-
----
 

@@ -4,7 +4,7 @@ title: gdpr
 parent: Commands
 nav_order: 3
 ---
-		
+
 <h1>gdpr</h1>
 <h6>version: 3.2</h6>
 <h6>Documentation automatically generated from docstrings.</h6>

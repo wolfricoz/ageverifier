@@ -22,7 +22,12 @@ class Surveys(GroupCog, description="This module helps you gather valuable feedb
 
 	@Cog.listener(name='on_member_remove')
 	async def on_member_remove(self, member) :
-		"""This event handler sends the survey to the user when they leave the server."""
+		"""
+		Runs automatically whenever a member leaves the server.
+		If the Survey feature is enabled and the server has premium, the bot sends the
+		departing member a direct message with a link to a feedback survey. There is
+		nothing to run manually - this works quietly in the background.
+		"""
 		if not ConfigData().get_toggle(member.guild.id, "SURVEY") or not AccessControl().is_premium(member.guild.id):
 			return
 		logging.info(f"sending survey to {member} for leaving {member.guild.name}")

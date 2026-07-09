@@ -362,10 +362,10 @@ class Config(commands.GroupCog, name="config",
 	@commands.is_owner()
 	async def cache(self, ctx: commands.Context) :
 		"""
-        This is a developer-only command used for internal purposes, specifically for caching message history from a channel.
-        It is not intended for regular server administrators.
-
-				-- RMR LEGACY COMMAND, ONE TIME USE --
+        Developer-only maintenance command. It caches a channel's message history for
+        internal, one-time migration purposes (a legacy RMR utility) and is not intended
+        for, or usable by, regular server administrators. It is hidden from the public
+        command documentation.
 
         **Permissions:**
         - This command can only be used by the bot's owner.

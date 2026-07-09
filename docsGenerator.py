@@ -82,6 +82,12 @@ class DocGenerator() :
 						self.command_line(docfile, function, tclass, domain,)
 	def document_header(self, module, module_name: str, nav) :
 
+		# Use the cog's own docstring. inspect.getdoc walks the class hierarchy,
+		# so a cog without its own docstring would otherwise leak the internal
+		# discord.py Cog base-class docstring into the public docs. Guard against that.
+		doc = inspect.getdoc(module)
+		if doc is None or doc == inspect.getdoc(commands.Cog) :
+			doc = module.__doc__ or "Commands for this module."
 
 		return f"""---
 layout: default
@@ -89,12 +95,12 @@ title: {module_name}
 parent: Commands
 nav_order: {nav}
 ---
-		
+
 <h1>{module_name}</h1>
 <h6>version: {VERSION}</h6>
 <h6>Documentation automatically generated from docstrings.</h6>
 
-{inspect.getdoc(module)}
+{doc}
 
 
 """
@@ -105,6 +111,17 @@ nav_order: {nav}
 
 		func_obj = getattr(tclass, function)
 		if not (hasattr(func_obj, 'callback') or callable(func_obj)) :
+			return
+
+		# Skip background event listeners (e.g. on_member_remove). They are not
+		# commands users can run, so they should not appear in the command docs.
+		if getattr(func_obj, '__cog_listener__', False) or function.startswith('on_') :
+			return
+
+		# Skip developer/owner-only commands (marked with @commands.is_owner()).
+		# These are internal tools and should not be exposed to server admins.
+		checks = getattr(func_obj, 'checks', None) or []
+		if any(getattr(c, '__qualname__', '').startswith('is_owner') for c in checks) :
 			return
 		docstring = ""
 		# Check if it's a decorated command with a callback

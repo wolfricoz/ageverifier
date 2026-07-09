@@ -1,0 +1,212 @@
+{
+    "568584096566685264": {
+        "VERIFICATION_REMOVE_ROLE": [],
+        "RETURN_REMOVE_ROLE": [],
+        "SERVER_JOIN_ROLE": [],
+        "AUTO_UPDATE_EXCLUDED_ROLES": [],
+        "REVERIFICATION_ROLE": [],
+        "VERIFICATION_ADD_ROLE": {
+            "9876543210": {
+                "MAX": 30,
+                "MIN": 18
+            }
+        },
+        "SEND_JOIN_MESSAGE": "ENABLED",
+        "SEND_VERIFICATION_COMPLETED_MESSAGE": "ENABLED",
+        "AUTOMATIC_VERIFICATION": "DISABLED",
+        "AUTOKICK_UNDERAGED_USERS": "DISABLED",
+        "AUTO_UPDATE_AGE_ROLES": "DISABLED",
+        "PING_OWNER_ON_FAILURE": "DISABLED",
+        "ONLINE_VERIFICATION": "DISABLED",
+        "SURVEY": "DISABLED",
+        "LOG_CONFIG_CHANGES": "ENABLED",
+        "CLEANUP_MESSAGES": "ENABLED",
+        "PICTURE_LARGE": "DISABLED",
+        "PICTURE_SMALL": "ENABLED",
+        "BANS": "ENABLED",
+        "JOINED_AT": "ENABLED",
+        "CREATED_AT": "ENABLED",
+        "LEGACY_MESSAGE": "DISABLED",
+        "USER_ID": "ENABLED",
+        "SHOW_PREVIOUS_SERVERS": "DISABLED",
+        "DEBUG": "DISABLED",
+        "COOLDOWN": "5"
+    },
+    "855621879075072434": {
+        "VERIFICATION_REMOVE_ROLE": [],
+        "RETURN_REMOVE_ROLE": [],
+        "SERVER_JOIN_ROLE": [],
+        "AUTO_UPDATE_EXCLUDED_ROLES": [],
+        "REVERIFICATION_ROLE": [],
+        "VERIFICATION_ADD_ROLE": {
+            "9876543210": {
+                "MAX": 200,
+                "MIN": 18
+            }
+        },
+        "SEND_JOIN_MESSAGE": "ENABLED",
+        "SEND_VERIFICATION_COMPLETED_MESSAGE": "ENABLED",
+        "AUTOMATIC_VERIFICATION": "DISABLED",
+        "AUTOKICK_UNDERAGED_USERS": "DISABLED",
+        "AUTO_UPDATE_AGE_ROLES": "DISABLED",
+        "PING_OWNER_ON_FAILURE": "DISABLED",
+        "ONLINE_VERIFICATION": "DISABLED",
+        "SURVEY": "DISABLED",
+        "LOG_CONFIG_CHANGES": "ENABLED",
+        "CLEANUP_MESSAGES": "ENABLED",
+        "PICTURE_LARGE": "DISABLED",
+        "PICTURE_SMALL": "ENABLED",
+        "BANS": "ENABLED",
+        "JOINED_AT": "ENABLED",
+        "CREATED_AT": "ENABLED",
+        "LEGACY_MESSAGE": "DISABLED",
+        "USER_ID": "ENABLED",
+        "SHOW_PREVIOUS_SERVERS": "DISABLED",
+        "DEBUG": "DISABLED",
+        "COOLDOWN": "5"
+    },
+    "511676873686936502": {
+        "VERIFICATION_REMOVE_ROLE": [],
+        "RETURN_REMOVE_ROLE": [],
+        "SERVER_JOIN_ROLE": [],
+        "AUTO_UPDATE_EXCLUDED_ROLES": [],
+        "REVERIFICATION_ROLE": [],
+        "VERIFICATION_ADD_ROLE": {
+            "9876543210": {
+                "MAX": 200,
+                "MIN": 18
+            },
+            "9876543211": {
+                "MAX": 200,
+                "MIN": 18
+            }
+        },
+        "SEND_JOIN_MESSAGE": "ENABLED",
+        "SEND_VERIFICATION_COMPLETED_MESSAGE": "ENABLED",
+        "AUTOMATIC_VERIFICATION": "DISABLED",
+        "AUTOKICK_UNDERAGED_USERS": "DISABLED",
+        "AUTO_UPDATE_AGE_ROLES": "DISABLED",
+        "PING_OWNER_ON_FAILURE": "DISABLED",
+        "ONLINE_VERIFICATION": "DISABLED",
+        "SURVEY": "DISABLED",
+        "LOG_CONFIG_CHANGES": "ENABLED",
+        "CLEANUP_MESSAGES": "ENABLED",
+        "PICTURE_LARGE": "DISABLED",
+        "PICTURE_SMALL": "ENABLED",
+        "BANS": "ENABLED",
+        "JOINED_AT": "ENABLED",
+        "CREATED_AT": "ENABLED",
+        "LEGACY_MESSAGE": "DISABLED",
+        "USER_ID": "ENABLED",
+        "SHOW_PREVIOUS_SERVERS": "DISABLED",
+        "DEBUG": "DISABLED",
+        "COOLDOWN": "5"
+    },
+    "771821053940856022": {
+        "VERIFICATION_REMOVE_ROLE": [],
+        "RETURN_REMOVE_ROLE": [],
+        "SERVER_JOIN_ROLE": [],
+        "AUTO_UPDATE_EXCLUDED_ROLES": [],
+        "REVERIFICATION_ROLE": [],
+        "VERIFICATION_ADD_ROLE": {
+            "9876543210": {
+                "MAX": 200,
+                "MIN": 25
+            },
+            "9876543211": {
+                "MAX": 200,
+                "MIN": 16
+            },
+            "9876543212": {
+                "MAX": 200,
+                "MIN": 60
+            }
+        },
+        "SEND_JOIN_MESSAGE": "ENABLED",
+        "SEND_VERIFICATION_COMPLETED_MESSAGE": "ENABLED",
+        "AUTOMATIC_VERIFICATION": "DISABLED",
+        "AUTOKICK_UNDERAGED_USERS": "DISABLED",
+        "AUTO_UPDATE_AGE_ROLES": "DISABLED",
+        "PING_OWNER_ON_FAILURE": "DISABLED",
+        "ONLINE_VERIFICATION": "DISABLED",
+        "SURVEY": "DISABLED",
+        "LOG_CONFIG_CHANGES": "ENABLED",
+        "CLEANUP_MESSAGES": "ENABLED",
+        "PICTURE_LARGE": "DISABLED",
+        "PICTURE_SMALL": "ENABLED",
+        "BANS": "ENABLED",
+        "JOINED_AT": "ENABLED",
+        "CREATED_AT": "ENABLED",
+        "LEGACY_MESSAGE": "DISABLED",
+        "USER_ID": "ENABLED",
+        "SHOW_PREVIOUS_SERVERS": "DISABLED",
+        "DEBUG": "DISABLED",
+        "COOLDOWN": "5"
+    },
+    "633559465183934336": {
+        "VERIFICATION_REMOVE_ROLE": [],
+        "RETURN_REMOVE_ROLE": [],
+        "SERVER_JOIN_ROLE": [],
+        "AUTO_UPDATE_EXCLUDED_ROLES": [],
+        "REVERIFICATION_ROLE": [],
+        "VERIFICATION_ADD_ROLE": {
+            "9876543210": {
+                "MAX": 200,
+                "MIN": 18
+            }
+        },
+        "SEND_JOIN_MESSAGE": "ENABLED",
+        "SEND_VERIFICATION_COMPLETED_MESSAGE": "ENABLED",
+        "AUTOMATIC_VERIFICATION": "DISABLED",
+        "AUTOKICK_UNDERAGED_USERS": "DISABLED",
+        "AUTO_UPDATE_AGE_ROLES": "DISABLED",
+        "PING_OWNER_ON_FAILURE": "DISABLED",
+        "ONLINE_VERIFICATION": "DISABLED",
+        "SURVEY": "DISABLED",
+        "LOG_CONFIG_CHANGES": "ENABLED",
+        "CLEANUP_MESSAGES": "ENABLED",
+        "PICTURE_LARGE": "DISABLED",
+        "PICTURE_SMALL": "ENABLED",
+        "BANS": "ENABLED",
+        "JOINED_AT": "ENABLED",
+        "CREATED_AT": "ENABLED",
+        "LEGACY_MESSAGE": "DISABLED",
+        "USER_ID": "ENABLED",
+        "SHOW_PREVIOUS_SERVERS": "DISABLED",
+        "DEBUG": "DISABLED",
+        "COOLDOWN": "5"
+    },
+    "573475779119613030": {
+        "VERIFICATION_REMOVE_ROLE": [],
+        "RETURN_REMOVE_ROLE": [],
+        "SERVER_JOIN_ROLE": [],
+        "AUTO_UPDATE_EXCLUDED_ROLES": [],
+        "REVERIFICATION_ROLE": [],
+        "VERIFICATION_ADD_ROLE": {
+            "9876543210": {
+                "MAX": 200,
+                "MIN": 18
+            }
+        },
+        "SEND_JOIN_MESSAGE": "ENABLED",
+        "SEND_VERIFICATION_COMPLETED_MESSAGE": "ENABLED",
+        "AUTOMATIC_VERIFICATION": "DISABLED",
+        "AUTOKICK_UNDERAGED_USERS": "DISABLED",
+        "AUTO_UPDATE_AGE_ROLES": "DISABLED",
+        "PING_OWNER_ON_FAILURE": "DISABLED",
+        "ONLINE_VERIFICATION": "DISABLED",
+        "SURVEY": "DISABLED",
+        "LOG_CONFIG_CHANGES": "ENABLED",
+        "CLEANUP_MESSAGES": "ENABLED",
+        "PICTURE_LARGE": "DISABLED",
+        "PICTURE_SMALL": "ENABLED",
+        "BANS": "ENABLED",
+        "JOINED_AT": "ENABLED",
+        "CREATED_AT": "ENABLED",
+        "LEGACY_MESSAGE": "DISABLED",
+        "USER_ID": "ENABLED",
+        "SHOW_PREVIOUS_SERVERS": "DISABLED",
+        "DEBUG": "DISABLED",
+        "COOLDOWN": "5"
+    }
+}

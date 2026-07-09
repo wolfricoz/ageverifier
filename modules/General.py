@@ -7,6 +7,11 @@ from views.v2.HelpLayout import HelpLayout
 
 
 class General(Cog) :
+	"""
+	General-purpose commands that any member can use.
+	This is your starting point for finding your way around AgeVerifier - use the
+	help command to browse what the bot can do and read documentation for each command.
+	"""
 
 	def __init__(self, bot: Bot) :
 		self.bot = bot

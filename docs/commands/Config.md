@@ -4,7 +4,7 @@ title: Config
 parent: Commands
 nav_order: 1
 ---
-		
+
 <h1>Config</h1>
 <h6>version: 3.2</h6>
 <h6>Documentation automatically generated from docstrings.</h6>
@@ -156,20 +156,6 @@ It's a handy way to see all your settings at a glance. The configuration will be
 **Permissions:**
 - You'll need the `Manage Server` permission to use this command.
 - Only the bot developer can view the configuration of other guilds.
-
----
-
-### `cache`
-
-**Usage:** `/config cache <ctx>`
-
-> This is a developer-only command used for internal purposes, specifically for caching message history from a channel.
-It is not intended for regular server administrators.
-
-                        -- RMR LEGACY COMMAND, ONE TIME USE --
-
-**Permissions:**
-- This command can only be used by the bot's owner.
 
 ---
 

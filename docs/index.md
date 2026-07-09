@@ -29,4 +29,9 @@ To request data removal, simply run the `/gdpr removal` command.
 - **Automated Lobby** – Automatically approves users and flags any concerns.  
 - **Auto-Kick for Underage Users** – Instantly removes users who do not meet your server’s age threshold.  
 
-# Check out our new dashboard: [AgeVerifier Dashboard](https://bots.roleplaymeets.com/)
+## **New here?**
+Head to the [Getting Started](getting-started.html) guide for a step-by-step setup walkthrough, or manage everything visually on the [web dashboard](https://strykerdevelopment.com).
+
+Need help? Join our [support server](https://discord.gg/twbegvvarY).
+
+# Check out our dashboard: [AgeVerifier Dashboard](https://strykerdevelopment.com)

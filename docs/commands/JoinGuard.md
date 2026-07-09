@@ -4,7 +4,7 @@ title: JoinGuard
 parent: Commands
 nav_order: 6
 ---
-		
+
 <h1>JoinGuard</h1>
 <h6>version: 3.2</h6>
 <h6>Documentation automatically generated from docstrings.</h6>

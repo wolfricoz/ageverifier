@@ -50,6 +50,7 @@ debug = os.getenv('DEBUG')
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
+intents.presences = True
 activity = discord.Activity(type=discord.ActivityType.watching, name="over the community")
 shard_count = 5
 if debug :
