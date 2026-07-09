@@ -4,7 +4,7 @@ title: Lobby
 parent: Commands
 nav_order: 7
 ---
-		
+
 <h1>Lobby</h1>
 <h6>version: 3.2</h6>
 <h6>Documentation automatically generated from docstrings.</h6>
