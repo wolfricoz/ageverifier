@@ -7,7 +7,7 @@ nav_order: 1
 <h1 style="text-align: center">AgeVerifier – Age Verification for Discord Servers</h1>
 
 Prefix: ?<br>
-Build: 2.7<br>
+Build: 3.2<br>
 Devs: ricostryker
 
 
