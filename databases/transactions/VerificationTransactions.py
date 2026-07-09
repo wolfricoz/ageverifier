@@ -100,7 +100,7 @@ class VerificationTransactions(DatabaseTransactions) :
 	                        idverified: bool = None, verifieddob: str = None, server: str = None, idmessage: int = None) :
 		with self.createsession() as session :
 			verification = self.get_id_info(uid, session=session)
-			if not verification:
+			if not isinstance(verification, IdVerification):
 				self.add_idcheck(uid, "No check Found, added to allow id verification.", idcheck=False)
 
 			data = {

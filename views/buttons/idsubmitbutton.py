@@ -64,7 +64,12 @@ class IdSubmitButton(discord.ui.View) :
 		if idcheck and idcheck.idmessage:
 			from classes.idcheck import IdCheck
 			await IdCheck.remove_idmessage(interaction.user, idcheck)
-		VerificationTransactions().update_verification(interaction.user.id, idmessage=message.id)
+
+		try:
+			VerificationTransactions().add_idcheck(interaction.user.id, idcheck=False)
+			VerificationTransactions().update_verification(interaction.user.id, idmessage=message.id)
+		except Exception as e:
+			await send_message(mod_channel, f"[ID record fail] Failed to update ID record, continuing verification.")
 		embed = discord.Embed(
 			title="ID Verification Submission",
 			description=f"Submission from {interaction.user.mention}.",
