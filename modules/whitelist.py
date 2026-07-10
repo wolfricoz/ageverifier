@@ -42,9 +42,11 @@ class whitelist(commands.GroupCog, name="whitelist") :
 
 		requirements = {
 			'premium': AccessControl().is_premium(interaction.guild.id),
-			'members': interaction.guild.member_count > 500,
+			'members': interaction.guild.member_count >= 100,
 			'guild_age' : interaction.guild.created_at.astimezone(timezone.utc) < (
 						datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=180)),
+			'2fa' : interaction.guild.mfa_level == discord.MFALevel.require_2fa,
+			'community': "COMMUNITY" in interaction.guild.features,
 			'owner': interaction.guild.owner.name,
 
 		}

@@ -8,15 +8,38 @@ nav_order: 12
 
 # Requirements
 
-_Last Updated: 29/04/2026_
+_Last Updated: 10/07/2026_
 
-* Your server must at least have 500 members
-* Your server must be 6 months old.
-* You must have a staff team consisting of at least two administrators.
-* A valid reason to need access the database and view non-sensitive personal identifiable information (Date of Births)
-* Signing an agreement form
+Whitelisting is reviewed in two stages: a set of automatic checks the bot runs when you apply, and a manual review by the
+developer.
 
-If your server does not fulfill these requirements, we reserve the right to charge a one-time 5 dollar service fee.
+## Checked automatically when you apply
+
+When you run `/whitelist apply`, the bot instantly confirms that your server meets these baseline requirements:
+
+* **Premium** — your server has an active AgeVerifier premium subscription.
+* **Members** — your server has at least 100 members.
+* **Server age** — your server is at least 6 months old.
+* **Two-factor authentication** — server-wide 2FA is required for moderation actions.
+* **Community server** — Discord's Community feature is enabled.
+
+If any of these fail, the application is declined on the spot and the results are shown to you so you know what to fix.
+
+## Reviewed by hand
+
+If the automatic checks pass, the developer reviews the rest before approving:
+
+* A staff team consisting of at least two administrators.
+* A valid reason to need access to the database and to view non-sensitive personally identifiable information (dates of
+  birth).
+* Signing an agreement form.
+
+# How to apply
+
+Run **`/whitelist apply`** in your server. The bot checks the automatic requirements above; if they pass, you'll be asked
+for a short reason for your request. Your application — along with the requirement results and your reason — is then sent
+to the AgeVerifier team, and the developer will reach out to continue the process. Read the rest of this page to prepare
+for your inspection.
 
 # Step One: Id Verification
 
