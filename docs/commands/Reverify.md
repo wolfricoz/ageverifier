@@ -6,7 +6,7 @@ nav_order: 8
 ---
 
 <h1>Reverify</h1>
-<h6>version: 3.2</h6>
+<h6>version: 3.3: Updated documentation and quality of life fixes.</h6>
 <h6>Documentation automatically generated from docstrings.</h6>
 
 <h3>Premium Feature: Reverify</h3>

@@ -6,7 +6,7 @@ nav_order: 10
 ---
 
 <h1>Surveys</h1>
-<h6>version: 3.2</h6>
+<h6>version: 3.3: Updated documentation and quality of life fixes.</h6>
 <h6>Documentation automatically generated from docstrings.</h6>
 
 This module helps you gather valuable feedback from members who decide to leave your server.
