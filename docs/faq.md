@@ -39,6 +39,9 @@ This is a safety feature, not a bug. The **Age Log** and **Reverify Age Log** ch
 **A member says the date-of-birth form won't accept their entry.**
 The default format is **`MM/DD/YYYY`** but using the buttons they can choose their own format (and the dashboard takes their regional format automatically!). If you do any of the commands using ageverifier you have to submit them in `mm/dd/yyyy`.
 
+**A member was kicked for an age/date-of-birth "discrepancy" — what does that mean?**
+The age they typed didn't match the date of birth they entered during verification. If **Autokick On Discrepancy** is enabled, the bot removes them automatically with a message explaining the mismatch and inviting them to appeal to your staff. If it was a genuine typo, you can let them retry.
+
 **A member got a cooldown message.**
 Servers can set a short wait between verification attempts to prevent spam. They just need to wait a few minutes and try again. You can adjust or disable this with `/config cooldown` (set it to `0` to turn it off).
 
