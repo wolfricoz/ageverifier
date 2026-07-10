@@ -32,7 +32,7 @@ class LobbyListeners(GroupCog) :
 		channel = await ConfigData().get_channel(member.guild, "leave_log")
 		if not channel:
 			return
-		await send_message(channel, f"{member.mention} has left! " + leave_message)
+		await send_message(channel, f"{member.name} ({member.id}) has left! " + leave_message)
 
 
 
