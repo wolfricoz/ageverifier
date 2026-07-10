@@ -6,6 +6,7 @@ from classes.AgeCalculations import AgeCalculations
 from classes.lobbyprocess import LobbyProcess
 from classes.retired.discord_tools import send_message, send_response
 from classes.support.queue import Queue
+from classes.verification.inform import notify_verified
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.VerificationTransactions import VerificationTransactions
 
@@ -23,6 +24,7 @@ async def verify(user: discord.Member, interaction: discord.Interaction, dob: st
 	if dev_log is None:
 		dev_log = interaction.client.fetch_channel(int(os.getenv("DEV", 1022319186950758472)))
 	id_message = f"**USER ID VERIFICATION**\n**ID VERIFIED BY:** {interaction.user}\n"
+	await notify_verified(interaction.client, interaction.guild, user)
 
 	await LobbyProcess.log(user, interaction.guild, age, dob, interaction.user, True, id_verify=id_message, reverify=reverify)
 	await interaction.channel.send(

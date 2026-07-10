@@ -96,7 +96,7 @@ async def verify_age(request: Request, guild_id: int, user_id: int, verification
 				id_check = False
 
 			from classes.idcheck import IdCheck
-			Queue().add(IdCheck.send_check_api(user, guild,
+			Queue().add(IdCheck.send_check_api(bot, user, guild,
 			                                   vp.id_channel,
 			                                   vp.discrepancy,
 			                                   vp.age,

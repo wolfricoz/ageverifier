@@ -7,6 +7,7 @@ from discord_py_utilities.exceptions import NoPermissionException
 from discord_py_utilities.messages import send_message, send_response
 from discord_py_utilities.permissions import find_first_accessible_text_channel
 
+from classes.verification.inform import notify_agecheck
 from databases.current import IdVerification
 from databases.enums.joinhistorystatus import JoinHistoryStatus
 from databases.transactions.AgeRoleTransactions import AgeRoleTransactions
@@ -89,7 +90,7 @@ class IdCheck(ABC) :
 		embed.add_field(name="Staff Notice",
 		                value="Please contact the user to complete their ID check. They must submit a valid ID. Do not share or store the ID outside of authorized verification staff. Any abuse results in immediate blacklisting. If the issue may be a typo, you may allow a retry by removing them from the ID check list.", )
 		embed.set_footer(text=f"{interaction.user.id}")
-
+		await notify_agecheck(interaction.client, interaction.guild, interaction.user, embed)
 		try :
 
 
@@ -117,7 +118,7 @@ class IdCheck(ABC) :
 
 	@staticmethod
 	@abstractmethod
-	async def send_check_api(user, guild, channel, message, age, dob, date_of_birth=None, years=None,
+	async def send_check_api(bot, user, guild, channel, message, age, dob, date_of_birth=None, years=None,
 	                         id_check=False, verify_button=True, id_check_reason=None, server=None) :
 		messages = {
 			"underage"          : {
@@ -183,6 +184,7 @@ class IdCheck(ABC) :
 		embed.add_field(name="Staff Notice",
 		                value="Please contact the user to complete their ID check. They must submit a valid ID. Do not share or store the ID outside of authorized verification staff. Any abuse results in immediate blacklisting. If the issue may be a typo, you may allow a retry by removing them from the ID check list.")
 		embed.set_footer(text=f"{user.id}")
+		await notify_agecheck(bot, guild, user, embed)
 
 		try :
 			await send_message(channel,
@@ -245,7 +247,7 @@ class IdCheck(ABC) :
 
 	@staticmethod
 	@abstractmethod
-	async def send_id_log(guild: discord.Guild, user: discord.User | discord.Member, message: str) :
+	async def send_id_log(guild: discord.Guild, user: discord.User | discord.Member, message: str, bot) :
 		idlog = await ConfigData().get_channel(guild, "verification_failure_log")
 		if not idlog:
 			logging.warning("ID log channel not set.")
@@ -256,7 +258,7 @@ class IdCheck(ABC) :
 		                value="Please contact the user to complete their ID check. They must submit a valid ID. Do not share or store the ID outside of authorized verification staff. Any abuse results in immediate blacklisting. If the issue may be a typo, you may allow a retry by removing them from the ID check list.", )
 		embed.set_footer(text=f"{user.id}")
 
-
+		await notify_agecheck(bot, guild, user, embed)
 		from views.buttons.idverifybutton import IdVerifyButton
 		view = IdVerifyButton()
 

@@ -153,7 +153,7 @@ class ApprovalButtons(discord.ui.View) :
 		                                               f"manually flagged by {interaction.user.name} with reason: {reason}",
 		                                               server=interaction.guild.name)
 		JoinHistoryTransactions().update(self.user.id, interaction.guild.id, JoinHistoryStatus.IDCHECK)
-		await IdCheck.send_id_log(interaction.guild, self.user, reason)
+		await IdCheck.send_id_log(interaction.guild, self.user, reason, interaction.client)
 		await interaction.message.edit(view=self)
 
 
