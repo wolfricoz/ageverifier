@@ -1,3 +1,4 @@
+import copy
 import logging
 
 import discord
@@ -8,10 +9,11 @@ from databases.transactions.ConfigData import ConfigData
 
 
 async def notify_agecheck(bot, current_guild, member, embed):
-	embed.add_field(name="Server", value=current_guild.name, inline=False)
-	embed.add_field(name="No Buttons", value="To prevent spamming the user with ID requests, this notice has no buttons.", inline=False)
+	new_embed = copy.deepcopy(embed)
+	new_embed.add_field(name="Server", value=current_guild.name, inline=False)
+	new_embed.add_field(name="No Buttons", value="To prevent spamming the user with ID requests, this notice has no buttons.", inline=False)
 
-	await inform_servers(bot, current_guild, member, f"[Verify Fail: Cross-server] User was flagged for an ID check in another server.", embed)
+	await inform_servers(bot, current_guild, member, f"[Verify Fail: Cross-server] User was flagged for an ID check in another server.", new_embed)
 
 
 async def notify_verified(bot, current_guild: discord. Guild, member:discord.Member):
@@ -29,13 +31,14 @@ async def inform_servers(bot, current_guild: discord.Guild,  member: discord.Mem
 	:param embed:
 	"""
 	for guild in bot.guilds :
+
 		if not member in guild.members :
 			continue
 		if guild == current_guild :
 			# Prevent double notifications
 			continue
 		try:
-			verify_fail_channel = ConfigData().get_channel(guild, "verification_failure_log")
+			verify_fail_channel = await ConfigData().get_channel(guild, "verification_failure_log")
 			Queue().add(send_message(verify_fail_channel, msg, embed=embed))
 
 		except Exception as e:
