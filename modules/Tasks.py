@@ -176,6 +176,7 @@ class Tasks(commands.Cog) :
 	@tasks.loop(minutes=30)
 	async def check_active_servers(self) :
 		guild_ids = ServerTransactions().get_all()
+		ConfigData().load_all_guilds()
 		count = 0
 		for guild in self.bot.guilds :
 			if count % 10 == 0 :
@@ -188,7 +189,7 @@ class Tasks(commands.Cog) :
 				invite_link = await check_guild_invites(self.bot, guild),
 
 				await asyncio.to_thread(ServerTransactions().add, guild.id,
-				                         active=False,
+				                         active=True,
 				                         name=guild.name,
 				                         owner=guild.owner,
 				                         member_count=guild.member_count,
@@ -197,7 +198,7 @@ class Tasks(commands.Cog) :
 				count += 1
 			except AttributeError :
 				await asyncio.to_thread(ServerTransactions().add,guild.id,
-				                         active=False,
+				                         active=True,
 				                         name=guild.name,
 				                         owner=guild.owner,
 				                         member_count=guild.member_count,
@@ -209,7 +210,7 @@ class Tasks(commands.Cog) :
 				logging.exception(f"Error adding guild {guild.name} ({guild.id}) to the database: error: {e}",)
 				count += 1
 				continue
-
+		logging.info(f"pending removal: {guild_ids}")
 		for gid in guild_ids :
 			try :
 				guild = self.bot.get_guild(gid)

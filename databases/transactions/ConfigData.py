@@ -2,7 +2,6 @@ import asyncio
 import json
 import logging
 import os
-from datetime import datetime as dt
 
 import discord
 from discord import CategoryChannel, ForumChannel, StageChannel, TextChannel, Thread, VoiceChannel
@@ -40,17 +39,51 @@ class ConfigData(metaclass=singleton) :
 
 	# logging.debug(self.conf)
 
-	async def load_all_guilds(self) :
-		start = dt.now()
-		from databases.transactions.ServerTransactions import ServerTransactions
-		logging.info("Loading all guild configurations")
-		server_ids = ServerTransactions().get_all(id_only=True)
-		for server_id in server_ids :
-			await asyncio.sleep(0.001)
-			server_start = dt.now()
-			self.load_guild(server_id)
-			logging.info(f"Loaded guild {server_id} in {dt.now() - server_start}")
-		logging.info(f"Loaded all guild configurations in {dt.now() - start}")
+	def load_all_guilds(self) :
+		logging.info(f"Loading all guilds")
+		# Regardless if the guild exists, we add it to the config to avoid KeyErrors
+
+		# Fetch the settings from the database
+		items = ConfigTransactions().server_config_all()
+		for item in items:
+			guild_id = item.guild
+
+			self.conf[guild_id] = {}
+
+			add_list = ["VERIFICATION_REMOVE_ROLE", "RETURN_REMOVE_ROLE", "SERVER_JOIN_ROLE", "AUTO_UPDATE_EXCLUDED_ROLES",
+			            "REVERIFICATION_ROLE"]
+			add_dict = ["VERIFICATION_ADD_ROLE"]
+
+			for key in add_list :
+				self.conf[guild_id][key] = []
+
+			role = AgeRoleTransactions().get_all(guild_id)
+
+			for key in add_dict :
+				self.conf[guild_id][key] = {}
+
+
+			conf_key = item.key.upper()
+
+			if conf_key in ["VERIFICATION_ADD_ROLE"] :
+				AgeRoleTransactions().add(guild_id, item.value, "VERIFICATION_ADD_ROLE", reload=False)
+				ConfigTransactions().config_unique_remove(guild_id, item.key)
+				continue
+
+			if conf_key in add_list :
+				self.conf[guild_id][conf_key].append(int(item.value))
+				continue
+
+			self.conf[guild_id][conf_key] = item.value
+
+			for x in role :
+				self.conf[guild_id]["VERIFICATION_ADD_ROLE"][x.role_id] = {
+					"MAX" : x.maximum_age,
+					"MIN" : x.minimum_age,
+				}
+		self.output_to_json()
+
+
 
 	def cleanup(self) :
 		"""
