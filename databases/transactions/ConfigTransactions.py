@@ -1,11 +1,11 @@
 import logging
 
 import sqlalchemy.exc
-from sqlalchemy import Select
+from sqlalchemy import Select, select
 
 from databases import current as db
+from databases.current import Config
 from databases.transactions.DatabaseTransactions import DatabaseTransactions
-from databases.current import Config, Servers
 
 
 class ConfigTransactions(DatabaseTransactions) :
@@ -139,3 +139,13 @@ class ConfigTransactions(DatabaseTransactions) :
 	def server_config_get(self, guildid) :
 		with self.createsession() as session :
 			return session.scalars(Select(db.Config).where(db.Config.guild == guildid)).all()
+
+	def server_config_all(self) :
+		with self.createsession() as session :
+			return session.scalars(
+				select(db.Config)
+				.join(db.Servers)  # Joins Config to Servers via the guild ForeignKey
+				.where(
+					db.Servers.active == True
+				)
+			).all()
