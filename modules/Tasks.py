@@ -179,24 +179,24 @@ class Tasks(commands.Cog) :
 		count = 0
 		for guild in self.bot.guilds :
 			if count % 10 == 0 :
-				logging.info(f"updating active servers: processed {count} guilds so far.")
+				logging.info(f"updating active servers: processed {count}/{len(self.bot.guilds)} guilds so far.")
 				await asyncio.sleep(0)
 
 			if guild.id in guild_ids :
 				guild_ids.remove(guild.id)
-				count += 1
-				continue
 			try :
-				ServerTransactions().add(guild.id,
+				invite_link = await check_guild_invites(self.bot, guild),
+
+				await asyncio.to_thread(ServerTransactions().add, guild.id,
 				                         active=False,
 				                         name=guild.name,
 				                         owner=guild.owner,
 				                         member_count=guild.member_count,
-				                         invite=await check_guild_invites(self.bot, guild),
+				                         invite=invite_link
 				                         )
 				count += 1
 			except AttributeError :
-				ServerTransactions().add(guild.id,
+				await asyncio.to_thread(ServerTransactions().add,guild.id,
 				                         active=False,
 				                         name=guild.name,
 				                         owner=guild.owner,
@@ -219,7 +219,7 @@ class Tasks(commands.Cog) :
 				ServerTransactions().delete(gid)
 				continue
 			try:
-				ServerTransactions().add(gid,
+				await asyncio.to_thread(ServerTransactions().add, gid,
 				                         active=False,
 				                         name=guild.name,
 				                         owner=guild.owner,
@@ -227,7 +227,7 @@ class Tasks(commands.Cog) :
 				                         invite=await check_guild_invites(self.bot, guild),
 				                         )
 			except AttributeError:
-				ServerTransactions().add(gid,
+				await asyncio.to_thread(ServerTransactions().add, gid,
 				                         active=False,
 				                         name=guild.name,
 				                         owner=guild.owner,
@@ -357,6 +357,9 @@ class Tasks(commands.Cog) :
 		"""
 		await send_response(interaction, "[Debug]Checking all entries.")
 		self.check_active_servers.restart()
+
+
+
 
 async def setup(bot) :
 	"""Adds the cog to the bot."""
