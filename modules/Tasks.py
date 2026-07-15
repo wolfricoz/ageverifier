@@ -21,6 +21,7 @@ from classes.support.queue import Queue
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.ServerTransactions import ServerTransactions
 from databases.transactions.UserTransactions import UserTransactions
+from modules.DevTools import check_access
 
 OLDLOBBY = int(os.getenv("OLDLOBBY"))
 DEBUG = os.getenv("DEBUG")
@@ -204,8 +205,8 @@ class Tasks(commands.Cog) :
 				                         )
 				count += 1
 
-			except :
-				logging.warning(f"Error adding guild {guild.name} ({guild.id}) to the database", exc_info=True)
+			except Exception as e :
+				logging.exception(f"Error adding guild {guild.name} ({guild.id}) to the database: error: {e}",)
 				count += 1
 				continue
 
@@ -343,6 +344,19 @@ class Tasks(commands.Cog) :
 		"""stops event from starting before the bot has fully loaded"""
 		await self.bot.wait_until_ready()
 
+
+	@app_commands.command(name="sync_servers",
+	                      description="[DEV] Forces all servers to be synced with the dashboard")
+	@check_access()
+	async def inspect_queue(self, interaction: discord.Interaction) :
+		"""
+		[DEV] Inspects the current state of the task queue for debugging.
+
+		**Permissions:**
+		- `Developer`
+		"""
+		await send_response(interaction, "[Debug]Checking all entries.")
+		self.check_active_servers.restart()
 
 async def setup(bot) :
 	"""Adds the cog to the bot."""
