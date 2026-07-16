@@ -7,6 +7,7 @@ from datetime import datetime
 import discord
 from discord import app_commands
 from discord.ext import commands, tasks
+from discord_py_utilities.invites import check_guild_invites
 from discord_py_utilities.messages import send_message, send_response
 
 from classes.AgeCalculations import AgeCalculations
@@ -298,6 +299,30 @@ class Tasks(commands.Cog) :
 		logging.info("Starting data anonymization.")
 		enforce_data_retention_policy()
 		logging.info("Data anonymized.")
+
+	@tasks.loop(hours=12)
+	async def update_invites(self) :
+		# if self.update_invites.current_loop == 0 :
+		# 	logging.info("Skipping invite update on startup.")
+		# 	return
+		servers = ServerTransactions().get_invalid_invites()
+		if not servers :
+			logging.info("No invites to updates.")
+			return
+		server_count = len(servers)
+		count = 0
+		for server in servers :
+			if count % 10 == 0 :
+				logging.info(f"Updating {count}/{server_count} servers.")
+				await asyncio.sleep(0)
+			guild = self.bot.get_guild(server.id)
+			if guild is None :
+				continue
+			invite = await check_guild_invites(self.bot, guild, server.invite)
+			ServerTransactions().update(server.id, invite=invite, invite_date=datetime.now())
+			count += 1
+		logging.info(f"Updated {count}/{server_count} servers.")
+
 
 	@app_commands.command(name="expirecheck")
 	@app_commands.checks.has_permissions(administrator=True)

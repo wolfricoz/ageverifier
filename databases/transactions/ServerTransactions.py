@@ -2,7 +2,7 @@ import datetime
 import logging
 
 import discord
-from sqlalchemy import Select
+from sqlalchemy import Select, or_
 
 from databases.current import Servers
 from databases.transactions.ConfigTransactions import ConfigTransactions
@@ -26,10 +26,10 @@ class ServerTransactions(DatabaseTransactions) :
 				UserTransactions().add_user_empty(owner_id)
 
 			if guild is not None :
-				if invite == "":
+				if invite == "" :
 					invite = None
 				self.update(guildid, active, name, owner_name, member_count, invite,
-				            owner_id=owner_id if owner_id != 0 else None, invite_date=invite_date,)
+				            owner_id=owner_id if owner_id != 0 else None, invite_date=invite_date, )
 			else :
 				session = self.createsession()
 				g = Servers(
@@ -89,7 +89,8 @@ class ServerTransactions(DatabaseTransactions) :
 				"invite"       : invite,
 				"invite_date"  : invite_date,
 				"premium"      : premium,
-				"owner_id"     : owner_id
+				"owner_id"     : owner_id,
+				"updated_at" : datetime.datetime.now()
 			}
 
 			# Filter out None values to perform partial updates
@@ -137,3 +138,12 @@ class ServerTransactions(DatabaseTransactions) :
 				session.delete(guild)
 			self.commit(session)
 			return True
+
+	def get_invalid_invites(self) :
+		with (self.createsession() as session) :
+			# calculate cutoff date
+			cutoff = datetime.datetime.now() - datetime.timedelta(days=7)
+			# Select servers with invites older than 6 days.
+			return session.query(Servers).filter(or_(Servers.invite.is_(None),
+			                                         Servers.invite == '',
+			                                         Servers.invite_date < cutoff)).all()
