@@ -6,16 +6,8 @@ import math
 import discord
 from discord_py_utilities.exceptions import NoPermissionException
 
+from classes.singleton import Singleton
 from databases.exceptions.KeyNotFound import KeyNotFound
-
-
-class Singleton(type):
-    _instances = {}
-
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
-        return cls._instances[cls]
 
 
 class Queue(metaclass=Singleton):
@@ -84,9 +76,9 @@ class Queue(metaclass=Singleton):
                 self.task_finished = True
                 return
             if not inspect.iscoroutine(task):
+                logging.info(f"Processing task: {task.__name__}")
                 task()
                 self.task_finished = True
-                logging.info(f"Processing task: {task.__name__}")
 
                 print(self.status())
                 return
