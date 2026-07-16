@@ -7,7 +7,7 @@ from datetime import datetime
 
 import discord
 from dateutil.relativedelta import relativedelta
-from discord_py_utilities.messages import send_message
+from discord_py_utilities.messages import send_message, send_response
 
 import databases.current
 from classes.encryption import Encryption
@@ -16,6 +16,7 @@ from databases.transactions.VerificationTransactions import VerificationTransact
 from resources.data.DobPatterns import DobPatterns
 
 
+# Future: [QUALITY] AgeCalculations is an ABC with @abstractmethod methods that all have real bodies and are called directly (AgeCalculations.dob_to_age(...)); it is never subclassed. Drop ABC/@abstractmethod, make it a plain utility class.
 class AgeCalculations(ABC) :
 
 	@staticmethod
@@ -23,7 +24,6 @@ class AgeCalculations(ABC) :
 	def check_date_of_birth(userdata, dob) :
 		if userdata is None or userdata.date_of_birth is None :
 			return True
-		logging.info("dob encrypted: "  + userdata.date_of_birth)
 		return Encryption().decrypt(userdata.date_of_birth) == dob
 
 	@staticmethod
@@ -64,7 +64,6 @@ class AgeCalculations(ABC) :
 	@abstractmethod
 	async def id_check(guild, user: discord.Member) :
 		userinfo: databases.current.IdVerification = VerificationTransactions().get_id_info(user.id)
-		print(guild.id)
 		idlog = ConfigData().get_key_int(guild.id, "verification_failure_log")
 		idchannel = guild.get_channel(idlog)
 		if userinfo is None :
@@ -99,6 +98,7 @@ class AgeCalculations(ABC) :
 		try :
 			date_of_birth = AgeCalculations.add_slashes_to_dob(date_of_birth)
 		except Exception as e :
+			logging.warning(f"Failed to add slashes to date of birth")
 			pass
 
 		dob_pattern = (
@@ -155,8 +155,6 @@ class AgeCalculations(ABC) :
 			day = dob_object.group(2).zfill(2)
 			year = dob_object.group(3)
 			fulldob = f"{month}/{day}/{year}"
-			if month is None or day is None or year is None :
-				raise ValueError("Failed to validate date of birth. Please enter the date of birth in the format: mm/dd/yyyy")
 			return fulldob
 		except Exception as e:
 			raise ValueError(f"Failed to validate date of birth, reason: {e}")
@@ -167,16 +165,14 @@ class AgeCalculations(ABC) :
 		try:
 			formatted = AgeCalculations.add_slashes_to_dob(arg2)
 			dob = AgeCalculations.dob_regex(formatted)
+
 		except AttributeError :
-			dob = "AttributeError"
+			await send_response(interaction, "Please fill in the date of birth field.")
+			return False
+
 		except ValueError :
 			dob = "ValueError"
-		if dob == "AttributeError" :
-			# await send_response(interaction, "Please fill in the date of birth field.")
-			print( "Please fill in the date of birth field.")
+			await send_response(interaction, "Please fill the dob in with the format: mm/dd/yyyy")
 			return False
-		if dob == "ValueError" :
-			# await send_response(interaction, "Please fill the dob in with the format: mm/dd/yyyy")
-			print("Please fill the dob in with the format: mm/dd/yyyy")
-			return False
+
 		return dob
