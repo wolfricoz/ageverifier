@@ -131,7 +131,7 @@ class Tasks(commands.Cog) :
 
 				UserTransactions().permanent_delete(entry, "GDPR Removal (30 days passed)")
 				count += 1
-			# logging.info("DEV: EXPIRATION CHECK DISABLED")
+		# logging.info("DEV: EXPIRATION CHECK DISABLED")
 		logging.info(f"Finished checking all GDPR expired entries, total removed: {count}")
 
 	@tasks.loop(hours=12)
@@ -143,7 +143,6 @@ class Tasks(commands.Cog) :
 		await self.user_expiration_update(userids)
 		await self.user_expiration_remove()
 		logging.info("Finished checking all entries")
-
 
 	@tasks.loop(hours=24)
 	async def clean_guilds(self) :
@@ -174,38 +173,38 @@ class Tasks(commands.Cog) :
 
 	@tasks.loop(minutes=30)
 	async def check_active_servers(self) :
-		guild_ids = ServerTransactions().get_all()
+		guild_ids = await asyncio.to_thread(ServerTransactions().get_all)
 		count = 0
 		for guild in self.bot.guilds :
+			await asyncio.sleep(0)
 			if count % 10 == 0 :
 				logging.info(f"updating active servers: processed {count}/{len(self.bot.guilds)} guilds so far.")
-				await asyncio.sleep(0)
 
 			if guild.id in guild_ids :
 				guild_ids.remove(guild.id)
 			try :
 
 				# this needs to be moved to another function.
-				#invite_link = await check_guild_invites(self.bot, guild),
+				# invite_link = await check_guild_invites(self.bot, guild),
 
-				ServerTransactions().add( guild.id,
-				                         active=True,
-				                         name=guild.name,
-				                         owner=guild.owner,
-				                         member_count=guild.member_count,
-				                         )
+				await asyncio.to_thread(ServerTransactions().add, guild.id,
+				                        active=True,
+				                        name=guild.name,
+				                        owner=guild.owner,
+				                        member_count=guild.member_count,
+				                        )
 				count += 1
 			except AttributeError :
-				ServerTransactions().add(guild.id,
-				                         active=True,
-				                         name=guild.name,
-				                         owner=guild.owner,
-				                         member_count=guild.member_count,
-				                         )
+				await asyncio.to_thread(ServerTransactions().add, guild.id,
+				                        active=True,
+				                        name=guild.name,
+				                        owner=guild.owner,
+				                        member_count=guild.member_count,
+				                        )
 				count += 1
 
 			except Exception as e :
-				logging.exception(f"Error adding guild {guild.name} ({guild.id}) to the database: error: {e}",)
+				logging.exception(f"Error adding guild {guild.name} ({guild.id}) to the database: error: {e}", )
 				count += 1
 				continue
 		logging.info(f"pending removal: {guild_ids}")
@@ -215,26 +214,26 @@ class Tasks(commands.Cog) :
 				if guild is None :
 					guild = await self.bot.fetch_guild(gid)
 			except discord.errors.NotFound :
-				ServerTransactions().delete(gid)
+				await asyncio.to_thread(ServerTransactions().delete, gid)
 				continue
-			try:
-				ServerTransactions().add( gid,
-				                         active=False,
-				                         name=guild.name,
-				                         owner=guild.owner,
-				                         member_count=guild.member_count,
-				                         )
-			except AttributeError:
-				ServerTransactions().add( gid,
-				                         active=False,
-				                         name=guild.name,
-				                         owner=guild.owner,
-				                         member_count=guild.member_count,
-				                         )
+			try :
+				await asyncio.to_thread(ServerTransactions().add, gid,
+				                        active=False,
+				                        name=guild.name,
+				                        owner=guild.owner,
+				                        member_count=guild.member_count,
+				                        )
+			except AttributeError :
+				await asyncio.to_thread(ServerTransactions().add, gid,
+				                        active=False,
+				                        name=guild.name,
+				                        owner=guild.owner,
+				                        member_count=guild.member_count,
+				                        )
 
-		guilds = ServerTransactions().get_all(id_only=False)
+		guilds = await asyncio.to_thread(ServerTransactions().get_all, id_only=False)
 
-		Queue().add(Servers().update_servers(guilds), 0)
+		await asyncio.to_thread(Queue().add, Servers().update_servers(guilds), 0)
 		await asyncio.sleep(0)
 
 		AccessControl().reload()
@@ -341,7 +340,6 @@ class Tasks(commands.Cog) :
 		"""stops event from starting before the bot has fully loaded"""
 		await self.bot.wait_until_ready()
 
-
 	@app_commands.command(name="sync_servers",
 	                      description="[DEV] Forces all servers to be synced with the dashboard")
 	@check_access()
@@ -354,8 +352,6 @@ class Tasks(commands.Cog) :
 		"""
 		await send_response(interaction, "[Debug]Checking all entries.")
 		self.check_active_servers.restart()
-
-
 
 
 async def setup(bot) :
