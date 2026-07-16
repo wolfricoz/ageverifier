@@ -32,12 +32,18 @@ def check_whitelist(server_id) :
 	This function reads the `whitelist.json` file and returns `True` if the server's ID is found, and `False` otherwise.
 	It's used to restrict access to certain features or commands.
 	"""
+	if isinstance(server_id, str):
+		server_id = int(server_id)
+
+	if os.path.exists(whitelist_path) :
+		with open(whitelist_path, 'w') as f :
+			f.write(json.dumps({"whitelist" : []}))
+
+
 	with open(whitelist_path, 'r') as f :
 		whitelist = json.load(f)
-	if server_id in whitelist["whitelist"] :
-		return True
-	else :
-		return False
+	return server_id in whitelist["whitelist"]
+
 
 
 def add_to_whitelist(server_id) :
@@ -46,8 +52,10 @@ def add_to_whitelist(server_id) :
 	This is a developer function that takes a server ID and adds it to the `whitelist.json` file, granting it access to whitelisted features.
 	"""
 	server_id = int(server_id)
-	with open('whitelist.json', 'r') as f :
+	with open(whitelist_path, 'r') as f :
 		whitelist = json.load(f)
+	if server_id in whitelist["whitelist"] :
+		return
 	whitelist["whitelist"].append(server_id)
 	with open(whitelist_path, 'w') as f :
 		json.dump(whitelist, f)
@@ -61,6 +69,7 @@ def remove_from_whitelist(server_id) :
 	server_id = int(server_id)
 	with open('whitelist.json', 'r') as f :
 		whitelist = json.load(f)
+	# TODO: [BUG] list.remove raises ValueError if the id is not present. Check membership first or catch the error.
 	whitelist["whitelist"].remove(server_id)
 	with open(whitelist_path, 'w') as f :
 		json.dump(whitelist, f)
