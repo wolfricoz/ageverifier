@@ -41,8 +41,8 @@ def check_whitelist(server_id) :
 
 
 	with open(whitelist_path, 'r') as f :
-		whitelist = json.load(f)
-	return server_id in whitelist["whitelist"]
+		whitelist_data = json.load(f)
+	return server_id in whitelist_data["whitelist"]
 
 
 
@@ -53,12 +53,12 @@ def add_to_whitelist(server_id) :
 	"""
 	server_id = int(server_id)
 	with open(whitelist_path, 'r') as f :
-		whitelist = json.load(f)
-	if server_id in whitelist["whitelist"] :
+		whitelist_data = json.load(f)
+	if server_id in whitelist_data["whitelist"] :
 		return
-	whitelist["whitelist"].append(server_id)
+	whitelist_data["whitelist"].append(server_id)
 	with open(whitelist_path, 'w') as f :
-		json.dump(whitelist, f)
+		json.dump(whitelist_data, f)
 
 
 def remove_from_whitelist(server_id) :
@@ -68,11 +68,13 @@ def remove_from_whitelist(server_id) :
 	"""
 	server_id = int(server_id)
 	with open('whitelist.json', 'r') as f :
-		whitelist = json.load(f)
-	# TODO: [BUG] list.remove raises ValueError if the id is not present. Check membership first or catch the error.
-	whitelist["whitelist"].remove(server_id)
+		whitelist_data = json.load(f)
+	if server_id in whitelist_data["whitelist"] :
+		return
+
+	whitelist_data["whitelist"].remove(server_id)
 	with open(whitelist_path, 'w') as f :
-		json.dump(whitelist, f)
+		json.dump(whitelist_data, f)
 
 async def whitelist( interaction) :
 	"""
