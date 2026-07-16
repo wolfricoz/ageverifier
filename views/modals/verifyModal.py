@@ -1,12 +1,11 @@
 import logging
 
 import discord
-from discord_py_utilities.messages import send_message, send_response
+from discord_py_utilities.messages import send_response
 
 from classes.encryption import Encryption
 from classes.idcheck import IdCheck
 from classes.verification.process import VerificationProcess
-from databases.transactions.ConfigData import ConfigData
 
 
 class VerifyModal(discord.ui.Modal) :
@@ -37,6 +36,7 @@ class VerifyModal(discord.ui.Modal) :
 			row=0
 
 		)
+
 		self.fields = {
 			month : discord.ui.TextInput(
 				label='month',
@@ -141,13 +141,3 @@ class VerifyModal(discord.ui.Modal) :
 		await send_response(interaction, f"An error occurred: {error}", ephemeral=True)
 		raise error
 
-	async def autokick(self, interaction, mod_channel, age, minimum_age) :
-		if ConfigData().get_key(interaction.guild.id, "autokick_underaged_users") == "ENABLED" :
-			await send_message(interaction.user,
-			                   f"Thank you for submitting your date of birth, unfortunately you are too young for this server; you must be {minimum_age} years old.")
-			await send_message(mod_channel,
-			                   f"\n{interaction.user.mention} has given {age} which is below the minimum age of the age roles and has been denied entry. The user has been kicked because autokick is turned on.")
-			await interaction.user.kick(reason="user under minimum age")
-			return
-		await send_message(mod_channel,
-		                   f"\n{interaction.user.mention} has given {age} which is below the minimum age of the age roles and has been denied entry.")
