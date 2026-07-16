@@ -12,13 +12,15 @@ async def change_age_roles(guild: discord.Guild, user: discord.Member, age, remo
 
 	# Building the role list
 	roles = ConfigData().get_key(guild.id, "VERIFICATION_ADD_ROLE", {})
-	exluded_roles = []
+	excluded_roles = []
 	if remove :
-		exluded_roles = ConfigData().get_key(guild.id, "auto_update_excluded_roles")
-	roles = {key: value for key, value in roles.items() if key not in exluded_roles}
+		excluded_roles = ConfigData().get_key(guild.id, "auto_update_excluded_roles", [])
+
+	roles = {key: value for key, value in roles.items() if key not in excluded_roles}
 	logging.info(roles)
 	add_roles = []
 	remove_roles = []
+
 	if isinstance(user, discord.User):
 		user = guild.get_member(user.id)
 
@@ -26,6 +28,8 @@ async def change_age_roles(guild: discord.Guild, user: discord.Member, age, remo
 	for key, value in roles.items() :
 		if user is None:
 			return
+		if isinstance(key, str):
+			key = int(key)
 		role = guild.get_role(key)
 		if value['MIN'] <= age <= value['MAX']:
 			if role not in user.roles:
@@ -77,7 +81,7 @@ async def change_age_roles(guild: discord.Guild, user: discord.Member, age, remo
 	try:
 		await user.remove_roles(*remove_roles)
 	except Exception as e:
-		logging.warning(f"Failed to add reverify roles to {user.mention} in {guild.name}: {e}", exc_info=True)
+		logging.warning(f"Failed to remove reverify roles from {user.mention} in {guild.name}: {e}", exc_info=True)
 
 	mod_lobby = guild.get_channel(ConfigData().get_key_int(guild.id, "approval_channel"))
 	if mod_lobby is None:
