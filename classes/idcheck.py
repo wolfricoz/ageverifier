@@ -20,6 +20,8 @@ from views.buttons.idsubmitbutton import IdSubmitButton
 
 class IdCheck(ABC) :
 
+
+
 	@staticmethod
 	@abstractmethod
 	async def send_check(interaction: discord.Interaction, channel, message, age, dob, date_of_birth=None, years=None,
@@ -78,7 +80,7 @@ class IdCheck(ABC) :
 			lobbymod = interaction.guild.get_channel(
 				ConfigData().get_key_int_or_zero(interaction.guild.id, "approval_channel"))
 			await lobbymod.send(f"Lobby Debug] Age: {age} dob {dob} userid: {interaction.user.mention}\n" + message.get('channel-message', "Message not found."))
-			await IdCheck.auto_kick(interaction.user, m_key, interaction.guild, channel)
+			await IdCheck.auto_kick(interaction.user, m_key, interaction.guild, channel, message.get('channel-message', "Message not found."))
 
 			return
 		if verify_button :
@@ -107,7 +109,8 @@ class IdCheck(ABC) :
 				await send_response(interaction,
 				                    f"I don't have permission to send messages in {channel.mention}. Please contact a server administrator to resolve this issue.",
 				                    ephemeral=True)
-			except discord.Forbidden or NoPermissionException:
+
+			except (discord.Forbidden or NoPermissionException):
 				channel = find_first_accessible_text_channel(interaction.guild)
 				await send_message(channel, f"{f'{interaction.guild.owner.mention}' if ConfigData().get_key(interaction.guild.id, "ping_owner_on_failure") == 'ENABLED' else ''} I don't have permission to send messages in {channel.mention}. Please contact a server administrator to resolve this issue.")
 
@@ -120,7 +123,7 @@ class IdCheck(ABC) :
 	@abstractmethod
 	async def send_check_api(bot, user, guild, channel, message, age, dob, date_of_birth=None, years=None,
 	                         id_check=False, verify_button=True, id_check_reason=None, server=None) :
-		messages = {
+		messages: dict = {
 			"underage"          : {
 				"user-message"    : f"Unfortunately, you are too young to join our server. If you are 17, you may wait in the lobby until you are old enough to join.",
 				"channel-message" : f"[ID CHECK: underage] User {user.mention}\'s gave an age below 18 and was added to the ID list in {server}",
@@ -201,7 +204,7 @@ class IdCheck(ABC) :
 			JoinHistoryTransactions().update(user.id, guild.id, JoinHistoryStatus.IDCHECK)
 			await IdCheck.add_check(user, guild, message.get("channel-message", f"No message set for {message}"))
 
-		await IdCheck.auto_kick(user, m_key, guild, channel)
+		await IdCheck.auto_kick(user, m_key, guild, channel, message.get('channel-message', "Message not found."))
 
 	@staticmethod
 	@abstractmethod
@@ -228,9 +231,9 @@ class IdCheck(ABC) :
 
 	@staticmethod
 	@abstractmethod
-	async def auto_kick(member: discord.Member, discrepancy, guild: discord.Guild, channel) :
+	async def auto_kick(member: discord.Member, discrepancy, guild: discord.Guild, channel, reason) :
 		kick_message = None
-
+		staff_message = None
 		if discrepancy in ['underage', 'below_minimum_age'] :
 			config_state = ConfigData().get_toggle(guild.id, "autokick_underaged_users")
 			if not config_state :
@@ -242,17 +245,24 @@ class IdCheck(ABC) :
 			kick_message = (
 				f"You have been removed from the server because you do not meet the minimum age requirement. You may rejoin once you meet the minimum age required of {minimum_age}."
 			)
+			staff_message = f"{member.name} doesn't meet the minimum age requirement and has been kicked."
+
 		if ConfigData().get_toggle(guild.id, "AUTOKICK_ON_DISCREPANCY"):
 			kick_message = (
 				"You've been removed from the server because the age and date of birth "
 				"you provided during verification did not match. If you believe this was "
 				"a genuine mistake, you're welcome to contact server staff to appeal."
+				"\n\n",
+				reason
 			)
+			staff_message = f"{member.name} had a discrepancy and has been automatically kicked!"
 
-
+		# We only kick if a kick reason is set.
+		if not kick_message:
+			return
 		await send_message(member, kick_message)
 		await member.kick(reason=kick_message)
-		await channel.send(f"[Autokick] {member.mention} doesn't meet the minimum age requirement and has been kicked.")
+		await channel.send(f"[Autokick] {staff_message}")
 
 	@staticmethod
 	@abstractmethod
@@ -288,7 +298,8 @@ class IdCheck(ABC) :
 			await user.create_dm()
 			await send_message(user, embed=embed, view=IdSubmitButton())
 			await send_response(interaction, "Successfully sent ID verification request!", ephemeral=True)
-		except discord.Forbidden or discord.NotFound:
+
+		except (discord.Forbidden or discord.NotFound):
 			await send_response(interaction, "Could not DM user.", ephemeral=True)
 		except Exception as e :
 			await send_response(interaction, f"Could not DM user due to an error: {e}", ephemeral=True)
