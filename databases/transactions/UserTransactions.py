@@ -82,7 +82,7 @@ class UserTransactions(DatabaseTransactions) :
 				if field == 'date_of_birth' and value is not None :
 					encrypted_value = Encryption().encrypt(value)
 					setattr(user, field, encrypted_value)
-				if value is not None :
+				elif value is not None :
 					setattr(user, field, value)
 			session.merge(user)
 			self.commit(session)
@@ -210,11 +210,11 @@ class UserTransactions(DatabaseTransactions) :
 			warnings = session.scalars(
 				Select(Warnings).where(Warnings.uid == userid, Warnings.type == warning_type.upper()).order_by(Warnings.uid)).all()
 			session.close()
-			if len(warnings) == 0 or warnings is None :
+			if len(warnings) == 0 :
 				return False
-			for warnings in warnings :
-				warning_dict[warnings.id] = warnings.reason
-				warning_list.append(warnings.id)
+			for warning in warnings :
+				warning_dict[warning.id] = warning.reason
+				warning_list.append(warning.id)
 			return warning_list, warning_dict
 
 
@@ -228,7 +228,7 @@ class UserTransactions(DatabaseTransactions) :
 	def get_all_expired(self):
 		with self.createsession() as session:
 			# Fetches users that have not updated their entry in over 365 days
-			return session.execute(text("select uid, entry from users where entry < NOW() - INTERVAL '365' DAY")).all()
+			return session.execute(text("select uid, entry from users where entry < NOW() - INTERVAL '365 days'")).all()
 
 	def get_all_soft_deleted(self, expired=False):
 		with self.createsession() as session:
