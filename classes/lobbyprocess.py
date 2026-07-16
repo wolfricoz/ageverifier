@@ -2,7 +2,6 @@ import datetime
 import logging
 import os
 import re
-from abc import ABC, abstractmethod
 
 import discord
 from discord.utils import get
@@ -21,10 +20,9 @@ from databases.transactions.HistoryTransactions import JoinHistoryTransactions
 from databases.transactions.UserTransactions import UserTransactions
 
 
-class LobbyProcess(ABC) :
+class LobbyProcess :
 
 	@staticmethod
-	@abstractmethod
 	async def approve_user(guild: discord.Guild, user: discord.Member, dob: str, age: int, staff: str, idverify: bool = False, reverify: bool =False) :
 		# checks if user is on the id list
 		id_msg = ""
@@ -55,7 +53,6 @@ class LobbyProcess(ABC) :
 		Queue().add(LobbyProcess.clean_up(guild, user), priority=0)
 
 	@staticmethod
-	@abstractmethod
 	async def remove_user_roles(user: discord.Member, guild: discord.Guild) :
 		id = user.id
 		if isinstance(user, discord.User) :
@@ -74,10 +71,7 @@ class LobbyProcess(ABC) :
 		Queue().add(user.remove_roles(*rem_roles), priority=2)
 
 
-
-
 	@staticmethod
-	@abstractmethod
 	async def get_roles(guild, roles, key: str) :
 		results = []
 		for role in roles :
@@ -91,7 +85,6 @@ class LobbyProcess(ABC) :
 
 
 	@staticmethod
-	@abstractmethod
 	async def log(user, guild, age, dob, staff, exists, id_verify = "", reverify=False) :
 		# Empty variables, these may be filled based on the type of verification
 
@@ -106,6 +99,7 @@ class LobbyProcess(ABC) :
 			if revlog is not None:
 				lobbylog = revlog
 
+		# TODO: [BUG] If lobbylog is None (age_log not configured) int(None) raises TypeError; if the channel was deleted, get_channel returns None and channel.members below raises AttributeError. Guard for both.
 		channel = guild.get_channel(int(lobbylog))
 
 		viewers = [member for member in channel.members if member.bot is False]
@@ -142,10 +136,10 @@ class LobbyProcess(ABC) :
 
 
 	@staticmethod
-	@abstractmethod
 	async def clean_up(guild, user) :
 		lobby = ConfigData().get_key(guild.id, "server_join_channel")
 		lobbymod = ConfigData().get_key(guild.id, "approval_channel")
+		# TODO: [BUG] int(lobby) raises TypeError if server_join_channel is unset, and channel.history below raises AttributeError if the channel was deleted (get_channel -> None). Guard both here and for lobbymod below.
 		channel = guild.get_channel(int(lobby))
 		messages = channel.history(limit=100)
 		notify = re.compile(r"Info", flags=re.IGNORECASE)
@@ -155,6 +149,7 @@ class LobbyProcess(ABC) :
 
 		async for message in messages :
 
+			# TODO: [BUG] Precedence: this is `author==user or (user in mentions and count<10)`. When author==user the count<10 cap is bypassed, so an unbounded number of the user's own messages get queued for deletion. Parenthesise to apply the cap to both conditions.
 			if message.author == user or user in message.mentions and count < 10 :
 				count += 1
 				Queue().add(message.delete(), priority=0)
@@ -172,7 +167,6 @@ class LobbyProcess(ABC) :
 						Queue().add(message.delete(), priority=0)
 
 	@staticmethod
-	@abstractmethod
 	async def welcome(user: discord.Member, guild: discord.Guild) :
 		if ConfigData().get_key(guild.id, "send_verification_completed_message") == "DISABLED" :
 			return
@@ -188,7 +182,6 @@ class LobbyProcess(ABC) :
 		await send_message(channel, f"Welcome to {guild.name} {user.mention}! {message}")
 
 	@staticmethod
-	@abstractmethod
 	async def age_log(userid, dob, interaction, operation="added", log=True, reason="") :
 		try:
 			age_log = interaction.guild.get_channel(ConfigData().get_key_int(interaction.guild.id, "age_log"))
@@ -196,6 +189,7 @@ class LobbyProcess(ABC) :
 			age_log = find_first_accessible_text_channel(interaction.guild)
 			await send_message(age_log, f"Could not find age log channel, using {age_log.mention} instead. Please set one up with `/config channels`")
 			return
+		# TODO: [BUG] int(os.getenv('DEV')) raises TypeError if DEV is unset, and dev_channel may be None here (used unguarded in the queued send_message below).
 		dev_channel = interaction.client.get_channel(int(os.getenv('DEV')))
 		dob_field = ""
 		if check_whitelist(interaction.guild.id) :
