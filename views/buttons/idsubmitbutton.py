@@ -42,7 +42,7 @@ class IdSubmitButton(discord.ui.View) :
 			await send_response(interaction, "No attachments attached to this message")
 			return
 		if len(message.attachments) > 1:
-			await send_response(interaction, "Too many attachments attached to this message, please send only 1 image.")
+			return await send_response(interaction, "Too many attachments attached to this message, please send only 1 image.")
 
 		if self.user_initiated:
 			mod_channel: discord.TextChannel = self.guild.get_channel(
@@ -114,6 +114,9 @@ class IdSubmitButton(discord.ui.View) :
 		if len(interaction.message.embeds) < 1:
 			return False
 		embed = interaction.message.embeds[0]
+
+		if not embed.footer.text or not embed.footer.text.isnumeric():
+			return False
 
 		self.guild = interaction.client.get_guild(int(embed.footer.text))
 		for field in embed.fields:
