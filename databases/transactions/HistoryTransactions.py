@@ -186,65 +186,76 @@ class JoinHistoryTransactions(DatabaseTransactions) :
 			if not isinstance(uid, int) :
 				return []
 			result =  session.execute(text(
-				f"""select b.name from join_history a
+				"""select b.name from join_history a
 LEFT OUTER JOIN servers b on a.gid = b.guild
-    where a.uid = {uid}
+    where a.uid = :uid
     and a.status = 'SUCCESS'
 limit 5;
 		"""
-			)).mappings().all()
+			), {"uid": uid}).mappings().all()
 
 			if len(result) < 1 :
 				return []
 			return result
 	# Statistic functions go here
 	def join_leave_graph_data(self, gid: int = None, days: int = 30) :
-		guild_query = ""
-		if gid and isinstance(gid, int):
-			guild_query += f"and gid={gid}"
+		# Ensure days is a safe integer to prevent SQL injection or interval manipulation
+		if not isinstance(days, int) or days <= 0 :
+			days = 30  # Fallback to default safely
+
+		# Build the dynamic SQL condition safely without f-string interpolation
+		guild_clause = ""
+		params = {"days" : days}
+
+		if gid and isinstance(gid, int) :
+			guild_clause = "AND gid = :gid"
+			params["gid"] = gid
+
 		with self.createsession() as session :
-			return session.execute(text(
-				f"""SELECT
-    GREATEST(created_date, last_updated)::date AS date_created,
-    status,
-    COUNT(*) AS records
-FROM
-    join_history
-WHERE
-    created_date >= now() - INTERVAL '{days} days' OR
-    last_updated >= now() - INTERVAL '{days} days'
-GROUP BY
-    date_created,
-    status
-ORDER BY
-    date_created;
-"""
-			)).mappings().all()
+			# We safely construct the query. :days and :gid are proper bound parameters.
+			# Postgres allows '1 day' * :days as a safe way to bind numeric intervals.
+			query = text(f"""
+	            SELECT
+	                GREATEST(created_date, last_updated)::date AS date_created,
+	                status,
+	                COUNT(*) AS records
+	            FROM
+	                join_history
+	            WHERE
+	                (created_date >= NOW() - INTERVAL '1 day' * :days OR
+	                 last_updated >= NOW() - INTERVAL '1 day' * :days)
+	                {guild_clause}
+	            GROUP BY
+	                date_created,
+	                status
+	            ORDER BY
+	                date_created;
+	        """)
+
+			return session.execute(query, params).mappings().all()
 
 	def age_graph_data(self, gid: int) :
+		guild_clause = ""
+		params = {}
+
+		if gid and isinstance(gid, int) :
+			guild_clause = "AND a.gid = :gid"  # Explicitly using a.gid to prevent ambiguity
+			params["gid"] = gid
+
 		with self.createsession() as session :
-			if gid and isinstance(gid, int) :
-				guild = f"and gid= :gid"
+			# Using pure SQL bind parameters and explicitly qualifying columns
+			query = text(f"""
+	            SELECT
+	                a.uid,
+	                b.date_of_birth
+	            FROM
+	                join_history a
+	            INNER JOIN users b ON a.uid = b.uid
+	            WHERE b.date_of_birth IS NOT NULL
+	              {guild_clause}
+	        """)
 
-			return session.execute(text(
-				f"""
-			select
-			a.uid,
-			b.date_of_birth
-			from
-			join_history a
-			inner join users
-			b
-			on
-			a.uid = b.uid
-			where b.date_of_birth is not null
-			
-			{guild}
-			"""
-
-			), {
-				'gid': gid
-			}).mappings().all()
+			return session.execute(query, params).mappings().all()
 
 	def anonymize_data(self, uid: int = None) :
 		with self.createsession() as session :
