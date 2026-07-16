@@ -1,4 +1,5 @@
 import logging
+import os
 
 import discord
 from discord import app_commands
@@ -61,7 +62,7 @@ class queueTask(commands.Cog):
     async def before_queue(self):
         await self.bot.wait_until_ready()
 
-    @queue.before_loop
+    @display_status.before_loop
     async def before_display(self):
         await self.bot.wait_until_ready()
 
