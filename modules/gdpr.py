@@ -37,8 +37,6 @@ class gdpr(commands.GroupCog, description="Commands related to your data and pri
 		if user is None or user.date_of_birth is None :
 			await send_response(interaction, "No data found for you.")
 			return
-		dev_channel = self.bot.get_channel(int(os.getenv("DEV")))
-		# await send_message(dev_channel, f"{interaction.user.mention} has requested to have their data removed, data has been marked for removal in 30 days.")
 		text = """You have requested to have your data removed under GDPR. 
 
 - AgeVerifier cannot confirm your age, so we will notify the owners of any guilds you are in.  
@@ -63,11 +61,15 @@ If you want to continue, please confirm your request."""
 		user_data = UserTransactions().get_user(interaction.user.id)
 		id_verified = VerificationTransactions().get_id_info(interaction.user.id)
 		server = self.bot.get_guild(int(supportguild if supportguild else 0))
-		if server is None :
-			invite = "Failed to generate invite link, please contact the developer."
-		else :
-			invite = await server.get_channel(int(dev if dev else 0)).create_invite(max_age=3600, max_uses=1,
-			                                                                  reason="GDPR data request")
+
+		invite = "Failed to generate invite link, please contact the developer."
+		if server:
+			invite_channel = server.get_channel(int(dev if dev else 0))
+			if invite_channel :
+				invite = await invite_channel.create_invite(max_age=3600, max_uses=1,
+				                                            reason="GDPR data request")
+
+
 		if user_data is None :
 			await interaction.user.send(f"**__User Data Request__**"
 			                            f"\nUser: {interaction.user.mention}({interaction.user.id})"
