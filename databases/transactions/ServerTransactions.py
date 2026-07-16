@@ -15,19 +15,21 @@ from resources.data.config_variables import VERIFICATION_KEY, VerificationMethod
 class ServerTransactions(DatabaseTransactions) :
 
 	def add(self, guildid: int, active: bool = True, name: str = "", owner: discord.Member = None, member_count: int = 0,
-	        invite: str = "", reload=True) :
+	        invite: str = "", reload=True, invite_date=None) :
 		with self.createsession() as session :
 
 			guild = self.get(guildid, session=session)
 			owner_name = owner.name if owner else ""
 			owner_id = owner.id if owner else 0
 			owner = UserTransactions().user_exists(owner_id)
-			if not owner:
+			if not owner :
 				UserTransactions().add_user_empty(owner_id)
 
 			if guild is not None :
-
-				self.update(guildid, active, name, owner_name, member_count, invite, owner_id=owner_id if owner_id != 0 else None)
+				if invite == "":
+					invite = None
+				self.update(guildid, active, name, owner_name, member_count, invite,
+				            owner_id=owner_id if owner_id != 0 else None, invite_date=invite_date,)
 			else :
 				session = self.createsession()
 				g = Servers(
@@ -37,6 +39,7 @@ class ServerTransactions(DatabaseTransactions) :
 					owner=owner_name,
 					member_count=member_count,
 					invite=invite,
+					invite_date=invite_date,
 					owner_id=owner_id,
 				)
 				session.merge(g)
@@ -45,12 +48,12 @@ class ServerTransactions(DatabaseTransactions) :
 
 			# Apply configurations to new servers
 
-			for toggle in available_toggles + list(lobby_approval_toggles.keys()):
-				if toggle.upper() in enabled_toggles:
+			for toggle in available_toggles + list(lobby_approval_toggles.keys()) :
+				if toggle.upper() in enabled_toggles :
 					ConfigTransactions().toggle_add(guildid, toggle, "ENABLED")
 				ConfigTransactions().toggle_add(guildid, toggle)
 			ConfigTransactions().config_unique_add(guildid, "COOLDOWN", 5)
-			ConfigTransactions().config_unique_add(guildid,  VERIFICATION_KEY, VerificationMethods.BASIC)
+			ConfigTransactions().config_unique_add(guildid, VERIFICATION_KEY, VerificationMethods.BASIC)
 
 		if reload :
 			from databases.transactions.ConfigData import ConfigData
@@ -64,14 +67,14 @@ class ServerTransactions(DatabaseTransactions) :
 				return session.query(Servers).all()
 			return [sid[0] for sid in session.query(Servers.guild).all()]
 
-	def get(self, guild_id: int, session=None)  -> "Servers"  :
+	def get(self, guild_id: int, session=None) -> "Servers" :
 		if session :
 			return session.scalar(Select(Servers).where(Servers.guild == guild_id))
 		with self.createsession() as session :
 			return session.scalar(Select(Servers).where(Servers.guild == guild_id))
 
 	def update(self, guild_id: int, active: bool = None, name: str = None, owner: str = None, member_count: int = None,
-	           invite: str = None, premium: datetime = None, owner_id=None, reload=True) -> bool :
+	           invite: str = None, premium: datetime = None, owner_id=None, reload=True, invite_date=None) -> bool :
 
 		with self.createsession() as session :
 			guild = self.get(guild_id, session=session)
@@ -84,6 +87,7 @@ class ServerTransactions(DatabaseTransactions) :
 				"owner"        : owner,
 				"member_count" : member_count,
 				"invite"       : invite,
+				"invite_date"  : invite_date,
 				"premium"      : premium,
 				"owner_id"     : owner_id
 			}
@@ -127,7 +131,6 @@ class ServerTransactions(DatabaseTransactions) :
 					guild.owner_id = None
 				self.commit(session)
 				return True
-
 
 			guilds = session.query(Servers).filter(Servers.owner_id == user_id).all()
 			for guild in guilds :
