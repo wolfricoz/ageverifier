@@ -10,15 +10,16 @@ class Confirm(discord.ui.View):
 
 	async def send_confirm(self, interaction: discord.Interaction, message: str = "Do you want to proceed?", cancelled_message = "Cancelled", save_interaction: bool = False):
 		"""send the confirm message"""
+
 		await send_response(interaction, message, view=self, ephemeral=True)
-		await self.wait()
 		self.cancel_message = cancelled_message
 		self.save_interaction = save_interaction
+		await self.wait()
 
 		return self.value
 
 	def __init__(self):
-		super().__init__(timeout=None)
+		super().__init__(timeout=1200)
 		self.save_interaction = None
 		self.cancel_message = None
 		self.interaction = None
