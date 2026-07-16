@@ -176,7 +176,6 @@ class Tasks(commands.Cog) :
 	@tasks.loop(minutes=30)
 	async def check_active_servers(self) :
 		guild_ids = ServerTransactions().get_all()
-		ConfigData().load_all_guilds()
 		count = 0
 		for guild in self.bot.guilds :
 			if count % 10 == 0 :
@@ -186,6 +185,8 @@ class Tasks(commands.Cog) :
 			if guild.id in guild_ids :
 				guild_ids.remove(guild.id)
 			try :
+
+
 				invite_link = await check_guild_invites(self.bot, guild),
 
 				await asyncio.to_thread(ServerTransactions().add, guild.id,
