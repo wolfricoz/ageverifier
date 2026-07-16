@@ -3,16 +3,16 @@ import os
 from datetime import UTC, datetime
 
 import discord
+from classes.retired.discord_tools import send_response
 from discord import app_commands
 
 from classes.jsonmaker import Configer
-from classes.retired.discord_tools import send_response
 # from classes.databaseController import StaffDbTransactions
-from classes.singleton import singleton
+from classes.singleton import Singleton
 from databases.transactions.ServerTransactions import ServerTransactions
 
 
-class AccessControl(metaclass=singleton) :
+class AccessControl(metaclass=Singleton) :
 	staff: dict = {
 
 	}
@@ -28,6 +28,7 @@ class AccessControl(metaclass=singleton) :
 
 	def add_staff_to_dict(self) :
 		self.staff = {}
+		# Future: Implement staff mechanism.
 		# staff_members = StaffDbTransactions().get_all()
 		staff_members= []
 		for staff in staff_members :
@@ -86,6 +87,6 @@ class AccessControl(metaclass=singleton) :
 		return app_commands.check(is_premium_check)
 
 	def is_premium(self, guild_id: int):
-		if os.getenv('DEBUG'):
+		if os.getenv('DEBUG') == "true":
 			logging.info(f"[DEBUG]: {guild_id} checking for premium status in list: {self.premium_guilds}")
 		return guild_id in self.premium_guilds
