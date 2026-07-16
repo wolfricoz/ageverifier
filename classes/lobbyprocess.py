@@ -99,7 +99,6 @@ class LobbyProcess :
 			if revlog is not None:
 				lobbylog = revlog
 
-		# TODO: [BUG] If lobbylog is None (age_log not configured) int(None) raises TypeError; if the channel was deleted, get_channel returns None and channel.members below raises AttributeError. Guard for both.
 		channel = guild.get_channel(int(lobbylog))
 
 		viewers = [member for member in channel.members if member.bot is False]
@@ -137,10 +136,9 @@ class LobbyProcess :
 
 	@staticmethod
 	async def clean_up(guild, user) :
-		lobby = ConfigData().get_key(guild.id, "server_join_channel")
 		lobbymod = ConfigData().get_key(guild.id, "approval_channel")
-		# TODO: [BUG] int(lobby) raises TypeError if server_join_channel is unset, and channel.history below raises AttributeError if the channel was deleted (get_channel -> None). Guard both here and for lobbymod below.
-		channel = guild.get_channel(int(lobby))
+
+		channel = await ConfigData().get_channel(guild, "server_join_channel")
 		messages = channel.history(limit=100)
 		notify = re.compile(r"Info", flags=re.IGNORECASE)
 		count = 0
@@ -149,8 +147,7 @@ class LobbyProcess :
 
 		async for message in messages :
 
-			# TODO: [BUG] Precedence: this is `author==user or (user in mentions and count<10)`. When author==user the count<10 cap is bypassed, so an unbounded number of the user's own messages get queued for deletion. Parenthesise to apply the cap to both conditions.
-			if message.author == user or user in message.mentions and count < 10 :
+			if (message.author == user or user in message.mentions) and count < 10 :
 				count += 1
 				Queue().add(message.delete(), priority=0)
 		channel = guild.get_channel(int(lobbymod))
@@ -189,7 +186,6 @@ class LobbyProcess :
 			age_log = find_first_accessible_text_channel(interaction.guild)
 			await send_message(age_log, f"Could not find age log channel, using {age_log.mention} instead. Please set one up with `/config channels`")
 			return
-		# TODO: [BUG] int(os.getenv('DEV')) raises TypeError if DEV is unset, and dev_channel may be None here (used unguarded in the queued send_message below).
 		dev_channel = interaction.client.get_channel(int(os.getenv('DEV')))
 		dob_field = ""
 		if check_whitelist(interaction.guild.id) :
