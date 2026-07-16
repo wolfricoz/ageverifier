@@ -2,17 +2,15 @@ import os
 from datetime import datetime
 from typing import List, Optional
 
-import pymysql
 from dotenv import load_dotenv
-from sqlalchemy import Enum, Integer, create_engine, DateTime, ForeignKey, String, BigInteger, Boolean
+from sqlalchemy import BigInteger, Boolean, DateTime, Enum, ForeignKey, Integer, String, create_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, sessionmaker
 from sqlalchemy.pool import NullPool
 from sqlalchemy.sql import func
-from sqlalchemy_utils import database_exists, create_database
+from sqlalchemy_utils import create_database, database_exists
 
 from databases.enums.joinhistorystatus import JoinHistoryStatus
 
-pymysql.install_as_MySQLdb()
 load_dotenv('.env')
 DB = os.getenv('DB')
 DEBUG = os.getenv('TEST')
@@ -24,7 +22,7 @@ engine = create_engine(db_string, poolclass=NullPool, echo=False, isolation_leve
 if not database_exists(engine.url) :
 	create_database(engine.url)
 
-conn = engine.connect()
+
 
 
 class Base(DeclarativeBase) :
@@ -79,6 +77,7 @@ class Servers(Base) :
 	owner: Mapped[Optional[str]] = mapped_column(String(2048))
 	member_count: Mapped[int] = mapped_column(BigInteger, default=0)
 	invite: Mapped[str] = mapped_column(String(256, ), default="")
+	invite_date: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 	created: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 	updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(),
 	                                             server_onupdate=func.now())
@@ -126,7 +125,7 @@ class Timers(Base) :
 	role: Mapped[Optional[int]] = mapped_column(BigInteger)
 	reason: Mapped[Optional[str]] = mapped_column(String(1024))  # Reason for timer
 	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-	removal: Mapped[int]  # In hours
+	removal: Mapped[int]  = mapped_column(Integer) # In hours
 
 
 class AgeRole(Base) :
@@ -174,7 +173,7 @@ class WebsiteData(Base) :
 	last_updated: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), server_onupdate=func.now())
 
 
-class database :
+class Database :
 	@staticmethod
 	def create() :
 		Base.metadata.create_all(engine)
