@@ -7,7 +7,6 @@ from datetime import datetime
 import discord
 from discord import app_commands
 from discord.ext import commands, tasks
-from discord_py_utilities.invites import check_guild_invites
 from discord_py_utilities.messages import send_message, send_response
 
 from classes.AgeCalculations import AgeCalculations
@@ -186,24 +185,22 @@ class Tasks(commands.Cog) :
 				guild_ids.remove(guild.id)
 			try :
 
+				# this needs to be moved to another function.
+				#invite_link = await check_guild_invites(self.bot, guild),
 
-				invite_link = await check_guild_invites(self.bot, guild),
-
-				await asyncio.to_thread(ServerTransactions().add, guild.id,
+				ServerTransactions().add( guild.id,
 				                         active=True,
 				                         name=guild.name,
 				                         owner=guild.owner,
 				                         member_count=guild.member_count,
-				                         invite=invite_link
 				                         )
 				count += 1
 			except AttributeError :
-				await asyncio.to_thread(ServerTransactions().add,guild.id,
+				ServerTransactions().add(guild.id,
 				                         active=True,
 				                         name=guild.name,
 				                         owner=guild.owner,
 				                         member_count=guild.member_count,
-				                         invite="No Permission",
 				                         )
 				count += 1
 
@@ -221,20 +218,18 @@ class Tasks(commands.Cog) :
 				ServerTransactions().delete(gid)
 				continue
 			try:
-				await asyncio.to_thread(ServerTransactions().add, gid,
+				ServerTransactions().add( gid,
 				                         active=False,
 				                         name=guild.name,
 				                         owner=guild.owner,
 				                         member_count=guild.member_count,
-				                         invite=await check_guild_invites(self.bot, guild),
 				                         )
 			except AttributeError:
-				await asyncio.to_thread(ServerTransactions().add, gid,
+				ServerTransactions().add( gid,
 				                         active=False,
 				                         name=guild.name,
 				                         owner=guild.owner,
 				                         member_count=guild.member_count,
-				                         invite="No Permission",
 				                         )
 
 		guilds = ServerTransactions().get_all(id_only=False)

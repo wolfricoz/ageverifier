@@ -3,7 +3,9 @@ python-dateutil>=2.9.0.post0
 Levenshtein>=0.25.1
 SQLAlchemy>=2.0.40
 python-dotenv>=1.0.1
+# TODO: [BUG] asyncio is part of the standard library. This obsolete 3.x PyPI backport can shadow/break the stdlib module on modern Python. Remove this line.
 asyncio>=3.4.3
+# TODO: [QUALITY] Both PyMySQL (here) and psycopg2-binary (below) are declared. Only one DB backend is actually used — drop the unused driver once the MySQL/PostgreSQL dialect question (see databases/current.py) is settled.
 PyMySQL>=1.1.1
 discord.py==2.6.4.0
 cryptography>=46.0.5
@@ -12,7 +14,7 @@ zipp>=3.19.1 # not directly required, pinned by Snyk to avoid a vulnerability
 fastapi~=0.135.3
 uvicorn
 sentry-sdk[fastapi]~=2.33.2
-discord-py-utilities>=0.1.0.1
+discord-py-utilities>=0.1.0.2
 pydantic~=2.11.7
 requests~=2.32.4
 alembic~=1.16.4
