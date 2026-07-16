@@ -42,7 +42,7 @@ if os.getenv("KEY") is None :
 
 
 # Creating database
-db.database.create()
+db.Database.create()
 # Declares the bots intent
 
 # Load the data from env
