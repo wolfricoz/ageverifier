@@ -171,9 +171,14 @@ class Tasks(commands.Cog) :
 				logging.warning(f"Could not refresh invites for {guild.name}: {e}")
 				continue
 
-	@tasks.loop(minutes=30)
+	@tasks.loop(hours=1)
 	async def check_active_servers(self) :
 		guild_ids = await asyncio.to_thread(ServerTransactions().get_all)
+
+		# Improve the first time load by loading all guilds.
+		if self.check_active_servers.current_loop == 0:
+			ConfigData().load_all_guilds()
+
 		count = 0
 		for guild in self.bot.guilds :
 			await asyncio.sleep(0)
