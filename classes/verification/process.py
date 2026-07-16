@@ -40,7 +40,7 @@ class VerificationProcess :
 		self.id_check_info = None
 		self.error = None
 		self.dob = None
-		self.years = None,
+		self.years = None
 		self.reverify = reverify
 
 	async def verify(self) :
@@ -80,7 +80,7 @@ class VerificationProcess :
 				return self.discrepancy
 			# === Validation finished, we now start processing the member ===
 			automatic_status = ConfigData().get_key_or_none(self.guild.id, "automatic_verification")
-			if automatic_status and automatic_status == "enabled".upper() or self.reverify :
+			if automatic_status and (automatic_status == "ENABLED" or self.reverify) :
 				await LobbyProcess.approve_user(self.guild, self.member, dob, self.age, "automatic_verification",
 				                                reverify=self.reverify)
 				return "Thank you for submitting your age and date of birth! You’ve been automatically verified and granted access."
@@ -103,8 +103,8 @@ class VerificationProcess :
 			self.error = "Ageverifier could not validate your date of birth, please make sure it is in the format: mm/dd/yyyy"
 		except Exception as e :
 
-			self.error = e
-			logging.warning(e)
+			self.error = "Ageverified failed to validate your date of birth due to an unknown error. Please reach out to the devs."
+			logging.warning(e, exc_info=True)
 
 
 	async def load_data(self) :
@@ -164,8 +164,9 @@ class VerificationProcess :
 
 	def check_id_record(self) :
 		"""Checks if the member is on the id list."""
+
 		if id_check_info := AgeCalculations.id_check_or_id_verified(self.member) :
 			self.discrepancy = "id_check"
 			self.id_check_info = id_check_info
-
+		return True
 
