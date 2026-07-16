@@ -35,6 +35,8 @@ async def fetch_age(request: Request, user_id: int) :
 	if userinfo is None :
 		return {"message" : "No data found for this user"}
 
+	# FUTURE: [SECURITY] This endpoint returns the fully decrypted date of birth of (potentially minor) users over the API. Even behind auth, exposing plaintext DOB is a significant privacy/GDPR concern — confirm this is required, restrict it, and audit-log access.
+	# This is only used by the dashboard currently to review date of birth, because of that we'll be changing this in the future.
 	return {
 		"message"       : "Reminder: this information is only for verification purposes. Do not share this information with anyone.",
 		"user_id"       : userinfo.uid,
@@ -50,6 +52,12 @@ async def verify_age(request: Request, guild_id: int, user_id: int, verification
 		raise HTTPException(status_code=403)
 	guild = None
 	# === Preparing the data ===
+
+
+	if verification.dob.count("/") <2 :
+		return {"success": False, "message" : "Invalid date format"}
+
+
 	dob = verification.dob.split('/')  # this should always be mm/dd/yyyy
 	age = verification.age
 	bot: commands.Bot = request.app.state.bot
@@ -82,7 +90,7 @@ async def verify_age(request: Request, guild_id: int, user_id: int, verification
 		if vp.error is not None :
 			try :
 				await send_message(user, f"Verification failed: {vp.error}")
-			except discord.Forbidden or discord.NotFound :
+			except (discord.Forbidden or discord.NotFound):
 				logging.warning(f"Unable to send message to {user.name}")
 
 			return {"success" : False, "message" : vp.discrepancy}
