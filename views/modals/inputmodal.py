@@ -9,7 +9,7 @@ class InputModal(discord.ui.Modal):
     custom_id = "InputModal"
 
     def __init__(self, confirmation, title):
-        super().__init__(timeout=None, title=title)  # Set a timeout for the modal
+        super().__init__(timeout=600, title=title)  # Set a timeout for the modal
         self.confirmation = confirmation
     reason = discord.ui.TextInput(label='What is the reason?', style=discord.TextStyle.long, placeholder='Type your reason here...', max_length=500)
 
@@ -43,4 +43,4 @@ async def send_modal(interaction: discord.Interaction, confirmation, title = 'In
         await interaction.followup.send(view=view)
 
     await view.wait()
-    return view.reason
+    return view.reason.value
