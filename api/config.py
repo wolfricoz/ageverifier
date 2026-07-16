@@ -23,13 +23,12 @@ logger = logging.getLogger(__name__)
 
 
 @router.post("/config/refresh/{guildid}")
-async def refresh_config(request: Request, guildid: Optional[int]= None) :
+async def refresh_config(request: Request, guildid: Optional[int]) :
 	if not await Auth(request).verify() :
 		# the error is usually raised in the verify function, but this is just a final catch.
 		raise HTTPException(status_code=403)
 
-	logging.info("Website Request: Reload Config")
-	print("Website Request: Reload Config")
+	logger.info("Website Request: Reload Config")
 	if guildid is None :
 		logging.info("[Config API] guildid not provided")
 		return {"error" : "Guild ID is required"}
