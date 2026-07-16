@@ -86,7 +86,7 @@ class HelpLayout(discord.ui.LayoutView) :
 		self.links.add_item(discord.ui.Button(label="Documentation", style=discord.ButtonStyle.link,
 		                                      url="https://wolfricoz.github.io/ageverifier/"))
 		support_server = ServerTransactions().get(int(os.getenv("SUPPORTGUILD")))
-		if support_server is not None :
+		if support_server is not None and len(support_server.invite) > 3 :
 			self.links.add_item(
 				discord.ui.Button(label="Support Server", style=discord.ButtonStyle.link, url=support_server.invite))
 
