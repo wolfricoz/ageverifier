@@ -2,15 +2,15 @@ import logging
 
 import pymysql.err
 from sqlalchemy import text
-from sqlalchemy.exc import PendingRollbackError, InvalidRequestError, SQLAlchemyError
+from sqlalchemy.exc import InvalidRequestError, PendingRollbackError, SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
 
-from databases.exceptions.CommitError import CommitError
-from classes.singleton import singleton
+from classes.singleton import Singleton
 from databases.current import engine
+from databases.exceptions.CommitError import CommitError
 
 
-class DatabaseTransactions(metaclass=singleton) :
+class DatabaseTransactions(metaclass=Singleton) :
 	sessionmanager = sessionmaker(bind=engine)
 
 	def reload_guild(self, guild_id: int) :

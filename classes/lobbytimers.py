@@ -1,10 +1,10 @@
 import logging
 from datetime import datetime, timedelta
 
-from classes.singleton import singleton
+from classes.singleton import Singleton
 
 
-class LobbyTimers(metaclass=singleton):
+class LobbyTimers(metaclass=Singleton):
 
 	cooldowns = {
 

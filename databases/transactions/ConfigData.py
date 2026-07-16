@@ -7,14 +7,14 @@ import discord
 from discord import CategoryChannel, ForumChannel, StageChannel, TextChannel, Thread, VoiceChannel
 from discord_py_utilities.messages import send_message
 
-from classes.singleton import singleton
+from classes.singleton import Singleton
 from databases.exceptions.ConfigNotFound import ConfigNotFound
 from databases.exceptions.KeyNotFound import KeyNotFound
 from databases.transactions.AgeRoleTransactions import AgeRoleTransactions
 from databases.transactions.ConfigTransactions import ConfigTransactions
 
 
-class ConfigData(metaclass=singleton) :
+class ConfigData(metaclass=Singleton) :
 	"""
 	The goal of this class is to save the config to reduce database calls for the config; especially the roles.
 	"""
@@ -46,6 +46,7 @@ class ConfigData(metaclass=singleton) :
 		# Fetch the settings from the database
 		items = ConfigTransactions().server_config_all()
 		for item in items:
+
 			guild_id = item.guild
 
 			self.conf[guild_id] = {}
