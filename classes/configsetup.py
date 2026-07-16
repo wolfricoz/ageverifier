@@ -280,7 +280,7 @@ class ConfigSetup :
 		embed = await self.create_permission_channels_embed(channel.guild)
 		try :
 			await send_message(channel, "-# Make sure ageverifier has the right permissions to operate", embed=embed)
-		except discord.Forbidden or NoPermissionException :
+		except (discord.Forbidden or NoPermissionException) :
 			channel = find_first_accessible_text_channel(guild)
 			await send_message(channel, "-# Make sure ageverifier has the right permissions to operate", embed=embed)
 		embed = await self.create_permission_roles_embed(channel.guild)
