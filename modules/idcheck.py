@@ -117,6 +117,8 @@ class idcheck(commands.GroupCog, description="Commands for managing manual ID ve
 		if reason is None :
 			await send_response(interaction, f"Please include a reason")
 			return
+		reason = discord.utils.escape_mentions(reason)
+
 		idinfo = VerificationTransactions().add_idcheck(user.id, reason, True, server=interaction.guild.name)
 		if idinfo:
 			if await Confirm().send_confirm(interaction, f"{user.name} is on the ID list already with reason: `{idinfo.reason}`, do you want to update it?") is False:
