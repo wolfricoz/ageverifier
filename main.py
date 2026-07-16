@@ -3,6 +3,7 @@
 import asyncio
 import logging
 import os
+import sys
 from contextlib import asynccontextmanager
 
 import discord
@@ -36,6 +37,10 @@ from views.buttons.reverifybutton import ReVerifyButton
 from views.buttons.verifybutton import VerifyButton
 from views.v2.OnboardingLayout import OnboardingLayout
 
+if os.getenv("KEY") is None :
+	sys.exit("No encryption key found in .env")
+
+
 # Creating database
 db.database.create()
 # Declares the bots intent
@@ -57,7 +62,6 @@ if debug :
 	shard_count = 1
 bot = commands.AutoShardedBot(command_prefix=PREFIX, case_insensitive=False, intents=intents, activity=activity,
                               shard_count=shard_count)
-
 bot.DEV = int(os.getenv("DEV"))
 
 # Sentry Integration
@@ -65,7 +69,7 @@ sentry_sdk.init(
 	dsn=os.getenv("SENTRY_DSN"),
 	# Add data like request headers and IP for users,
 	# see https://docs.sentry.io/platforms/python/data-management/data-collected/ for more info
-	send_default_pii=True,
+	send_default_pii=False,
 )
 
 
@@ -74,8 +78,6 @@ sentry_sdk.init(
 async def lifespan(app: FastAPI) :
 	async def run_bot() :
 		try :
-
-			print(DISCORD_TOKEN)
 			await bot.start(DISCORD_TOKEN)
 		except asyncio.CancelledError :
 			# Graceful cancellation
@@ -116,10 +118,6 @@ for router in api.__all__ :
 		routers.append(router)
 	except Exception as e :
 		logging.error(f"Failed to load {router}: {e}")
-
-if os.getenv("KEY") is None :
-	quit("No encryption key found in .env")
-
 
 # Move to devtools?
 @bot.command()
@@ -199,7 +197,7 @@ async def on_guild_join(guild) :
 	devroom = bot.get_channel(bot.DEV)
 	await devroom.send(f"Ageverifier is now in {len(bot.guilds)}! It just joined:"
 	                   f"\nGuild: `{guild}({guild.id})`"
-	                   f"\nOwner: `{guild.owner}({guild.owner.id})`"
+	                   f"\nOwner: `{guild.owner}({guild.owner_id})`"
 	                   f"\nMember count: {guild.member_count}"
 	                   f"\n\nThank you for choosing Ageverifier to keep your server safe.")
 	if await blacklist_check(guild, devroom) :
@@ -272,6 +270,8 @@ async def setup_hook() :
 @bot.command(aliases=["cr", "reload"])
 @commands.has_permissions(administrator=True)
 async def cogreload(ctx) :
+	if ctx.author.id != bot.DEV :
+		return await ctx.send("You are not allowed to use this command.")
 	filesloaded = []
 	for filename in os.listdir("modules") :
 		if filename.endswith('.py') :
@@ -284,9 +284,12 @@ async def cogreload(ctx) :
 
 @bot.command()
 async def leave_server(ctx, guildid: int) :
-	if ctx.author.id != 188647277181665280 :
+
+	if ctx.author.id != bot.DEV :
 		return await ctx.send("You are not allowed to use this command.")
 	guild = bot.get_guild(guildid)
+	if not guild :
+		guild = bot.fetch_guild(guildid)
 	await guild.leave()
 	await ctx.send(f"Left {guild}")
 	return None
