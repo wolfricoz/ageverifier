@@ -3,10 +3,10 @@ from datetime import UTC, datetime, timedelta
 
 import discord
 from discord.ext.commands import Bot
+from discord_py_utilities.messages import send_message
 
 from classes.access import AccessControl
 from classes.banwatch import BanWatch
-from classes.retired.discord_tools import send_message
 from classes.support.queue import Queue
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.ServerTransactions import ServerTransactions

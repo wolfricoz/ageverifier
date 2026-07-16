@@ -1,9 +1,8 @@
 import logging
 
 import discord
-from discord_py_utilities.messages import send_response
+from discord_py_utilities.messages import send_message, send_response
 
-from classes.retired.discord_tools import send_message
 from databases.transactions.VerificationTransactions import VerificationTransactions
 from views.modals.inputmodal import send_modal
 

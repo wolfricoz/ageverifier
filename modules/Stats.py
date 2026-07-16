@@ -2,9 +2,9 @@ import discord
 import matplotlib
 from discord import app_commands
 from discord.ext import commands
+from discord_py_utilities.messages import send_message
 
 from classes.charts import AgeCharts, JoinHistoryCharts
-from classes.retired.discord_tools import send_message
 
 matplotlib.use('Agg')
 

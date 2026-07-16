@@ -6,7 +6,6 @@ from discord_py_utilities.messages import send_message
 from discord_py_utilities.permissions import find_first_accessible_text_channel
 
 import databases.exceptions.KeyNotFound
-from classes.retired.discord_tools import create_embed
 from databases.enums.joinhistorystatus import JoinHistoryStatus
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.HistoryTransactions import JoinHistoryTransactions
@@ -77,6 +76,14 @@ def find_invite_by_code(invite_list, code) :
 		if inv.code == code :
 			return inv
 	return None
+
+
+async def create_embed(title, fields) :
+	embed = discord.Embed(title=title)
+	for key, value in fields.items() :
+		embed.add_field(name=key, value=value, inline=False)
+	return embed
+
 
 async def invite_info(bot, member: discord.Member) :
 	infochannel = ConfigData().get_key_or_none(member.guild.id, 'invite_log')

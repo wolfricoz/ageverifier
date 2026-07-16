@@ -1,8 +1,8 @@
 import discord
 from discord import app_commands
 from discord.ext.commands import Bot, Cog
+from discord_py_utilities.messages import send_response
 
-from classes.retired.discord_tools import send_response
 from views.v2.HelpLayout import HelpLayout
 
 

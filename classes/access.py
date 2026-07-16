@@ -3,7 +3,6 @@ import os
 from datetime import UTC, datetime
 
 import discord
-from classes.retired.discord_tools import send_response
 from discord import app_commands
 
 from classes.jsonmaker import Configer

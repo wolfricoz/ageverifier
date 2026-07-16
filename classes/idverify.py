@@ -2,7 +2,7 @@ import logging
 import os
 
 import discord
-from classes.retired.discord_tools import send_message, send_response
+from discord_py_utilities.messages import send_message, send_response
 
 from classes.AgeCalculations import AgeCalculations
 from classes.lobbyprocess import LobbyProcess

@@ -10,12 +10,11 @@ import discord.utils
 from discord import Interaction, app_commands
 from discord.app_commands import AppCommandError, CheckFailure, command
 from discord.ext import commands
+from discord_py_utilities.messages import NoChannelException, send_message, send_response
 from discord_py_utilities.permissions import find_first_accessible_text_channel
 from dotenv import load_dotenv
 
-from classes.retired.discord_tools import NoMessagePermissionException
 from databases.exceptions.KeyNotFound import KeyNotFound
-from discord_py_utilities.messages import NoChannelException, send_message, send_response
 
 load_dotenv('main.env')
 channels72 = os.getenv('channels72')
@@ -169,8 +168,7 @@ class Logging(commands.Cog) :
 				await send_message(interaction.guild.owner, message, error_mode='ignore')
 				return
 			await send_response(interaction, message, ephemeral=True, error_mode='ignore')
-		except NoMessagePermissionException :
-			logging.warning(f"No message permission for {interaction.guild.name} {interaction.guild.id}")
+
 
 		except Exception as e :
 			logging.error(e)
@@ -189,9 +187,6 @@ class Logging(commands.Cog) :
 		channel = self.bot.get_channel(self.bot.DEV)
 		if isinstance(error, CheckFailure) :
 			return await self.on_fail_message(interaction, "You do not have permission.")
-		if isinstance(error.original, NoMessagePermissionException) :
-			return await self.on_fail_message(interaction,
-			                                  f"Missing permission to send message to {interaction.channel.mention} in {interaction.guild.name}. Check permissions: {error.original.message}")
 		if isinstance(error.original, discord.Forbidden) :
 			return await self.on_fail_message(interaction,
 			                                  f"The bot does not have sufficient permission to run this command. Please check: \n* if the bot has permission to post in the channel \n* if the bot is above the role its trying to assign\n* If trying to ban, ensure the bot has the ban permission",
