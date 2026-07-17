@@ -40,6 +40,7 @@ class ConfigData(metaclass=Singleton) :
 	# logging.debug(self.conf)
 
 	async def load_all_guilds(self) :
+		return
 		logging.info(f"Loading all guilds")
 		# Regardless if the guild exists, we add it to the config to avoid KeyErrors
 
