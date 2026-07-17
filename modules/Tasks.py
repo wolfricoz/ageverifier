@@ -42,22 +42,27 @@ class Tasks(commands.Cog) :
 		self.config_reload.start()
 		self.check_users_expiration.start()
 		self.check_active_servers.start()
+		self.sync_configs.start()
 		self.update_age_roles.start()
 		# self.database_ping.start()
 		self.refresh_invites.start()
 		self.clean_guilds.start()
 		self.anonymize_data.start()
+		self.update_invites.start()
+
 
 	def cog_unload(self) :
 		"""unloads tasks"""
 		self.config_reload.cancel()
 		self.check_users_expiration.cancel()
 		self.check_active_servers.cancel()
+		self.sync_configs.cancel()
 		self.update_age_roles.cancel()
 		# self.database_ping.cancel()
 		self.refresh_invites.cancel()
 		self.clean_guilds.cancel()
 		self.anonymize_data.cancel()
+		self.update_invites.cancel()
 
 	@tasks.loop(minutes=10)
 	async def config_reload(self) :
@@ -66,7 +71,6 @@ class Tasks(commands.Cog) :
 		ConfigData().output_to_json()
 		ConfigData().cleanup()
 		AccessControl().reload()
-		print("config reload")
 		for guild in self.bot.guilds :
 			try :
 				self.bot.invites[guild.id] = await guild.invites()
@@ -174,47 +178,58 @@ class Tasks(commands.Cog) :
 
 	@tasks.loop(hours=1)
 	async def check_active_servers(self) :
-		guild_ids = await asyncio.to_thread(ServerTransactions().get_all)
+		"""Keeps the servers table in sync with the guilds the bot is in.
+
+		Only lightweight server state is touched here (active / name / owner /
+		member_count). Config defaults are seeded once for brand-new guilds by
+		ServerTransactions.add(); backfilling newly-introduced config keys to
+		existing guilds is handled separately by the daily sync_configs task.
+		"""
+		db_ids = set(await asyncio.to_thread(ServerTransactions().get_all))
+		live_ids = {guild.id for guild in self.bot.guilds}
 
 		# Improve the first time load by loading all guilds.
 		if self.check_active_servers.current_loop == 0:
 			await ConfigData().load_all_guilds()
 
+		new_ids = live_ids - db_ids          # guilds we don't have a row for yet
+		removed_ids = db_ids - live_ids      # rows for guilds we're no longer in
+
 		count = 0
+		total = len(self.bot.guilds)
 		for guild in self.bot.guilds :
 			await asyncio.sleep(0)
 			if count % 10 == 0 :
-				logging.info(f"updating active servers: processed {count}/{len(self.bot.guilds)} guilds so far.")
+				logging.info(f"updating active servers: processed {count}/{total} guilds so far.")
+			count += 1
 
-			if guild.id in guild_ids :
-				guild_ids.remove(guild.id)
 			try :
-
-				# this needs to be moved to another function.
-				# invite_link = await check_guild_invites(self.bot, guild),
-
-				await asyncio.to_thread(ServerTransactions().add, guild.id,
-				                        active=True,
-				                        name=guild.name,
-				                        owner=guild.owner,
-				                        member_count=guild.member_count,
-				                        )
-				count += 1
-			except AttributeError :
-				await asyncio.to_thread(ServerTransactions().add, guild.id,
-				                        active=True,
-				                        name=guild.name,
-				                        owner=guild.owner,
-				                        member_count=guild.member_count,
-				                        )
-				count += 1
-
+				if guild.id in new_ids :
+					# Brand-new server: full add() also seeds its default config.
+					await asyncio.to_thread(ServerTransactions().add, guild.id,
+					                        active=True,
+					                        name=guild.name,
+					                        owner=guild.owner,
+					                        member_count=guild.member_count,
+					                        reload=False,
+					                        )
+				else :
+					# Existing server: lightweight state refresh only, no config churn.
+					await asyncio.to_thread(ServerTransactions().update, guild.id,
+					                        active=True,
+					                        name=guild.name,
+					                        owner=guild.owner.name if guild.owner else 'unknown',
+					                        member_count=guild.member_count,
+					                        owner_id=guild.owner_id if guild.owner_id else 0,
+					                        reload=False,
+					                        )
 			except Exception as e :
-				logging.exception(f"Error adding guild {guild.name} ({guild.id}) to the database: error: {e}", )
-				count += 1
+				logging.exception(f"Error syncing guild {guild.name} ({guild.id}) to the database: error: {e}")
 				continue
-		logging.info(f"pending removal: {guild_ids}")
-		for gid in guild_ids :
+
+		# Deactivate (or delete) servers the bot is no longer a member of.
+		logging.info(f"pending removal: {removed_ids}")
+		for gid in removed_ids :
 			try :
 				guild = self.bot.get_guild(gid)
 				if guild is None :
@@ -222,20 +237,14 @@ class Tasks(commands.Cog) :
 			except discord.errors.NotFound :
 				await asyncio.to_thread(ServerTransactions().delete, gid)
 				continue
-			try :
-				await asyncio.to_thread(ServerTransactions().add, gid,
-				                        active=False,
-				                        name=guild.name,
-				                        owner=guild.owner,
-				                        member_count=guild.member_count,
-				                        )
-			except AttributeError :
-				await asyncio.to_thread(ServerTransactions().add, gid,
-				                        active=False,
-				                        name=guild.name,
-				                        owner=guild.owner,
-				                        member_count=guild.member_count,
-				                        )
+			await asyncio.to_thread(ServerTransactions().update, gid,
+			                        active=False,
+			                        name=guild.name,
+			                        owner=guild.owner.name if guild.owner else None,
+			                        member_count=guild.member_count,
+			                        owner_id=guild.owner.id if guild.owner else None,
+			                        reload=False,
+			                        )
 
 		guilds = await asyncio.to_thread(ServerTransactions().get_all, id_only=False)
 
@@ -243,6 +252,20 @@ class Tasks(commands.Cog) :
 		await asyncio.sleep(0)
 
 		AccessControl().reload()
+
+	@tasks.loop(hours=24)
+	async def sync_configs(self) :
+		"""Backfills any newly-introduced default config keys to all existing guilds.
+
+		This is the migration that add()'s per-guild seeding loop used to perform on
+		every hourly run. It only inserts keys that are missing, so most runs are a
+		no-op (one SELECT, nothing to insert). Runs on startup too (current_loop 0).
+		"""
+		logging.info("Syncing config defaults across all guilds.")
+		inserted = await asyncio.to_thread(ServerTransactions().backfill_config)
+		if inserted :
+			await ConfigData().load_all_guilds()
+		logging.info(f"Config sync complete. Inserted {inserted} missing config rows.")
 
 	@tasks.loop(hours=24 * 3)
 	async def update_age_roles(self) :
@@ -302,9 +325,9 @@ class Tasks(commands.Cog) :
 
 	@tasks.loop(hours=12)
 	async def update_invites(self) :
-		# if self.update_invites.current_loop == 0 :
-		# 	logging.info("Skipping invite update on startup.")
-		# 	return
+		if self.update_invites.current_loop == 0 :
+			logging.info("Skipping invite update on startup.")
+			return
 		servers = ServerTransactions().get_invalid_invites()
 		if not servers :
 			logging.info("No invites to updates.")
@@ -353,6 +376,10 @@ class Tasks(commands.Cog) :
 
 	@check_active_servers.before_loop
 	async def before_serverhcheck(self) :
+		await self.bot.wait_until_ready()
+
+	@sync_configs.before_loop
+	async def before_sync_configs(self) :
 		await self.bot.wait_until_ready()
 
 	# @database_ping.before_loop

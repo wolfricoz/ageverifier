@@ -4,7 +4,7 @@ import logging
 import discord
 from sqlalchemy import Select, or_
 
-from databases.current import Servers
+from databases.current import Config, Servers
 from databases.transactions.ConfigTransactions import ConfigTransactions
 from databases.transactions.DatabaseTransactions import DatabaseTransactions
 from databases.transactions.UserTransactions import UserTransactions
@@ -46,14 +46,17 @@ class ServerTransactions(DatabaseTransactions) :
 				self.commit(session)
 				guild = g
 
-			# Apply configurations to new servers
-
-			for toggle in available_toggles + list(lobby_approval_toggles.keys()) :
-				if toggle.upper() in enabled_toggles :
-					ConfigTransactions().toggle_add(guildid, toggle, "ENABLED")
-				ConfigTransactions().toggle_add(guildid, toggle)
-			ConfigTransactions().config_unique_add(guildid, "COOLDOWN", 5)
-			ConfigTransactions().config_unique_add(guildid, VERIFICATION_KEY, VerificationMethods.BASIC)
+				# Apply default configuration — ONLY for brand-new servers.
+				# Backfilling newly-introduced config keys to already-existing guilds
+				# is handled in bulk by backfill_config() (run from the daily
+				# sync_configs task), so this no longer runs for every guild on every
+				# hourly sync.
+				for toggle in available_toggles + list(lobby_approval_toggles.keys()) :
+					if toggle.upper() in enabled_toggles :
+						ConfigTransactions().toggle_add(guildid, toggle, "ENABLED")
+					ConfigTransactions().toggle_add(guildid, toggle)
+				ConfigTransactions().config_unique_add(guildid, "COOLDOWN", 5)
+				ConfigTransactions().config_unique_add(guildid, VERIFICATION_KEY, VerificationMethods.BASIC)
 
 		if reload :
 			from databases.transactions.ConfigData import ConfigData
@@ -66,6 +69,51 @@ class ServerTransactions(DatabaseTransactions) :
 			if not id_only :
 				return session.query(Servers).all()
 			return [sid[0] for sid in session.query(Servers.guild).all()]
+
+	def backfill_config(self) :
+		"""Ensures every guild has every currently-defined default config key.
+
+		This does the same "insert missing keys only" work that add()'s per-guild
+		seeding loop used to do on every sync, but in bulk: one SELECT of all
+		existing (guild, key) pairs plus a single bulk INSERT of whatever is
+		missing — instead of one existence check per (guild, key). Existing values
+		are never overwritten, so a guild that changed a toggle keeps its choice.
+
+		Returns the number of config rows inserted.
+		"""
+		# Same desired set that add() seeds for a new server.
+		desired_toggles = list(available_toggles) + list(lobby_approval_toggles.keys())
+		unique_defaults = [("COOLDOWN", "5"), (VERIFICATION_KEY, str(VerificationMethods.BASIC))]
+
+		with self.createsession() as session :
+			# Every (guild, key) that already exists — one query for the whole table.
+			existing = {
+				(guild, key) for guild, key in session.execute(Select(Config.guild, Config.key)).all()
+			}
+			guild_ids = [gid for (gid,) in session.execute(Select(Servers.guild)).all()]
+
+			rows = []
+			for gid in guild_ids :
+				for toggle in desired_toggles :
+					key = toggle.upper()
+					if (gid, key) not in existing :
+						rows.append({
+							"guild" : gid,
+							"key"   : key,
+							"value" : "ENABLED" if toggle.upper() in enabled_toggles else "DISABLED",
+						})
+				for key, value in unique_defaults :
+					if (gid, key.upper()) not in existing :
+						rows.append({"guild" : gid, "key" : key.upper(), "value" : value})
+
+			if not rows :
+				logging.info("Config backfill: all guilds already up to date, nothing to insert.")
+				return 0
+
+			session.bulk_insert_mappings(Config, rows)
+			self.commit(session)
+			logging.info(f"Config backfill: inserted {len(rows)} missing config rows across {len(guild_ids)} guilds.")
+			return len(rows)
 
 	def get(self, guild_id: int, session=None) -> "Servers" :
 		if session :
