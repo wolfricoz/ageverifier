@@ -178,7 +178,7 @@ class Tasks(commands.Cog) :
 
 		# Improve the first time load by loading all guilds.
 		if self.check_active_servers.current_loop == 0:
-			ConfigData().load_all_guilds()
+			await ConfigData().load_all_guilds()
 
 		count = 0
 		for guild in self.bot.guilds :

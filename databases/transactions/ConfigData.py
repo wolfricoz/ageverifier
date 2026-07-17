@@ -58,11 +58,10 @@ class ConfigData(metaclass=Singleton) :
 			for key in add_list :
 				self.conf[guild_id][key] = []
 
-			role = AgeRoleTransactions().get_all(guild_id)
+
 
 			for key in add_dict :
 				self.conf[guild_id][key] = {}
-
 
 			conf_key = item.key.upper()
 
@@ -77,11 +76,15 @@ class ConfigData(metaclass=Singleton) :
 
 			self.conf[guild_id][conf_key] = item.value
 
-			for x in role :
-				self.conf[guild_id]["VERIFICATION_ADD_ROLE"][x.role_id] = {
-					"MAX" : x.maximum_age,
-					"MIN" : x.minimum_age,
-				}
+		# Moved to it doesn't run during every config item
+		ageroles = AgeRoleTransactions().get_all()
+		for x in ageroles :
+			self.conf[x.guild_id]["VERIFICATION_ADD_ROLE"][x.role_id] = {
+				"MAX" : x.maximum_age,
+				"MIN" : x.minimum_age,
+			}
+
+
 		self.output_to_json()
 
 
@@ -112,7 +115,7 @@ class ConfigData(metaclass=Singleton) :
 
 		for key in add_list :
 			self.conf[guild_id][key] = []
-		role = AgeRoleTransactions().get_all(guild_id)
+		role = AgeRoleTransactions().get_all_guild(guild_id)
 		for key in add_dict :
 			self.conf[guild_id][key] = {}
 

@@ -39,7 +39,7 @@ class TestAgeRoleTransactions(unittest.TestCase):
         controller = AgeRoleTransactions()
         controller.add(self.guild, self.role_id, "ADULT")
         controller.add(self.guild, self.role_id + 1, "TEEN")
-        roles = controller.get_all(self.guild)
+        roles = controller.get_all_guild(self.guild)
         self.assertEqual(len(roles), 2)
 
     def test_get_minimum_age(self):

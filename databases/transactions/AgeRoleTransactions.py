@@ -3,8 +3,8 @@ import logging
 from sqlalchemy import Select, func
 
 from databases import current as db
-from databases.transactions.DatabaseTransactions import DatabaseTransactions
 from databases.current import AgeRole
+from databases.transactions.DatabaseTransactions import DatabaseTransactions
 
 
 class AgeRoleTransactions(DatabaseTransactions) :
@@ -17,9 +17,15 @@ class AgeRoleTransactions(DatabaseTransactions) :
 		with self.createsession() as session :
 			return session.scalar(Select(AgeRole).where(AgeRole.guild_id == guild_id, AgeRole.role_id == role_id))
 
-	def get_all(self, guild_id) :
+	def get_all_guild(self, guild_id) :
 		with self.createsession() as session :
 			return session.scalars(Select(AgeRole).where(AgeRole.guild_id == guild_id)).all()
+
+	def get_all(self) :
+		with self.createsession() as session :
+			return session.scalars(Select(AgeRole)).all()
+
+
 
 	def get_minimum_age(self, guild_id) :
 		with self.createsession() as session :

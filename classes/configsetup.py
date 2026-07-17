@@ -323,7 +323,7 @@ class ConfigSetup :
 		                inline=False)
 		for key in self.rolechoices.keys() :
 			await self.process_roles(ement, guild, key, top_role)
-		ageroles = AgeRoleTransactions().get_all(guild.id)
+		ageroles = AgeRoleTransactions().get_all_guild(guild.id)
 		for age_role in ageroles :
 			await self.process_roles(ement, guild, str(age_role.role_id), top_role, type="age role", value=age_role.role_id)
 		return ement
