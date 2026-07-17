@@ -35,7 +35,7 @@ def check_whitelist(server_id) :
 	if isinstance(server_id, str):
 		server_id = int(server_id)
 
-	if os.path.exists(whitelist_path) :
+	if not os.path.exists(whitelist_path) :
 		with open(whitelist_path, 'w') as f :
 			f.write(json.dumps({"whitelist" : []}))
 

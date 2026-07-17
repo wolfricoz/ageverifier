@@ -13,6 +13,7 @@ from discord_py_utilities.messages import send_message, send_response
 from classes.AgeCalculations import AgeCalculations
 from classes.access import AccessControl
 from classes.ageroles import change_age_roles
+from classes.blacklist import blacklist_check
 from classes.dashboard.Servers import Servers
 from classes.encryption import Encryption
 from classes.lobby.Clean import clean_lobby
@@ -197,7 +198,10 @@ class Tasks(commands.Cog) :
 
 		count = 0
 		total = len(self.bot.guilds)
+
+		devroom = self.bot.get_channel(self.bot.DEV)
 		for guild in self.bot.guilds :
+			await blacklist_check(guild, devroom)
 			await asyncio.sleep(0)
 			if count % 10 == 0 :
 				logging.info(f"updating active servers: processed {count}/{total} guilds so far.")

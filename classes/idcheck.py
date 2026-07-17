@@ -17,6 +17,75 @@ from databases.transactions.VerificationTransactions import VerificationTransact
 from resources.data.IDVerificationMessage import create_message
 from views.buttons.idsubmitbutton import IdSubmitButton
 
+DEFAULT_USER_MESSAGE = "There was an issue with the age and date of birth you provided. Please try again."
+FALLBACK_DISCREPANCY_USER_MESSAGE = ("Thank you for submitting your age and date of birth, a staff member will "
+                                     "contact you soon because of a discrepancy.")
+DEFAULT_CHANNEL_MESSAGE = "No message set for this ID check."
+
+
+def build_id_check_messages(mention, *, age=None, dob=None, years=None, date_of_birth=None,
+                            server=None, id_check_reason=None) -> dict :
+	"""Return the discrepancy -> {user-message, channel-message} mapping.
+
+	Shared by IdCheck.send_check (interaction flow) and IdCheck.send_check_api (bot
+	flow). The only thing that differs between the two callers is the member
+	`mention`, so it is passed in rather than read off an interaction/user here.
+	"""
+	return {
+		"underage"          : {
+			"user-message"    : "Unfortunately, you are too young to join our server. If you are 17, you may wait in the lobby until you are old enough to join.",
+			"channel-message" : f"[ID CHECK: underage] User {mention}'s gave an age below 18 and was added to the ID list in {server}",
+		},
+		"mismatch"          : {
+			"user-message"    : "It seems that the age you've given does not match the date of birth you've provided. Please try again. As a reminder, you must use your CURRENT age.",
+			"channel-message" : f"[INFO: Age Mismatch] [Info] User {mention}'s age does not match. User gave {age} but dob indicates {years}. User may retry.",
+		},
+		"age_too_high"      : {
+			"user-message"    : (
+				"The age you've entered seems unusually high. "
+				"Please double-check your input and make sure you've entered your **current** age accurately."
+			),
+			"channel-message" : (
+				f"[INFO: Age Too High] [Info] User {mention} entered an abnormally high age ({age}). "
+				f"Date of birth indicates {years}. User may retry with correct information."
+			),
+		},
+		"below_minimum_age" : {
+			"user-message"    : (
+				"You appear to be below the minimum age required to join this server. "
+				"Unfortunately, you cannot proceed with verification at this time."
+			),
+			"channel-message" : (
+				f"[INFO: Below Minimum Age] [Info] User {mention} appears to be below the server’s minimum age requirement. "
+				f"User entered {age}, with date of birth indicating {years}. Verification process stopped."
+			),
+		},
+		"no_match"          : {
+			"user-message"    : "It seems that the age you've given does not match the date of birth you've provided. A staff member will reach out to you shortly.",
+			"channel-message" : f"[ID CHECK: Age Mismatch] User {mention}'s age does not match, please reach out to the user. User gave {age} but dob indicates {years} in {server}",
+		},
+		"dob_mismatch"      : {
+			"user-message"    : "It seems that the date of birth you've provided does not match a previously given date of birth. A staff member will reach out to you shortly.",
+			"channel-message" : f"[ID CHECK: Age Mismatch] User {mention}'s date of birth does not match. Given: {dob} (mm/dd/yyyy) Recorded: {date_of_birth} (mm/dd/yyyy) in {server}",
+		},
+		"id_check"          : {
+			"channel-message" : f"{mention} is on the ID list added by {server} with the reason:\n{id_check_reason}",
+		},
+	}
+
+
+def get_id_check_message(key, mention, **kwargs) -> dict :
+	"""Safely fetch a single discrepancy entry, always returning a dict.
+
+	Unknown keys fall back to a generic entry (with no channel-message) so callers
+	can always call .get('user-message') / .get('channel-message') without risking
+	an AttributeError on a raw string (the old `messages.get(key, key)` idiom).
+	"""
+	return build_id_check_messages(mention, **kwargs).get(key) or {
+		"user-message"    : DEFAULT_USER_MESSAGE,
+		"channel-message" : None,
+	}
+
 
 class IdCheck(ABC) :
 
@@ -27,60 +96,19 @@ class IdCheck(ABC) :
 	async def send_check(interaction: discord.Interaction, channel, message, age, dob, date_of_birth=None, years=None,
 	                     id_check=False, verify_button=True, id_check_reason=None, server=None) :
 		logging.debug(f"Sending ID check message for {interaction.user.id}")
-		messages = {
-			"underage"          : {
-				"user-message"    : f"Unfortunately, you are too young to join our server. If you are 17, you may wait in the lobby until you are old enough to join.",
-				"channel-message" : f"[ID CHECK: underage] User {interaction.user.mention}\'s gave an age below 18 and was added to the ID list in {server}",
-			},
-			"mismatch"          : {
-				"user-message"    : f"It seems that the age you've given does not match the date of birth you've provided. Please try again. As a reminder, you must use your CURRENT age.",
-				"channel-message" : f"[INFO: Age Mismatch] [Info] User {interaction.user.mention}\'s age does not match. User gave {age} but dob indicates {years}. User may retry."
-			},
-			"age_too_high"      : {
-				"user-message"    : (
-					"The age you've entered seems unusually high. "
-					"Please double-check your input and make sure you've entered your **current** age accurately."
-				),
-				"channel-message" : (
-					f"[INFO: Age Too High] [Info] User {interaction.user.mention} entered an abnormally high age ({age}). "
-					f"Date of birth indicates {years}. User may retry with correct information."
-				)
-			},
-			"below_minimum_age" : {
-				"user-message"    : (
-					"You appear to be below the minimum age required to join this server. "
-					"Unfortunately, you cannot proceed with verification at this time."
-				),
-				"channel-message" : (
-					f"[INFO: Below Minimum Age] [Info] User {interaction.user.mention} appears to be below the server’s minimum age requirement. "
-					f"User entered {age}, with date of birth indicating {years}. Verification process stopped."
-				)
-			},
-
-			"no_match"          : {
-				"user-message"    : f"It seems that the age you've given does not match the date of birth you've provided. A staff member will reach out to you shortly.",
-				"channel-message" : f"[ID CHECK: Age Mismatch] User {interaction.user.mention}\'s age does not match, please reach out to the user. User gave {age} but dob indicates {years} in {server}"
-			},
-			"dob_mismatch"      : {
-				"user-message"    : f"It seems that the date of birth you've provided does not match a previously given date of birth. A staff member will reach out to you shortly.",
-				"channel-message" : f"[ID CHECK: Age Mismatch] User {interaction.user.mention}\'s date of birth does not match. Given: {dob} (mm/dd/yyyy) Recorded: {date_of_birth} (mm/dd/yyyy) in {server}"
-			},
-			"id_check"          : {
-				"channel-message" : f"{interaction.user.mention} is on the ID list added by {server} with the reason:\n{id_check_reason}"
-			}
-		}
-		view = None
 		m_key = message
-		message = messages.get(message, message)
+		entry = get_id_check_message(m_key, interaction.user.mention, age=age, dob=dob, years=years,
+		                             date_of_birth=date_of_birth, server=server, id_check_reason=id_check_reason)
+		channel_message = entry.get("channel-message")
+		user_message = entry.get("user-message") or FALLBACK_DISCREPANCY_USER_MESSAGE
+		display_channel_message = channel_message or DEFAULT_CHANNEL_MESSAGE
+		view = None
 		if m_key in ['underage', 'mismatch', 'age_too_high', 'below_minimum_age'] :
-			await send_response(interaction,
-			                    message.get("user-message",
-			                                "There was an issue with the age and date of birth you provided. Please try again."),
-			                    ephemeral=True)
+			await send_response(interaction, user_message, ephemeral=True)
 			lobbymod = interaction.guild.get_channel(
 				ConfigData().get_key_int_or_zero(interaction.guild.id, "approval_channel"))
-			await lobbymod.send(f"Lobby Debug] Age: {age} dob {dob} userid: {interaction.user.mention}\n" + message.get('channel-message', "Message not found."))
-			await IdCheck.auto_kick(interaction.user, m_key, interaction.guild, channel, message.get('channel-message', "Message not found."))
+			await lobbymod.send(f"Lobby Debug] Age: {age} dob {dob} userid: {interaction.user.mention}\n" + display_channel_message)
+			await IdCheck.auto_kick(interaction.user, m_key, interaction.guild, channel, display_channel_message)
 
 			return
 		if verify_button :
@@ -88,7 +116,7 @@ class IdCheck(ABC) :
 			view = IdVerifyButton()
 		# create the embed
 		embed = discord.Embed(title="ID Check Required",
-		                      description=message.get('channel-message', 'No message set for this ID check.'))
+		                      description=display_channel_message)
 		embed.add_field(name="Staff Notice",
 		                value="Please contact the user to complete their ID check. They must submit a valid ID. Do not share or store the ID outside of authorized verification staff. Any abuse results in immediate blacklisting. If the issue may be a typo, you may allow a retry by removing them from the ID check list.", )
 		embed.set_footer(text=f"{interaction.user.id}")
@@ -100,82 +128,40 @@ class IdCheck(ABC) :
 			                   f"{f'{interaction.guild.owner.mention}' if ConfigData().get_key(interaction.guild.id, "ping_owner_on_failure") == 'ENABLED' else ''} -# Lobby Debug] Age: {age} dob {dob} userid: {interaction.user.mention}",
 			                   embed=embed,
 			                   view=view)
-			await send_response(interaction, interaction.user.mention + " " + message.get("user-message",
-			                                                                              "Thank you for submitting your age and date of birth, a staff member will contact you soon because of a discrepancy.")
-			                    ,
-			                    ephemeral=True)
+			await send_response(interaction, interaction.user.mention + " " + user_message, ephemeral=True)
 		except discord.Forbidden :
 			try:
 				await send_response(interaction,
 				                    f"I don't have permission to send messages in {channel.mention}. Please contact a server administrator to resolve this issue.",
 				                    ephemeral=True)
 
-			except (discord.Forbidden or NoPermissionException):
+			except (discord.Forbidden, NoPermissionException):
 				channel = find_first_accessible_text_channel(interaction.guild)
 				await send_message(channel, f"{f'{interaction.guild.owner.mention}' if ConfigData().get_key(interaction.guild.id, "ping_owner_on_failure") == 'ENABLED' else ''} I don't have permission to send messages in {channel.mention}. Please contact a server administrator to resolve this issue.")
 
-		if id_check and message.get("channel-message", None) :
+		if id_check and channel_message :
 			JoinHistoryTransactions().update(interaction.user.id, interaction.guild.id, JoinHistoryStatus.IDCHECK)
-			await IdCheck.add_check(interaction.user, interaction.guild,
-			                        message.get("channel-message", f"No message set for {message}"))
+			await IdCheck.add_check(interaction.user, interaction.guild, channel_message)
 
 	@staticmethod
 	@abstractmethod
 	async def send_check_api(bot, user, guild, channel, message, age, dob, date_of_birth=None, years=None,
 	                         id_check=False, verify_button=True, id_check_reason=None, server=None) :
-		messages: dict = {
-			"underage"          : {
-				"user-message"    : f"Unfortunately, you are too young to join our server. If you are 17, you may wait in the lobby until you are old enough to join.",
-				"channel-message" : f"[ID CHECK: underage] User {user.mention}\'s gave an age below 18 and was added to the ID list in {server}",
-			},
-			"mismatch"          : {
-				"user-message"    : f"It seems that the age you've given does not match the date of birth you've provided. Please try again. As a reminder, you must use your CURRENT age.",
-				"channel-message" : f"[INFO: Age Mismatch] [Info] User {user.mention}\'s age does not match. User gave {age} (mm/dd/yyyy) but dob indicates {years}. User may retry."
-			},
-			"age_too_high"      : {
-				"user-message"    : (
-					"The age you've entered seems unusually high. "
-					"Please double-check your input and make sure you've entered your **current** age accurately."
-				),
-				"channel-message" : (
-					f"[INFO: Age Too High] [Info] User {user.mention} entered an abnormally high age ({age}). "
-					f"Date of birth indicates {years}. User may retry with correct information."
-				)
-			},
-			"below_minimum_age" : {
-				"user-message"    : (
-					"You appear to be below the minimum age required to join this server. "
-					"Unfortunately, you cannot proceed with verification at this time."
-				),
-				"channel-message" : (
-					f"[INFO: Below Minimum Age] [Info] User {user.mention} appears to be below the server’s minimum age requirement. "
-					f"User entered {age}, with date of birth indicating {years}. Verification process stopped."
-				)
-			},
-			"no_match"          : {
-				"user-message"    : f"It seems that the age you've given does not match the date of birth you've provided. A staff member will reach out to you shortly.",
-				"channel-message" : f"[ID CHECK: Age Mismatch] User {user.mention}\'s age does not match, please reach out to the user. User gave {age} (mm/dd/yyyy) but dob indicates {years} in {server}"
-			},
-			"dob_mismatch"      : {
-				"user-message"    : f"It seems that the date of birth you've provided does not match a previously given date of birth. A staff member will reach out to you shortly.",
-				"channel-message" : f"[ID CHECK: Age Mismatch] User {user.mention}\'s date of birth does not match. Given: {dob} (mm/dd/yyyy) Recorded: {date_of_birth} (mm/dd/yyyy) in {server}"
-			},
-			"id_check"          : {
-				"channel-message" : f"{user.mention} is on the ID list added by {server} with the reason:\n{id_check_reason}"
-			}
-		}
 		m_key = message
-		message = messages.get(message, message)
+		entry = get_id_check_message(m_key, user.mention, age=age, dob=dob, years=years,
+		                             date_of_birth=date_of_birth, server=server, id_check_reason=id_check_reason)
+		channel_message = entry.get("channel-message")
+		user_message = entry.get("user-message") or FALLBACK_DISCREPANCY_USER_MESSAGE
+		display_channel_message = channel_message or DEFAULT_CHANNEL_MESSAGE
 		view = None
 
 		# For the discrepancy cases that previously used send_response, DM the user and log to lobby mod channel.
 		if m_key in ['mismatch', 'age_too_high', 'below_minimum_age'] :
-			await send_message(user, message.get("user-message",
-			                                     "There was an issue with the age and date of birth you provided. Please try again."))
+			await send_message(user, user_message)
 			lobbymod = guild.get_channel(ConfigData().get_key_int_or_zero(guild.id, "approval_channel"))
 			if lobbymod :
 				await lobbymod.send(
-					f"Lobby Debug] Age: {age} dob {dob} userid: {user.mention}\n" + message.get('channel-message'))
+					f"Lobby Debug] Age: {age} dob {dob} userid: {user.mention}\n" + display_channel_message)
 			return
 
 		if verify_button :
@@ -183,7 +169,7 @@ class IdCheck(ABC) :
 			view = IdVerifyButton()
 
 		embed = discord.Embed(title="ID Check Required",
-		                      description=message.get('channel-message', 'No message set for this ID check.'))
+		                      description=display_channel_message)
 		embed.add_field(name="Staff Notice",
 		                value="Please contact the user to complete their ID check. They must submit a valid ID. Do not share or store the ID outside of authorized verification staff. Any abuse results in immediate blacklisting. If the issue may be a typo, you may allow a retry by removing them from the ID check list.")
 		embed.set_footer(text=f"{user.id}")
@@ -194,17 +180,16 @@ class IdCheck(ABC) :
 			                   f"{f'{guild.owner.mention}' if ConfigData().get_key(guild.id, "ping_owner_on_failure") == 'ENABLED' else ''} -# Lobby Debug] Age: {age} dob {dob} userid: {user.mention}",
 			                   embed=embed,
 			                   view=view)
-			await send_message(user, user.mention + " " + message.get("user-message",
-			                                                          "Thank you for submitting your age and date of birth, a staff member will contact you soon because of a discrepancy."))
+			await send_message(user, user.mention + " " + user_message)
 		except discord.Forbidden :
 			await send_message(user,
 			                   f"I don't have permission to send messages in {channel.mention}. Please contact a server administrator to resolve this issue.")
 
-		if id_check and message.get("channel-message", None) :
+		if id_check and channel_message :
 			JoinHistoryTransactions().update(user.id, guild.id, JoinHistoryStatus.IDCHECK)
-			await IdCheck.add_check(user, guild, message.get("channel-message", f"No message set for {message}"))
+			await IdCheck.add_check(user, guild, channel_message)
 
-		await IdCheck.auto_kick(user, m_key, guild, channel, message.get('channel-message', "Message not found."))
+		await IdCheck.auto_kick(user, m_key, guild, channel, display_channel_message)
 
 	@staticmethod
 	@abstractmethod
@@ -252,9 +237,9 @@ class IdCheck(ABC) :
 				"You've been removed from the server because the age and date of birth "
 				"you provided during verification did not match. If you believe this was "
 				"a genuine mistake, you're welcome to contact server staff to appeal."
-				"\n\n",
-				reason
 			)
+			if reason :
+				kick_message += f"\n\n{reason}"
 			staff_message = f"{member.name} had a discrepancy and has been automatically kicked!"
 
 		# We only kick if a kick reason is set.

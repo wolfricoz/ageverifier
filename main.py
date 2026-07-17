@@ -24,7 +24,6 @@ from classes.jsonmaker import Configer
 from classes.onboarding import Onboarding
 from classes.support.queue import Queue
 from databases import current as db
-from databases.current import Servers
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.ServerTransactions import ServerTransactions
 from project.data import VERSION
@@ -144,50 +143,9 @@ async def on_ready() :
 	Queue().add(bot.tree.sync(), 2)
 	Queue().add(devroom.send(f"AgeVerifier is in {len(bot.guilds)} guilds. Ageverifier {VERSION}"), 2)
 	logging.info(f"Commands synced, start up done! Connected to {len(bot.guilds)} guilds and {bot.shard_count} shards.")
-
 	logging.info("Loaded routers: " + ", ".join(routers))
-	Queue().add(check_guilds(devroom))
 
 
-async def check_guilds(devroom: discord.TextChannel) :
-	count = 0
-	total= len(bot.guilds)
-	for guild in bot.guilds :
-		if count % 50 == 0:
-			logging.info(f"Checked {count}/{total} guilds")
-			await asyncio.sleep(0)
-		await update_guild(guild, devroom)
-		count += 1
-
-
-async def update_guild(guild: discord.Guild, devroom) :
-	await blacklist_check(guild, devroom)
-
-	invite = ""
-	db_guild: Servers = ServerTransactions().get(guild.id)
-	if db_guild :
-		invite = db_guild.invite
-	ServerTransactions().add(guild.id,
-	                         active=True,
-	                         name=guild.name,
-	                         owner=guild.owner,
-	                         member_count=guild.member_count,
-	                         invite=await check_guild_invites(bot, guild, invite),
-	                         reload=False
-	                         )
-	try :
-		bot.invites[guild.id] = await guild.invites()
-	except discord.errors.Forbidden :
-		print(f"Unable to get invites for {guild.name}")
-		try :
-			await guild.owner.send("I need the manage server permission to work properly.")
-		except discord.errors.Forbidden :
-			print(f"Unable to send message to {guild.owner.name} in {guild.name}")
-		pass
-	except discord.HTTPException:
-		print(f"HTTP Exception when getting invites for {guild.name}, sleeping for 60 seconds.")
-		await asyncio.sleep(60)
-		pass
 
 
 # This can become its own cog.
