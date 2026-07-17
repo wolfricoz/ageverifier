@@ -36,14 +36,14 @@ class VerificationProcess :
 		self.age = age
 		self.mod_channel = None
 		self.id_channel = None
-		self.discrepancy = None
+		self.discrepancy = " "
 		self.id_check_info = None
 		self.error = None
 		self.dob = None
 		self.years = None
 		self.reverify = reverify
 
-	async def verify(self) :
+	async def verify(self) -> str :
 		try :
 			# === Data validation starts here ===
 			await self.load_data()
@@ -96,15 +96,21 @@ class VerificationProcess :
 		except discord.Forbidden :
 			self.error = "Ageverifier is missing permissions, please use `/config permissioncheck` to test permissions."
 			logging.warning(f"Ageverifier is missing permissions, please use `/config permissioncheck` to test permissions.")
+			return self.error
 		except discord.NotFound :
 			self.error = "Ageverifier could not fetch one of the channels, please use `/config view` and check if the channels still exist, and if ageverifier has permissions to view them."
 			logging.warning(f"Ageverifier could not fetch one of the channels, please use `/config view` and check if the channels still exist, and if ageverifier has permissions to view them.")
+			return self.error
+
 		except ValueError:
 			self.error = "Ageverifier could not validate your date of birth, please make sure it is in the format: mm/dd/yyyy"
-		except Exception as e :
+			return self.error
 
+		except Exception as e :
 			self.error = "Ageverified failed to validate your date of birth due to an unknown error. Please reach out to the devs."
 			logging.warning(e, exc_info=True)
+			return self.error
+
 
 
 	async def load_data(self) :
