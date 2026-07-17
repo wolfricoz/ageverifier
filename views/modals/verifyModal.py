@@ -105,7 +105,7 @@ class VerifyModal(discord.ui.Modal) :
 		if verification_process.error is not None :
 			await send_response(interaction, f"Verification failed: {verification_process.error}", ephemeral=True)
 			return
-		if verification_process.discrepancy is not None :
+		if verification_process.discrepancy is not None or verification_process.discrepancy == " ":
 			logging.info(f"discrepancy: {verification_process.discrepancy}")
 			id_check = True
 
@@ -133,7 +133,7 @@ class VerifyModal(discord.ui.Modal) :
 			                                id_check=id_check,
 			                                id_check_reason=verification_process.id_check_info.reason if verification_process.id_check_info else verification_process.discrepancy,
 			                                server=server)
-		if len(message) < 1 :
+		if len(message) < 1 or message is None:
 			message = " "
 		return await send_response(interaction, message, ephemeral=True)
 

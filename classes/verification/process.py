@@ -36,7 +36,7 @@ class VerificationProcess :
 		self.age = age
 		self.mod_channel = None
 		self.id_channel = None
-		self.discrepancy = " "
+		self.discrepancy = None
 		self.id_check_info = None
 		self.error = None
 		self.dob = None
