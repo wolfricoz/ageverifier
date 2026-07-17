@@ -145,14 +145,14 @@ class ServerTransactions(DatabaseTransactions) :
 			data_to_update = {k : v for k, v in updated_data.items() if v is not None}
 
 			if not data_to_update :
-				logging.info(f"No new data provided for server {guild_id}, no changes made.")
+				logging.debug(f"No new data provided for server {guild_id}, no changes made.")
 				return True
 
 			for field, value in data_to_update.items() :
 				setattr(guild, field, value)
 
-			logging.info(f"Updated server {guild.guild} with:")
-			logging.info(data_to_update)
+			logging.debug(f"Updated server {guild.guild} with:")
+			logging.debug(data_to_update)
 
 			self.commit(session)
 
