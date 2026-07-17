@@ -134,7 +134,7 @@ class VerifyModal(discord.ui.Modal) :
 			                                id_check_reason=verification_process.id_check_info.reason if verification_process.id_check_info else verification_process.discrepancy,
 			                                server=server)
 		if  message is None or len(message) < 1 :
-			message = " "
+			message = "There was an error, reach out to staff."
 		return await send_response(interaction, message, ephemeral=True)
 
 	async def on_error(self, interaction: discord.Interaction, error: Exception) -> None :

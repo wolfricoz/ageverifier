@@ -113,6 +113,8 @@ class VerificationProcess :
 
 
 
+
+
 	async def load_data(self) :
 		"""Loads the data for the verification process and verifies it."""
 		if self.age is None or self.day is None or self.month is None or self.year is None or self.member is None or self.guild is None :
@@ -168,11 +170,10 @@ class VerificationProcess :
 			return True
 		return None
 
+
 	def check_id_record(self) :
 		"""Checks if the member is on the id list."""
-
 		if id_check_info := AgeCalculations.id_check_or_id_verified(self.member) :
 			self.discrepancy = "id_check"
 			self.id_check_info = id_check_info
-		return True
 
