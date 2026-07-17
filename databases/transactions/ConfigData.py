@@ -39,14 +39,14 @@ class ConfigData(metaclass=Singleton) :
 
 	# logging.debug(self.conf)
 
-	def load_all_guilds(self) :
+	async def load_all_guilds(self) :
 		logging.info(f"Loading all guilds")
 		# Regardless if the guild exists, we add it to the config to avoid KeyErrors
 
 		# Fetch the settings from the database
 		items = ConfigTransactions().server_config_all()
 		for item in items:
-
+			await asyncio.sleep(0)
 			guild_id = item.guild
 
 			self.conf[guild_id] = {}
