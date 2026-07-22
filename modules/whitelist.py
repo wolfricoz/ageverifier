@@ -1,5 +1,6 @@
 """Config options for the bot."""
 import datetime
+import logging
 import os
 from datetime import timezone
 
@@ -63,11 +64,17 @@ class whitelist(commands.GroupCog, name="whitelist") :
 		embed.description = reason.value
 
 		await send_response(interaction, "Thank you for submitting your whitelisting application. The developer will reach out to you.\n\nPlease read this article to prepare for your inspection: https://wolfricoz.github.io/ageverifier/whitelisting.html", embed=embed)
-		gid = os.getenv('SUPPORTGUILD')
+		gid = int(os.getenv('SUPPORTGUILD'))
 		guild = self.bot.get_guild(gid)
 		if not guild :
 			guild = await self.bot.fetch_guild(gid)
-		channel = ConfigData().get_channel(guild, "approval_channel")
+		# get_channel is a coroutine; without await, `channel` is a coroutine object and
+		# send_message ends up calling coroutine.send(...) -> "coroutine.send() takes no
+		# keyword arguments" (AGEVERIFIER-F7).
+		channel = await ConfigData().get_channel(guild, "approval_channel")
+		if channel is None :
+			logging.warning(f"Whitelist application could not be posted: approval_channel not set in support guild {gid}.")
+			return
 		await send_message(channel, embed=embed)
 
 

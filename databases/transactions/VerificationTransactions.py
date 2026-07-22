@@ -101,7 +101,9 @@ class VerificationTransactions(DatabaseTransactions) :
 		with self.createsession() as session :
 			verification = self.get_id_info(uid, session=session)
 			if not isinstance(verification, IdVerification):
-				self.add_idcheck(uid, "No check Found, added to allow id verification.", idcheck=False)
+				UserTransactions().add_user_empty(uid, True)
+				verification = IdVerification(uid=uid, reason="No check found, added to allow id verification.", idcheck=False)
+				session.add(verification)
 
 			data = {
 				"reason"      : reason,

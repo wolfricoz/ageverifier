@@ -189,10 +189,6 @@ class Tasks(commands.Cog) :
 		db_ids = set(await asyncio.to_thread(ServerTransactions().get_all))
 		live_ids = {guild.id for guild in self.bot.guilds}
 
-		# Improve the first time load by loading all guilds.
-		if self.check_active_servers.current_loop == 0:
-			await ConfigData().load_all_guilds()
-
 		new_ids = live_ids - db_ids          # guilds we don't have a row for yet
 		removed_ids = db_ids - live_ids      # rows for guilds we're no longer in
 
@@ -259,12 +255,6 @@ class Tasks(commands.Cog) :
 
 	@tasks.loop(hours=24)
 	async def sync_configs(self) :
-		"""Backfills any newly-introduced default config keys to all existing guilds.
-
-		This is the migration that add()'s per-guild seeding loop used to perform on
-		every hourly run. It only inserts keys that are missing, so most runs are a
-		no-op (one SELECT, nothing to insert). Runs on startup too (current_loop 0).
-		"""
 		logging.info("Syncing config defaults across all guilds.")
 		inserted = await asyncio.to_thread(ServerTransactions().backfill_config)
 		if inserted :

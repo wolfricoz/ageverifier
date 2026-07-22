@@ -87,7 +87,7 @@ class SurveyModal(discord.ui.Modal) :
 
 
 	async def on_error(self, interaction: discord.Interaction, error: Exception) -> None :
-		print(error)
+		logging.error(f"Error in {type(self).__name__}: {error}", exc_info=True)
 		await self.send_message(interaction, f"An error occurred: {error}")
 
 

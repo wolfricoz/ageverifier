@@ -35,6 +35,9 @@ class BanWatch :
 			async with aiohttp.ClientSession() as session :
 				async with session.get(target_url, headers=headers) as response :
 					if response.status != 200 :
+						if response.status in [404]:
+							logging.info(f"Banwatch could not find user {user_id}")
+							return None
 						logging.error(f"BanWatch returned {response.status}: {response.reason}")
 						return None
 

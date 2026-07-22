@@ -1,3 +1,5 @@
+import logging
+
 import discord
 from discord_py_utilities.messages import send_response
 
@@ -32,5 +34,5 @@ class WarningModal(discord.ui.Modal, title='Official Warning'):
         await channel.send(embed=embed)
 
     async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
-        print(error)
+        logging.error(f"Error in {type(self).__name__}: {error}", exc_info=True)
         await send_response(interaction, 'Oops! Something went wrong.', ephemeral=True)

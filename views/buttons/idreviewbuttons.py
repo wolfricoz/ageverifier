@@ -41,6 +41,8 @@ class IdReviewButton(discord.ui.View) :
 
 
 		message = await self.member.dm_channel.fetch_message(idcheck.idmessage)
+		logging.info(f"[ID Review] {interaction.user}({interaction.user.id}) viewed the ID of "
+		             f"{self.member.id} in {interaction.guild.name}({interaction.guild.id})")
 		await send_response(interaction, f"Here is the ID verification request for <@{self.member.id}>\n"
 		                                 f"{message.attachments[0].url}", ephemeral=True)
 
@@ -68,6 +70,8 @@ class IdReviewButton(discord.ui.View) :
 		                 confirmation=f"Thank you for providing a reason for declining the ID verification for <@{self.member.id}>.")
 		idcheck = VerificationTransactions().get_id_info(self.member.id)
 
+		logging.info(f"[ID Decline] {interaction.user}({interaction.user.id}) declined the ID of "
+		             f"{self.member.id} in {interaction.guild.name}({interaction.guild.id})")
 		await send_response(interaction,
 		                    f"Declined ID verification for: <@{self.member.id}> by {interaction.user.mention}", )
 		if idcheck.idmessage :

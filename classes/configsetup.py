@@ -180,12 +180,16 @@ class ConfigSetup :
 
 				try :
 					if channel is None :
-						await send_message(interaction.channel, f"Failed to create or find channel for {channelkey}, please set it up manually.")
+						if interaction is not None :
+							await send_message(interaction.channel, f"Failed to create or find channel for {channelkey}, please set it up manually.")
 						continue
 
 					self.changes[channelkey] = channel.id
 					ConfigTransactions().config_unique_add(guild.id, channelkey, channel.id, overwrite=True)
-					await send_message(interaction.channel, f"Channel for {channelkey} set to {channel.mention}")
+					# create_channels also runs on the automatic setup path where interaction
+					# is None; only announce when a user triggered it (AGEVERIFIER-BJ).
+					if interaction is not None :
+						await send_message(interaction.channel, f"Channel for {channelkey} set to {channel.mention}")
 					continue
 				except Exception as e :
 					logging.error(e, exc_info=True)

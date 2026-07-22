@@ -1,4 +1,5 @@
 """Modal for the NSFW section, similar to lobby but is fully automatic"""
+import logging
 from abc import ABC, abstractmethod
 from datetime import datetime
 
@@ -122,7 +123,6 @@ class NsfwVerifyModal(discord.ui.Modal):
         await NsfwFunctions.log(interaction.user, interaction.guild, self.age.value, self.dateofbirth.value)
 
     async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
-        print(error)
+        logging.error(f"Error in {type(self).__name__}: {error}", exc_info=True)
         await send_response(interaction, 'Oops! Something went wrong.\n'
                                                 f'{error}')
-        raise error

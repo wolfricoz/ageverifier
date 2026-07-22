@@ -1,4 +1,6 @@
 """Allows users to text(str) data into the database through discord.ui.Modal"""
+import logging
+
 import discord
 from discord_py_utilities.messages import send_response
 
@@ -26,7 +28,7 @@ class ConfigInputUnique(discord.ui.Modal, title='set config message'):
         await send_response(interaction, f"{self.key} has been added to the database with value:\n{self.text.value}", ephemeral=True)
 
     async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
-        print(error)
+        logging.error(f"Error in {type(self).__name__}: {error}", exc_info=True)
         await send_response(interaction, 'Oops! Something went wrong.', ephemeral=True)
 
 
@@ -54,5 +56,5 @@ class ConfigInput(discord.ui.Modal, title='set config message'):
         await send_response(interaction, f"{self.key} has been added to the database with value:\n{self.text.value}", ephemeral=True)
 
     async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
-        print(error)
+        logging.error(f"Error in {type(self).__name__}: {error}", exc_info=True)
         await send_response(interaction, 'Oops! Something went wrong.', ephemeral=True)

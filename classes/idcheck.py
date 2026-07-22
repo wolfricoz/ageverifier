@@ -228,8 +228,8 @@ class IdCheck(ABC) :
 			message_to_delete = await dm_channel.fetch_message(idcheck.idmessage)
 			await message_to_delete.delete()
 			VerificationTransactions().remove_idmessage(user.id)
-		except Exception :
-			pass
+		except Exception as e :
+			logging.debug(f"Could not remove ID message for {user.id}: {e}")
 
 
 	@staticmethod
@@ -255,9 +255,9 @@ class IdCheck(ABC) :
 				"You've been removed from the server because the age and date of birth "
 				"you provided during verification did not match. If you believe this was "
 				"a genuine mistake, you're welcome to contact server staff to appeal."
-				"\n\n",
-				reason
 			)
+			if reason :
+				kick_message += f"\n\n{reason}"
 			staff_message = f"{member.name} had a discrepancy and has been automatically kicked!"
 
 		# We only kick if a kick reason is set.
@@ -265,6 +265,7 @@ class IdCheck(ABC) :
 			return
 		await send_message(member, kick_message)
 		await member.kick(reason=kick_message)
+		logging.info(f"[Autokick] Kicked {member}({member.id}) from {guild.name}({guild.id}) for discrepancy: {discrepancy}")
 		await channel.send(f"[Autokick] {staff_message}")
 
 	@staticmethod

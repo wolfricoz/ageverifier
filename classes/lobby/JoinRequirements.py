@@ -85,6 +85,14 @@ class JoinRequirements :
 		if not enabled :
 			return False
 
+		# get_key returns the stored value as a str (e.g. '7'); timedelta needs an int
+		# (AGEVERIFIER-F5). Coerce defensively, falling back to the 7-day default.
+		try :
+			days = int(days)
+		except (TypeError, ValueError) :
+			logging.warning(f"Invalid MINIMUM_ACCOUNT_AGE for guild {self.member.guild.id}: {days!r}; defaulting to 7.")
+			days = 7
+
 		created_at = self.member.created_at.astimezone(UTC)
 		cut_off = datetime.now(UTC) - timedelta(days=days)
 		if created_at > cut_off :

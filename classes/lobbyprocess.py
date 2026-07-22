@@ -28,6 +28,8 @@ class LobbyProcess :
 		id_msg = ""
 		if await AgeCalculations.id_check(guild, user) :
 			return
+		logging.info(f"Approving {user}({user.id}) in {guild.name}({guild.id}) by {staff} "
+		             f"(age: {age}, idverify: {idverify}, reverify: {reverify})")
 		# updates user's age if it exists, otherwise makes a new entry
 		exists = UserTransactions().update_user_dob(user.id, dob, guild.name, override=True)
 
@@ -112,9 +114,15 @@ class LobbyProcess :
 		if reverify:
 			reverify_field = "[REVERIFICATION]\n"
 		if isinstance(user, discord.User) :
-			user = guild.get_member(user.id)
+			member = guild.get_member(user.id)
+			# get_member() returns None when the user has already left the guild; keep the
+			# original discord.User in that case so mention/id/created_at still resolve
+			# instead of crashing on None (AGEVERIFIER-9Y).
+			if member is not None :
+				user = member
 
-
+		# discord.User has no joined_at (only Member does), so guard it (AGEVERIFIER-9Y).
+		joined_at = getattr(user, "joined_at", None)
 		message = await send_message(channel, f"{id_verify}"
 		                            f"{reverify_field}"
 		                            f"user: {user.mention}\n"
@@ -122,7 +130,7 @@ class LobbyProcess :
 		                            f"{dob_field}"
 		                            f"User info: \n"
 		                            f"UID: {user.id} \n"
-		                            f"Joined at: {user.joined_at.strftime('%m/%d/%Y %I:%M:%S %p') if user.joined_at else 'None'} \n"
+		                            f"Joined at: {joined_at.strftime('%m/%d/%Y %I:%M:%S %p') if joined_at else 'None'} \n"
 		                            f"Account created at: {user.created_at.strftime('%m/%d/%Y %I:%M:%S %p')} \n"
 		                            f"Executed at: {datetime.datetime.now().strftime('%m/%d/%Y %I:%M:%S %p')} \n"
 		                            f"first time: {f'yes' if not exists else 'no'}\n"
@@ -139,6 +147,10 @@ class LobbyProcess :
 		lobbymod = ConfigData().get_key(guild.id, "approval_channel")
 
 		channel = await ConfigData().get_channel(guild, "server_join_channel")
+		# get_channel() returns None when server_join_channel is unset or deleted; nothing
+		# to clean up in that case (AGEVERIFIER-EB).
+		if channel is None :
+			return
 		messages = channel.history(limit=100)
 		notify = re.compile(r"Info", flags=re.IGNORECASE)
 		count = 0
@@ -150,7 +162,10 @@ class LobbyProcess :
 			if (message.author == user or user in message.mentions) and count < 10 :
 				count += 1
 				Queue().add(message.delete(), priority=0)
-		channel = guild.get_channel(int(lobbymod))
+		channel = guild.get_channel(int(lobbymod)) if lobbymod else None
+		# Same guard as above: approval_channel may be unset or deleted (AGEVERIFIER-EB).
+		if channel is None :
+			return
 		messages = channel.history(limit=100)
 		count = 0
 		async for message in messages :

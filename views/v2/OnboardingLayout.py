@@ -72,7 +72,12 @@ Below you'll see a button for each setup method, they will start the respective 
 		await ConfigSetup().check_channel_permissions(interaction.guild)
 		await send_response(interaction, "Manual setup completed successfully!", ephemeral=True)
 	links = discord.ui.ActionRow()
-	links.add_item(discord.ui.Button(label="Dashboard Setup", style=discord.ButtonStyle.link, url=os.getenv("DASHBOARD_URL")))
+	# A link-style Button with url=None makes Discord reject the whole message with
+	# "Invalid Form Body ... url: A url is required" (AGEVERIFIER-CR). Only add each
+	# link button when its url is actually set.
+	_dashboard_url = os.getenv("DASHBOARD_URL")
+	if _dashboard_url:
+		links.add_item(discord.ui.Button(label="Dashboard Setup", style=discord.ButtonStyle.link, url=_dashboard_url))
 	links.add_item(discord.ui.Button(label="Documentation", style=discord.ButtonStyle.link, url="https://wolfricoz.github.io/ageverifier/"))
-	if support_server is not None:
+	if support_server is not None and support_server.invite:
 		links.add_item(discord.ui.Button(label="Support Server", style=discord.ButtonStyle.link, url=support_server.invite))

@@ -1,3 +1,5 @@
+import logging
+
 import discord
 from discord_py_utilities.messages import await_message, send_message, send_response
 
@@ -15,6 +17,9 @@ class IdSubmitButton(discord.ui.View) :
 		self.reverify = reverify
 
 	custom_id = "id_submit_buttons"
+
+	# Discord caps a bot's file uploads at 25 MB regardless of guild boost tier.
+	DISCORD_BOT_UPLOAD_LIMIT = 25 * 1024 * 1024
 
 
 
@@ -53,13 +58,36 @@ class IdSubmitButton(discord.ui.View) :
 		if mod_channel is None:
 			await send_response(interaction, "Lobbymod channel not set, please contact the server staff.", ephemeral=True)
 			return
-		message = await send_message(
-			interaction.user,
-			"Thank you — we received your ID for verification. Attached is a private copy of what you submitted.\n\n"
-			"This message is the only storage location for your submission. We keep it on Discord for review only, for up to 7 days. "
-			"When the review is complete, or 7 days pass (whichever comes first), this message will be deleted and no other copies will be kept.",
-			files=[await attachment.to_file() for attachment in message.attachments]
-		)
+		attachment = message.attachments[0]
+		if attachment.size > self.DISCORD_BOT_UPLOAD_LIMIT:
+			await send_response(
+				interaction,
+				f"Your image is too large ({attachment.size / 1024 / 1024:.1f} MB). "
+				f"The maximum accepted size is {self.DISCORD_BOT_UPLOAD_LIMIT // (1024 * 1024)} MB. "
+				"Please compress or resize it and try again.",
+				ephemeral=True,
+			)
+			return
+		# Safety net for anything the size check can't predict: don't let a rejected upload
+		# surface as an unhandled error.
+		try:
+			message = await send_message(
+				interaction.user,
+				"Thank you — we received your ID for verification. Attached is a private copy of what you submitted.\n\n"
+				"This message is the only storage location for your submission. We keep it on Discord for review only, for up to 7 days. "
+				"When the review is complete, or 7 days pass (whichever comes first), this message will be deleted and no other copies will be kept.",
+				files=[await attachment.to_file()]
+			)
+		except discord.HTTPException as e:
+			logging.error(f"Failed to store ID copy for {interaction.user.id} in {self.guild.name}: {e}", exc_info=True)
+			await send_response(
+				interaction,
+				"We couldn't store your ID — Discord rejected the upload, most likely because the file is too large. "
+				"Please try again with a smaller image, or contact server staff if this keeps happening.",
+				ephemeral=True,
+			)
+			await send_message(mod_channel, f"[ID submit fail] Could not store an ID copy for {interaction.user.mention}; they were asked to retry with a smaller image.")
+			return
 		idcheck = VerificationTransactions().get_id_info(interaction.user.id)
 		if idcheck and idcheck.idmessage:
 			from classes.idcheck import IdCheck
@@ -69,6 +97,7 @@ class IdSubmitButton(discord.ui.View) :
 			VerificationTransactions().add_idcheck(interaction.user.id, idcheck=False)
 			VerificationTransactions().update_verification(interaction.user.id, idmessage=message.id)
 		except Exception as e:
+			logging.error(f"Failed to update ID record for {interaction.user.id} in {self.guild.name}: {e}", exc_info=True)
 			await send_message(mod_channel, f"[ID record fail] Failed to update ID record, continuing verification.")
 		embed = discord.Embed(
 			title="ID Verification Submission",

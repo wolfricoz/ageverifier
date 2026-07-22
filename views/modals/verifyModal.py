@@ -133,12 +133,11 @@ class VerifyModal(discord.ui.Modal) :
 			                                id_check=id_check,
 			                                id_check_reason=verification_process.id_check_info.reason if verification_process.id_check_info else verification_process.discrepancy,
 			                                server=server)
-		if  message is None or len(message) < 1 :
+		if  message is None or len(message) < 1 or (isinstance(message, str) and not message.strip()) :
 			message = "There was an error, reach out to staff."
 		return await send_response(interaction, message, ephemeral=True)
 
 	async def on_error(self, interaction: discord.Interaction, error: Exception) -> None :
-		print(error)
+		logging.error(f"Error in {type(self).__name__}: {error}", exc_info=True)
 		await send_response(interaction, f"An error occurred: {error}", ephemeral=True)
-		raise error
 

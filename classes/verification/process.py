@@ -172,8 +172,11 @@ class VerificationProcess :
 
 
 	def check_id_record(self) :
-		"""Checks if the member is on the id list."""
+		"""Checks if the member is on the id list. Returns True only when they are."""
+
 		if id_check_info := AgeCalculations.id_check_or_id_verified(self.member) :
 			self.discrepancy = "id_check"
 			self.id_check_info = id_check_info
+			return True
+		return None
 

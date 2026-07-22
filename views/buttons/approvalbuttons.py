@@ -26,7 +26,7 @@ class ApprovalButtons(discord.ui.View) :
 		self.user = user
 		self.reverify = reverify
 		super().__init__(timeout=None)
-		logging.info(f"approval buttons: {self.reverify}")
+		logging.debug(f"approval buttons: {self.reverify}")
 		button = discord.ui.Button(label='Help', style=discord.ButtonStyle.url,
 		                           url='https://wolfricoz.github.io/ageverifier/lobby.html', emoji="❓")
 		self.add_item(button)
@@ -124,10 +124,6 @@ class ApprovalButtons(discord.ui.View) :
 			                    'The bot has restarted and the data of this button is missing. Please use the command.',
 			                    ephemeral=True)
 			return
-		logging.info(f"Interaction user: {getattr(interaction, 'user', None)}")
-		logging.info(f"Interaction message: {getattr(interaction, 'message', None)}")
-		logging.info(f"Interaction guild: {getattr(interaction, 'guild', None)}")
-		logging.info(interaction)
 		await send_response(interaction, "User approval queue'd, please wait for ageverifier to process the user.", ephemeral=True)
 		# Share this with the age commands
 		try :
@@ -230,7 +226,7 @@ Once you've made these changes you may resubmit your age and date of birth. Than
 			return False
 
 		embed = interaction.message.embeds[0]
-		logging.info(embed.footer.text)
+		logging.debug(embed.footer.text)
 		data = LobbyDataTransactions().read(embed.footer.text)
 		self.user = interaction.guild.get_member(data.uid)
 		if self.user is None :

@@ -50,7 +50,9 @@ class ConfigData(metaclass=Singleton) :
 			await asyncio.sleep(0)
 			guild_id = item.guild
 
-			self.conf[guild_id] = {}
+			# if guild doesn't exist, add it.
+			if guild_id not in self.conf :
+				self.conf[guild_id] = {}
 
 			add_list = ["VERIFICATION_REMOVE_ROLE", "RETURN_REMOVE_ROLE", "SERVER_JOIN_ROLE", "AUTO_UPDATE_EXCLUDED_ROLES",
 			            "REVERIFICATION_ROLE"]

@@ -9,6 +9,7 @@ from contextlib import asynccontextmanager
 import discord
 import sentry_sdk
 from discord.ext import commands
+from discord_py_utilities.exceptions import NoChannelException, NoPermissionException
 from discord_py_utilities.invites import check_guild_invites
 from discord_py_utilities.permissions import find_first_accessible_text_channel
 # IMPORT LOAD_DOTENV FUNCTION FROM DOTENV MODULE.
@@ -24,6 +25,7 @@ from classes.jsonmaker import Configer
 from classes.onboarding import Onboarding
 from classes.support.queue import Queue
 from databases import current as db
+from databases.exceptions.KeyNotFound import KeyNotFound
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.ServerTransactions import ServerTransactions
 from project.data import VERSION
@@ -63,12 +65,39 @@ bot = commands.AutoShardedBot(command_prefix=PREFIX, case_insensitive=False, int
                               shard_count=shard_count)
 bot.DEV = int(os.getenv("DEV"))
 
+# Exceptions caused by a server's own setup (missing Discord permissions, an unset
+# or deleted config channel), not by a bug in the bot. These are surfaced to the
+# affected server/user by the code that raises them; reporting them to Sentry just
+# creates noise, so we drop them before they become issues.
+SENTRY_IGNORED_EXCEPTIONS = (
+	discord.Forbidden,  # 403 Missing Permissions
+	NoPermissionException,
+	NoChannelException,
+	KeyNotFound,
+)
+
+
+def _sentry_before_send(event, hint):
+	"""Drops user-setup faults (permissions/config) so only real bugs reach Sentry."""
+	exc_info = hint.get("exc_info")
+	if exc_info is not None and isinstance(exc_info[1], SENTRY_IGNORED_EXCEPTIONS):
+		return None
+	return event
+
+
 # Sentry Integration
 sentry_sdk.init(
 	dsn=os.getenv("SENTRY_DSN"),
 	# Add data like request headers and IP for users,
 	# see https://docs.sentry.io/platforms/python/data-management/data-collected/ for more info
 	send_default_pii=False,
+	# Tags every issue with the running version and prod/dev, so the dashboard can
+	# filter and tell releases apart.
+	environment="development" if str(debug).upper() == "TRUE" else "production",
+	release=version,
+	# Filters out server-setup faults (missing permissions, unset channels) which
+	# are not bot bugs; see SENTRY_IGNORED_EXCEPTIONS above.
+	before_send=_sentry_before_send,
 )
 
 
@@ -116,7 +145,7 @@ for router in api.__all__ :
 		app.include_router(getattr(api, router))
 		routers.append(router)
 	except Exception as e :
-		logging.error(f"Failed to load {router}: {e}")
+		logging.error(f"Failed to load {router}: {e}", exc_info=True)
 
 # Move to devtools?
 @bot.command()
@@ -162,12 +191,20 @@ async def on_guild_join(guild) :
 		await guild.owner.send("This server is blacklisted. If this is a mistake then please contact the developer.")
 		return
 
+	# check_guild_invites() can hit a None channel and raise on channel.permissions_for(),
+	# aborting on_guild_join; register the server even if no invite can be generated
+	# (AGEVERIFIER-DQ).
+	try :
+		invite = await check_guild_invites(bot, guild)
+	except Exception as e :
+		logging.warning(f"Could not generate invite for guild {guild.id}: {e}")
+		invite = None
 	ServerTransactions().add(guild.id,
 	                         active=True,
 	                         name=guild.name,
 	                         owner=guild.owner,
 	                         member_count=guild.member_count,
-	                         invite=await check_guild_invites(bot, guild)
+	                         invite=invite
 	                         )
 	ConfigData().load_guild(guild.id)
 	try :
