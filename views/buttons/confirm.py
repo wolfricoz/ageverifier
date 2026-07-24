@@ -25,17 +25,26 @@ class Confirm(discord.ui.View):
 		self.interaction = None
 		self.value = None
 
+	async def _finish(self, interaction: discord.Interaction, content: str):
+		"""Replace the prompt with a result message and remove the buttons."""
+		try:
+			await interaction.response.edit_message(content=content, view=None)
+		except discord.HTTPException:
+			pass
+
 	@discord.ui.button(label="Confirm", style=discord.ButtonStyle.green, custom_id="confirm")
 	async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
 		"""confirm the action"""
 		self.value = True
-		try:
-			await interaction.message.delete()
-		except:
-			pass
 		self.interaction = interaction
-		if not self.save_interaction:
-			await send_response(interaction, "Confirmed", ephemeral=True)
+		if self.save_interaction:
+			# Leave the interaction unresponded so the caller can open a modal on it.
+			try:
+				await interaction.message.delete()
+			except discord.HTTPException:
+				pass
+		else:
+			await self._finish(interaction, "Confirmed")
 		self.stop()
 
 	@discord.ui.button(label="Cancel", style=discord.ButtonStyle.red, custom_id="cancel")
@@ -43,10 +52,5 @@ class Confirm(discord.ui.View):
 		"""cancel the action"""
 		self.value = False
 		self.interaction = interaction
-
-		await send_response(interaction, self.cancel_message, ephemeral=True)
+		await self._finish(interaction, self.cancel_message)
 		self.stop()
-		try:
-			await interaction.message.delete()
-		except:
-			pass

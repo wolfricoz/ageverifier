@@ -17,6 +17,7 @@ from classes.blacklist import blacklist_check
 from classes.dashboard.Servers import Servers
 from classes.encryption import Encryption
 from classes.lobby.Clean import clean_lobby
+from classes.permissions_notice import PermissionNotice
 from classes.support.RetentionPolicy import enforce_data_retention_policy
 from classes.support.queue import Queue
 from databases.transactions.ConfigData import ConfigData
@@ -77,11 +78,9 @@ class Tasks(commands.Cog) :
 				self.bot.invites[guild.id] = await guild.invites()
 			except discord.errors.Forbidden :
 				print(f"Unable to get invites for {guild.name}")
-				try :
-					await guild.owner.send("I need the manage server permission to work properly.")
-				except discord.errors.Forbidden :
-					print(f"Unable to send message to {guild.owner.name} in {guild.name}")
-				pass
+				# Names the server + how to fix, instead of a context-free owner DM.
+				await PermissionNotice.notify(guild, missing=["manage_guild"],
+				                              purpose="read invite data for invite tracking")
 
 	async def user_expiration_update(self, userids) :
 		"""updates entry time, if entry is expired this also removes it."""

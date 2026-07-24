@@ -113,7 +113,7 @@ class IdCheck(ABC) :
 				                    f"I don't have permission to send messages in {channel.mention}. Please contact a server administrator to resolve this issue.",
 				                    ephemeral=True)
 
-			except (discord.Forbidden or NoPermissionException):
+			except (discord.Forbidden, NoPermissionException):
 				channel = find_first_accessible_text_channel(interaction.guild)
 				await send_message(channel, f"{f'{interaction.guild.owner.mention}' if ConfigData().get_key(interaction.guild.id, "ping_owner_on_failure") == 'ENABLED' else ''} I don't have permission to send messages in {channel.mention}. Please contact a server administrator to resolve this issue.")
 
@@ -303,7 +303,7 @@ class IdCheck(ABC) :
 			await send_message(user, embed=embed, view=IdSubmitButton())
 			await send_response(interaction, "Successfully sent ID verification request!", ephemeral=True)
 
-		except (discord.Forbidden or discord.NotFound):
+		except (discord.Forbidden, discord.NotFound):
 			await send_response(interaction, "Could not DM user.", ephemeral=True)
 		except Exception as e :
 			await send_response(interaction, f"Could not DM user due to an error: {e}", ephemeral=True)

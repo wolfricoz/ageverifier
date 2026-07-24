@@ -6,6 +6,7 @@ from discord_py_utilities.messages import send_message
 from discord_py_utilities.permissions import find_first_accessible_text_channel
 
 import databases.exceptions.KeyNotFound
+from classes.permissions_notice import PermissionNotice
 from databases.enums.joinhistorystatus import JoinHistoryStatus
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.HistoryTransactions import JoinHistoryTransactions
@@ -93,7 +94,12 @@ async def invite_info(bot, member: discord.Member) :
 	if member.guild.id not in bot.invites:
 		bot.invites[member.guild.id] = {}
 	invites_before_join = bot.invites[member.guild.id]
-	invites_after_join = await member.guild.invites()
+	try :
+		invites_after_join = await member.guild.invites()
+	except discord.Forbidden :
+		await PermissionNotice.notify(member.guild, missing=["manage_guild"],
+		                              purpose="read invite data for invite logging")
+		return
 	userdata = UserTransactions().get_user(member.id)
 	fields = {
 		"user id"            : member.id,

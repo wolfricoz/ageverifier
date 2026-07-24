@@ -90,7 +90,7 @@ async def verify_age(request: Request, guild_id: int, user_id: int, verification
 		if vp.error is not None :
 			try :
 				await send_message(user, f"Verification failed: {vp.error}")
-			except (discord.Forbidden or discord.NotFound):
+			except (discord.Forbidden, discord.NotFound):
 				logging.warning(f"Unable to send message to {user.name}")
 
 			return {"success" : False, "message" : vp.discrepancy}

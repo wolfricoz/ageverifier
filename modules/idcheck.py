@@ -13,6 +13,7 @@ from databases.current import IdVerification
 from databases.transactions.VerificationTransactions import VerificationTransactions
 from resources.data.responses import StringStorage
 from views.buttons.confirm import Confirm
+from views.buttons.reasonchoice import ReasonChoice
 from views.modals.inputmodal import send_modal
 
 
@@ -147,11 +148,21 @@ class idcheck(commands.GroupCog, description="Commands for managing manual ID ve
 
 		idinfo = VerificationTransactions().get_id_info(user.id)
 		if idinfo:
-			confirm_class =  Confirm()
-			confirm_class.save_interaction = True
-			if await confirm_class.send_confirm(interaction, f"{user.name} is on the ID list already with reason: `{idinfo.reason}`, do you want to update it? Select confirm to overwrite and cancel to send the original.", "Using the original reason...", True) is True:
-				reason = await send_modal(confirm_class.interaction, f"Adding reason to the ID check for {user.name}", "ID Check Request")
-
+			chooser = ReasonChoice()
+			choice = await chooser.prompt(
+				interaction,
+				f"⚠️ {user.mention} is already on the ID check list.\n"
+				f"**Current reason:** `{idinfo.reason}`\n\n"
+				f"How would you like to proceed?\n"
+				f"• **Update reason** — enter a new reason, then send the request\n"
+				f"• **Keep existing reason** — send the request using the reason above\n"
+				f"• **Cancel** — do nothing",
+			)
+			if choice is None or choice == ReasonChoice.CANCEL:
+				return None
+			if choice == ReasonChoice.UPDATE:
+				reason = await send_modal(chooser.interaction, f"Adding reason to the ID check for {user.name}", "ID Check Request")
+				await chooser.clear_buttons()
 			else:
 				reason = idinfo.reason
 

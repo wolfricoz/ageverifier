@@ -7,6 +7,7 @@ from discord_py_utilities.messages import send_message, send_response
 from discord_py_utilities.permissions import check_missing_channel_permissions, find_first_accessible_text_channel
 
 from classes.config.utils import ConfigUtils
+from classes.permissions_notice import humanize_permission
 from classes.support.queue import Queue
 from databases.transactions.AgeRoleTransactions import AgeRoleTransactions
 from databases.transactions.ConfigData import ConfigData
@@ -284,13 +285,13 @@ class ConfigSetup :
 		embed = await self.create_permission_channels_embed(channel.guild)
 		try :
 			await send_message(channel, "-# Make sure ageverifier has the right permissions to operate", embed=embed)
-		except (discord.Forbidden or NoPermissionException) :
+		except (discord.Forbidden, NoPermissionException) :
 			channel = find_first_accessible_text_channel(guild)
 			await send_message(channel, "-# Make sure ageverifier has the right permissions to operate", embed=embed)
 		embed = await self.create_permission_roles_embed(channel.guild)
 		try :
 			await send_message(channel, "-# Make sure ageverifier has the right permissions to assign roles", embed=embed)
-		except discord.Forbidden or NoPermissionException :
+		except (discord.Forbidden, NoPermissionException) :
 			channel = find_first_accessible_text_channel(guild)
 			await send_message(channel, "-# Make sure ageverifier has the right permissions to assign roles", embed=embed)
 
@@ -300,36 +301,66 @@ class ConfigSetup :
 		embed = discord.Embed(title="Permissions Check (channels)", color=0x00ff00)
 		embed.description = f"Checking channel permissions in {guild.name}:"
 
+		has_issue = False
 		for key in self.channelchoices.keys() :
 			try :
 				channel = guild.get_channel(ConfigData().get_key_int_or_zero(guild.id, key))
 				if channel is None :
-					embed.add_field(name=f"**{key}**", value=f"❌ This key was not set or channel not found", inline=False)
+					has_issue = True
+					embed.add_field(name=f"**{key}**", value=f"❌ Not set, or the channel no longer exists — set it with `/config channels`", inline=False)
 					continue
 				missing = check_missing_channel_permissions(channel,
 				                                            ['view_channel', 'send_messages', 'embed_links', 'attach_files'])
 				if len(missing) > 0 :
-					embed.add_field(name=f"**{key}**", value=f"❌ Missing permissions: {', '.join(missing)}", inline=False)
+					has_issue = True
+					pretty = ', '.join(humanize_permission(p) for p in missing)
+					embed.add_field(name=f"**{key}**", value=f"❌ {channel.mention} is missing: {pretty}", inline=False)
 					continue
 				embed.add_field(name=f"**{key}**", value=f"✅ All required permissions are set", inline=False)
 
 			except Exception as e :
 				logging.error(e, exc_info=True)
+				has_issue = True
 				embed.add_field(name=f"**{key}**", value=f"❌ Error checking permissions", inline=False)
+
+		if has_issue :
+			embed.color = 0xff0000
+			embed.add_field(
+				name="How to fix",
+				value=(
+					"1. Open the channel → **Edit Channel → Permissions**, add the **Ageverifier** role, and enable the missing permissions.\n"
+					"2. Or grant them server-wide: **Server Settings → Roles → Ageverifier**.\n"
+					"3. Re-run this check afterwards to confirm everything is green."
+				),
+				inline=False,
+			)
 		return embed
 
 	async def create_permission_roles_embed(self, guild: discord.Guild) :
 		ement = discord.Embed(title="Permissions Check (roles)", color=0x00ff00)
 		ement.description = f"Checking role permissions in {guild.name}:"
 		top_role = guild.me.top_role
+		can_manage_roles = guild.me.guild_permissions.manage_roles
 		ement.add_field(name=f"role giving permission",
-		                value="✅ I have permission to give roles" if guild.me.guild_permissions.manage_roles else "❌ I don't have permission to give roles",
+		                value="✅ I have permission to give roles" if can_manage_roles else "❌ I don't have permission to give roles",
 		                inline=False)
 		for key in self.rolechoices.keys() :
 			await self.process_roles(ement, guild, key, top_role)
 		ageroles = AgeRoleTransactions().get_all_guild(guild.id)
 		for age_role in ageroles :
 			await self.process_roles(ement, guild, str(age_role.role_id), top_role, type="age role", value=age_role.role_id)
+
+		if any((field.value or "").startswith("❌") for field in ement.fields) :
+			ement.color = 0xff0000
+			ement.add_field(
+				name="How to fix",
+				value=(
+					"1. Enable **Manage Roles** for the **Ageverifier** role in **Server Settings → Roles → Ageverifier**.\n"
+					"2. Drag the **Ageverifier** role **above** every role it needs to assign — a bot can only manage roles below its own.\n"
+					"3. Re-run this check afterwards to confirm everything is green."
+				),
+				inline=False,
+			)
 		return ement
 
 

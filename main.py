@@ -23,6 +23,7 @@ from classes.blacklist import blacklist_check
 from classes.dashboard.Servers import Servers as DashServers
 from classes.jsonmaker import Configer
 from classes.onboarding import Onboarding
+from classes.permissions_notice import PermissionNotice
 from classes.support.queue import Queue
 from databases import current as db
 from databases.exceptions.KeyNotFound import KeyNotFound
@@ -211,11 +212,9 @@ async def on_guild_join(guild) :
 		bot.invites[guild.id] = await guild.invites()
 	except discord.errors.Forbidden :
 		print(f"Unable to get invites for {guild.name}")
-		try :
-			await guild.owner.send("I need the manage server permission to work properly.")
-		except discord.errors.Forbidden :
-			print(f"Unable to send message to {guild.owner.name} in {guild.name}")
-		pass
+		# Names the server + how to fix, instead of a context-free owner DM.
+		await PermissionNotice.notify(guild, missing=["manage_guild"],
+		                              purpose="read invite data for invite tracking")
 	channel = find_first_accessible_text_channel(guild)
 	if not channel:
 		channel = guild.owner

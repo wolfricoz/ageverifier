@@ -2,9 +2,11 @@ import logging
 
 from discord import Member
 from discord.ext.commands import Bot, Cog, GroupCog
+from discord_py_utilities.exceptions import NoPermissionException
 from discord_py_utilities.messages import send_message
 
 from classes.lobby.JoinRequirements import JoinRequirements
+from classes.permissions_notice import PermissionNotice
 from databases.transactions.ConfigData import ConfigData
 
 
@@ -32,7 +34,10 @@ class LobbyListeners(GroupCog) :
 		channel = await ConfigData().get_channel(member.guild, "leave_log")
 		if not channel:
 			return
-		await send_message(channel, f"{member.name} ({member.id}) has left! " + leave_message)
+		try :
+			await send_message(channel, f"{member.name} ({member.id}) has left! " + leave_message)
+		except NoPermissionException :
+			await PermissionNotice.notify(member.guild, channel=channel, purpose="post leave-log messages")
 
 
 

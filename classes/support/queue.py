@@ -58,6 +58,26 @@ def describe_task(task, include_args: bool = False) -> str:
         return f"{getattr(task, '__name__', repr(task))} <describe failed: {e}>"
 
 
+def _extract_task_channel(task):
+    """Best-effort pull of the `channel` argument from a not-yet-started coroutine.
+
+    Used so a permission failure in a queued send can be reported against the actual
+    channel. Returns None for non-coroutines, started/finished coroutines, or tasks
+    with no `channel` argument.
+
+    """
+    try:
+        if not inspect.iscoroutine(task):
+            return None
+        frame = getattr(task, "cr_frame", None)
+        f_locals = getattr(frame, "f_locals", None) if frame is not None else None
+        if not f_locals:
+            return None
+        return f_locals.get("channel")
+    except Exception:
+        return None
+
+
 class Queue(metaclass=Singleton):
     high_priority_queue = []
     normal_priority_queue = []
@@ -120,6 +140,9 @@ class Queue(metaclass=Singleton):
         # keep user data out of the info-level logs.
         task_desc = describe_task(task)
         task_error_desc = describe_task(task, include_args=True)
+        # Grab the target channel now (if this is a send_message-style task) so a permission
+        # failure below can be turned into a user-facing notice pointing at the right channel.
+        captured_channel = _extract_task_channel(task)
 
         try:
 
@@ -145,10 +168,13 @@ class Queue(metaclass=Singleton):
 
         except KeyNotFound as e:
             logging.warning(f"Key not found: {task_desc}: {e}")
+
         except NoPermissionException as e:
             logging.warning(f"Not enough permissions to perform task: {task_desc}: {e}")
+            await self._notify_permission_issue(captured_channel)
         except discord.Forbidden as e:
             logging.warning(f"Discord Forbidden: {task_desc}: {e}")
+            await self._notify_permission_issue(captured_channel)
 
         except discord.NotFound:
           logging.warning(f"Discord NotFound: {task_desc}")
@@ -158,6 +184,19 @@ class Queue(metaclass=Singleton):
         logging.info(self.status())
 
 
+
+    async def _notify_permission_issue(self, channel):
+        """Turn a queued permission failure into a user-facing notice, when the guild is known."""
+        try:
+            guild = getattr(channel, "guild", None)
+            if guild is None:
+                # DMs and unresolved channels have no guild; nothing actionable to report.
+                return
+            # Lazy import to avoid a circular import at module load.
+            from classes.permissions_notice import PermissionNotice
+            await PermissionNotice.notify(guild, channel=channel, purpose="post an automated message")
+        except Exception as e:
+            logging.debug(f"Could not send queued permission notice: {e}")
 
     def get_queue_time(self) -> float:
         return (len(self.high_priority_queue) + len(self.normal_priority_queue) + len(self.low_priority_queue)) * 0.3
