@@ -193,11 +193,11 @@ class LobbyProcess :
 		if channel is None:
 			channel = await guild.fetch_channel(int(verification_completed_channel))
 
-		if verification_completed_channel != server_join_channel:
-			logging.info("Checking if user is in recent memory history")
-			async for cmessage in channel.history(limit=20) :
-				if cmessage.author.bot and user in cmessage.mentions :
-					return
+		# if verification_completed_channel != server_join_channel:
+		# 	logging.info("Checking if user is in recent memory history")
+		# 	async for cmessage in channel.history(limit=20) :
+		# 		if cmessage.author.bot and user in cmessage.mentions :
+		# 			return
 
 		await send_message(channel, f"Welcome to {guild.name} {user.mention}! {message}")
 
