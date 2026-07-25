@@ -180,23 +180,23 @@ class LobbyProcess :
 
 	@staticmethod
 	async def welcome(user: discord.Member, guild: discord.Guild) :
-		logging.info('a')
+
 		if ConfigData().get_key(guild.id, "send_verification_completed_message") == "DISABLED" :
 			return
-		logging.info('b')
+
 		verification_completed_channel = ConfigData().get_key(guild.id, "verification_completed_channel")
+		server_join_channel = ConfigData().get_key(guild.id, "server_join_channel")
 		message = ConfigData().get_key(guild.id, "verification_completed_message")
 		channel = guild.get_channel(int(verification_completed_channel))
-		logging.info('c')
+
 
 		if channel is None:
 			channel = await guild.fetch_channel(int(verification_completed_channel))
-		logging.info('d')
 
-		async for cmessage in channel.history(limit=20) :
-			if cmessage.author.bot and user in cmessage.mentions :
-				return
-		logging.info('e')
+		if verification_completed_channel != server_join_channel:
+			async for cmessage in channel.history(limit=20) :
+				if cmessage.author.bot and user in cmessage.mentions :
+					return
 
 		await send_message(channel, f"Welcome to {guild.name} {user.mention}! {message}")
 
