@@ -30,6 +30,7 @@ from databases.exceptions.KeyNotFound import KeyNotFound
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.ServerTransactions import ServerTransactions
 from project.data import VERSION
+from views.buttons.CrossServerAccessButton import CrossServerAccessButton
 from views.buttons.approvalbuttons import ApprovalButtons
 from views.buttons.dobentrybutton import dobentry
 from views.buttons.idreviewbuttons import IdReviewButton
@@ -260,6 +261,7 @@ async def setup_hook() :
 	bot.add_view(IdSubmitButton())
 	bot.add_view(IdReviewButton())
 	bot.add_view(OnboardingLayout())
+	bot.add_view(CrossServerAccessButton())
 
 @bot.command(aliases=["cr", "reload"])
 @commands.has_permissions(administrator=True)
