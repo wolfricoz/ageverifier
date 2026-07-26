@@ -5,6 +5,7 @@ from discord.ext import commands
 
 import databases.current
 from classes.AgeCalculations import AgeCalculations
+from classes.kernel.LocalCacheStorage import LocalCacheStorage
 from classes.lobbyprocess import LobbyProcess
 from classes.lobbytimers import LobbyTimers
 from databases.enums.joinhistorystatus import JoinHistoryStatus
@@ -42,6 +43,7 @@ class VerificationProcess :
 		self.dob = None
 		self.years = None
 		self.reverify = reverify
+		self.cache = LocalCacheStorage()
 
 	async def verify(self) -> str :
 		try :
@@ -51,6 +53,7 @@ class VerificationProcess :
 				self.age = int(self.age.strip())
 			dob = await AgeCalculations.validate_user_info(self.member, self.age, f"{self.month}/{self.day}/{self.year}",
 			                                               self.mod_channel)
+
 			self.dob = dob
 			agechecked, years = AgeCalculations.agechecker(self.age, dob)
 			self.years = years
@@ -59,21 +62,32 @@ class VerificationProcess :
 			if self.check_underage(years):
 				return self.discrepancy
 
-			# Checks if the member is below the minimum age for the server.
-			if self.check_minimum_age():
-				return self.discrepancy
+
 
 			# Check if users made any mistakes; prevent unnecessary ID checks.
 			if self.check_typos(agechecked):
 				return self.discrepancy
 
+			self.cache.add_submission(self.member.id, dob)
+
+
+			# Checks if the member is below the minimum age for the server.
+			if self.check_minimum_age():
+				return self.discrepancy
+
+
+
 			# Checks if member has a date of birth in the database, and if the date of births match.
 			if self.check_record(dob):
+				return self.discrepancy
+			# Checks the cache to see what the user recently gave. Reset with each restart (weekly)
+			if self.check_local_cache():
 				return self.discrepancy
 
 			# Checks if member is on the id list
 			if self.check_id_record():
 				return self.discrepancy
+
 
 			# To be added: Check username for suspicious patterns.
 			if self.discrepancy:
@@ -166,6 +180,15 @@ class VerificationProcess :
 	def check_record(self, dob) :
 		"""Checks if the member has a date of birth in the database, and if the date of births match."""
 		if AgeCalculations.check_date_of_birth(self.user_record, dob) is False :
+			self.discrepancy = "dob_mismatch"
+			return True
+		return None
+
+	def check_local_cache(self):
+		cached_dob = self.cache.get_submission(self.member.id)
+		if not cached_dob:
+			return None
+		if cached_dob != self.dob:
 			self.discrepancy = "dob_mismatch"
 			return True
 		return None

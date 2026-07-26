@@ -11,6 +11,7 @@ from discord_py_utilities.messages import send_response
 import classes.permissions as permissions
 from classes.AgeCalculations import AgeCalculations
 from classes.encryption import Encryption
+from classes.kernel.LocalCacheStorage import LocalCacheStorage
 from classes.lobbyprocess import LobbyProcess
 from classes.whitelist import whitelist
 from databases.current import Users
@@ -179,6 +180,7 @@ class Database(commands.GroupCog, name="database", description="Commands for int
 		await send_response(interaction, f"⌛ deleting {user.mention} from the database", ephemeral=True)
 		if await whitelist(interaction) :
 			return
+		LocalCacheStorage().remove_submission(user.id)
 		if UserTransactions().soft_delete(user.id, interaction.guild.name) is False :
 			await interaction.followup.send(f"Can't find entry: ({user.name}){user.id}")
 			return
