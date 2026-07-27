@@ -50,7 +50,7 @@ class JoinRequirements :
 			# Setting up kick variables; these are only used when actually needing to kick.
 			server = ServerTransactions().get(self.member.guild.id)
 			invite = "No invite set"
-			lobby_channel = await ConfigData().get_channel(self.member.guild, "VERIFICATION_FAILURE_LOG")
+			lobby_channel = await ConfigData().get_channel(self.member.guild, "verification_completed_channel")
 			if not lobby_channel :
 				logging.info(f"JoinRequirements: Lobby channel not set.")
 				return None
