@@ -5,6 +5,7 @@ from discord.ext import commands
 
 import databases.current
 from classes.AgeCalculations import AgeCalculations
+from classes.encryption import Encryption
 from classes.kernel.LocalCacheStorage import LocalCacheStorage
 from classes.lobbyprocess import LobbyProcess
 from classes.lobbytimers import LobbyTimers
@@ -44,6 +45,9 @@ class VerificationProcess :
 		self.years = None
 		self.reverify = reverify
 		self.cache = LocalCacheStorage()
+		# The date of birth to display as "Recorded" in a dob_mismatch idcheck.
+		# Set to the DB record when the DB check trips, or the cached value when the cache check trips.
+		self.recorded_dob = None
 
 	async def verify(self) -> str :
 		try :
@@ -75,17 +79,14 @@ class VerificationProcess :
 			if self.check_minimum_age():
 				return self.discrepancy
 
-
+			if self.check_id_record():
+				return self.discrepancy
 
 			# Checks if member has a date of birth in the database, and if the date of births match.
 			if self.check_record(dob):
 				return self.discrepancy
 			# Checks the cache to see what the user recently gave. Reset with each restart (weekly)
 			if self.check_local_cache():
-				return self.discrepancy
-
-			# Checks if member is on the id list
-			if self.check_id_record():
 				return self.discrepancy
 
 
@@ -181,6 +182,7 @@ class VerificationProcess :
 		"""Checks if the member has a date of birth in the database, and if the date of births match."""
 		if AgeCalculations.check_date_of_birth(self.user_record, dob) is False :
 			self.discrepancy = "dob_mismatch"
+			self.recorded_dob = Encryption().decrypt(self.user_record.date_of_birth)
 			return True
 		return None
 
@@ -190,6 +192,7 @@ class VerificationProcess :
 			return None
 		if cached_dob != self.dob:
 			self.discrepancy = "dob_mismatch"
+			self.recorded_dob = cached_dob
 			return True
 		return None
 

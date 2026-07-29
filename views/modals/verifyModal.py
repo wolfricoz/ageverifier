@@ -3,7 +3,6 @@ import logging
 import discord
 from discord_py_utilities.messages import send_response
 
-from classes.encryption import Encryption
 from classes.idcheck import IdCheck
 from classes.verification.process import VerificationProcess
 
@@ -120,15 +119,13 @@ class VerifyModal(discord.ui.Modal) :
 				server = interaction.guild.name
 
 
+
 			return await IdCheck.send_check(interaction,
 			                                verification_process.id_channel,
 			                                verification_process.discrepancy,
 			                                verification_process.age,
 			                                verification_process.dob,
-			                                date_of_birth=Encryption().decrypt(
-				                                verification_process.user_record.date_of_birth)
-			                                if verification_process.user_record is not None
-			                                else None,
+			                                date_of_birth=verification_process.recorded_dob,
 			                                years=verification_process.years if verification_process.years else None,
 			                                id_check=id_check,
 			                                id_check_reason=verification_process.id_check_info.reason if verification_process.id_check_info else verification_process.discrepancy,
