@@ -109,10 +109,7 @@ async def verify_age(request: Request, guild_id: int, user_id: int, verification
 			                                   vp.discrepancy,
 			                                   vp.age,
 			                                   vp.dob,
-			                                   date_of_birth=Encryption().decrypt(
-				                                   vp.user_record.date_of_birth)
-			                                   if vp.user_record is not None
-			                                   else None,
+			                                   date_of_birth=vp.recorded_dob,
 			                                   years=vp.years if vp.years else None,
 			                                   id_check=id_check,
 			                                   id_check_reason=vp.id_check_info.reason if vp.id_check_info else vp.discrepancy,

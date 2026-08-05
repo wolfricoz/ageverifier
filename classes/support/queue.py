@@ -2,12 +2,15 @@ import asyncio
 import inspect
 import logging
 import math
+import time
 
 import discord
 from discord_py_utilities.exceptions import NoPermissionException
 
 from classes.singleton import Singleton
 from databases.exceptions.KeyNotFound import KeyNotFound
+
+TASK_TIMEOUT = 600
 
 
 def describe_task(task, include_args: bool = False) -> str:
@@ -83,12 +86,16 @@ class Queue(metaclass=Singleton):
     normal_priority_queue = []
     low_priority_queue = []
     task_finished = True
+    # monotonic timestamp of when the task currently being awaited started, or None when
+    # idle. The watchdog in modules/queuetask.py uses it to spot a wedged queue.
+    task_started_at = None
 
     def clear(self) :
         self.high_priority_queue = []
         self.normal_priority_queue = []
         self.low_priority_queue = []
         self.task_finished = True
+        self.task_started_at = None
 
     def status(self) :
         return f"Remaining queue: High: {len(self.high_priority_queue)} Normal: {len(self.normal_priority_queue)} Low: {len(self.low_priority_queue)} Estimated time: {round(math.ceil(self.get_queue_time()) / 60, 2)} minutes"
@@ -131,6 +138,20 @@ class Queue(metaclass=Singleton):
         if not self.task_finished or self.empty() :
             return
         self.task_finished = False
+        self.task_started_at = time.monotonic()
+        try:
+            await self._run_next()
+        finally:
+            # Always hand the queue back, whatever happened. `except Exception` below
+            # cannot see CancelledError (or any other BaseException), and a single one
+            # escaping used to leave task_finished False forever - every later task then
+            # sat in the queue untouched, which looks exactly like the bot dying halfway
+            # through a verification.
+            self.task_finished = True
+            self.task_started_at = None
+            logging.info(self.status())
+
+    async def _run_next(self):
         task = self.process()
 
         # Describe the task now, while a coroutine still holds its original arguments in
@@ -151,20 +172,16 @@ class Queue(metaclass=Singleton):
                 self.low_priority_queue = [i for i in self.low_priority_queue if i is not None]
                 self.normal_priority_queue = [i for i in self.normal_priority_queue if i is not None]
                 self.high_priority_queue = [i for i in self.high_priority_queue if i is not None]
-                print(self.status())
-                self.task_finished = True
                 return
             if not inspect.iscoroutine(task):
                 logging.info(f"Processing task: {task_desc}")
                 task()
-                self.task_finished = True
-
-                print(self.status())
                 return
             logging.info(f"Processing task: {task_desc}")
             if task.__name__.lower() in ["delete"]:
                 await asyncio.sleep(1)
-            await task
+            # Bounded so one unresponsive await cannot hold up the whole queue.
+            await asyncio.wait_for(task, timeout=TASK_TIMEOUT)
 
         except KeyNotFound as e:
             logging.warning(f"Key not found: {task_desc}: {e}")
@@ -178,10 +195,10 @@ class Queue(metaclass=Singleton):
 
         except discord.NotFound:
           logging.warning(f"Discord NotFound: {task_desc}")
+        except asyncio.TimeoutError:
+          logging.error(f"Queue task exceeded {TASK_TIMEOUT}s and was cancelled: {task_error_desc}")
         except Exception as e:
           logging.error(f"Error in queue while processing {task_error_desc}: {e}", exc_info=True)
-        self.task_finished = True
-        logging.info(self.status())
 
 
 

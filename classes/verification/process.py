@@ -93,6 +93,7 @@ class VerificationProcess :
 			# To be added: Check username for suspicious patterns.
 			if self.discrepancy:
 				return self.discrepancy
+			self.cache.add_submission(self.member.id, dob, overwrite=True)
 			# === Validation finished, we now start processing the member ===
 			automatic_status = ConfigData().get_key_or_none(self.guild.id, "automatic_verification")
 			if automatic_status and (automatic_status == "ENABLED" or self.reverify) :
@@ -187,6 +188,16 @@ class VerificationProcess :
 		return None
 
 	def check_local_cache(self):
+		"""Compares the submission against the last one this process saw from the member.
+
+		Only consulted when there is no stored date of birth to check against. A member
+		whose submission matches their database record has already been checked against
+		the authoritative value, and a stale in-memory entry from an earlier typo must not
+		override that - doing so produced ID checks reading "Given: X Recorded: X" for
+		members who had just corrected themselves.
+		"""
+		if self.user_record is not None and self.user_record.date_of_birth is not None:
+			return None
 		cached_dob = self.cache.get_submission(self.member.id)
 		if not cached_dob:
 			return None
