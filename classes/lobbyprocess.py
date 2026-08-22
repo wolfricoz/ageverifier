@@ -181,12 +181,26 @@ class LobbyProcess :
 	@staticmethod
 	async def welcome(user: discord.Member, guild: discord.Guild) :
 
-		if ConfigData().get_key(guild.id, "send_verification_completed_message") == "DISABLED" :
+		# Both destinations are independent: the channel message keeps its own toggle, and
+		# DM_VERIFICATION_COMPLETED_MESSAGE adds a copy in the user's DMs. Turning the
+		# channel toggle off while leaving the DM toggle on gives a DM-only welcome.
+		send_in_channel = ConfigData().get_toggle(guild.id, "send_verification_completed_message", "ENABLED", "ENABLED")
+		send_in_dm = ConfigData().get_toggle(guild.id, "dm_verification_completed_message")
+		if not send_in_channel and not send_in_dm :
+			return
+
+		message = ConfigData().get_key(guild.id, "verification_completed_message")
+		welcome_message = f"Welcome to {guild.name} {user.mention}! {message}"
+
+		if send_in_dm :
+			# The member may have DMs closed; that is not a config problem, so it is ignored.
+			await send_message(user, welcome_message, error_mode='ignore')
+
+		if not send_in_channel :
 			return
 
 		verification_completed_channel = ConfigData().get_key(guild.id, "verification_completed_channel")
 		server_join_channel = ConfigData().get_key(guild.id, "server_join_channel")
-		message = ConfigData().get_key(guild.id, "verification_completed_message")
 		channel = guild.get_channel(int(verification_completed_channel))
 
 
@@ -199,7 +213,7 @@ class LobbyProcess :
 		# 		if cmessage.author.bot and user in cmessage.mentions :
 		# 			return
 
-		await send_message(channel, f"Welcome to {guild.name} {user.mention}! {message}")
+		await send_message(channel, welcome_message)
 
 	@staticmethod
 	async def age_log(userid, dob, interaction, operation="added", log=True, reason="") :
