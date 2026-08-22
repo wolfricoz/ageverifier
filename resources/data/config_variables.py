@@ -1,9 +1,14 @@
 from enum import StrEnum
 
+DEFAULT_VERIFICATION_BUTTON_LABEL = "Start Age Verification!"
+# Discord rejects the whole message when a button label is longer than this.
+MAX_BUTTON_LABEL_LENGTH = 80
+
 messagechoices = {
 	"verification_completed_message" : 'This is the welcome message that will be posted in the verification_completed_channel channel This starts with: `Welcome to {server name} {user}! This is where the message goes`',
 	"server_join_message"            : 'This is the welcome message that will be posted in the lobby channel, and be the first message new users see. This starts with: `Welcome {user}! This is where the message goes`',
-	"server_leave_message" : "This is the message that will be sent when a user leaves the server."
+	"server_leave_message" : "This is the message that will be sent when a user leaves the server.",
+	"verification_button_label" : f'💎 Premium: The text on the verification button itself (max 80 characters). '
 	# "idmessage"    : 'This message will be sent to the user when using the id request method along with the default.',
 }
 channelchoices = {
@@ -74,5 +79,3 @@ available_toggles = ["SEND_JOIN_MESSAGE", "SEND_VERIFICATION_COMPLETED_MESSAGE",
 enabled_toggles = ["SEND_VERIFICATION_COMPLETED_MESSAGE", "SEND_JOIN_MESSAGE", 'BANS', 'JOINED_AT', 'CREATED_AT',
                    'USER_ID', 'PICTURE_SMALL',
                    "LOG_CONFIG_CHANGES", "CLEANUP_MESSAGES", "KICK_ON_CLEAN"]
-
-

@@ -19,7 +19,8 @@ from classes.support.queue import Queue
 from databases.transactions.AgeRoleTransactions import AgeRoleTransactions
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.ConfigTransactions import ConfigTransactions
-from resources.data.config_variables import REVERIFICATION_KEY, VERIFICATION_KEY, VerificationMethods, \
+from resources.data.config_variables import MAX_BUTTON_LABEL_LENGTH, REVERIFICATION_KEY, VERIFICATION_KEY, \
+	VerificationMethods, \
 	available_toggles, channelchoices, \
 	lobby_approval_toggles, messagechoices, \
 	rolechoices
@@ -114,14 +115,25 @@ class Config(commands.GroupCog, name="config",
         Lets you customize the various messages the bot sends. You can either set a new custom message or remove an existing one to revert it back to the default.
         When you choose to 'set' a message, a pop-up will appear for you to enter your new text.
 
+        Some of these are premium only, such as `verification_button_label`, which changes the text on the verification button itself.
 
         **Permissions:**
         - You'll need the `Manage Server` permission to use this command.
         """
 		match action.value.lower() :
 			case 'set' :
+				# Only setting is gated: a server whose premium lapsed can still clear a value
+				# it set earlier, even though the bot already falls back to the default for it.
+				if key.value == "verification_button_label" and not AccessControl().is_premium(interaction.guild.id) :
+					return await send_response(interaction,
+					                           f"`{key.value}` is a premium setting. Without premium the default is used instead. "
+					                           f"You can find out more about premium here: {os.getenv('DASHBOARD_URL')}",
+					                           ephemeral=True)
+				# Button labels have a much lower ceiling than a normal message; the modal is
+				# capped so an over-long label can never reach Discord in the first place.
+				max_length = MAX_BUTTON_LABEL_LENGTH if key.value == "verification_button_label" else 512
 				# noinspection PyUnresolvedReferences
-				await interaction.response.send_modal(ConfigInputUnique(key=key.value))
+				await interaction.response.send_modal(ConfigInputUnique(key=key.value, max_length=max_length))
 
 			case 'remove' :
 				await interaction.response.defer(ephemeral=True)

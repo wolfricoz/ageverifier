@@ -11,9 +11,14 @@ from databases.transactions.ConfigTransactions import ConfigTransactions
 
 class ConfigInputUnique(discord.ui.Modal, title='set config message'):
 
-    def __init__(self, key):
+    def __init__(self, key, max_length: int = 512):
         super().__init__(timeout=None)  # Set a timeout for the modal
         self.key = key
+        # Modal children are deep-copied per instance, so this only affects this modal.
+        # Shorter limits are used for values Discord itself caps, such as button labels.
+        self.text.max_length = max_length
+        if max_length <= 80:
+            self.text.style = discord.TextStyle.short
     text = discord.ui.TextInput(
             label='What is the message?',
             style=discord.TextStyle.long,

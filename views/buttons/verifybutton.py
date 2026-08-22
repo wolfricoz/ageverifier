@@ -13,15 +13,45 @@ from databases.transactions.ConfigData import ConfigData
 from databases.transactions.UserTransactions import UserTransactions
 from databases.transactions.VerificationTransactions import VerificationTransactions
 from databases.transactions.WebsiteDataTransactions import WebsiteDataTransactions
-from resources.data.config_variables import VERIFICATION_KEY, VerificationMethods
+from resources.data.config_variables import DEFAULT_VERIFICATION_BUTTON_LABEL, MAX_BUTTON_LABEL_LENGTH, \
+	VERIFICATION_KEY, VerificationMethods
 from views.buttons.approvalbuttons import ApprovalButtons
 from views.buttons.tosbutton import TOSButton
 from views.buttons.websitebutton import WebsiteButton
 
 
+def get_verification_button_label(guild_id: int = None) -> str :
+	"""Resolves the label on the verification button for a guild.
+
+	A custom label is a premium perk, so non-premium guilds (and premium guilds that never
+	set one) get DEFAULT_VERIFICATION_BUTTON_LABEL. The stored value is trimmed to Discord's
+	button label limit; an over-long label would otherwise make the entire message fail to
+	send, which would take the lobby down with it.
+	"""
+	# Test for guild ID, if not return default; this prevents errors.
+	if not guild_id :
+		return DEFAULT_VERIFICATION_BUTTON_LABEL
+	if not AccessControl().is_premium(guild_id) :
+		return DEFAULT_VERIFICATION_BUTTON_LABEL
+	label = ConfigData().get_key_or_none(guild_id, "verification_button_label")
+	if not label :
+		return DEFAULT_VERIFICATION_BUTTON_LABEL
+	# A button label is a single line: the dashboard's field is one line, but a value that
+	# arrived any other way could contain newlines, which render badly on a button.
+	label = " ".join(str(label).split())
+	if not label :
+		return DEFAULT_VERIFICATION_BUTTON_LABEL
+	return label[:MAX_BUTTON_LABEL_LENGTH]
+
+
 class VerifyButton(discord.ui.View) :
-	def __init__(self) :
+	def __init__(self, guild_id: int = None) :
 		super().__init__(timeout=None)
+		# guild_id is omitted by the persistent-view registrations in main.py/Lobby.py: those
+		# only exist to route clicks on messages that were already sent, so the label they
+		# carry is never displayed. It is passed whenever a new message is actually sent.
+		if guild_id is not None :
+			self.verify.label = get_verification_button_label(guild_id)
 
 	@discord.ui.button(label="Start Age Verification!", style=discord.ButtonStyle.green, custom_id="verify")
 	async def verify(self, interaction: discord.Interaction, button: discord.ui.Button) :
@@ -48,7 +78,7 @@ class VerifyButton(discord.ui.View) :
 		                    f"{interaction.user.mention} To verify using AgeVerifier, you must accept our [Privacy Policy](https://wolfricoz.github.io/ageverifier/privacypolicy.html). By accepting, you consent to your date of birth being stored for verification purposes. Please review the policy and if you accept our privacy policy, please click 'I accept.'",
 		                    view=TOSButton(interaction.guild_id), ephemeral=True)
 
-	def get_user_data(self, user_id: int) :
+	def get_user_data(self, user_id: int ):
 		user = UserTransactions().get_user(user_id)
 		dob = Encryption().decrypt(user.date_of_birth)
 		age = AgeCalculations.dob_to_age(dob)

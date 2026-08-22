@@ -51,7 +51,7 @@ async def welcome_user(member) :
 	                   f"Welcome {member.mention}! {lobby_welcome}\n{warning}"
 	                   f"\n"
 	                   f"-# GDPR AND INFORMATION USE DISCLOSURE: By entering your birth date (MM/DD/YYYY) and age, you consent to having this information about you stored by Age Verifier and used to verify that you are the age that you say you are, including sharing to relevant parties for age verification. This information will be stored for a maximum of 1 year if you are no longer in a server using Ageverifier.",
-	                   view=VerifyButton(), error_mode="ignore")
+	                   view=VerifyButton(member.guild.id), error_mode="ignore")
 
 
 async def add_join_roles(member) -> bool:

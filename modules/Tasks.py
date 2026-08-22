@@ -105,6 +105,13 @@ class Tasks(commands.Cog) :
 		await self.dob_expiration_check()
 		await self.clean_deleted_users()
 
+	@staticmethod
+	async def purge_record(userid, reason: str) :
+		"""
+		Permanently deletes one user without blocking the event loop.
+		"""
+		await asyncio.to_thread(UserTransactions().permanent_delete, userid, reason)
+
 	async def dob_expiration_check(self) :
 		"""
 		removes expired entries based on dob expiration
@@ -116,7 +123,7 @@ class Tasks(commands.Cog) :
 			if count % 10 == 0 :
 				logging.info(f"Processed {count} expired entries so far.")
 				await asyncio.sleep(0)
-			UserTransactions().permanent_delete(entry[0], "Expiration Check (Entry Expired)")
+			await self.purge_record(entry[0], "Expiration Check (Entry Expired)")
 			# logging.info("DEV: EXPIRATION CHECK DISABLED")
 			logging.info(f"Database record: {entry[0]} expired with date: {entry[1]}")
 			count += 1
@@ -131,12 +138,12 @@ class Tasks(commands.Cog) :
 		count = 0
 		for entry in records :
 			if count % 10 == 0 :
-				logging.info(f"Processed {count} expired entries so far.")
-				await asyncio.sleep(0)
-
-				UserTransactions().permanent_delete(entry, "GDPR Removal (30 days passed)")
-				count += 1
-		# logging.info("DEV: EXPIRATION CHECK DISABLED")
+				logging.info(f"Processed {count} GDPR expired entries so far.")
+			# The delete and the increment used to sit inside the modulo guard above, so
+			# count stuck at 1 after the first record and the guard never matched again -
+			# every remaining entry was skipped and the GDPR purge silently did nothing.
+			await self.purge_record(entry, "GDPR Removal (30 days passed)")
+			count += 1
 		logging.info(f"Finished checking all GDPR expired entries, total removed: {count}")
 
 	@tasks.loop(hours=12)

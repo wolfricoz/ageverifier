@@ -26,6 +26,7 @@ Most of AgeVerifier is **free**. The following features require **premium**:
 - **Reverification** — including the reverification roles and the reverify log channel.
 - **Leave Message** — the notification posted when a member leaves.
 - **Leave Survey** — the feedback survey sent to members who leave.
+- **Verification Button Label** — custom text on the verification button.
 
 Everything else described in this guide is available on the free plan. Premium items are marked with **💎 Premium**
 below.
@@ -35,14 +36,16 @@ below.
 ## Welcome & System Messages
 
 These are the messages the bot posts automatically at different points. You write the text yourself, and the bot fills
-in details like the user's name and your server name. You can write any of them for free; note that the leave message is
-only *sent* when the premium **Send Leave Message** feature is enabled.
+in details like the user's name and your server name. You can write the welcome messages for free; note that the leave
+message is only *sent* when the premium **Send Leave Message** feature is enabled, and that the verification button
+label can only be changed with premium.
 
 | Setting                            | What it does                                                                                                                                                                                         | Default | Plan       |
 |------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------|------------|
 | **Verification Completed Message** | The welcome message posted in your verification-completed channel once a user finishes verifying. It automatically begins with `Welcome to {server name} {user}!` and then your custom text follows. | Not set | Free       |
 | **Server Join Message**            | The very first message a new user sees when they join, posted in your lobby channel. It automatically begins with `Welcome {user}!` followed by your custom text.                                    | Not set | Free       |
 | **Server Leave Message**           | The message sent when a user leaves your server. Requires the premium *Send Leave Message* feature to actually be delivered.                                                                         | Not set | 💎 Premium |
+| **Verification Button Label**      | 💎 The text on the verification button itself — the green button members click to start verifying. Maximum 80 characters (Discord's limit). When it is not set, the button reads `Start Age Verification!`. | Not set | 💎 Premium |
 
 ---
 

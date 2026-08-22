@@ -26,6 +26,8 @@ from discord import Interaction, app_commands
 from discord.app_commands import AppCommandError, CheckFailure, command
 from discord.ext import commands
 from discord_py_utilities.exceptions import NoChannelException, NoPermissionException
+from discord_py_utilities.messages import send_message
+from discord_py_utilities.permissions import find_first_accessible_text_channel
 from dotenv import load_dotenv
 
 from databases.exceptions.KeyNotFound import KeyNotFound
@@ -174,10 +176,22 @@ class Logging(commands.Cog):
 	@staticmethod
 	def _format_options(interaction: Interaction) -> str:
 		"""Renders the slash-command options as a readable string."""
+
+		def leaf_options(options):
+			# Subcommands (type 1) and subcommand groups (type 2) carry the real
+			# options one level down. Without descending, every GroupCog command
+			# (/config messages, /lobby ...) renders as "No data" - dropping exactly
+			# the arguments worth having when the command errored.
+			for option in options:
+				if option.get("type") in (1, 2):
+					yield from leaf_options(option.get("options") or [])
+				elif "value" in option:
+					yield f"{option['name']}: {option['value']}"
+
 		try:
-			data = [f"{a['name']}: {a['value']}" for a in interaction.data['options']]
-			return ", ".join(data)
-		except (KeyError, TypeError):
+			data = list(leaf_options(interaction.data["options"]))
+			return ", ".join(data) if data else "No data"
+		except (KeyError, TypeError, AttributeError):
 			return "No data"
 
 	# ============================================================
@@ -251,11 +265,33 @@ class Logging(commands.Cog):
 
 	# ============================================================
 	async def on_fail_message(self, interaction: Interaction, message: str):
-		"""sends a message to the user if the command fails."""
-		try:
-			await interaction.channel.send(message)
-		except Exception as e:
-			logging.error(e)
+		"""Tells the user their command failed, over whichever route still works.
+
+		The interaction itself is tried first so the notice is ephemeral and reaches the
+		person who ran the command. That route is gone once the token is dead - a 10062
+		from blowing the 3s deadline is precisely when we most need to say something - so
+		fall back to the channel, and then to any channel we can actually post in. Going
+		straight to interaction.channel is not enough on its own: where the bot cannot
+		speak there, the send raises and the user is left with Discord's bare
+		"The application did not respond".
+		"""
+		routes = (
+			("interaction response",
+			 lambda: interaction.response.send_message(message, ephemeral=True)),
+			("interaction followup",
+			 lambda: interaction.followup.send(message, ephemeral=True)),
+			("origin channel", lambda: interaction.channel.send(message)),
+			("fallback channel", lambda: send_message(
+				find_first_accessible_text_channel(interaction.guild), message,
+				error_mode='ignore')),
+		)
+		for name, send in routes:
+			try:
+				await send()
+				return
+			except Exception as e:
+				logging.debug(f"Failure notice via {name} did not go through: {e}")
+		logging.error(f"Could not deliver failure notice in {interaction.guild}: {message}")
 
 	# ============================================================
 	async def on_app_command_error(self, interaction: Interaction, error: AppCommandError):
@@ -273,19 +309,24 @@ class Logging(commands.Cog):
 		command_name = interaction.command.name if interaction.command else "unknown"
 		guild_label = f"{guild.name} {guild.id}" if guild else f"DM {interaction.user.id}"
 
+		tb = traceback.format_exc()
 		event_id = self._capture(error, guild=guild, user=interaction.user,
 		                         command_name=command_name, arguments=arguments)
 		logger.warning(
-			f"\n{guild_label} {command_name} with arguments {arguments}: "
-			f"{traceback.format_exc()}")
-		header = (f"{guild_label}: {interaction.user}: {command_name} "
-		          f"with arguments {arguments}")
-		await self._notify_dev(header, event_id, traceback.format_exc())
+			f"\n{guild_label} {command_name} with arguments {arguments}: {tb}")
 
+		# The user comes before the DEV channel. _capture() is synchronous (it hands the
+		# event to Sentry's background transport) so the ref is already available here,
+		# while _notify_dev uploads a file - awaiting that first parks the user's notice
+		# behind a slow round trip, and loses it outright if the bot restarts in between.
 		notice = f"Command failed: {error} \nreport this to Rico"
 		if event_id:
 			notice += f"\n(ref: `{event_id}`)"
 		await self.on_fail_message(interaction, notice)
+
+		header = (f"{guild_label}: {interaction.user}: {command_name} "
+		          f"with arguments {arguments}")
+		await self._notify_dev(header, event_id, tb)
 
 	# ============================================================
 	@commands.Cog.listener(name='on_command')

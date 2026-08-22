@@ -247,8 +247,13 @@ class ConfigSetup :
 				'verification_completed_message' : "Be sure to get some roles in the roles channel and if you need help be sure to ask the staff!",
 				'server_leave_message': 'Thanks for hanging out with us! 👋'
 			}
+			default = message_dict.get(messagekey)
+			if default is None :
+				# Not every message has a starting text worth writing during setup; the
+				# verification button label, for instance, already falls back on its own.
+				continue
 			self.changes[messagekey] = messagevalue
-			ConfigTransactions().config_unique_add(guild.id, messagekey, message_dict[messagekey], overwrite=True)
+			ConfigTransactions().config_unique_add(guild.id, messagekey, default, overwrite=True)
 
 	async def create_channel(self, guild, category, name, description=None) :
 		channel = get(guild.text_channels, name=name)

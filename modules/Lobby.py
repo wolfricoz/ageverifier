@@ -46,7 +46,7 @@ class Lobby(commands.GroupCog, description="Commands for managing the new member
         """
 		await interaction.channel.send(
 			f"{text}\n-# GDPR AND INFORMATION USE DISCLOSURE: By entering your birth date (MM/DD/YYYY) and age, you consent to having this information about you stored by Age Verifier and used to verify that you are the age that you say you are, including sharing to relevant parties for age verification. This information will be stored for a maximum of 1 year if you are no longer in a server using Ageverifier.",
-			view=VerifyButton())
+			view=VerifyButton(interaction.guild.id))
 
 	@app_commands.command(description="Manually verifies a user with their ID and date of birth.")
 	@app_commands.checks.has_permissions(administrator=True)
