@@ -16,6 +16,7 @@ from discord_py_utilities.permissions import find_first_accessible_text_channel
 
 from classes.jsonmaker import Configer
 from classes.support.queue import Queue
+from classes.toolbox import Toolbox
 from databases.Generators.uidgenerator import uidgenerator
 from databases.current import Users
 from databases.enums.joinhistorystatus import JoinHistoryStatus
@@ -323,6 +324,35 @@ class DevTools(commands.GroupCog, name="dev", description="A set of commands for
 	# @check_access()
 	# async def test_start_onboarding(self, interaction: discord.Interaction) :
 	# 	await Onboarding().join_message(interaction.channel)
+
+	@app_commands.command(name="toolbox", description="[DEV] Runs one of the toolbox tools")
+	@check_access()
+	@app_commands.choices(tool=[app_commands.Choice(name=label, value=method)
+	                           for label, method in Toolbox.TOOLS_LIST.items()])
+	async def toolbox(self, interaction: discord.Interaction, tool: app_commands.Choice[str],
+	                  dry_run: bool = True, guild_id: str = None) :
+		"""
+        Runs one of the tools in the toolbox and posts whatever it returns.
+        dry_run and guild_id are only used by the tools that read them; the rest ignore them.
+
+        **Permissions:**
+        - This is a developer-only command.
+        """
+		kwargs = {"dry_run" : dry_run}
+		if guild_id :
+			guild = self.bot.get_guild(int(guild_id))
+			if guild is None :
+				return await send_response(interaction, f"Could not find guild `{guild_id}`.", ephemeral=True)
+			kwargs["guild"] = guild
+
+		# Answer first: a tool that reads channel history runs well past the interaction timeout.
+		await send_response(interaction, f"Running `{tool.name}`, this may take a while...")
+		try :
+			result = await Toolbox().run(interaction, tool.value, **kwargs)
+		except Exception as e :
+			logging.error(f"[Toolbox] {tool.value} failed: {e}", exc_info=True)
+			return await send_message(interaction.channel, f"❌ `{tool.name}` failed: `{type(e).__name__}: {e}`")
+		await send_message(interaction.channel, result if result else "Tool returned nothing.")
 
 	@app_commands.command(name="migrate_database", description="[DEV] Applies pending database migrations")
 	@check_access()
