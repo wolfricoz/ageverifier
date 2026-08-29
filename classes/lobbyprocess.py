@@ -13,10 +13,12 @@ from classes.ageroles import change_age_roles
 from classes.support.queue import Queue
 from classes.whitelist import check_whitelist
 from databases.enums.joinhistorystatus import JoinHistoryStatus
+from databases.enums.loggedmessagetype import LoggedMessageType
 from databases.exceptions.KeyNotFound import KeyNotFound
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.ConfigTransactions import ConfigTransactions
 from databases.transactions.HistoryTransactions import JoinHistoryTransactions
+from databases.transactions.LoggedMessageTransactions import LoggedMessageTransactions
 from databases.transactions.UserTransactions import UserTransactions
 
 
@@ -135,6 +137,9 @@ class LobbyProcess :
 		                            f"Executed at: {datetime.datetime.now().strftime('%m/%d/%Y %I:%M:%S %p')} \n"
 		                            f"first time: {f'yes' if not exists else 'no'}\n"
 		                            f"Staff: {staff}")
+		# Tracked so a GDPR removal can delete this entry directly; it carries the age and, on
+		# whitelisted guilds, the date of birth.
+		LoggedMessageTransactions().track(message, user.id, LoggedMessageType.LOBBY_LOG)
 		if id_verify :
 			JoinHistoryTransactions().update(user.id, guild.id, JoinHistoryStatus.VERIFIED,
 			                                 verification_date=datetime.datetime.now(), message_id=message.id)
@@ -229,10 +234,11 @@ class LobbyProcess :
 			dob_field = f"DOB: {dob}\n"
 		Queue().add(send_message(dev_channel,
 		                   f"{userid}'s dob {operation} in {interaction.guild.name} by {interaction.user.name}. {f'Reason: {reason}' if reason else ''}"), 0)
-		await send_message(age_log, f"USER {operation.upper()}\n"
+		message = await send_message(age_log, f"USER {operation.upper()}\n"
 		                                    f"{dob_field}"
 		                                    f"UID: {userid}\n"
 		                                    f"Entry updated by: {interaction.user.name}")
+		LoggedMessageTransactions().track(message, userid, LoggedMessageType.AGE_LOG)
 		Queue().add(send_message(interaction.channel, f"{operation} <@{userid}>({userid}) date of birth with dob: {dob}"))
 
 

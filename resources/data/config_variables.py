@@ -4,6 +4,8 @@ DEFAULT_VERIFICATION_BUTTON_LABEL = "Start Age Verification!"
 # Discord rejects the whole message when a button label is longer than this.
 MAX_BUTTON_LABEL_LENGTH = 80
 
+GDPR_REMOVAL_GRACE_DAYS = 30
+
 messagechoices = {
 	"verification_completed_message" : 'This is the welcome message that will be posted in the verification_completed_channel channel This starts with: `Welcome to {server name} {user}! This is where the message goes`',
 	"server_join_message"            : 'This is the welcome message that will be posted in the lobby channel, and be the first message new users see. This starts with: `Welcome {user}! This is where the message goes`',

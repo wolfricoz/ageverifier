@@ -1,6 +1,6 @@
 import datetime
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import sqlalchemy.exc
 from sqlalchemy import Select, and_, text
@@ -12,6 +12,7 @@ from databases.current import IdVerification, Users, Warnings
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.ConfigTransactions import ConfigTransactions
 from databases.transactions.DatabaseTransactions import DatabaseTransactions
+from resources.data.config_variables import GDPR_REMOVAL_GRACE_DAYS
 
 
 class UserTransactions(DatabaseTransactions) :
@@ -104,6 +105,18 @@ class UserTransactions(DatabaseTransactions) :
 			except sqlalchemy.exc.IntegrityError :
 				session.rollback()
 				return False
+
+
+	def get_pending_removal(self, userid: int) -> datetime | None :
+		"""When a soft-deleted user's data is due to be purged, or None if no removal is pending.
+
+		The purge itself runs on a 12 hour loop, so the record goes on or shortly after this
+		moment rather than exactly at it - phrase anything shown to a user accordingly.
+		"""
+		userdata: Users = self.get_user(userid, deleted=True)
+		if userdata is None or userdata.deleted_at is None :
+			return None
+		return userdata.deleted_at + timedelta(days=GDPR_REMOVAL_GRACE_DAYS)
 
 
 	def permanent_delete(self, userid: int, guildname: str) :
@@ -233,8 +246,11 @@ class UserTransactions(DatabaseTransactions) :
 	def get_all_soft_deleted(self, expired=False):
 		with self.createsession() as session:
 			if expired:
-				# Fetches users that have been soft deleted over 30 days ago
-				return session.scalars(text("select uid from users where deleted_at < NOW() - INTERVAL '30' DAY")).all()
+				# Fetches users whose grace period has run out. The interval comes from the same
+				# constant get_pending_removal uses, so the date we promise the user is the date
+				# we actually delete on.
+				return session.scalars(text(
+					f"select uid from users where deleted_at < NOW() - INTERVAL '{GDPR_REMOVAL_GRACE_DAYS}' DAY")).all()
 
 			# Fetches users that have been soft deleted
 			return session.scalars(Select(Users).where(Users.deleted_at.is_not(None))).all()

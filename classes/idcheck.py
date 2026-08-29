@@ -7,12 +7,15 @@ from discord_py_utilities.exceptions import NoPermissionException
 from discord_py_utilities.messages import send_message, send_response
 from discord_py_utilities.permissions import find_first_accessible_text_channel
 
+from classes.gdpr import pending_removal_date
 from classes.verification.inform import notify_agecheck
 from databases.current import IdVerification
 from databases.enums.joinhistorystatus import JoinHistoryStatus
+from databases.enums.loggedmessagetype import LoggedMessageType
 from databases.transactions.AgeRoleTransactions import AgeRoleTransactions
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.HistoryTransactions import JoinHistoryTransactions
+from databases.transactions.LoggedMessageTransactions import LoggedMessageTransactions
 from databases.transactions.VerificationTransactions import VerificationTransactions
 from resources.data.IDVerificationMessage import create_message
 from views.buttons.idsubmitbutton import IdSubmitButton
@@ -95,14 +98,17 @@ class IdCheck(ABC) :
 		embed.add_field(name="Staff Notice",
 		                value="Please contact the user to complete their ID check. They must submit a valid ID. Do not share or store the ID outside of authorized verification staff. Any abuse results in immediate blacklisting. If the issue may be a typo, you may allow a retry by removing them from the ID check list.", )
 		embed.set_footer(text=f"{interaction.user.id}")
+		IdCheck.add_pending_removal_notice(embed, interaction.user.id)
 		await notify_agecheck(interaction.client, interaction.guild, interaction.user, embed)
 		try :
 
 
-			await send_message(channel,
+			id_check_message = await send_message(channel,
 			                   f"{f'{interaction.guild.owner.mention}' if ConfigData().get_key(interaction.guild.id, "ping_owner_on_failure") == 'ENABLED' else ''} -# Lobby Debug] Age: {age} dob {dob} userid: {interaction.user.mention}",
 			                   embed=embed,
 			                   view=view)
+			# Tracked for GDPR removal: the content carries the raw date of birth.
+			LoggedMessageTransactions().track(id_check_message, interaction.user.id, LoggedMessageType.ID_CHECK)
 			await send_response(interaction, interaction.user.mention + " " + message.get("user-message",
 			                                                                              "Thank you for submitting your age and date of birth, a staff member will contact you soon because of a discrepancy.")
 			                    ,
@@ -190,13 +196,16 @@ class IdCheck(ABC) :
 		embed.add_field(name="Staff Notice",
 		                value="Please contact the user to complete their ID check. They must submit a valid ID. Do not share or store the ID outside of authorized verification staff. Any abuse results in immediate blacklisting. If the issue may be a typo, you may allow a retry by removing them from the ID check list.")
 		embed.set_footer(text=f"{user.id}")
+		IdCheck.add_pending_removal_notice(embed, user.id)
 		await notify_agecheck(bot, guild, user, embed)
 
 		try :
-			await send_message(channel,
+			id_check_message = await send_message(channel,
 			                   f"{f'{guild.owner.mention}' if ConfigData().get_key(guild.id, "ping_owner_on_failure") == 'ENABLED' else ''} -# Lobby Debug] Age: {age} dob {dob} userid: {user.mention}",
 			                   embed=embed,
 			                   view=view)
+			# Tracked for GDPR removal: the content carries the raw date of birth.
+			LoggedMessageTransactions().track(id_check_message, user.id, LoggedMessageType.ID_CHECK)
 			await send_message(user, user.mention + " " + message.get("user-message",
 			                                                          "Thank you for submitting your age and date of birth, a staff member will contact you soon because of a discrepancy."))
 		except discord.Forbidden :
@@ -219,6 +228,25 @@ class IdCheck(ABC) :
 			server=guild.name
 
 		)
+
+	@staticmethod
+	@abstractmethod
+	def add_pending_removal_notice(embed: discord.Embed, user_id: int) -> discord.Embed :
+		"""Flags a pending GDPR removal on a staff embed, if the user has one.
+
+		Staff about to chase someone for an ID should know that person has asked to be erased,
+		and that verifying them cancels that request.
+		"""
+		removal_date = pending_removal_date(user_id)
+		if removal_date is None :
+			return embed
+		embed.add_field(
+			name="⚠️ Pending Data Removal",
+			value=f"This user has requested removal of their data under GDPR. It is scheduled to be "
+			      f"permanently removed on or shortly after {removal_date}. Verifying them will cancel "
+			      f"that request.",
+			inline=False)
+		return embed
 
 	@staticmethod
 	@abstractmethod
@@ -280,16 +308,18 @@ class IdCheck(ABC) :
 		embed.add_field(name="Staff Notice",
 		                value="Please contact the user to complete their ID check. They must submit a valid ID. Do not share or store the ID outside of authorized verification staff. Any abuse results in immediate blacklisting. If the issue may be a typo, you may allow a retry by removing them from the ID check list.", )
 		embed.set_footer(text=f"{user.id}")
+		IdCheck.add_pending_removal_notice(embed, user.id)
 
 		await notify_agecheck(bot, guild, user, embed)
 		from views.buttons.idverifybutton import IdVerifyButton
 		view = IdVerifyButton()
 
-		await send_message(idlog,
+		id_log_message = await send_message(idlog,
 		                   f"{f'{guild.owner.mention}\n' if ConfigData().get_toggle(guild.id, "ping_owner_on_failure", "ENABLED", "DISABLED" ) else ''}"
 		                   f"-# Custom idcheck for {user.mention}",
 		                   embed=embed,
 		                   view=view)
+		LoggedMessageTransactions().track(id_log_message, user.id, LoggedMessageType.ID_CHECK)
 
 
 	@staticmethod

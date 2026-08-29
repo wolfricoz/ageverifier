@@ -10,6 +10,7 @@ from sqlalchemy.sql import func
 from sqlalchemy_utils import create_database, database_exists
 
 from databases.enums.joinhistorystatus import JoinHistoryStatus
+from databases.enums.loggedmessagetype import LoggedMessageType
 
 load_dotenv('.env')
 DB = os.getenv('DB')
@@ -150,6 +151,28 @@ class JoinHistory(Base) :
 	last_updated: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), server_onupdate=func.now())
 	user: Mapped["Users"] = relationship("Users", back_populates="join_history")
 	server: Mapped["Servers"] = relationship("Servers", back_populates="join_history")
+
+class LoggedMessage(Base) :
+	"""Every message the bot posts that contains a user's age or date of birth.
+
+	A GDPR removal has to delete those messages out of the guilds they were posted in. Without
+	this table the only way to find them is to scan the full history of four log channels in
+	every guild the bot is in; with it, the removal deletes them directly by id.
+
+	guild is a plain column rather than a foreign key on purpose: it is only ever used to group
+	rows for logging, and a foreign key would make writing a row depend on the servers table
+	already having caught up with the guild.
+	"""
+	__tablename__ = "logged_messages"
+	id: Mapped[int] = mapped_column(primary_key=True)
+	uid: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.uid", ondelete="CASCADE"), nullable=False,
+	                                 index=True)
+	guild: Mapped[int] = mapped_column(BigInteger, nullable=False)
+	channel: Mapped[int] = mapped_column(BigInteger, nullable=False)
+	message: Mapped[int] = mapped_column(BigInteger, nullable=False)
+	type: Mapped[str] = mapped_column(Enum(LoggedMessageType), nullable=False)
+	created_date: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
 
 class LobbyData(Base) :
 	__tablename__ = "lobby_data"

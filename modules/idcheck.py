@@ -7,6 +7,7 @@ from discord_py_utilities.messages import send_message, send_response
 
 from classes.access import AccessControl
 from classes.encryption import Encryption
+from classes.gdpr import pending_removal_date
 from classes.idcheck import IdCheck
 from classes.support.queue import Queue
 from databases.current import IdVerification
@@ -41,17 +42,26 @@ class idcheck(commands.GroupCog, description="Commands for managing manual ID ve
         - You'll need the `Manage Messages` permission to use this command.
         """
 		await send_response(interaction, f"⌛ checking if {user.mention} is on the ID list", ephemeral=True)
+		removal_date = pending_removal_date(user.id)
 		user = VerificationTransactions().get_id_info(user.id)
 		if user is None :
+			# A pending removal is worth reporting even with no ID check entry - a bare "Not found"
+			# would leave staff thinking there is nothing to know about this user.
+			if removal_date :
+				await interaction.followup.send(
+					f"Not found on the ID list, but this user has requested data removal. "
+					f"Their data is scheduled to be permanently removed on or shortly after {removal_date}.")
+				return
 			await interaction.followup.send("Not found")
 			return
 		data = {
-			"user"        : user.uid,
-			"Reason"      : user.reason,
-			"idcheck"     : user.idcheck,
-			"idverified"  : user.idverified,
-			"verifieddob" : Encryption().decrypt(user.verifieddob) if user.verifieddob else "",
-			"server"      : user.server if user.server else "",
+			"user"                 : user.uid,
+			"Reason"               : user.reason,
+			"idcheck"              : user.idcheck,
+			"idverified"           : user.idverified,
+			"verifieddob"          : Encryption().decrypt(user.verifieddob) if user.verifieddob else "",
+			"server"               : user.server if user.server else "",
+			"Pending GDPR removal" : f"Yes, on or shortly after {removal_date}" if removal_date else "No",
 		}
 
 		embed = discord.Embed(title="USER INFO",

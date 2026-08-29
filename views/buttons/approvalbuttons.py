@@ -12,9 +12,11 @@ from classes.idcheck import IdCheck
 from classes.lobbyprocess import LobbyProcess
 from classes.whitelist import check_whitelist
 from databases.enums.joinhistorystatus import JoinHistoryStatus
+from databases.enums.loggedmessagetype import LoggedMessageType
 from databases.transactions.ButtonTransactions import LobbyDataTransactions
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.HistoryTransactions import JoinHistoryTransactions
+from databases.transactions.LoggedMessageTransactions import LoggedMessageTransactions
 from databases.transactions.VerificationTransactions import VerificationTransactions
 from views.modals.inputmodal import send_modal
 
@@ -105,10 +107,12 @@ class ApprovalButtons(discord.ui.View) :
 				continue
 			embed.add_field(name=key, value=value, inline=show_inline)
 		# send the content and create the record
-		await send_message(mod_channel,
+		approval_message = await send_message(mod_channel,
 		                         f"{user.mention} {ping}\n-# All timestamps are (mm/dd/yyyy) ",
 		                         embed=embed,
 		                         view=self)
+		# Tracked for GDPR removal: this post carries the age and, on whitelisted guilds, the dob.
+		LoggedMessageTransactions().track(approval_message, self.user.id, LoggedMessageType.APPROVAL)
 		LobbyDataTransactions().create(footer, self.user.id, self.dob, self.age, reverify=self.reverify)
 
 	@discord.ui.button(label="Approve User", style=discord.ButtonStyle.green, custom_id="allow")

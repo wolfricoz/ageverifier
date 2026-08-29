@@ -7,6 +7,7 @@ from discord.ext import commands
 from discord_py_utilities.messages import send_response
 
 from classes.encryption import Encryption
+from classes.gdpr import pending_removal_date
 from databases.transactions.UserTransactions import UserTransactions
 from databases.transactions.VerificationTransactions import VerificationTransactions
 from views.buttons.gdprremoval import GDPRRemoval
@@ -33,6 +34,15 @@ class gdpr(commands.GroupCog, description="Commands related to your data and pri
 		**Permissions:**
 		- No special permissions are needed. This command can be used by anyone to manage their own data.
 		"""
+		removal_date = pending_removal_date(interaction.user.id)
+		if removal_date is not None :
+			await send_response(interaction,
+			                    f"You have already requested to have your data removed.\n"
+			                    f"Your data is hidden and will be permanently removed on or shortly after {removal_date}.\n\n"
+			                    f"If you want to cancel the removal, submit your date of birth again before that date and we will ask you to confirm.",
+			                    ephemeral=True)
+			return
+
 		user = UserTransactions().get_user(interaction.user.id)
 		if user is None or user.date_of_birth is None :
 			await send_response(interaction, "No data found for you.")
@@ -58,8 +68,11 @@ If you want to continue, please confirm your request."""
 		"""
 		dev = os.getenv('DEV')
 		supportguild = os.getenv("SUPPORTGUILD")
-		user_data = UserTransactions().get_user(interaction.user.id)
+		# deleted=True: a user with a pending removal still has their data on file for the rest of
+		# the grace period, so a subject access request has to return it rather than claim it is gone.
+		user_data = UserTransactions().get_user(interaction.user.id, deleted=True)
 		id_verified = VerificationTransactions().get_id_info(interaction.user.id)
+		removal_date = pending_removal_date(interaction.user.id)
 		server = self.bot.get_guild(int(supportguild if supportguild else 0))
 
 		invite = "Failed to generate invite link, please contact the developer."
@@ -81,6 +94,7 @@ If you want to continue, please confirm your request."""
 		                            f"\ndate of birth (decrypted): {Encryption().decrypt(user_data.date_of_birth) if user_data.date_of_birth is not None else 'Not set'}"
 		                            f"\nLast server: {user_data.server if user_data.server is not None else 'Not set'}"
 		                            f"\nID Verified: {'Yes' if id_verified and id_verified.idverified else 'No'}"
+		                            f"\nPending removal: {f'Yes, scheduled for on or shortly after {removal_date}' if removal_date else 'No'}"
 		                            f"\n\n-# Note: All personal data is encrypted and stored securely. If you have any questions or concerns please contact the developer `ricostryker` or join our [support server]({invite}) and open a ticket.")
 
 		await send_response(interaction, "Your data will be sent to you through DM..", ephemeral=True)

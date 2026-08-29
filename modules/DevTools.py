@@ -6,6 +6,8 @@ import random
 import re
 from datetime import datetime, timedelta
 
+from alembic import command as alembic_command
+from alembic.config import Config as AlembicConfig
 from discord import app_commands
 from discord.ext import commands
 from discord_py_utilities.invites import check_guild_invites, create_invite
@@ -322,9 +324,38 @@ class DevTools(commands.GroupCog, name="dev", description="A set of commands for
 	# async def test_start_onboarding(self, interaction: discord.Interaction) :
 	# 	await Onboarding().join_message(interaction.channel)
 
+	@app_commands.command(name="migrate_database", description="[DEV] Applies pending database migrations")
+	@check_access()
+	async def migrate_database(self, interaction: discord.Interaction, revision: str = "head") :
+		"""
+        Runs the Alembic migrations against the bot's database, bringing the schema up to date.
+        Defaults to the latest revision; pass a revision id to stop at a specific one.
+
+        **Permissions:**
+        - This is a developer-only command.
+        """
+		await send_response(interaction, f"Applying database migrations up to `{revision}`...")
+
+		def run_migration() :
+			# alembic/env.py points this at the bot's own database, so there is nothing to
+			# override here - the CLI and this command migrate the same place by construction.
+			config = AlembicConfig(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+			                                    "alembic.ini"))
+			alembic_command.upgrade(config, revision)
+
+		try :
+			await asyncio.to_thread(run_migration)
+		except Exception as e :
+			logging.error(f"[Migration] Failed: {e}", exc_info=True)
+			# The url carries credentials, so report the exception type and message only.
+			await send_message(interaction.channel, f"❌ Migration failed: `{type(e).__name__}: {e}`")
+			return
+		logging.info(f"[Migration] Database upgraded to {revision}")
+		await send_message(interaction.channel, f"✅ Database migrated to `{revision}`.")
+
 	@app_commands.command(name="migrate", description="[DEV] updates bot to the latest version")
 	@check_access()
-	async def serverinfo(self, interaction: discord.Interaction) :
+	async def migrate_config(self, interaction: discord.Interaction) :
 		"""
 				Command to update the bots config to the latest version.
 

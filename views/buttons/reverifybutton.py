@@ -5,6 +5,7 @@ from discord_py_utilities.messages import send_response
 
 from classes.AgeCalculations import AgeCalculations
 from classes.encryption import Encryption
+from classes.gdpr import confirm_removal_cancellation
 from classes.helpers import fetch_member
 from classes.lobbyprocess import LobbyProcess
 from classes.lobbytimers import LobbyTimers
@@ -29,6 +30,12 @@ class ReVerifyButton(discord.ui.View) :
 			await send_response(interaction,
 			                    f"{interaction.user.mention} You are on cooldown for verification. Please wait {discord.utils.format_dt(cooldown, style='R')} before trying again.",
 			                    ephemeral=True)
+			return
+
+		# Before id_verified_check: that path can approve the user outright, which would clear a
+		# pending removal without ever asking them.
+		proceed, interaction = await confirm_removal_cancellation(interaction)
+		if not proceed :
 			return
 
 		idcheck = await self.id_verified_check(interaction, True)

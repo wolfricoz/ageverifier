@@ -1,8 +1,10 @@
 import unittest
+from datetime import timedelta
 
 from databases.Generators.uidgenerator import uidgenerator
-from databases.transactions.UserTransactions import UserTransactions
 from databases.current import create_bot_database, drop_bot_database
+from databases.transactions.UserTransactions import UserTransactions
+from resources.data.config_variables import GDPR_REMOVAL_GRACE_DAYS
 
 
 class TestUserTransactions(unittest.TestCase) :
@@ -58,6 +60,24 @@ class TestUserTransactions(unittest.TestCase) :
 		user_soft_deleted = self.ut.get_user(self.uid, deleted=True)
 		self.assertIsNotNone(user_soft_deleted)
 		self.assertIsNotNone(user_soft_deleted.deleted_at)
+
+	def test_get_pending_removal(self) :
+		self.ut.add_user_empty(self.uid)
+		self.assertIsNone(self.ut.get_pending_removal(self.uid))
+
+		self.ut.soft_delete(self.uid, self.guild)
+		removal_date = self.ut.get_pending_removal(self.uid)
+		self.assertIsNotNone(removal_date)
+
+		user = self.ut.get_user(self.uid, deleted=True)
+		self.assertEqual(removal_date, user.deleted_at + timedelta(days=GDPR_REMOVAL_GRACE_DAYS))
+
+		# Re-submitting a date of birth cancels the removal, so nothing should be pending afterwards.
+		self.ut.update_user_dob(self.uid, self.dob, self.guild, override=True)
+		self.assertIsNone(self.ut.get_pending_removal(self.uid))
+
+	def test_get_pending_removal_unknown_user(self) :
+		self.assertIsNone(self.ut.get_pending_removal(self.uid))
 
 	def test_permanent_delete(self) :
 		self.ut.add_user_empty(self.uid)
