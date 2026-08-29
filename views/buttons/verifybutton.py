@@ -75,7 +75,7 @@ class VerifyButton(discord.ui.View) :
 
 			uuid = WebsiteDataTransactions().create(user_id=interaction.user.id, guild_id=interaction.guild.id)
 			website_base = os.getenv("DASHBOARD_URL")
-			url = f"{website_base}/ageverifier/verification/{interaction.guild.id}/{uuid}"
+			url = f"{website_base}/ageverifier/verification/{interaction.user.id}/{interaction.guild.id}/{uuid}"
 
 			await send_response(interaction, f"This server uses our online verification system. Please use the button below to visit our verification page.", ephemeral=True, view=WebsiteButton(url))
 			return
