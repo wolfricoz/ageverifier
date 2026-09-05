@@ -72,6 +72,13 @@ async def log_config_changes(request: Request, guildid: int, changes: dict, user
 		# the error is usually raised in the verify function, but this is just a final catch.
 		raise HTTPException(status_code=403)
 
+	# The dashboard writes config straight to the database, so the bot's in-memory
+	# ConfigData cache stays stale until something reloads the guild. This endpoint is
+	# the one call the dashboard makes on every save, so reload here - before logging,
+	# so the log_config_changes toggle is itself read at its new value.
+	logger.info("Website Request: Reload Config (config change)")
+	ConfigData().load_guild(guildid)
+
 	bot: commands.Bot = request.app.state.bot
 	guild = bot.get_guild(guildid)
 	if not guild :
