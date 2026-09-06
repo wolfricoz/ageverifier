@@ -51,6 +51,14 @@ class Users(Base) :
 	id_verification: Mapped[Optional["IdVerification"]] = relationship(back_populates="user",
 	                                                                   cascade="save-update, merge, delete, delete-orphan",
 	                                                                   uselist=False)
+	# The raw address is never stored; see classes.iphash for what these digests are
+	# and why several prefix widths are kept. ip_recorded_at is when the address was
+	# last seen, and is what the retention sweep clears these columns on.
+	ip_hash: Mapped[Optional[str]] = mapped_column(String(64), index=True)
+	ip_prefix_24: Mapped[Optional[str]] = mapped_column(String(64), index=True)
+	ip_prefix_20: Mapped[Optional[str]] = mapped_column(String(64))
+	ip_prefix_16: Mapped[Optional[str]] = mapped_column(String(64))
+	ip_recorded_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True, default=None, index=True)
 	deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True, default=None)
 
 	join_history: Mapped[list["JoinHistory"]] = relationship("JoinHistory", back_populates="user", cascade="save-update, merge, delete, delete-orphan")

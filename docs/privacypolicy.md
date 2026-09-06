@@ -6,7 +6,7 @@ nav_order: 13
 
 <h1 style="text-align: center">Privacy Policy</h1>
 
-_Last Updated: 20/06/2026_
+_Last Updated: 06/09/2026_
 
 # Introduction
 This privacy policy outlines how AgeVerifier ("we," "our," or "us") collects, uses, and protects your (the end user) personal data when you interact with the AgeVerifier bot. By using AgeVerifier, you agree to the terms and conditions of this policy.
@@ -14,13 +14,21 @@ This privacy policy outlines how AgeVerifier ("we," "our," or "us") collects, us
 References in this document may refer to servers as guilds, as that is the terminology used within Discord's API.
 
 ## Why do we store your data?
-To verify users, we collect the (non-sensitive) personal data:
+To verify users, we collect the following personal data:
 
 - **Date of birth:** Used to calculate the age and to verify future verification attempts.
 - **Age:** This data is collected but not stored; it is collected from the user only to validate that the age matches the date of birth submitted.
 - **Discord ID:** While not technically personal data, we collect and store users’ Discord ID and combine it with the submitted Date of Birth.
+- **IP address:** Collected only when a user verifies through our website, and never stored in readable form. See *IP Addresses* below.
 
 The combination of age and date of birth is used as a simple method of verifying the age of users. By storing the date of birth with Discord ID, we can ensure that users give the same date of birth in future interactions or flag them for a discrepancy.
+
+### IP Addresses
+When a user completes verification through our website, we record the IP address that the verification was submitted from. This is used to identify users attempting to circumvent age verification by creating additional accounts, which protects the integrity of the verification system and the member guilds relying on it.
+
+We do not store the IP address itself. Before anything is written to our database, the address is converted into a set of one-way cryptographic hashes using a secret key held only by AgeVerifier. We store those hashes and nothing else; the address itself is discarded and is not present in our records. Alongside the exact address, we also hash the surrounding network ranges, which allows us to recognise verifications originating from the same internet connection or the same internet provider even after a provider has reassigned a user's address.
+
+IP data is never used to determine a user's physical location, and is not collected at all when verifying directly through Discord rather than through our website.
 
 ## Legal Basis for Data Collection
 We collect, store, and process user data under the lawful basis of **legitimate interest** (ensuring compliance with platform rules) and **user consent** when users interact with AgeVerifier.
@@ -45,6 +53,7 @@ We use the user-submitted data collected for the following purposes:
 - Ensuring compliance with platform, guild, or legal age requirements.
 - Improving the accuracy and/or functionality of our age verification system.
 - Assigning roles based on your age and guild requirements.
+- Detecting attempts to bypass age verification through the use of additional accounts.
 
 ## Data Minimization
 We only collect the minimum amount of data required for age verification and do not use user data for purposes other than those explicitly stated in this policy.
@@ -56,6 +65,7 @@ To remain compliant with data minimization protocols, avoid unnecessary data sto
 Data generated from temporary interactions with the verification infrastructure is subject to a rolling execution window:
 - **Website Session Data:** Relational web metadata logs are permanently erased after 90 days.
 - **Lobby Configuration Data:** Interaction and queuing data used during active verification sessions are permanently erased after 90 days.
+- **IP Address Hashes:** The hashed IP data described above is permanently erased **30 days** after the address was last seen. Because internet providers routinely reassign addresses, this data stops being meaningful well before the one-year profile retention period, and it is therefore erased on a much shorter schedule rather than being kept for the life of the verification record.
 
 ### Historical Analytical Metrics
 - **Join History Logs:** Relational records tracking user guild join histories are retained for analytical purposes but undergo **irreversible anonymization** after 90 days. During this process, individual user identification markers (`uid`) are unlinked and mapped permanently to a generic anonymous system identifier. This allows member guilds to preserve non-identifiable, aggregate server historical statistics without tracking individual user behavior over time.
@@ -67,7 +77,9 @@ Data generated from temporary interactions with the verification infrastructure 
 AgeVerifier uses automated processes to flag discrepancies in submitted data (e.g., mismatched dates of birth). Flagged cases may require manual review by guild staff. Additionally, guilds can enable automated approvals for correct age and date of birth matches to reduce the strain on the guild's staff.
 
 ## How We Store and Protect Your Data
-User data is communicated to the AgeVerifier bot via Discord utilizing **End to End Encryption (EE2E)** and is stored in a database local to the AgeVerifier bot.
+User data is transmitted between Discord and the AgeVerifier bot over encrypted connections (TLS) and is stored in a database local to the AgeVerifier bot.
+
+Dates of birth are encrypted at rest, and are decrypted only when needed to carry out the verification purposes described in this policy. IP addresses are never written to the database in readable form; only the one-way hashes described above are stored, so the underlying addresses are not present in our systems or in any backup of them.
 
 ## Retention Policy
 User data is pruned from the database automatically after **one year of absence** on member guilds using AgeVerifier.

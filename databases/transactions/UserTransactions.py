@@ -3,16 +3,17 @@ import logging
 from datetime import datetime, timedelta, timezone
 
 import sqlalchemy.exc
-from sqlalchemy import Select, and_, text
+from sqlalchemy import Select, Update, and_, text
 from sqlalchemy.exc import SQLAlchemyError
 
 from classes.encryption import Encryption
+from classes.iphash import hash_ip
 from databases import current as db
 from databases.current import IdVerification, Users, Warnings
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.ConfigTransactions import ConfigTransactions
 from databases.transactions.DatabaseTransactions import DatabaseTransactions
-from resources.data.config_variables import GDPR_REMOVAL_GRACE_DAYS
+from resources.data.config_variables import GDPR_REMOVAL_GRACE_DAYS, IP_RETENTION_DAYS
 
 
 class UserTransactions(DatabaseTransactions) :
@@ -71,7 +72,7 @@ class UserTransactions(DatabaseTransactions) :
 			return True
 
 
-	def update_user(self, uid: int, entry: datetime = None, date_of_birth: str = None, server: str = None, override=False) :
+	def update_user(self, uid: int, entry: datetime = None, date_of_birth: str = None, server: str = None, ip_address: str = None, override=False) :
 		with self.createsession() as session :
 			user = self.get_user(uid, deleted=override)
 			data = {
@@ -79,6 +80,14 @@ class UserTransactions(DatabaseTransactions) :
 				"date_of_birth" : date_of_birth,
 				"server"        : server
 			}
+			# Hashed here rather than by the caller so a raw address cannot reach the
+			# columns or the log line below. A malformed address hashes to None and is
+			# dropped rather than recorded.
+			if ip_address is not None :
+				hashes = hash_ip(ip_address)
+				if hashes is not None :
+					data.update(hashes)
+					data["ip_recorded_at"] = datetime.now(tz=timezone.utc)
 			for field, value in data.items() :
 				if field == 'date_of_birth' and value is not None :
 					encrypted_value = Encryption().encrypt(value)
@@ -242,6 +251,28 @@ class UserTransactions(DatabaseTransactions) :
 		with self.createsession() as session:
 			# Fetches users that have not updated their entry in over 365 days
 			return session.execute(text("select uid, entry from users where entry < NOW() - INTERVAL '365 days'")).all()
+
+	def clear_expired_ips(self) :
+		"""
+		Wipes the stored IP hashes of every user whose address was last seen more
+		than IP_RETENTION_DAYS ago.
+
+		This runs well ahead of the 365 day record expiry on purpose: a rotated
+		address stops being worth correlating long before the row itself expires,
+		so there is no reason to keep the digests around for the full year.
+
+		:return: the number of users cleared.
+		"""
+		with self.createsession() as session :
+			result = session.execute(
+				Update(Users)
+				.where(Users.ip_recorded_at < datetime.now(tz=timezone.utc) - timedelta(days=IP_RETENTION_DAYS))
+				.values(ip_hash=None, ip_prefix_24=None, ip_prefix_20=None, ip_prefix_16=None, ip_recorded_at=None)
+			)
+			self.commit(session)
+			logging.info(f"Cleared stored IP hashes for {result.rowcount} users.")
+			return result.rowcount
+
 
 	def get_all_soft_deleted(self, expired=False):
 		with self.createsession() as session:

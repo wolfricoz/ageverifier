@@ -23,7 +23,10 @@ router = APIRouter()
 class AgeVerification(BaseModel) :
 	dob: str = Field(..., description="Date of birth in mm/dd/yyyy format")
 	age: int = Field(..., description="Calculated or provided age of the user")
-	guid: str = None
+	guid: str = None,
+	ip: str = None,
+	vpn: bool = False,
+	free: bool = True, # Check if its a subscribed server; we can pull it from the server too but this is just for debugging / future statistics.
 
 
 @router.post("/age/get/{user_id}")

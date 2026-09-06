@@ -6,6 +6,11 @@ MAX_BUTTON_LABEL_LENGTH = 80
 
 GDPR_REMOVAL_GRACE_DAYS = 30
 
+# How long a recorded IP stays useful for correlation. Dynamic addresses have
+# rotated well before this, so the digests are cleared here rather than being
+# carried for the full 365 day record retention.
+IP_RETENTION_DAYS = 30
+
 messagechoices = {
 	"verification_completed_message" : 'This is the welcome message that will be posted in the verification_completed_channel channel This starts with: `Welcome to {server name} {user}! This is where the message goes`',
 	"server_join_message"            : 'This is the welcome message that will be posted in the lobby channel, and be the first message new users see. This starts with: `Welcome {user}! This is where the message goes`',
