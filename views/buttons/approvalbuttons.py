@@ -22,11 +22,12 @@ from views.modals.inputmodal import send_modal
 
 
 class ApprovalButtons(discord.ui.View) :
-	def __init__(self, age: int = None, dob: str = None, user: discord.Member = None, reverify=False) :
+	def __init__(self, age: int = None, dob: str = None, user: discord.Member = None, reverify=False, alts=None) :
 		self.age = age
 		self.dob = dob
 		self.user = user
 		self.reverify = reverify
+		self.alts = alts
 		super().__init__(timeout=None)
 		logging.debug(f"approval buttons: {self.reverify}")
 		button = discord.ui.Button(label='Help', style=discord.ButtonStyle.url,
@@ -44,10 +45,9 @@ class ApprovalButtons(discord.ui.View) :
 		footer = f"{uuid.uuid4()}"
 		previous_guilds = None
 
-
 		# loading the config, since some settings are used multiple times we do it here to prevent the same call being made multiple times
 
-		approval_ping_role: int | None= ConfigData().get_key_or_none(guild.id, "approval_ping_role")
+		approval_ping_role: int | None = ConfigData().get_key_or_none(guild.id, "approval_ping_role")
 		legacy_message: bool = ConfigData().get_toggle(guild.id, "legacy_message", default="DISABLED")
 		show_previous_servers: bool = ConfigData().get_toggle(guild.id, "show_previous_servers",
 		                                                      default="ENABLED")
@@ -64,22 +64,34 @@ class ApprovalButtons(discord.ui.View) :
 		if show_previous_servers :
 			previous_guilds = "\n".join([guild.get('name', 'Failed to fetch name') for guild in
 			                             JoinHistoryTransactions().fetch_previous_verifications(user.id)])
+		# fetch alt names
+		alt_names = None
+		for alt in self.alts:
+			try:
+				alt_user = guild.get_member(alt.uid)
+
+				alt_names += f"\n - {alt_user.mention}"
+
+			except:
+				pass
+
 
 		# filling the fields
 		fields = {
 			"ID Verified"            : id_verified,
+			"Potential Alts"         : alt_names,
 			"Date of Birth"          : self.dob if whitelisted and legacy_message is False else None,
 			"Age"                    : self.age if legacy_message is False else None,
-			"Banwatch Bans"          : await BanWatch().fetchBanCount(user.id) if show_bans else None, # Potentially premium?
+			"Banwatch Bans"          : await BanWatch().fetchBanCount(user.id) if show_bans else None,  # Potentially premium?
 			"Joined at"              : user.joined_at.strftime("%m/%d/%Y %I:%M %p") if show_joined_at else None,
 			"Created at"             : user.created_at.strftime("%m/%d/%Y") if show_created_at else None,
-			"Previous Verifications" : previous_guilds, # Potentially premium?
+			"Previous Verifications" : previous_guilds,  # Potentially premium?
 			"User ID"                : user.id if show_user_id else None,
 			"debug"                  : f"?approve {user.mention} {self.age} {self.dob}" if whitelisted and debug else None
 		}
 
 		profile_picture = None
-		if user.avatar:
+		if user.avatar :
 			profile_picture = user.avatar.url
 
 		# Build the embed
@@ -90,7 +102,7 @@ class ApprovalButtons(discord.ui.View) :
 
 		# create the ping if set
 		ping = ""
-		if approval_ping_role is not None:
+		if approval_ping_role is not None :
 			ping = f"<@&{approval_ping_role}> a new verification has been submitted"
 
 		embed.set_footer(text=footer)
@@ -108,9 +120,9 @@ class ApprovalButtons(discord.ui.View) :
 			embed.add_field(name=key, value=value, inline=show_inline)
 		# send the content and create the record
 		approval_message = await send_message(mod_channel,
-		                         f"{user.mention} {ping}\n-# All timestamps are (mm/dd/yyyy) ",
-		                         embed=embed,
-		                         view=self)
+		                                      f"{user.mention} {ping}\n-# All timestamps are (mm/dd/yyyy) ",
+		                                      embed=embed,
+		                                      view=self)
 		# Tracked for GDPR removal: this post carries the age and, on whitelisted guilds, the dob.
 		LoggedMessageTransactions().track(approval_message, self.user.id, LoggedMessageType.APPROVAL)
 		LobbyDataTransactions().create(footer, self.user.id, self.dob, self.age, reverify=self.reverify)
@@ -119,7 +131,8 @@ class ApprovalButtons(discord.ui.View) :
 	async def allow(self, interaction: discord.Interaction, button: discord.ui.Button) :
 		"""starts approving process"""
 		if not interaction.user.guild_permissions.manage_roles :
-			return await send_response(interaction, "You must have the \"manage_roles\" permission to execute this action!", ephemeral=True)
+			return await send_response(interaction, "You must have the \"manage_roles\" permission to execute this action!",
+			                           ephemeral=True)
 
 		await self.disable_buttons(interaction, button)
 		await self.load_data(interaction)
@@ -128,7 +141,8 @@ class ApprovalButtons(discord.ui.View) :
 			                    'The bot has restarted and the data of this button is missing. Please use the command.',
 			                    ephemeral=True)
 			return
-		await send_response(interaction, "User approval queue'd, please wait for ageverifier to process the user.", ephemeral=True)
+		await send_response(interaction, "User approval queue'd, please wait for ageverifier to process the user.",
+		                    ephemeral=True)
 		# Share this with the age commands
 		try :
 			await LobbyProcess.approve_user(interaction.guild, self.user, self.dob, self.age, interaction.user.name)
@@ -139,16 +153,17 @@ class ApprovalButtons(discord.ui.View) :
 	async def manual_id(self, interaction: discord.Interaction, button: discord.ui.Button) :
 		"""Flags user for manual id."""
 		if not interaction.user.guild_permissions.manage_roles :
-			return await send_response(interaction, "You must have the \"manage_roles\" permission to execute this action!", ephemeral=True)
+			return await send_response(interaction, "You must have the \"manage_roles\" permission to execute this action!",
+			                           ephemeral=True)
 		await self.disable_buttons(interaction, button)
 		await self.load_data(interaction)
 		reason = await send_modal(interaction, confirmation="The user has been flagged",
 		                          title="Why should the user be ID Checked?", max_length=1500)
 		if self.user is None :
 			await send_response(interaction,
-				'The bot has restarted and the data of this button is missing. Please manually report user to admins',
-				ephemeral=True)
-		await send_response(interaction,'User flagged for manual ID.', ephemeral=True)
+			                    'The bot has restarted and the data of this button is missing. Please manually report user to admins',
+			                    ephemeral=True)
+		await send_response(interaction, 'User flagged for manual ID.', ephemeral=True)
 		VerificationTransactions().set_idcheck_to_true(self.user.id,
 		                                               f"manually flagged by {interaction.user.name} with reason: {reason}",
 		                                               server=interaction.guild.name)
@@ -156,21 +171,21 @@ class ApprovalButtons(discord.ui.View) :
 		await IdCheck.send_id_log(interaction.guild, self.user, reason, interaction.client)
 		await interaction.message.edit(view=self)
 
-
 		return
 
 	@discord.ui.button(label="NSFW Profile Warning", style=discord.ButtonStyle.danger, custom_id="NSFW")
 	async def nsfw_warning(self, interaction: discord.Interaction, button: discord.ui.Button) :
 		"""Flags user for nsfw warning."""
 		if not interaction.user.guild_permissions.manage_roles :
-			return await send_response(interaction, "You must have the \"manage_roles\" permission to execute this action!", ephemeral=True)
+			return await send_response(interaction, "You must have the \"manage_roles\" permission to execute this action!",
+			                           ephemeral=True)
 		await self.disable_buttons(interaction, button)
 		await self.load_data(interaction)
 		if self.user is None :
 			await send_response(interaction,
-				'The bot has restarted and the data of this button is missing. Please manually report user to admins',
-				ephemeral=True)
-		await send_response(interaction,'User flagged for NSFW Warning.', ephemeral=True)
+			                    'The bot has restarted and the data of this button is missing. Please manually report user to admins',
+			                    ephemeral=True)
+		await send_response(interaction, 'User flagged for NSFW Warning.', ephemeral=True)
 		warning = f"""**NSFW Warning**\n
 Hello, this is the moderation team for {interaction.guild.name}. As Discord TOS prohibits NSFW content anywhere that can be accessed without an age gate, we will have to ask that you inspect your profile and remove any NSFW content. This includes but is not limited to: 
 * NSFW profile pictures 
@@ -193,17 +208,18 @@ Once you've made these changes you may resubmit your age and date of birth. Than
 		"""Adds user to db"""
 		await self.load_data(interaction)
 		if not interaction.user.guild_permissions.manage_roles :
-			return await send_response(interaction, "You must have the \"manage_roles\" permission to execute this action!", ephemeral=True)
+			return await send_response(interaction, "You must have the \"manage_roles\" permission to execute this action!",
+			                           ephemeral=True)
 		age_log = ConfigData().get_key_int(interaction.guild.id, "age_log")
 		await self.disable_buttons(interaction, button, disable_add=True)
 		if self.user is None :
 			await send_response(interaction,
-				'The bot has restarted and the data of this button is missing. Please add the user manually.',
-				ephemeral=True)
+			                    'The bot has restarted and the data of this button is missing. Please add the user manually.',
+			                    ephemeral=True)
 		await LobbyProcess.age_log(self.user.id, self.dob, interaction)
 		await interaction.message.add_reaction("✅")
-		await send_response(interaction,'User added to database and this message will be deleted in 3 minutes.',
-		                                ephemeral=True)
+		await send_response(interaction, 'User added to database and this message will be deleted in 3 minutes.',
+		                    ephemeral=True)
 		await asyncio.sleep(180)
 		await interaction.message.delete()
 		return
@@ -226,7 +242,7 @@ Once you've made these changes you may resubmit your age and date of birth. Than
 		await interaction.message.edit(view=self)
 
 	async def load_data(self, interaction: discord.Interaction) :
-		if len(interaction.message.embeds) < 1:
+		if len(interaction.message.embeds) < 1 :
 			return False
 
 		embed = interaction.message.embeds[0]
@@ -234,9 +250,9 @@ Once you've made these changes you may resubmit your age and date of birth. Than
 		data = LobbyDataTransactions().read(embed.footer.text)
 		self.user = interaction.guild.get_member(data.uid)
 		if self.user is None :
-			try:
+			try :
 				self.user = await interaction.client.fetch_user(data.uid)
-			except:
+			except :
 				self.user = None
 		self.dob = Encryption().decrypt(data.dob)
 		self.age = data.age

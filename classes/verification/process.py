@@ -26,7 +26,8 @@ class VerificationProcess :
 	             month: str,
 	             year: str,
 	             age: int | str,
-	             reverify = False
+	             reverify = False,
+	             ip_hash = False
 	             ) :
 		self.bot = bot
 		self.member = member
@@ -48,6 +49,7 @@ class VerificationProcess :
 		# The date of birth to display as "Recorded" in a dob_mismatch idcheck.
 		# Set to the DB record when the DB check trips, or the cached value when the cache check trips.
 		self.recorded_dob = None
+		self.ip_hash = ip_hash
 
 	async def verify(self) -> str :
 		try :
@@ -93,6 +95,8 @@ class VerificationProcess :
 			# To be added: Check username for suspicious patterns.
 			if self.discrepancy:
 				return self.discrepancy
+			alts = self.check_alt()
+
 			self.cache.add_submission(self.member.id, dob, overwrite=True)
 			# === Validation finished, we now start processing the member ===
 			automatic_status = ConfigData().get_key_or_none(self.guild.id, "automatic_verification")
@@ -104,7 +108,7 @@ class VerificationProcess :
 			await AgeCalculations.check_history(self.guild.id, self.member, self.mod_channel)
 			LobbyTimers().add_cooldown(self.guild.id, self.member.id, ConfigData().get_key_int_or_zero(self.guild.id, 'COOLDOWN'))
 			logging.info(f"Verification validated: {self.member.id} with reverify: {self.reverify}")
-			approval_buttons = ApprovalButtons(age=self.age, dob=dob, user=self.member, reverify=self.reverify)
+			approval_buttons = ApprovalButtons(age=self.age, dob=dob, user=self.member, reverify=self.reverify, alts = alts)
 			await approval_buttons.send_message(self.guild, self.member, self.mod_channel)
 
 			return "Your age and date of birth have been submitted successfully. A staff member will review your verification shortly to ensure everything checks out."
@@ -216,4 +220,12 @@ class VerificationProcess :
 			self.id_check_info = id_check_info
 			return True
 		return None
+
+	def check_alt(self):
+		"""[Online Verification Only] Checks if IP is used by other users, if so returns them and informs the server """
+		if not self.ip_hash:
+			return None
+		return UserTransactions().check_duplicate_ips(self.ip_hash, exclude_uid=self.member.id)
+
+
 

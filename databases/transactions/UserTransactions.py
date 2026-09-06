@@ -285,3 +285,22 @@ class UserTransactions(DatabaseTransactions) :
 
 			# Fetches users that have been soft deleted
 			return session.scalars(Select(Users).where(Users.deleted_at.is_not(None))).all()
+
+	def check_duplicate_ips(self, ip_hash: str, exclude_uid: int = None) :
+		"""
+		Finds other users who last verified from the same address.
+
+		:param ip_hash: the digest from check_ip.
+		:param exclude_uid: the user being verified, who would otherwise match themselves.
+		:return: the matching users, empty if there are none.
+		"""
+		# Without this an empty digest becomes "ip_hash IS NULL", which matches every
+		# user who has no address recorded rather than matching nothing.
+		if not ip_hash :
+			return []
+
+		with self.createsession() as session :
+			query = Select(Users).where(Users.ip_hash == ip_hash)
+			if exclude_uid is not None :
+				query = query.where(Users.uid != exclude_uid)
+			return session.scalars(query).all()

@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from starlette.responses import JSONResponse
 
 from api.auth.auth import Auth
+from api.helpers.VerificationHelpers import check_ip
 from classes.encryption import Encryption
 from classes.support.queue import Queue
 from classes.verification.process import VerificationProcess
@@ -87,7 +88,8 @@ async def verify_age(request: Request, guild_id: int, user_id: int, verification
 				content={"success" : False, "message" : "Member not found"},
 			)
 
-		vp = VerificationProcess(bot, user, guild, dob[1], dob[0], dob[2], age)
+		ip_hash = check_ip(user, verification.ip)
+		vp = VerificationProcess(bot, user, guild, dob[1], dob[0], dob[2], age, ip_hash=ip_hash)
 		msg = await vp.verify()
 
 		if vp.error is not None :

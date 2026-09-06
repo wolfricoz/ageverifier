@@ -1,35 +1,38 @@
+import discord
+
 from classes.iphash import hash_ip
 from databases.current import Users
 from databases.transactions.UserTransactions import UserTransactions
 
 
-def check_ip(user: Users, current_ip: str) -> bool :
+def check_ip(member: discord.Member, current_ip: str) -> str | None :
 	"""
-	Records the address the user verified from, and reports whether it changed.
+	Records the address the member verified from, and returns its digest.
 
-	The write happens on every call, not only on a change, so ip_recorded_at
-	tracks when the address was last seen. An address still in active use
+	The write happens on every call, not only when the address changed, so
+	ip_recorded_at tracks when it was last seen. An address still in active use
 	therefore survives the retention sweep, while one the ISP has rotated away
 	from ages out.
 
-	A changed address is a weak signal on its own, since dynamic addresses rotate
-	constantly; the value is in matching one user's digests against another's.
+	The returned digest is what alt detection matches on; a changed address is a
+	weak signal by itself, since dynamic addresses rotate constantly.
 
-	:param user: the user being verified.
+	:param member: the member being verified.
 	:param current_ip: the client address as reported by the website edge.
-	:return: True if this is a different address than the one on record.
+	:return: the digest of the address, or None if there was no usable address.
 	"""
 	hashes = hash_ip(current_ip)
 	if hashes is None :
-		return False
+		return None
 
-	changed = user.ip_hash != hashes["ip_hash"]
-	UserTransactions().update_user(user.uid, ip_address=current_ip)
-	return changed
+	# A first time website verification reaches here before the member has a row,
+	# so there may be nothing to record against yet. The digest is still returned
+	# so the caller can match this address against existing users either way.
+	user: Users = UserTransactions().get_user(member.id)
+	if user is not None :
+		UserTransactions().update_user(user.uid, ip_address=current_ip)
+
+	return hashes["ip_hash"]
 
 
-def check_alts(user: Users) -> bool:
-	# TODO: still a stub. This is the direction the digests are actually for:
-	#  match this user's ip_hash (same host) or ip_prefix_* (same ISP pool) against
-	#  other users, recent first, and raise an id check rather than acting on it.
-	pass
+
