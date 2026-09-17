@@ -385,20 +385,28 @@ class ConfigSetup :
 			data = [data]
 		if isinstance(data, list) and len(data) > 0 :
 			fail = []
+			errored = False
 			for role_id in data :
 				try :
-					role = guild.get_role(role_id)
+					# Single-role keys such as approval_ping_role are cached as the raw
+					# database string, and get_role only matches int keys.
+					role = guild.get_role(int(role_id))
 					if not await self.check_role_permissions(role, top_role) :
 						fail.append(role_id)
 						continue
 				except ValueError :
+					errored = True
 					ement.add_field(name=f"**{key} - {role_id}**", value=f"❌ Unable to retrieve role", inline=False)
 					continue
 				except Exception as e :
+					errored = True
 					logging.error(e, exc_info=True)
 					ement.add_field(name=f"**{key} - {role_id}**", value=f"❌ Error checking permissions", inline=False)
 					continue
-			await self.add_role_field(ement, key, len(fail) < 1, failed=fail)
+			# A per-role error field was already added, so skip the summary unless
+			# there are also roles we simply cannot assign.
+			if fail or not errored :
+				await self.add_role_field(ement, key, len(fail) < 1, failed=fail)
 			return
 
 
