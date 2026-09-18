@@ -6,6 +6,7 @@ from discord_py_utilities.messages import send_response
 from classes.idcheck import IdCheck
 from classes.idverify import verify
 from classes.support.queue import Queue
+from databases.exceptions.KeyNotFound import KeyNotFound
 from databases.transactions.VerificationTransactions import VerificationTransactions
 
 
@@ -25,7 +26,12 @@ class IDConfirm(discord.ui.View) :
 		if not idcheck :
 			await send_response(interaction, f"No ID verification request found for <@{self.member.id}>", ephemeral=True)
 			return None
-		await verify(self.member, interaction, self.dateofbirth, True, reverify=self.reverify)
+		try :
+			await verify(self.member, interaction, self.dateofbirth, True, reverify=self.reverify)
+		except KeyNotFound as e :
+			logging.info(f"ID confirm for {self.member.id} in {interaction.guild.id} stopped: {e.message}")
+			await send_response(interaction, e.message, ephemeral=True)
+			return None
 		if idcheck.idmessage :
 			try :
 
