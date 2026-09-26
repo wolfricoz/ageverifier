@@ -19,8 +19,8 @@ knowledge to follow along — each setting is changed through the bot's slash co
 Most of AgeVerifier is **free**. The following features require **premium**:
 
 - **Join Requirements** (all the gatekeeping checks, the failure action, and minimum account age)
-- **Advanced verification modes** — ID Verification, Basic + ID, and Website verification. (Basic date-of-birth
-  verification is free.)
+- **Advanced verification modes** — ID Verification and Basic + ID. (Website verification, the default, and Basic
+  date-of-birth verification are free.)
 - **The Verification Page** — your customizable web verification page.
 - **Automated lobby cleanup & kicking** — the *Clean Lobby Days* and *Kick on Cleanup* settings.
 - **Reverification** — including the reverification roles and the reverify log channel.
@@ -126,10 +126,13 @@ For each, you can pick one of these methods:
 | **Basic**           | The user provides their date of birth and age. This is the simplest option.             | Free       |
 | **ID Verification** | The user verifies using a photo ID (following safe ID-handling procedures).             | 💎 Premium |
 | **All**             | Offers both — the user can verify by date of birth **or** ID, whichever they prefer.    | 💎 Premium |
-| **Website**         | Verification is handled through the online dashboard/website instead of inside Discord. | 💎 Premium |
+| **Website**         | Verification is handled through the online dashboard/website instead of inside Discord. | Free       |
 
-> **Default:** New servers start on **Basic**. Changing the verification mode is a 💎 **premium** feature, so free
-> servers stay on Basic date-of-birth verification (which works great on its own).
+> **Default:** New servers start on **Website** verification. You can switch to **Basic** for free; **ID Verification**
+> and **All** are 💎 **premium**.
+>
+> **Reverification** is 💎 **premium** and always happens inside Discord, so it can't be set to **Website**; it
+> defaults to **Basic**.
 
 ---
 

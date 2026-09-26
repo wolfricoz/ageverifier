@@ -19,7 +19,8 @@ from classes.support.queue import Queue
 from databases.transactions.AgeRoleTransactions import AgeRoleTransactions
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.ConfigTransactions import ConfigTransactions
-from resources.data.config_variables import MAX_BUTTON_LABEL_LENGTH, REVERIFICATION_KEY, VERIFICATION_KEY, \
+from resources.data.config_variables import MAX_BUTTON_LABEL_LENGTH, PREMIUM_VERIFICATION_METHODS, REVERIFICATION_KEY, \
+	VERIFICATION_KEY, \
 	VerificationMethods, \
 	available_toggles, channelchoices, \
 	lobby_approval_toggles, messagechoices, \
@@ -85,11 +86,12 @@ class Config(commands.GroupCog, name="config",
 			case 'auto' :
 				status = await ConfigSetup().auto(interaction, self.channelchoices, self.rolechoices, self.messagechoices)
 
+		if not status :
+			# Cancelled or timed out; the setup flow has already told the user.
+			return None
 		await send_response(interaction,
 		                    "The config has been successfully setup, if you wish to check our toggles you please do /config toggles. Permission checking will commence shortly.",
 		                    ephemeral=True)
-		if not status :
-			return None
 		await ConfigSetup().check_channel_permissions(interaction.guild)
 		return None
 
@@ -248,10 +250,13 @@ class Config(commands.GroupCog, name="config",
         """
 		await interaction.response.defer(ephemeral=True)
 		value = value.id
+		# The choice values are the lowercase rolechoices keys, while config keys are stored
+		# uppercase; comparing key.value directly never matched, so age roles lost their ages.
+		config_key = key.value.upper()
 		match action.value.lower() :
 			case "add" :
-				if key.value == "VERIFICATION_ADD_ROLE" and maximum_age and minimum_age :
-					AgeRoleTransactions().add(guild_id=interaction.guild.id, role_id=value, role_type=key.value,
+				if config_key == "VERIFICATION_ADD_ROLE" and maximum_age and minimum_age :
+					AgeRoleTransactions().add(guild_id=interaction.guild.id, role_id=value, role_type=config_key,
 					                          minimum_age=minimum_age, maximum_age=maximum_age)
 					Queue().add(ConfigUtils.log_change(interaction.guild, {
 						key.value : f"role id: {value} minimum_age: {minimum_age} maximum age: {maximum_age}"},
@@ -269,8 +274,10 @@ class Config(commands.GroupCog, name="config",
 					return
 				await interaction.followup.send(f"{key.name}: <@&{value}> has been added to the database")
 			case 'remove' :
-				if key.value == "VERIFICATION_ADD_ROLE" :
-					AgeRoleTransactions().permanentdelete(interaction.guild_id, value)
+				if config_key == "VERIFICATION_ADD_ROLE" :
+					if not AgeRoleTransactions().permanentdelete(interaction.guild_id, value) :
+						await interaction.followup.send(f"{key.name}: <@&{value}> could not be found in database")
+						return
 					Queue().add(ConfigUtils.log_change(interaction.guild, {key.value : f"role id: {value} removed"},
 					                                   user_name=interaction.user.mention))
 					await interaction.followup.send(f"{key.name}: <@&{value}> has been removed from the database")
@@ -314,7 +321,6 @@ class Config(commands.GroupCog, name="config",
 	],
 		mode=[Choice(name=method.name, value=method.value) for method in VerificationMethods
 	])
-	@AccessControl().check_premium()
 	@app_commands.checks.has_permissions(manage_guild=True)
 	async def verification_mode(self, interaction: discord.Interaction, verification_type: Choice['str'], mode: Choice['str']) -> None:
 		"""
@@ -330,9 +336,29 @@ class Config(commands.GroupCog, name="config",
 
 			**Permissions:**
 			- You'll need the `Manage Server` permission to use this command.
-			- premium required
+			- premium required for Reverification, and for ID verification and Basic + ID verification
+
+			Reverification always happens inside Discord, so it can't be set to Website verification.
 
 		"""
+		is_premium = AccessControl().is_premium(interaction.guild.id)
+		if verification_type.value == REVERIFICATION_KEY :
+			if not is_premium :
+				return await send_response(interaction,
+				                           f"Reverification is a premium feature. "
+				                           f"You can find out more about premium here: {os.getenv('DASHBOARD_URL')}",
+				                           ephemeral=True)
+			# The dashboard has no reverify flow; TOSButton would silently fall back to basic anyway.
+			if mode.value == VerificationMethods.WEBSITE :
+				return await send_response(interaction,
+				                           "Reverification always happens inside Discord, so it can't use Website verification. "
+				                           "Please pick Basic, ID verification or Basic + ID verification.",
+				                           ephemeral=True)
+		if mode.value in PREMIUM_VERIFICATION_METHODS and not is_premium :
+			return await send_response(interaction,
+			                           f"ID verification and Basic + ID verification are premium features. Basic and Website verification are free. "
+			                           f"You can find out more about premium here: {os.getenv('DASHBOARD_URL')}",
+			                           ephemeral=True)
 		ConfigTransactions().config_unique_add(interaction.guild.id, verification_type.value, mode.value, overwrite=True)
 		Queue().add(
 			ConfigUtils.log_change(interaction.guild, { verification_type.value: mode.value}, user_name=interaction.user.mention,

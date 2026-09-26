@@ -2,11 +2,11 @@
 layout: default
 title: Surveys
 parent: Commands
-nav_order: 10
+nav_order: 11
 ---
 
 <h1>Surveys</h1>
-<h6>version: 3.3: Updated documentation and quality of life fixes.</h6>
+<h6>version: 3.4: Cleaned up and ready to go!</h6>
 <h6>Documentation automatically generated from docstrings.</h6>
 
 This module helps you gather valuable feedback from members who decide to leave your server.

@@ -51,26 +51,40 @@ Below you'll see a button for each setup method, they will start the respective 
 
 	@actions.button(label="Automatic Setup", style=discord.ButtonStyle.primary, custom_id="onboarding_automatic_setup")
 	async def onboarding_automatic_setup(self, interaction: discord.Interaction, button: discord.ui.Button) :
-		if not interaction.user.guild_permissions.manage_guild:
-			await send_response(interaction, "You need to be an manage_guild to use automatic setup.", ephemeral=True)
+		if not await self._can_run_setup(interaction) :
 			return
 		status = await ConfigSetup().auto(interaction, self.channelchoices, self.rolechoices, self.messagechoices)
 		if not status :
-			await send_response(interaction,
-				"Automatic setup failed, please try manual setup or use the dashboard to setup the bot.", ephemeral=True)
+			# Cancelled or timed out; auto() has already told the user.
 			return
+		await send_response(interaction, "Automatic setup completed! Checking permissions now.", ephemeral=True)
 		await ConfigSetup().check_channel_permissions(interaction.guild)
-		await send_response(interaction, "Automatic setup completed successfully!", ephemeral=True)
 
 	@actions.button(label="Manual Setup", style=discord.ButtonStyle.primary, custom_id="onboarding_manual_setup")
 	async def onboarding_manual_setup(self, interaction: discord.Interaction, button: discord.ui.Button) :
-		if not interaction.user.guild_permissions.manage_guild:
-			await send_response(interaction, "You need to be an manage_guild to use manual setup.", ephemeral=True)
+		if not await self._can_run_setup(interaction) :
 			return
-
-		await ConfigSetup().manual(interaction.client, interaction, self.channelchoices, self.rolechoices, self.messagechoices)
+		status = await ConfigSetup().manual(interaction.client, interaction, self.channelchoices, self.rolechoices,
+		                                    self.messagechoices)
+		if not status :
+			# Cancelled or timed out; manual() has already told the user.
+			return
+		await send_response(interaction, "Manual setup completed! Checking permissions now.", ephemeral=True)
 		await ConfigSetup().check_channel_permissions(interaction.guild)
-		await send_response(interaction, "Manual setup completed successfully!", ephemeral=True)
+
+	@staticmethod
+	async def _can_run_setup(interaction: discord.Interaction) -> bool :
+		# The welcome falls back to the owner's DMs when no server channel is usable. There
+		# is no guild (or guild_permissions) there, so setup has to happen in the server.
+		if interaction.guild is None :
+			await send_response(interaction,
+			                    "Setup has to run inside your server. Use `/config setup` in any channel I can see there.",
+			                    ephemeral=True)
+			return False
+		if not interaction.user.guild_permissions.manage_guild :
+			await send_response(interaction, "You need the **Manage Server** permission to run setup.", ephemeral=True)
+			return False
+		return True
 	links = discord.ui.ActionRow()
 	# A link-style Button with url=None makes Discord reject the whole message with
 	# "Invalid Form Body ... url: A url is required" (AGEVERIFIER-CR). Only add each

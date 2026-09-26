@@ -97,3 +97,12 @@ class WebsiteDataTransactions(DatabaseTransactions) :
 				return True
 			logging.warning(f"Attempted to set verification for {guid} to True, but entry not found.")
 
+	def check(self, user_id: int, guild_id: int, retrieve: bool = True) -> bool | str :
+		with self.createsession() as session :
+			result = session.scalar(Select(WebsiteData).where(WebsiteData.uid == user_id, WebsiteData.gid == guild_id, WebsiteData.created_date.is_(None)))
+
+			if result and retrieve:
+				return result.uuid
+			if result:
+				return True
+			return False

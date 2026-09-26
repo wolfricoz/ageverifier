@@ -36,14 +36,17 @@ class ConfigSelectChannels(ui.View) :
 		self.stop()
 
 	@ui.button(label="Cancel", style=discord.ButtonStyle.danger)
-	async def cancel(self, button: discord.ui.Button, interaction: discord.Interaction) :
+	async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button) :
 		self.value = None
+		# Without a response Discord shows "This interaction failed" on every click.
+		await interaction.response.edit_message()
 		self.stop()
 
 	# next
 	@ui.button(label="Skip", style=discord.ButtonStyle.primary)
-	async def next(self, button: discord.ui.Button, interaction: discord.Interaction) :
+	async def next(self, interaction: discord.Interaction, button: discord.ui.Button) :
 		self.value = "next"
+		await interaction.response.edit_message()
 		self.stop()
 
 
@@ -56,7 +59,7 @@ class ConfigSelectRoles(ui.View) :
 		self.add_item(button)
 
 	# @ui.select(cls=type_we_want, **other_things)
-	@ui.select(cls=RoleSelect, placeholder="Select a channel please!")
+	@ui.select(cls=RoleSelect, placeholder="Select a role please!")
 	async def my_user_select(self, interaction: Interaction, select: UserSelect) :
 		# handle the selected users here
 		# select.values is a list of User or Member objects here
@@ -68,11 +71,14 @@ class ConfigSelectRoles(ui.View) :
 		self.stop()
 
 	@ui.button(label="Cancel", style=discord.ButtonStyle.danger)
-	async def cancel(self, button: discord.ui.Button, interaction: discord.Interaction) :
+	async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button) :
 		self.value = None
+		# Without a response Discord shows "This interaction failed" on every click.
+		await interaction.response.edit_message()
 		self.stop()
 
 	@ui.button(label="Skip", style=discord.ButtonStyle.primary)
-	async def next(self, button: discord.ui.Button, interaction: discord.Interaction) :
+	async def next(self, interaction: discord.Interaction, button: discord.ui.Button) :
 		self.value = "next"
+		await interaction.response.edit_message()
 		self.stop()

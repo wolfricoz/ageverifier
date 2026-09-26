@@ -11,6 +11,12 @@ GDPR_REMOVAL_GRACE_DAYS = 30
 # carried for the full 365 day record retention.
 IP_RETENTION_DAYS = 30
 
+# Points check_asn adds when a website verification does not come from the member's
+# own connection. The non-residential value is a placeholder until the threshold
+# these points are compared against is decided.
+ASN_NON_RESIDENTIAL_POINTS = 50
+KNOWN_VPN_POINTS = 100
+
 messagechoices = {
 	"verification_completed_message" : 'This is the welcome message that will be posted in the verification_completed_channel channel This starts with: `Welcome to {server name} {user}! This is where the message goes`',
 	"server_join_message"            : 'This is the welcome message that will be posted in the lobby channel, and be the first message new users see. This starts with: `Welcome {user}! This is where the message goes`',
@@ -48,6 +54,9 @@ class VerificationMethods(StrEnum) :
 	IDVERIFY = "IDVERIFY"
 	ALL = "ALL"
 	WEBSITE = "WEBSITE"
+
+# Verification methods that need premium; the others are free to pick.
+PREMIUM_VERIFICATION_METHODS = (VerificationMethods.IDVERIFY, VerificationMethods.ALL)
 
 FAIL_ACTION = "JOIN_FAIL_ACTION"
 

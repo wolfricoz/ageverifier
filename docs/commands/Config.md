@@ -6,7 +6,7 @@ nav_order: 1
 ---
 
 <h1>Config</h1>
-<h6>version: 3.3: Updated documentation and quality of life fixes.</h6>
+<h6>version: 3.4: Cleaned up and ready to go!</h6>
 <h6>Documentation automatically generated from docstrings.</h6>
 
 Commands for configuring the bot's settings in the server.
@@ -22,9 +22,9 @@ Most commands require 'Manage Server' permissions.
 
 ---
 
-### `configsetup`
+### `setup`
 
-**Usage:** `/config configsetup <setup_type>`
+**Usage:** `/config setup <setup_type>`
 
 > This command helps you get the bot set up on your server. You have a few options to choose from:
 'dashboard' will give you a link to our web dashboard for an easy, graphical setup experience.
@@ -56,6 +56,7 @@ It's a great way to diagnose problems if the bot isn't behaving as expected. Any
 > Lets you customize the various messages the bot sends. You can either set a new custom message or remove an existing one to revert it back to the default.
 When you choose to 'set' a message, a pop-up will appear for you to enter your new text.
 
+Some of these are premium only, such as `verification_button_label`, which changes the text on the verification button itself.
 
 **Permissions:**
 - You'll need the `Manage Server` permission to use this command.
@@ -142,7 +143,9 @@ You can set the verification mode for the following types:
 
 **Permissions:**
 - You'll need the `Manage Server` permission to use this command.
-- premium required
+- premium required for Reverification, and for ID verification and Basic + ID verification
+
+Reverification always happens inside Discord, so it can't be set to Website verification.
 
 ---
 

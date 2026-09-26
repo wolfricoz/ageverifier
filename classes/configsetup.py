@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 import discord
@@ -23,7 +24,11 @@ class ConfigSetup :
 	channelchoices = channelchoices
 	messagechoices = messagechoices
 	available_toggles = available_toggles
-	changes = {}
+
+	def __init__(self) :
+		# Per instance: a class-level dict was shared by every server's setup, leaking
+		# one server's channel ids into another server's config-change log.
+		self.changes = {}
 
 	async def manual(self, bot, interaction: discord.Interaction, channelchoices: dict, rolechoices: dict,
 	                 messagechoices: dict) :
@@ -39,10 +44,11 @@ class ConfigSetup :
 					continue
 				if view.value is None :
 					await send_response(interaction, "Setup has been cancelled")
-					return
+					return False
 			except AttributeError :
 				logging.info("No value found, message was deleted")
-				return
+				return False
+			self.changes[channelkey] = int(view.value[0])
 			ConfigTransactions().config_unique_add(interaction.guild.id, channelkey, int(view.value[0]), overwrite=True)
 		for key, value in rolechoices.items() :
 			if key == "return_remove_role" :
@@ -56,24 +62,39 @@ class ConfigSetup :
 					continue
 				if view.value is None :
 					await send_response(interaction, "Setup has been cancelled")
-					return
+					return False
 			except AttributeError :
 				logging.info("No value found, message was deleted")
-				return
-			ConfigTransactions().config_unique_add(interaction.guild.id, value, int(view.value[0]), overwrite=True)
+				return False
+			self.changes[key] = int(view.value[0])
+			ConfigTransactions().config_unique_add(interaction.guild.id, key, int(view.value[0]), overwrite=True)
 		for messagekey, messagevalue in messagechoices.items() :
 			msg = await interaction.channel.send(f"Please set the message for {messagekey}\n"
 			                                     f"{messagevalue}\n"
 			                                     f"Type `cancel` to cancel, or `next` to go to the next message")
-			result = await bot.wait_for('message', check=lambda m : m.author == interaction.user)
+			try :
+				# Only this user in this channel: otherwise their next message anywhere,
+				# even in another server, was taken as the answer and deleted.
+				result = await bot.wait_for('message', timeout=1800,
+				                            check=lambda m : m.author == interaction.user and m.channel == interaction.channel)
+			except asyncio.TimeoutError :
+				await msg.delete()
+				await send_response(interaction, "Setup timed out, run `/config setup` to try again.")
+				return False
 			if result.content.lower() == "cancel" :
+				await msg.delete()
 				await send_response(interaction, "Setup has been cancelled")
-				return
+				return False
 			if result.content.lower() == "next" :
+				await result.delete()
+				await msg.delete()
 				continue
+			self.changes[messagekey] = result.content
 			ConfigTransactions().config_unique_add(interaction.guild.id, messagekey, result.content, overwrite=True)
 			await result.delete()
 			await msg.delete()
+		Queue().add(ConfigUtils.log_change(interaction.guild, self.changes, user_name=interaction.user.name), 1)
+		return True
 
 	async def auto(self, interaction: discord.Interaction, channelchoices: dict, rolechoices: dict,
 	               messagechoices: dict) :
@@ -85,18 +106,21 @@ class ConfigSetup :
 
 		if not confirmation.confirmed :
 			await send_response(interaction, "Setup has been cancelled")
-			return None
+			return False
 		category = get(interaction.guild.categories, name="Lobby")
 		if not category :
 			category: discord.CategoryChannel = await interaction.guild.create_category(name="Lobby", overwrites={
 				interaction.guild.default_role : discord.PermissionOverwrite(read_messages=False),
 				interaction.guild.me           : discord.PermissionOverwrite(read_messages=True)
 			})
-		await self.create_channels(interaction.guild, category, interaction)
-		await self.create_roles(interaction.guild, rolechoices, interaction)
-		await self.set_messages(interaction.guild, messagechoices)
+		# False means the user cancelled a step and has already been told so.
+		completed = await self.create_channels(interaction.guild, category, interaction) is not False
+		if completed :
+			completed = await self.create_roles(interaction.guild, rolechoices, interaction) is not False
+		if completed :
+			await self.set_messages(interaction.guild, messagechoices)
 		Queue().add(ConfigUtils.log_change(interaction.guild, self.changes, user_name=interaction.user.name), 1)
-		return True
+		return completed
 
 	async def add_roles_to_channel(self, channel, roles) :
 		for r in roles :
@@ -124,6 +148,7 @@ class ConfigSetup :
 						verification_completed_channel: discord.TextChannel = get(guild.text_channels, name="general")
 						if verification_completed_channel :
 							logging.info("setting up verification_completed_channel channel: ")
+							self.changes[channelkey] = verification_completed_channel.id
 							ConfigTransactions().config_unique_add(guild.id, channelkey, verification_completed_channel.id,
 							                                       overwrite=True)
 							continue
@@ -143,6 +168,7 @@ class ConfigSetup :
 						except AttributeError :
 							logging.info("No value found, message was deleted")
 							return False
+						self.changes[channelkey] = int(view.value[0])
 						ConfigTransactions().config_unique_add(guild.id, channelkey, int(view.value[0]), overwrite=True)
 						continue
 					# This is your general channel, where the welcome message will be posted
@@ -235,10 +261,10 @@ class ConfigSetup :
 					return False
 			except AttributeError :
 				logging.info("No value found, message was deleted")
+				return False
 			self.changes[key] = int(view.value[0])
 			ConfigTransactions().config_unique_add(guild.id, key, int(view.value[0]), overwrite=True)
-			return None
-		return None
+		return True
 
 	async def set_messages(self, guild, messagechoices) :
 		for messagekey, messagevalue in messagechoices.items() :
@@ -252,7 +278,7 @@ class ConfigSetup :
 				# Not every message has a starting text worth writing during setup; the
 				# verification button label, for instance, already falls back on its own.
 				continue
-			self.changes[messagekey] = messagevalue
+			self.changes[messagekey] = default
 			ConfigTransactions().config_unique_add(guild.id, messagekey, default, overwrite=True)
 
 	async def create_channel(self, guild, category, name, description=None) :
@@ -274,9 +300,11 @@ class ConfigSetup :
 				guild.default_role : discord.PermissionOverwrite(read_messages=False),
 				guild.me           : discord.PermissionOverwrite(read_messages=True)
 			})
-		Queue().add(ConfigSetup().create_channels(guild, category), 2)
-		Queue().add(ConfigSetup().create_roles(guild, rolechoices), 2)
-		Queue().add(ConfigSetup().set_messages(guild, messagechoices), 2)
+		# Run in order on this instance so self.changes is filled before it is logged and
+		# the moderation channel exists before the completion notice is sent to it.
+		await self.create_channels(guild, category)
+		await self.create_roles(guild, rolechoices)
+		await self.set_messages(guild, messagechoices)
 		lobby_mod = guild.get_channel(ConfigData().get_key_int(guild.id, "approval_channel"))
 		Queue().add(send_message(lobby_mod, f"## Auto Setup for {guild.name} has been completed!"), 0)
 		Queue().add(send_message(guild.owner, f"## Auto Setup for {guild.name} has been completed!"), 0)
@@ -385,20 +413,28 @@ class ConfigSetup :
 			data = [data]
 		if isinstance(data, list) and len(data) > 0 :
 			fail = []
+			errored = False
 			for role_id in data :
 				try :
-					role = guild.get_role(role_id)
+					# Single-role keys such as approval_ping_role are cached as the raw
+					# database string, and get_role only matches int keys.
+					role = guild.get_role(int(role_id))
 					if not await self.check_role_permissions(role, top_role) :
 						fail.append(role_id)
 						continue
 				except ValueError :
+					errored = True
 					ement.add_field(name=f"**{key} - {role_id}**", value=f"❌ Unable to retrieve role", inline=False)
 					continue
 				except Exception as e :
+					errored = True
 					logging.error(e, exc_info=True)
 					ement.add_field(name=f"**{key} - {role_id}**", value=f"❌ Error checking permissions", inline=False)
 					continue
-			await self.add_role_field(ement, key, len(fail) < 1, failed=fail)
+			# A per-role error field was already added, so skip the summary unless
+			# there are also roles we simply cannot assign.
+			if fail or not errored :
+				await self.add_role_field(ement, key, len(fail) < 1, failed=fail)
 			return
 
 

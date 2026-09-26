@@ -151,8 +151,10 @@ nav_order: {nav}
 
 
 
-		docfile.write(f"### `{function}`\n\n"
-		              f"**Usage:** `/{domain.lower()} {function}{param_string}`\n\n"
+		# Use the slash command's name where it differs from the python function (e.g. support_help -> help).
+		command_name = getattr(func_obj, 'name', function)
+		docfile.write(f"### `{command_name}`\n\n"
+		              f"**Usage:** `/{domain.lower()} {command_name}{param_string}`\n\n"
 		              f"> {docstring}\n\n"
 		              f"---\n\n")
 

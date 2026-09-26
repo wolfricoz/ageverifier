@@ -11,8 +11,9 @@ AgeVerifier can confirm a member's age in a few different ways. This page explai
 members, and when to choose it. You set the method with `/config verification_mode`.
 
 > You can set the method separately for first-time **Verification** and for **Reverification** (asking existing members
-> to verify again). Changing the method is a **premium** feature; **Basic** is the free default and is all many servers
-> ever need.
+> to verify again). New servers start on **Website** verification. **Basic** and **Website** are free; **ID
+> Verification** and **All** need premium. Reverification is premium and always happens inside Discord, so **Website**
+> is only available for first-time verification.
 
 ---
 
@@ -23,8 +24,6 @@ gives
 their age, the bot checks if they previously have submitted their date of birth and if that matches as well as a few
 additional
 checks to ensure they provided their actual date of birth.
-
-**This is the default for every new server.**
 
 **Choose this when:** you want a simple, low-friction check that keeps most people moving through quickly. It's the
 right starting point for the vast majority of communities.
@@ -45,10 +44,12 @@ options!
 
 **Choose this when:** Choose this if you want to give your members all the possible options.
 
-## Website Verification &nbsp;·&nbsp; 💎 Premium
+## Website Verification &nbsp;·&nbsp; Free
 
 Verification happens through the **web dashboard** instead of inside Discord. The member is directed to the site to
 complete the process.
+
+**This is the default for every new server.**
 
 The verification page is a fully customizable page, allowing you to upload your own images, edit colors, add a lovely
 intro to your server and display your rules in style!
@@ -65,7 +66,7 @@ experience the website provides. See the [Dashboard](dashboard.html) page for mo
 | **Basic**           | Enters date of birth          | Free       | Most servers; fast and simple |
 | **ID Verification** | Provides a photo ID           | 💎 Premium | Higher assurance              |
 | **All**             | Date of birth **OR** ID       | 💎 Premium | Maximum thoroughness          |
-| **Website**         | Verifies on the web dashboard | 💎 Premium | Guided, out-of-Discord flow   |
+| **Website**         | Verifies on the web dashboard | Free       | Guided, out-of-Discord flow   |
 
 ---
 

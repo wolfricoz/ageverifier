@@ -15,6 +15,7 @@ from discord_py_utilities.permissions import find_first_accessible_text_channel
 # IMPORT LOAD_DOTENV FUNCTION FROM DOTENV MODULE.
 from dotenv import load_dotenv
 from fastapi import FastAPI
+from starlette.formparsers import MultiPartParser
 
 import api
 from classes import whitelist
@@ -134,6 +135,12 @@ async def lifespan(app: FastAPI) :
 			except asyncio.CancelledError :
 				pass
 
+
+# Keep uploaded ID images in memory instead of letting Starlette roll them over to a
+# temp file on disk (default threshold is 1MB, which a phone-camera JPEG exceeds).
+# 25MB matches Discord's own attachment limit, so anything we can accept here is
+# something we can actually forward to Discord.
+MultiPartParser.spool_max_size = 25 * 1024 * 1024
 
 app = FastAPI(lifespan=lifespan,
               docs_url=None,  # disables /docs (Swagger UI)

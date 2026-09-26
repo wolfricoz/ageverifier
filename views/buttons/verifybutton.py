@@ -71,9 +71,11 @@ class VerifyButton(discord.ui.View) :
 		idcheck = await self.id_verified_check(interaction)
 		if idcheck :
 			return
-		if ConfigData().get_key(interaction.guild.id, VERIFICATION_KEY, VerificationMethods.BASIC) == VerificationMethods.WEBSITE :
-
-			uuid = WebsiteDataTransactions().create(user_id=interaction.user.id, guild_id=interaction.guild.id)
+		if ConfigData().get_key(interaction.guild.id, VERIFICATION_KEY, VerificationMethods.WEBSITE) == VerificationMethods.WEBSITE :
+			# Test if a UUID for this server and user is active, otherwise we create a new one.
+			uuid = WebsiteDataTransactions().check(user_id=interaction.user.id, guild_id=interaction.guild.id, retrieve=True)
+			if not uuid :
+				uuid = WebsiteDataTransactions().create(user_id=interaction.user.id, guild_id=interaction.guild.id)
 			website_base = os.getenv("DASHBOARD_URL")
 			url = f"{website_base}/ageverifier/verification/{interaction.user.id}/{interaction.guild.id}/{uuid}"
 

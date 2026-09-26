@@ -56,7 +56,7 @@ class ServerTransactions(DatabaseTransactions) :
 						ConfigTransactions().toggle_add(guildid, toggle, "ENABLED")
 					ConfigTransactions().toggle_add(guildid, toggle)
 				ConfigTransactions().config_unique_add(guildid, "COOLDOWN", 5)
-				ConfigTransactions().config_unique_add(guildid, VERIFICATION_KEY, VerificationMethods.BASIC)
+				ConfigTransactions().config_unique_add(guildid, VERIFICATION_KEY, VerificationMethods.WEBSITE)
 
 		if reload :
 			from databases.transactions.ConfigData import ConfigData
@@ -83,7 +83,7 @@ class ServerTransactions(DatabaseTransactions) :
 		"""
 		# Same desired set that add() seeds for a new server.
 		desired_toggles = list(available_toggles) + list(lobby_approval_toggles.keys())
-		unique_defaults = [("COOLDOWN", "5"), (VERIFICATION_KEY, str(VerificationMethods.BASIC))]
+		unique_defaults = [("COOLDOWN", "5"), (VERIFICATION_KEY, str(VerificationMethods.WEBSITE))]
 
 		with self.createsession() as session :
 			# Every (guild, key) that already exists — one query for the whole table.

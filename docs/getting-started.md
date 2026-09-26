@@ -71,7 +71,7 @@ You can customize the message that appears above the button. This is the entry p
 
 ## Step 7 — Choose how members verify (optional)
 
-By default, verification is **Basic** (members enter their date of birth), which is free and works well for most servers. If you have premium and want ID or website-based verification, set it with:
+By default, verification is **Website** (members verify on our online verification page), which is free. To switch to Basic date-of-birth verification (free) or ID verification (premium), use:
 
 ```
 /config verification_mode

@@ -6,16 +6,16 @@ nav_order: 7
 ---
 
 <h1>Lobby</h1>
-<h6>version: 3.2</h6>
+<h6>version: 3.4: Cleaned up and ready to go!</h6>
 <h6>Documentation automatically generated from docstrings.</h6>
 
 Commands for managing the new member lobby and verification process.
 This includes tools for manual verification, age checks, and purging inactive users from the lobby.
 
 
-### `verify_button`
+### `button`
 
-**Usage:** `/lobby verify_button <text>`
+**Usage:** `/lobby button <text>`
 
 > Creates the main verification button in your lobby channel.
 When new users click this button, it kicks off the entire age verification process. You can customize the message that appears above the button.
