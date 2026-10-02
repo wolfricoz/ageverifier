@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from dotenv import load_dotenv
-from sqlalchemy import BigInteger, Boolean, DateTime, Enum, ForeignKey, Integer, String, create_engine
+from sqlalchemy import BigInteger, Boolean, DateTime, Enum, ForeignKey, Integer, String, Text, create_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, sessionmaker
 from sqlalchemy.pool import NullPool
 from sqlalchemy.sql import func
@@ -194,6 +194,35 @@ class WebsiteData(Base) :
 	verified: Mapped[datetime] = mapped_column(DateTime, default=None, nullable=True)
 	created_date: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 	last_updated: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), server_onupdate=func.now())
+
+
+# RMRbot's tables. The bots share this database and its migrations live here, so they are defined here too.
+class Approvals(Base) :
+	"""Advert approvals in RMRbot's forums, by moderator (or by RMRbot for an auto-approved bump)."""
+	__tablename__ = "approvals"
+	id: Mapped[int] = mapped_column(primary_key=True)
+	uid: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.uid", ondelete="CASCADE"))
+	guild: Mapped[int] = mapped_column(BigInteger, ForeignKey("servers.guild", ondelete="CASCADE"))
+	thread: Mapped[int] = mapped_column(BigInteger)
+	# The advert's text as it was approved: RMRbot diffs later edits against the latest one.
+	content: Mapped[Optional[str]] = mapped_column(Text, default=None)
+	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class Advertisements(Base) :
+	"""RMRbot's index of the adverts in its forums; an advert is cross-posted to the website when it has consent,
+	is approved and isn't deleted."""
+	__tablename__ = "advertisements"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=False)
+	thread_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	forum_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.uid", ondelete="CASCADE"), index=True)
+	consent_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), default=None)
+	published_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), default=None)
+	# The post's page on the website, returned when it was published.
+	url: Mapped[Optional[str]] = mapped_column(String(255), default=None)
+	approved: Mapped[bool] = mapped_column(Boolean, default=False)
+	deleted: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), default=None)
 
 
 class Database :
