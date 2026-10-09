@@ -45,6 +45,9 @@ LOG_BUFFER_CAPACITY = int(os.getenv("LOG_BUFFER_CAPACITY", "5000"))
 # Optional base URL to build a clickable Sentry link from an event id, e.g.
 # https://your-org.sentry.io/issues/?query=
 SENTRY_URL = os.getenv("SENTRY_URL")
+# Slash-command options never written to the log or sent to Sentry. The dob is
+# encrypted at rest, so echoing it here would undo that.
+REDACTED_OPTIONS = {"dob", "date_of_birth", "dateofbirth"}
 
 logger = logging.getLogger('discord')
 
@@ -185,6 +188,8 @@ class Logging(commands.Cog):
 			for option in options:
 				if option.get("type") in (1, 2):
 					yield from leaf_options(option.get("options") or [])
+				elif option.get("name") in REDACTED_OPTIONS:
+					yield f"{option['name']}: [redacted]"
 				elif "value" in option:
 					yield f"{option['name']}: {option['value']}"
 

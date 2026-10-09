@@ -75,7 +75,6 @@ class NsfwVerifyModal(discord.ui.Modal):
             return
         dob = self.dateofbirth.value.replace("-", "/").replace(".", "/")
 
-        print(dob)
         # Checks if date of birth and age match
         if int(age) < 18:
             await channel.send(
