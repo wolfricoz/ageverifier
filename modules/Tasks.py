@@ -346,11 +346,12 @@ class Tasks(commands.Cog) :
 			if count % 10 == 0 :
 				logging.info(f"Updating {count}/{server_count} servers.")
 				await asyncio.sleep(0)
-			guild = self.bot.get_guild(server.id)
+			# Servers is keyed on `guild`; it has no `id` column (AGEVERIFIER-FQ).
+			guild = self.bot.get_guild(server.guild)
 			if guild is None :
 				continue
 			invite = await check_guild_invites(self.bot, guild, server.invite)
-			ServerTransactions().update(server.id, invite=invite, invite_date=datetime.now())
+			ServerTransactions().update(server.guild, invite=invite, invite_date=datetime.now())
 			count += 1
 		logging.info(f"Updated {count}/{server_count} servers.")
 

@@ -214,7 +214,11 @@ Once you've made these changes you may resubmit your age and date of birth. Than
 		await send_response(interaction, 'User added to database and this message will be deleted in 3 minutes.',
 		                    ephemeral=True)
 		await asyncio.sleep(180)
-		await interaction.message.delete()
+		try :
+			await interaction.message.delete()
+		except discord.NotFound :
+			# Staff (or the lobby clean up) often removed it within the 3 minutes (AGEVERIFIER-12).
+			pass
 		return
 
 	@discord.ui.button(label="reactivate buttons", custom_id="reactivate_buttons", style=discord.ButtonStyle.secondary)
