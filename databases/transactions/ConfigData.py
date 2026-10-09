@@ -229,33 +229,63 @@ class ConfigData(metaclass=Singleton) :
 		"""
 		return self.get_guild(guildid).get(key.upper(), None)
 
+	def get_channel_id(self, guildid: int, key: str) -> int | None :
+		"""
+		Returns a channel id from the config as an int, or None when it is unset.
+		Config values are stored as strings, and unset channels are sometimes stored as the literal
+		string "None" or an empty string; int() on those crashed several callers (AGEVERIFIER-E1, AGEVERIFIER-GY).
+		:param guildid:
+		:param key:
+		:return:
+		"""
+		value = self.get_guild(guildid).get(key.upper(), None)
+		if isinstance(value, int) :
+			return value
+		if isinstance(value, str) and value.strip().isnumeric() :
+			return int(value.strip())
+		return None
+
+	@staticmethod
+	async def _notify_owner(guild: discord.Guild, dedupe_key: str, message: str) -> None :
+		"""Tells the guild owner about a config problem. Throttled per guild/key and never raises.
+
+		This used to fire on every call (e.g. every lobby clean up) with error_mode='error'; an owner the bot
+		can't DM then crashed discord_py_utilities' permission check on a Member (AGEVERIFIER-EP).
+		"""
+		# Lazy import: keeps ConfigData importable without pulling in the notice's dependencies at load.
+		from classes.permissions_notice import PermissionNotice
+		if guild.owner is None or not PermissionNotice._should_send(guild.id, dedupe_key) :
+			return
+		try :
+			await send_message(guild.owner, message, error_mode="ignore")
+		except Exception as e :
+			logging.info(f"Could not notify the owner of {guild.name}({guild.id}): {e}")
+
 	async def get_channel(self, guild: discord.Guild,
 	                      channel_type: str = "modchannel") -> None | VoiceChannel | StageChannel | ForumChannel | TextChannel | CategoryChannel | Thread :
 		"""Gets the channel from the config"""
-		channel_id = self.get_key_or_none(guild.id, channel_type)
-		if not isinstance(channel_id, int) :
-
-			if isinstance(channel_id, str) and channel_id.isnumeric() :
-				channel_id = int(channel_id)
-			else :
-				channel_id = None
+		channel_id = self.get_channel_id(guild.id, channel_type)
 
 		if channel_id is None :
-			await send_message(guild.owner,
-			                   f"No `{channel_type}` channel set for {guild.name}, please set it up using the /config command")
+			await self._notify_owner(guild, f"missing-channel:{channel_type}",
+			                         f"No `{channel_type}` channel set for {guild.name}, please set it up using the /config command")
 			return None
 		channel = guild.get_channel(channel_id)
+		attempts = 0
+		# Only Discord-side errors are worth retrying. A deleted or hidden channel will not come back, and
+		# retrying it without counting attempts looped until the queue's 600s timeout (AGEVERIFIER-HY and friends).
+		while channel is None and attempts < 3 :
+			attempts += 1
+			try :
+				channel = await guild.fetch_channel(channel_id)
+			except (discord.NotFound, discord.Forbidden) :
+				break
+			except discord.DiscordServerError as e :
+				logging.info(f"Discord error fetching {channel_type} ({channel_id}) in {guild.name}, attempt {attempts}/3: {e}")
+				await asyncio.sleep(attempts)
 		if channel is None :
-			attempts = 0
-			while attempts < 3 and channel is None :
-				try :
-					channel = await guild.fetch_channel(channel_id)
-				except discord.NotFound :
-					channel = None
-					continue
-		if channel is None :
-			await send_message(guild.owner,
-			                   f"ageverifier could not fetch the `{channel_type}` channel with id {channel_id} in {guild.name}, please verify it exists and is accessible by the bot. If it does then discord may be having issues.")
+			await self._notify_owner(guild, f"unfetchable-channel:{channel_type}",
+			                         f"ageverifier could not fetch the `{channel_type}` channel with id {channel_id} in {guild.name}, please verify it exists and is accessible by the bot. If it does then discord may be having issues.")
 			return None
 		return channel
 
