@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 from uuid import uuid4
 
@@ -99,10 +99,51 @@ class WebsiteDataTransactions(DatabaseTransactions) :
 
 	def check(self, user_id: int, guild_id: int, retrieve: bool = True) -> bool | str :
 		with self.createsession() as session :
-			result = session.scalar(Select(WebsiteData).where(WebsiteData.uid == user_id, WebsiteData.gid == guild_id, WebsiteData.created_date.is_(None)))
+			result = session.scalar(Select(WebsiteData).where(WebsiteData.uid == user_id, WebsiteData.gid == guild_id, WebsiteData.verified.is_(None)))
 
 			if result and retrieve:
 				return result.uuid
 			if result:
 				return True
 			return False
+
+	def set_opened(self, guid: str, user_id: int, guild_id: int) -> bool :
+		"""
+		Records the first time the member loaded the verification page. Later loads keep the
+		original time, so the reminder counts from when they first saw the page.
+		The ids are checked against the row so a guid cannot be marked for someone else.
+		"""
+		with self.createsession() as session :
+			entry = self.read(guid, session)
+			if not entry or entry.uid != user_id or entry.gid != guild_id :
+				logging.warning(f"Attempted to mark {guid} as opened, but no matching entry was found.")
+				return False
+			if entry.opened is None :
+				entry.opened = datetime.now()
+				self.commit(session)
+			return True
+
+	def get_abandoned(self, max_age: timedelta) -> list[WebsiteData] :
+		"""
+		Returns links that were opened but never finished and have not been reminded yet.
+		max_age bounds how far back to look, so links abandoned long before the reminder
+		was enabled are not all messaged at once.
+		"""
+		with self.createsession() as session :
+			return list(session.scalars(
+				Select(WebsiteData).where(
+					WebsiteData.opened.is_not(None),
+					WebsiteData.opened >= datetime.now() - max_age,
+					WebsiteData.verified.is_(None),
+					WebsiteData.reminded.is_(None),
+				)
+			).all())
+
+	def set_reminded(self, guid: str) -> bool :
+		with self.createsession() as session :
+			entry = self.read(guid, session)
+			if not entry :
+				return False
+			entry.reminded = datetime.now()
+			self.commit(session)
+			return True

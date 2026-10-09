@@ -6,6 +6,18 @@ MAX_BUTTON_LABEL_LENGTH = 80
 
 GDPR_REMOVAL_GRACE_DAYS = 30
 
+# The weekly developer stats report (classes.support.weeklyreport) posts on Sundays at this hour, UTC.
+WEEKLY_REPORT_HOUR = 12
+REPORT_TOP_SERVERS = 5
+
+# A server that removes the bot within QUICK_LEAVE_DAYS of adding it, after using at least QUICK_LEAVE_MIN_COMMANDS
+# commands, gets its log trail saved to QUICK_LEAVE_DIR (classes.support.quickleaves). The files hold user names
+# and ids from the logs, so they are deleted after QUICK_LEAVE_RETENTION_DAYS.
+QUICK_LEAVE_DAYS = 7
+QUICK_LEAVE_MIN_COMMANDS = 1
+QUICK_LEAVE_DIR = "logs/quick_leaves"
+QUICK_LEAVE_RETENTION_DAYS = 90
+
 # How long a recorded IP stays useful for correlation. Dynamic addresses have
 # rotated well before this, so the digests are cleared here rather than being
 # carried for the full 365 day record retention.
@@ -16,6 +28,20 @@ IP_RETENTION_DAYS = 30
 # these points are compared against is decided.
 ASN_NON_RESIDENTIAL_POINTS = 50
 KNOWN_VPN_POINTS = 100
+
+# Risk score shown on online verification approvals, see classes.verification.risk.
+# Each signal adds its points once; the total is capped at RISK_MAX. A device-only
+# alt scores lower than an IP alt because identical phone models can share a
+# fingerprint, while an alt matching on both is the strongest signal of all.
+RISK_MAX = 100
+RISK_VPN_POINTS = 35
+RISK_IP_ALT_POINTS = 30
+RISK_DEVICE_ALT_POINTS = 20
+RISK_IP_AND_DEVICE_ALT_POINTS = 40
+# (maximum account age in days, points), checked in order.
+RISK_ACCOUNT_AGE_POINTS = ((7, 25), (30, 15), (90, 5))
+# Lowest score for each band, highest band first.
+RISK_BANDS = ((60, "High", "🔴"), (30, "Medium", "🟡"), (0, "Low", "🟢"))
 
 messagechoices = {
 	"verification_completed_message" : 'This is the welcome message that will be posted in the verification_completed_channel channel This starts with: `Welcome to {server name} {user}! This is where the message goes`',
@@ -80,12 +106,19 @@ lobby_approval_toggles = {
 	'legacy_message'        : 'Use the old approval message style',
 	'user_id'               : 'Show the user id of the account',
 	'show_previous_servers' : 'Show previous servers',
+	'risk_score'            : 'Show the risk score on online verifications',
 	'debug'                 : 'shows debug approval message'
 }
 
+# Abandoned online verification reminder (premium). 0 or unset disables it.
+VERIFICATION_REMINDER_KEY = "VERIFICATION_REMINDER_MINUTES"
+# Also how far back the reminder looks, so links opened before this are never reminded.
+MAX_VERIFICATION_REMINDER_MINUTES = 7 * 24 * 60
+
 int_options = {
 	'CLEAN_LOBBY_DAYS' : 'Inactive member cleanup threshold from the lobby (days).',
-	'MINIMUM_ACCOUNT_AGE' : 'The minimum required account age in days'
+	'MINIMUM_ACCOUNT_AGE' : 'The minimum required account age in days',
+	VERIFICATION_REMINDER_KEY : '💎 Premium: Message members who opened the online verification page but did not finish after this many minutes (0 disables).'
 }
 
 available_toggles = ["SEND_JOIN_MESSAGE", "SEND_VERIFICATION_COMPLETED_MESSAGE", "DM_VERIFICATION_COMPLETED_MESSAGE",

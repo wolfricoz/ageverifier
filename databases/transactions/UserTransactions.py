@@ -7,7 +7,7 @@ from sqlalchemy import Select, Update, and_, text
 from sqlalchemy.exc import SQLAlchemyError
 
 from classes.encryption import Encryption
-from classes.iphash import hash_ip
+from classes.iphash import hash_fingerprint, hash_ip
 from databases import current as db
 from databases.current import IdVerification, Users, Warnings
 from databases.transactions.ConfigData import ConfigData
@@ -47,7 +47,7 @@ class UserTransactions(DatabaseTransactions) :
 				                server=guildname)
 				session.add(item)
 				self.commit(session)
-				logging.info(f"User {userid} added to database with dob {dob} in {guildname}")
+				logging.info(f"User {userid} added to database in {guildname}")
 				return True
 			except ValueError :
 				return False
@@ -59,20 +59,19 @@ class UserTransactions(DatabaseTransactions) :
 			if userdata is None :
 				self.add_user_full(userid, dob, guildname)
 				return False
-			old_dob = userdata.date_of_birth
 			# noinspection PyTypeChecker
 			userdata.date_of_birth = Encryption().encrypt(dob)
 			userdata.entry = datetime.now(tz=timezone.utc)
 			userdata.server = guildname
 			userdata.deleted_at = None
 			self.commit(session)
-			logging.info(f"Dob updated for {userid} from {old_dob} to {dob} in {guildname}")
+			logging.info(f"Dob updated for {userid} in {guildname}")
 			if userdata.date_of_birth is None :
 				return False
 			return True
 
 
-	def update_user(self, uid: int, entry: datetime = None, date_of_birth: str = None, server: str = None, ip_address: str = None, override=False) :
+	def update_user(self, uid: int, entry: datetime = None, date_of_birth: str = None, server: str = None, ip_address: str = None, device_fingerprint: str = None, override=False) :
 		with self.createsession() as session :
 			user = self.get_user(uid, deleted=override)
 			data = {
@@ -88,6 +87,12 @@ class UserTransactions(DatabaseTransactions) :
 				if hashes is not None :
 					data.update(hashes)
 					data["ip_recorded_at"] = datetime.now(tz=timezone.utc)
+			# Same for the fingerprint: only the peppered digest is ever stored.
+			if device_fingerprint is not None :
+				digest = hash_fingerprint(device_fingerprint)
+				if digest is not None :
+					data["device_fingerprint"] = digest
+					data["fingerprint_recorded_at"] = datetime.now(tz=timezone.utc)
 			for field, value in data.items() :
 				if field == 'date_of_birth' and value is not None :
 					encrypted_value = Encryption().encrypt(value)
@@ -96,8 +101,9 @@ class UserTransactions(DatabaseTransactions) :
 					setattr(user, field, value)
 			session.merge(user)
 			self.commit(session)
-			logging.info(f"Updated {uid} with:")
-			logging.info(data)
+			# Field names only: the values include the plaintext date of birth.
+			changed = [field for field, value in data.items() if value is not None]
+			logging.info(f"Updated {uid} fields: {', '.join(changed)}")
 
 
 	def soft_delete(self, userid: int, guildname: str) :
@@ -269,8 +275,14 @@ class UserTransactions(DatabaseTransactions) :
 				.where(Users.ip_recorded_at < datetime.now(tz=timezone.utc) - timedelta(days=IP_RETENTION_DAYS))
 				.values(ip_hash=None, ip_prefix_24=None, ip_prefix_20=None, ip_prefix_16=None, ip_recorded_at=None)
 			)
+			# Device fingerprints are kept for the same window, on their own timestamp.
+			fingerprints = session.execute(
+				Update(Users)
+				.where(Users.fingerprint_recorded_at < datetime.now(tz=timezone.utc) - timedelta(days=IP_RETENTION_DAYS))
+				.values(device_fingerprint=None, fingerprint_recorded_at=None)
+			)
 			self.commit(session)
-			logging.info(f"Cleared stored IP hashes for {result.rowcount} users.")
+			logging.info(f"Cleared stored IP hashes for {result.rowcount} users and device fingerprints for {fingerprints.rowcount}.")
 			return result.rowcount
 
 
@@ -301,6 +313,24 @@ class UserTransactions(DatabaseTransactions) :
 
 		with self.createsession() as session :
 			query = Select(Users).where(Users.ip_hash == ip_hash)
+			if exclude_uid is not None :
+				query = query.where(Users.uid != exclude_uid)
+			return session.scalars(query).all()
+
+	def check_duplicate_fingerprints(self, fingerprint_digest: str, exclude_uid: int = None) :
+		"""
+		Finds other users who last verified from the same browser.
+
+		:param fingerprint_digest: the digest from classes.iphash.hash_fingerprint.
+		:param exclude_uid: the user being verified, who would otherwise match themselves.
+		:return: the matching users, empty if there are none.
+		"""
+		# Same guard as check_duplicate_ips: an empty digest must match nothing, not every NULL.
+		if not fingerprint_digest :
+			return []
+
+		with self.createsession() as session :
+			query = Select(Users).where(Users.device_fingerprint == fingerprint_digest)
 			if exclude_uid is not None :
 				query = query.where(Users.uid != exclude_uid)
 			return session.scalars(query).all()

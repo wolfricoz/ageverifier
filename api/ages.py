@@ -11,10 +11,11 @@ from pydantic import BaseModel, Field, Json
 from starlette.responses import JSONResponse
 
 from api.auth.auth import Auth
-from api.helpers.VerificationHelpers import check_ip
+from classes.alts import find_alts, format_alts
 from classes.encryption import Encryption
 from classes.support.queue import Queue
 from classes.verification.process import VerificationProcess
+from classes.verification.risk import calculate_risk
 from databases.current import Users
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.UserTransactions import UserTransactions
@@ -28,16 +29,40 @@ router = APIRouter()
 class AgeVerification(BaseModel) :
 	dob: str = Field(..., description="Date of birth in mm/dd/yyyy format")
 	age: int = Field(..., description="Calculated or provided age of the user")
-	guid: str = None,
-	ip: str = None,
-	vpn: bool = False,
-	free: bool = True, # Check if its a subscribed server; we can pull it from the server too but this is just for debugging / future statistics.
+	guid: str = None
+	ip: str = None
+	vpn: bool = False
+	vpn_score: int = 0
+	fingerprint: str = None # SHA-256 of the member's browser traits, from the dashboard.
+	free: bool = True # Check if its a subscribed server; we can pull it from the server too but this is just for debugging / future statistics.
 
 class IdVerification(BaseModel) :
-	guid: str = None,
-	ip: str = None,
-	vpn: bool = False,
-	free: bool = True,
+	guid: str = None
+	ip: str = None
+	vpn: bool = False
+	vpn_score: int = 0
+	fingerprint: str = None
+	free: bool = True
+
+class VerificationOpened(BaseModel) :
+	guid: str = Field(..., description="The verification link's uuid")
+
+@router.post("/age/opened/{guild_id}/{user_id}")
+async def verification_opened(request: Request, guild_id: int, user_id: int, opened: VerificationOpened = Body()) :
+	"""
+	Called by the dashboard when the member loads the verification page. Only the first call
+	for a link is recorded; it starts the abandoned link reminder timer.
+	"""
+	if not await Auth(request).verify() :
+		# the error is usually raised in the verify function, but this is just a final catch.
+		raise HTTPException(status_code=403)
+	if not WebsiteDataTransactions().set_opened(opened.guid, user_id, guild_id) :
+		return JSONResponse(
+			status_code=404,
+			content={"success" : False, "message" : "Verification link not found"},
+		)
+	return {"success" : True}
+
 
 @router.post("/age/get/{user_id}")
 async def fetch_age(request: Request, user_id: int) :
@@ -97,8 +122,9 @@ async def verify_age(request: Request, guild_id: int, user_id: int, verification
 				content={"success" : False, "message" : "Member not found"},
 			)
 
-		ip_hash = check_ip(user, verification.ip)
-		vp = VerificationProcess(bot, user, guild, dob[1], dob[0], dob[2], age, ip_hash=ip_hash)
+		alts = find_alts(user, verification.ip, verification.fingerprint)
+		risk = calculate_risk(user.created_at, alts, verification.vpn, verification.vpn_score)
+		vp = VerificationProcess(bot, user, guild, dob[1], dob[0], dob[2], age, alts=alts, risk=risk)
 		msg = await vp.verify()
 
 		if vp.error is not None :
@@ -241,6 +267,12 @@ async def verify_age(request: Request, guild_id: int, user_id: int, id_file: Ann
 		value="Do not share this ID outside of staff members responsible for verification or save this ID. Abuse will be grounds for immediate blacklisting.",
 		inline=False
 	)
+	alts = find_alts(member, verification.ip, verification.fingerprint)
+	if ConfigData().get_toggle(guild.id, "risk_score", default="ENABLED") :
+		risk = calculate_risk(member.created_at, alts, verification.vpn, verification.vpn_score)
+		embed.add_field(name="Risk Score", value=risk.format(), inline=False)
+	if alt_names := format_alts(alts) :
+		embed.add_field(name="Potential Alts", value=alt_names, inline=False)
 	embed.set_footer(text=member.id)
 	await mod_channel.send(f"{member.mention} has submitted an ID for verification.", embed=embed,
 	                       view=IdReviewButton(reverify=False)) # This route can never be reverify.

@@ -6,6 +6,7 @@ import uuid
 import discord
 from discord_py_utilities.messages import send_message, send_response
 
+from classes.alts import format_alts
 from classes.banwatch import BanWatch
 from classes.encryption import Encryption
 from classes.idcheck import IdCheck
@@ -22,12 +23,14 @@ from views.modals.inputmodal import send_modal
 
 
 class ApprovalButtons(discord.ui.View) :
-	def __init__(self, age: int = None, dob: str = None, user: discord.Member = None, reverify=False, alts=None) :
+	def __init__(self, age: int = None, dob: str = None, user: discord.Member = None, reverify=False, alts=None, risk=None) :
 		self.age = age
 		self.dob = dob
 		self.user = user
 		self.reverify = reverify
 		self.alts = alts
+		# classes.verification.risk.RiskScore, only set for online verifications.
+		self.risk = risk
 		super().__init__(timeout=None)
 		logging.debug(f"approval buttons: {self.reverify}")
 		button = discord.ui.Button(label='Help', style=discord.ButtonStyle.url,
@@ -58,28 +61,18 @@ class ApprovalButtons(discord.ui.View) :
 		picture_large: bool = ConfigData().get_toggle(guild.id, "picture_large", default="DISABLED")
 		picture_small: bool = ConfigData().get_toggle(guild.id, "picture_small", default="ENABLED")
 		show_inline: bool = ConfigData().get_toggle(guild.id, "show_inline", default="DISABLED")
+		show_risk_score: bool = ConfigData().get_toggle(guild.id, "risk_score", default="ENABLED")
 		debug: bool = ConfigData().get_toggle(guild.id, "debug", default="DISABLED")
 
 		# fetching previous servers
 		if show_previous_servers :
 			previous_guilds = "\n".join([guild.get('name', 'Failed to fetch name') for guild in
 			                             JoinHistoryTransactions().fetch_previous_verifications(user.id)])
-		# fetch alt names
-		alt_names = None
-		for alt in self.alts:
-			try:
-				alt_user = guild.get_member(alt.uid)
-
-				alt_names += f"\n - {alt_user.mention}"
-
-			except:
-				pass
-
-
 		# filling the fields
 		fields = {
+			"Risk Score"             : self.risk.format() if self.risk is not None and show_risk_score else None,
 			"ID Verified"            : id_verified,
-			"Potential Alts"         : alt_names,
+			"Potential Alts"         : format_alts(self.alts),
 			"Date of Birth"          : self.dob if whitelisted and legacy_message is False else None,
 			"Age"                    : self.age if legacy_message is False else None,
 			"Banwatch Bans"          : await BanWatch().fetchBanCount(user.id) if show_bans else None,  # Potentially premium?

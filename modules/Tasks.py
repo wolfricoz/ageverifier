@@ -2,7 +2,7 @@
 import asyncio
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, time, timezone
 
 import discord
 from discord import app_commands
@@ -19,11 +19,14 @@ from classes.encryption import Encryption
 from classes.lobby.Clean import clean_lobby
 from classes.permissions_notice import PermissionNotice
 from classes.support.RetentionPolicy import enforce_data_retention_policy
+from classes.support import quickleaves, weeklyreport
 from classes.support.queue import Queue
+from classes.verification.reminders import send_abandoned_reminders
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.ServerTransactions import ServerTransactions
 from databases.transactions.UserTransactions import UserTransactions
 from modules.DevTools import check_access
+from resources.data.config_variables import WEEKLY_REPORT_HOUR
 
 OLDLOBBY = int(os.getenv("OLDLOBBY"))
 DEBUG = os.getenv("DEBUG")
@@ -51,6 +54,8 @@ class Tasks(commands.Cog) :
 		self.clean_guilds.start()
 		self.anonymize_data.start()
 		self.update_invites.start()
+		self.verification_reminders.start()
+		self.weekly_report.start()
 
 
 	def cog_unload(self) :
@@ -65,6 +70,8 @@ class Tasks(commands.Cog) :
 		self.clean_guilds.cancel()
 		self.anonymize_data.cancel()
 		self.update_invites.cancel()
+		self.verification_reminders.cancel()
+		self.weekly_report.cancel()
 
 	@tasks.loop(minutes=10)
 	async def config_reload(self) :
@@ -321,6 +328,7 @@ class Tasks(commands.Cog) :
 	async def anonymize_data(self) :
 		logging.info("Starting data anonymization.")
 		enforce_data_retention_policy()
+		logging.info(f"Deleted {await asyncio.to_thread(quickleaves.prune)} expired quick leave files.")
 		logging.info("Data anonymized.")
 
 	@tasks.loop(hours=12)
@@ -346,6 +354,26 @@ class Tasks(commands.Cog) :
 			count += 1
 		logging.info(f"Updated {count}/{server_count} servers.")
 
+
+	@tasks.loop(minutes=5)
+	async def verification_reminders(self) :
+		"""Reminds members who opened the online verification page but did not finish it."""
+		try :
+			await send_abandoned_reminders(self.bot)
+		except Exception as e :
+			# A failing run must not stop the loop; the next run picks the same links up again.
+			logging.error(f"Abandoned verification reminders failed: {e}", exc_info=True)
+
+	@tasks.loop(time=time(hour=WEEKLY_REPORT_HOUR, tzinfo=timezone.utc))
+	async def weekly_report(self) :
+		"""Posts the weekly developer stats report to the DEV channel. Runs daily, only reports on Sundays."""
+		if datetime.now(tz=timezone.utc).weekday() != 6 :
+			return
+		try :
+			await weeklyreport.send(self.bot)
+		except Exception as e :
+			# A failing report must not stop the loop; next Sunday tries again.
+			logging.error(f"Weekly stats report failed: {e}", exc_info=True)
 
 	@app_commands.command(name="expirecheck")
 	@app_commands.checks.has_permissions(administrator=True)
@@ -392,6 +420,14 @@ class Tasks(commands.Cog) :
 		"""stops event from starting before the bot has fully loaded"""
 		await self.bot.wait_until_ready()
 
+	@verification_reminders.before_loop
+	async def before_verification_reminders(self) :
+		await self.bot.wait_until_ready()
+
+	@weekly_report.before_loop
+	async def before_weekly_report(self) :
+		await self.bot.wait_until_ready()
+
 	@anonymize_data.before_loop
 	async def before_dataanonymize(self) :
 		"""stops event from starting before the bot has fully loaded"""
@@ -409,6 +445,21 @@ class Tasks(commands.Cog) :
 		"""
 		await send_response(interaction, "[Debug]Checking all entries.")
 		self.check_active_servers.restart()
+
+	@app_commands.command(name="stats_report",
+	                      description="[DEV] Posts the weekly stats report for the last 7 days to the dev channel now")
+	@check_access()
+	async def stats_report(self, interaction: discord.Interaction) :
+		"""
+		[DEV] Posts the weekly developer stats report now, covering the last 7 days, instead of waiting for Sunday.
+
+		**Permissions:**
+		- `Developer`
+		"""
+		await send_response(interaction, "Building the weekly stats report.", ephemeral=True)
+		sent = await weeklyreport.send(self.bot)
+		await interaction.followup.send("Report posted to the dev channel." if sent else
+		                                "The report could not be posted, check the logs.", ephemeral=True)
 
 
 async def setup(bot) :

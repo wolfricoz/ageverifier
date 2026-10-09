@@ -25,6 +25,7 @@ from classes.dashboard.Servers import Servers as DashServers
 from classes.jsonmaker import Configer
 from classes.onboarding import Onboarding
 from classes.permissions_notice import PermissionNotice
+from classes.support import quickleaves
 from classes.support.queue import Queue
 from databases import current as db
 from databases.exceptions.KeyNotFound import KeyNotFound
@@ -236,6 +237,8 @@ async def on_guild_join(guild) :
 async def on_guild_remove(guild) :
 	devroom = bot.get_channel(bot.DEV)
 	await devroom.send(f"Left `{guild.name}({guild.id})`")
+	# Waits for the log buffer to flush before reading it, so it runs apart from this event.
+	bot.loop.create_task(quickleaves.capture(guild))
 
 
 # cogloader

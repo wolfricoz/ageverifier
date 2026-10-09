@@ -117,6 +117,64 @@ class TestWebsiteDataTransactions(unittest.TestCase) :
 		self.assertIsNone(self.wt.read(old_uuid))
 		self.assertIsNotNone(self.wt.read(recent_uuid))
 
+	# set_opened
+	def _set_opened(self, uuid: str, opened: datetime) :
+		with self.wt.createsession() as session :
+			entry = session.scalar(Select(WebsiteData).where(WebsiteData.uuid == uuid))
+			entry.opened = opened
+			self.wt.commit(session)
+
+	def test_set_opened_records_first_open_only(self) :
+		uuid = self.wt.create(self.uid, self.gid)
+
+		self.assertTrue(self.wt.set_opened(uuid, self.uid, self.gid))
+		first = self.wt.read(uuid).opened
+		self.assertIsNotNone(first)
+		self.assertTrue(self.wt.set_opened(uuid, self.uid, self.gid))
+		self.assertEqual(self.wt.read(uuid).opened, first)
+
+	def test_set_opened_rejects_mismatched_ids(self) :
+		uuid = self.wt.create(self.uid, self.gid)
+		other_gid = guildgenerator().create().guild
+
+		self.assertFalse(self.wt.set_opened(uuid, self.uid, other_gid))
+		self.assertFalse(self.wt.set_opened(uuid, self.uid + 1, self.gid))
+		self.assertFalse(self.wt.set_opened("does-not-exist", self.uid, self.gid))
+		self.assertIsNone(self.wt.read(uuid).opened)
+
+	# get_abandoned / set_reminded
+	def _abandoned_uuids(self) :
+		return {entry.uuid for entry in self.wt.get_abandoned(timedelta(days=7))}
+
+	def test_get_abandoned_returns_opened_unfinished_links(self) :
+		opened = self.wt.create(self.uid, self.gid)
+		self.wt.set_opened(opened, self.uid, self.gid)
+		never_opened = self.wt.create(self.uid, self.gid)
+
+		result = self._abandoned_uuids()
+
+		self.assertIn(opened, result)
+		self.assertNotIn(never_opened, result)
+
+	def test_get_abandoned_skips_verified_and_reminded(self) :
+		verified = self.wt.create(self.uid, self.gid)
+		self.wt.set_opened(verified, self.uid, self.gid)
+		self.wt.set_verified(verified)
+		reminded = self.wt.create(self.uid, self.gid)
+		self.wt.set_opened(reminded, self.uid, self.gid)
+
+		self.assertTrue(self.wt.set_reminded(reminded))
+		result = self._abandoned_uuids()
+
+		self.assertNotIn(verified, result)
+		self.assertNotIn(reminded, result)
+
+	def test_get_abandoned_ignores_links_older_than_max_age(self) :
+		old = self.wt.create(self.uid, self.gid)
+		self._set_opened(old, datetime.now() - timedelta(days=8))
+
+		self.assertNotIn(old, self._abandoned_uuids())
+
 
 if __name__ == '__main__' :
 	unittest.main()

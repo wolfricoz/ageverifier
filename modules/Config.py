@@ -19,8 +19,9 @@ from classes.support.queue import Queue
 from databases.transactions.AgeRoleTransactions import AgeRoleTransactions
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.ConfigTransactions import ConfigTransactions
-from resources.data.config_variables import MAX_BUTTON_LABEL_LENGTH, PREMIUM_VERIFICATION_METHODS, REVERIFICATION_KEY, \
-	VERIFICATION_KEY, \
+from resources.data.config_variables import MAX_BUTTON_LABEL_LENGTH, MAX_VERIFICATION_REMINDER_MINUTES, \
+	PREMIUM_VERIFICATION_METHODS, REVERIFICATION_KEY, \
+	VERIFICATION_KEY, VERIFICATION_REMINDER_KEY, \
 	VerificationMethods, \
 	available_toggles, channelchoices, \
 	lobby_approval_toggles, messagechoices, \
@@ -311,6 +312,30 @@ class Config(commands.GroupCog, name="config",
 			                       ))
 		await send_response(interaction, f"The cooldown has been set to {cooldown} minutes", ephemeral=True)
 
+	@app_commands.command(name="verification_reminder",
+	                      description="💎 Remind members who opened the online verification page but did not finish.")
+	@app_commands.checks.has_permissions(manage_guild=True)
+	@AccessControl().check_premium()
+	async def verification_reminder(self, interaction: discord.Interaction,
+	                                minutes: app_commands.Range[int, 0, MAX_VERIFICATION_REMINDER_MINUTES]) :
+		"""
+        💎 Premium: Sends a DM to members who opened the online verification page but did not finish it within the set number of minutes.
+        The DM contains their verification link, so members who got distracted can pick up where they left off. Each link is only reminded once.
+        Set it to 0 to turn the reminder off. Only applies when the verification method is Website verification.
+
+        **Permissions:**
+        - You'll need the `Manage Server` permission to use this command.
+        """
+		ConfigTransactions().config_unique_add(interaction.guild.id, VERIFICATION_REMINDER_KEY, minutes, overwrite=True)
+		Queue().add(
+			ConfigUtils.log_change(interaction.guild, {VERIFICATION_REMINDER_KEY : minutes}, user_name=interaction.user.mention,
+			                       ))
+		if minutes == 0 :
+			await send_response(interaction, "The abandoned verification reminder has been turned off.", ephemeral=True)
+			return
+		await send_response(interaction,
+		                    f"Members who open the verification page but don't finish will be reminded after {minutes} minutes.",
+		                    ephemeral=True)
 
 	@app_commands.command(name="verification_mode", description="Set the verification mode for the bot.")
 	@app_commands.choices(verification_type=

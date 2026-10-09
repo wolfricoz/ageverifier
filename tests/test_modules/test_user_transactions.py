@@ -1,10 +1,13 @@
 import unittest
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 
 from databases.Generators.uidgenerator import uidgenerator
 from databases.current import create_bot_database, drop_bot_database
 from databases.transactions.UserTransactions import UserTransactions
-from resources.data.config_variables import GDPR_REMOVAL_GRACE_DAYS
+from classes.iphash import hash_fingerprint
+from resources.data.config_variables import GDPR_REMOVAL_GRACE_DAYS, IP_RETENTION_DAYS
+from sqlalchemy import Update
+from databases.current import Users
 
 
 class TestUserTransactions(unittest.TestCase) :
@@ -91,3 +94,42 @@ class TestUserTransactions(unittest.TestCase) :
 
 	def test_user_exists(self) :
 		self.assertFalse(self.ut.user_exists(self.uid))
+
+	def test_fingerprint_is_stored_peppered_and_matches_other_users(self) :
+		fingerprint = "ab" * 32
+		other = uidgenerator().create()
+		self.ut.add_user_empty(self.uid)
+		self.ut.add_user_empty(other)
+		self.ut.update_user(self.uid, device_fingerprint=fingerprint)
+		self.ut.update_user(other, device_fingerprint=fingerprint)
+
+		user = self.ut.get_user(self.uid)
+		self.assertNotEqual(user.device_fingerprint, fingerprint)
+		self.assertEqual(user.device_fingerprint, hash_fingerprint(fingerprint))
+		self.assertIsNotNone(user.fingerprint_recorded_at)
+
+		matches = self.ut.check_duplicate_fingerprints(hash_fingerprint(fingerprint), exclude_uid=self.uid)
+		self.assertEqual([match.uid for match in matches], [other])
+
+	def test_an_empty_fingerprint_matches_nobody(self) :
+		self.ut.add_user_empty(self.uid)
+		self.assertEqual(self.ut.check_duplicate_fingerprints(None), [])
+
+	def test_a_malformed_fingerprint_is_not_stored(self) :
+		self.ut.add_user_empty(self.uid)
+		self.ut.update_user(self.uid, device_fingerprint="not-a-hash")
+		self.assertIsNone(self.ut.get_user(self.uid).device_fingerprint)
+
+	def test_expired_fingerprints_are_cleared(self) :
+		self.ut.add_user_empty(self.uid)
+		self.ut.update_user(self.uid, device_fingerprint="ab" * 32)
+		with self.ut.createsession() as session :
+			session.execute(Update(Users).where(Users.uid == self.uid).values(
+				fingerprint_recorded_at=datetime.now(tz=timezone.utc) - timedelta(days=IP_RETENTION_DAYS + 1)))
+			session.commit()
+
+		self.ut.clear_expired_ips()
+
+		user = self.ut.get_user(self.uid)
+		self.assertIsNone(user.device_fingerprint)
+		self.assertIsNone(user.fingerprint_recorded_at)

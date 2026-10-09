@@ -34,6 +34,26 @@ def _digest(value: str) -> str :
 	return hmac.new(IpHashKey.encode(), value.encode(), hashlib.sha256).hexdigest()
 
 
+def hash_fingerprint(fingerprint: str | None) -> str | None :
+	"""
+	Peppers the website's device fingerprint before it is stored.
+
+	The dashboard already sends a SHA-256 of the browser traits, but a bare hash of a
+	small, guessable input can be matched against a precomputed table. HMACing it with
+	the same key as the addresses means a leaked column is useless on its own.
+
+	:param fingerprint: 64 hex characters from the dashboard, or None.
+	:return: the digest, or None if the value was missing or malformed.
+	"""
+	if not fingerprint :
+		return None
+	value = fingerprint.strip().lower()
+	if len(value) != 64 or any(c not in "0123456789abcdef" for c in value) :
+		logging.warning("Discarded a malformed device fingerprint before hashing.")
+		return None
+	return _digest(value)
+
+
 def hash_ip(raw_ip: str) -> dict | None :
 	"""
 	Turns a raw address into the set of hashes we actually store.

@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from dotenv import load_dotenv
-from sqlalchemy import BigInteger, Boolean, DateTime, Enum, ForeignKey, Integer, String, create_engine
+from sqlalchemy import BigInteger, Boolean, DateTime, Enum, ForeignKey, Index, Integer, String, Text, create_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, sessionmaker
 from sqlalchemy.pool import NullPool
 from sqlalchemy.sql import func
@@ -59,6 +59,10 @@ class Users(Base) :
 	ip_prefix_20: Mapped[Optional[str]] = mapped_column(String(64))
 	ip_prefix_16: Mapped[Optional[str]] = mapped_column(String(64))
 	ip_recorded_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True, default=None, index=True)
+	# The browser fingerprint from the website, HMAC'd like the address (classes.iphash.hash_fingerprint).
+	# Cleared by the same retention sweep, on its own timestamp.
+	device_fingerprint: Mapped[Optional[str]] = mapped_column(String(64), index=True)
+	fingerprint_recorded_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True, default=None, index=True)
 	deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True, default=None)
 
 	join_history: Mapped[list["JoinHistory"]] = relationship("JoinHistory", back_populates="user", cascade="save-update, merge, delete, delete-orphan")
@@ -194,14 +198,57 @@ class LobbyData(Base) :
 	reverify: Mapped[bool] = mapped_column(Boolean, default=False, nullable=True)
 
 class WebsiteData(Base) :
+	"""
+	One online verification link. uuid is always a str(uuid4()), so 36 characters; the dashboard
+	looks rows up by it on every page load, which the unique index covers on its own.
+	opened is reported by the dashboard the first time the member loads the page, and reminded is
+	set once the abandoned link reminder has been handled so a link is only ever reminded once.
+	"""
 	__tablename__ = "website_data"
+	__table_args__ = (
+		Index("ix_website_data_uuid", "uuid", unique=True),
+		# WebsiteDataTransactions.check() runs on every verify button click.
+		Index("ix_website_data_gid_uid", "gid", "uid"),
+		Index("ix_website_data_opened", "opened"),
+	)
 	id: Mapped[int] = mapped_column(primary_key=True)
-	uuid: Mapped[str] = mapped_column(String(2048))
+	uuid: Mapped[str] = mapped_column(String(36))
 	uid: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.uid", ondelete="CASCADE"))
 	gid: Mapped[int] = mapped_column(BigInteger, ForeignKey("servers.guild", ondelete="CASCADE"))
 	verified: Mapped[datetime] = mapped_column(DateTime, default=None, nullable=True)
+	opened: Mapped[Optional[datetime]] = mapped_column(DateTime, default=None, nullable=True)
+	reminded: Mapped[Optional[datetime]] = mapped_column(DateTime, default=None, nullable=True)
 	created_date: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 	last_updated: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), server_onupdate=func.now())
+
+
+# RMRbot's tables. The bots share this database and its migrations live here, so they are defined here too.
+class Approvals(Base) :
+	"""Advert approvals in RMRbot's forums, by moderator (or by RMRbot for an auto-approved bump)."""
+	__tablename__ = "approvals"
+	id: Mapped[int] = mapped_column(primary_key=True)
+	uid: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.uid", ondelete="CASCADE"))
+	guild: Mapped[int] = mapped_column(BigInteger, ForeignKey("servers.guild", ondelete="CASCADE"))
+	thread: Mapped[int] = mapped_column(BigInteger)
+	# The advert's text as it was approved: RMRbot diffs later edits against the latest one.
+	content: Mapped[Optional[str]] = mapped_column(Text, default=None)
+	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class Advertisements(Base) :
+	"""RMRbot's index of the adverts in its forums; an advert is cross-posted to the website when it has consent,
+	is approved and isn't deleted."""
+	__tablename__ = "advertisements"
+	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=False)
+	thread_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	forum_id: Mapped[int] = mapped_column(BigInteger, index=True)
+	user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.uid", ondelete="CASCADE"), index=True)
+	consent_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), default=None)
+	published_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), default=None)
+	# The post's page on the website, returned when it was published.
+	url: Mapped[Optional[str]] = mapped_column(String(255), default=None)
+	approved: Mapped[bool] = mapped_column(Boolean, default=False)
+	deleted: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), default=None)
 
 
 class Database :
