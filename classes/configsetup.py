@@ -17,6 +17,14 @@ from views.buttons.confirmButtons import confirmAction
 from views.select.configselectroles import ConfigSelectChannels, ConfigSelectRoles
 
 
+async def delete_quietly(msg: discord.Message) -> None :
+	"""Deletes a setup prompt; staff often delete it themselves (or the channel) first (AGEVERIFIER-C7)."""
+	try :
+		await msg.delete()
+	except (discord.NotFound, discord.Forbidden) :
+		pass
+
+
 class ConfigSetup :
 	"""This class is used to setup the configuration for the bot"""
 	rolechoices = rolechoices
@@ -33,7 +41,7 @@ class ConfigSetup :
 			view = ConfigSelectChannels()
 			msg = await interaction.channel.send(f"Select a channel for {channelkey}: \n`{channelvalue}`", view=view)
 			await view.wait()
-			await msg.delete()
+			await delete_quietly(msg)
 			try :
 				if view.value == "next" :
 					continue
@@ -50,7 +58,7 @@ class ConfigSetup :
 			view = ConfigSelectRoles()
 			msg = await interaction.channel.send(f"{key}: \n{value}", view=view)
 			await view.wait()
-			await msg.delete()
+			await delete_quietly(msg)
 			try :
 				if view.value == "next" :
 					continue
@@ -73,7 +81,7 @@ class ConfigSetup :
 				continue
 			ConfigTransactions().config_unique_add(interaction.guild.id, messagekey, result.content, overwrite=True)
 			await result.delete()
-			await msg.delete()
+			await delete_quietly(msg)
 
 	async def auto(self, interaction: discord.Interaction, channelchoices: dict, rolechoices: dict,
 	               messagechoices: dict) :
@@ -133,7 +141,7 @@ class ConfigSetup :
 						view = ConfigSelectChannels()
 						msg = await interaction.channel.send(f"Select a channel for {channelkey}: \n`{channelvalue}`", view=view)
 						await view.wait()
-						await msg.delete()
+						await delete_quietly(msg)
 						try :
 							if view.value == "next" :
 								continue
@@ -226,7 +234,7 @@ class ConfigSetup :
 			view = ConfigSelectRoles()
 			msg = await interaction.channel.send(f"{key}: \n{value}", view=view)
 			await view.wait()
-			await msg.delete()
+			await delete_quietly(msg)
 			try :
 				if view.value == "next" :
 					continue
@@ -287,13 +295,18 @@ class ConfigSetup :
 		if channel is None :
 			logging.warning("Mod channel is None, cannot check permissions")
 			channel = find_first_accessible_text_channel(guild)
-		embed = await self.create_permission_channels_embed(channel.guild)
+		if channel is None :
+			# No approval channel and no channel the bot can post in (AGEVERIFIER-FY); the owner is the last resort.
+			channel = guild.owner
+		if channel is None :
+			return
+		embed = await self.create_permission_channels_embed(guild)
 		try :
 			await send_message(channel, "-# Make sure ageverifier has the right permissions to operate", embed=embed)
 		except (discord.Forbidden, NoPermissionException) :
 			channel = find_first_accessible_text_channel(guild)
 			await send_message(channel, "-# Make sure ageverifier has the right permissions to operate", embed=embed)
-		embed = await self.create_permission_roles_embed(channel.guild)
+		embed = await self.create_permission_roles_embed(guild)
 		try :
 			await send_message(channel, "-# Make sure ageverifier has the right permissions to assign roles", embed=embed)
 		except (discord.Forbidden, NoPermissionException) :

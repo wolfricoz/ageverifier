@@ -87,7 +87,7 @@ async def create_embed(title, fields) :
 
 
 async def invite_info(bot, member: discord.Member) :
-	infochannel = ConfigData().get_key_or_none(member.guild.id, 'invite_log')
+	infochannel = ConfigData().get_channel_id(member.guild.id, 'invite_log')
 	if infochannel is None :
 		logging.info(f"{member.guild.name} doesn't have invite info setup")
 		return
@@ -129,7 +129,10 @@ async def invite_info(bot, member: discord.Member) :
 		embed.set_image(url=member.avatar.url)
 	except :
 		pass
-	channel = bot.get_channel(int(infochannel))
+	channel = bot.get_channel(infochannel)
+	if channel is None :
+		logging.info(f"{member.guild.name}'s invite_log channel {infochannel} no longer exists")
+		return
 	await send_message(channel, embed=embed, error_mode="ignore")
 
 

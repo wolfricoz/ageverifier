@@ -97,13 +97,17 @@ class LobbyProcess :
 		dob_field = ""
 		reverify_field = ""
 
-		lobbylog = ConfigData().get_key(guild.id, "age_log")
+		lobbylog = ConfigData().get_channel_id(guild.id, "age_log")
 		if reverify:
-			revlog = ConfigData().get_key(guild.id, "reverify_age_log")
+			revlog = ConfigData().get_channel_id(guild.id, "reverify_age_log")
 			if revlog is not None:
 				lobbylog = revlog
 
-		channel = guild.get_channel(int(lobbylog))
+		channel = guild.get_channel(lobbylog) if lobbylog else None
+		# age_log may be unset or deleted; there is nowhere to log to then (AGEVERIFIER-GQ).
+		if channel is None :
+			logging.warning(f"{guild.name} ({guild.id}) has no usable age_log channel, verification of {user.id} was not logged")
+			return
 
 		viewers = [member for member in channel.members if member.bot is False]
 		if len(viewers) > 20:
@@ -149,7 +153,7 @@ class LobbyProcess :
 
 	@staticmethod
 	async def clean_up(guild, user) :
-		lobbymod = ConfigData().get_key(guild.id, "approval_channel")
+		lobbymod = ConfigData().get_channel_id(guild.id, "approval_channel")
 
 		channel = await ConfigData().get_channel(guild, "server_join_channel")
 		# get_channel() returns None when server_join_channel is unset or deleted; nothing
@@ -167,7 +171,7 @@ class LobbyProcess :
 			if (message.author == user or user in message.mentions) and count < 10 :
 				count += 1
 				Queue().add(message.delete(), priority=0)
-		channel = guild.get_channel(int(lobbymod)) if lobbymod else None
+		channel = guild.get_channel(lobbymod) if lobbymod else None
 		# Same guard as above: approval_channel may be unset or deleted (AGEVERIFIER-EB).
 		if channel is None :
 			return
@@ -204,13 +208,20 @@ class LobbyProcess :
 		if not send_in_channel :
 			return
 
-		verification_completed_channel = ConfigData().get_key(guild.id, "verification_completed_channel")
-		server_join_channel = ConfigData().get_key(guild.id, "server_join_channel")
-		channel = guild.get_channel(int(verification_completed_channel))
+		verification_completed_channel = ConfigData().get_channel_id(guild.id, "verification_completed_channel")
+		# Unset (or stored as the string "None") means there is no channel to welcome in (AGEVERIFIER-GY).
+		if verification_completed_channel is None :
+			logging.info(f"{guild.name} ({guild.id}) has no verification_completed_channel, skipping the welcome message")
+			return
+		channel = guild.get_channel(verification_completed_channel)
 
 
 		if channel is None:
-			channel = await guild.fetch_channel(int(verification_completed_channel))
+			try :
+				channel = await guild.fetch_channel(verification_completed_channel)
+			except (discord.NotFound, discord.Forbidden) :
+				logging.info(f"{guild.name} ({guild.id})'s verification_completed_channel no longer exists or is hidden")
+				return
 
 		# if verification_completed_channel != server_join_channel:
 		# 	logging.info("Checking if user is in recent memory history")

@@ -26,6 +26,14 @@ class IdSubmitButton(discord.ui.View) :
 
 	@discord.ui.button(label="Submit ID", style=discord.ButtonStyle.blurple, custom_id="id_answer")
 	async def idverify(self, interaction: discord.Interaction, button: discord.ui.Button) :
+		# Acknowledge straight away: await_message() below waits up to 10 minutes without answering the
+		# interaction, and an interaction that isn't answered within 3 seconds can never be responded to or
+		# followed up on again (Unknown interaction -> Invalid Webhook Token, AGEVERIFIER-EC). Deferring keeps
+		# the followup webhook valid for 15 minutes, so every send_response() below lands as a followup.
+		try:
+			await interaction.response.defer()
+		except discord.HTTPException as e:
+			logging.info(f"Could not defer the ID submit interaction for {interaction.user.id}: {e}")
 		if not await self.load_data(interaction):
 			await send_response(interaction, "Could not load guild data from message. Please contact the developer.", ephemeral=True)
 			return

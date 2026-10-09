@@ -68,7 +68,11 @@ class GDPRRemoval(discord.ui.View) :
 
 		if not update :
 			return
-		await interaction.message.edit(view=self)
+		try :
+			await interaction.message.edit(view=self)
+		except discord.NotFound :
+			# The request message was already removed; nothing left to disable (AGEVERIFIER-FR).
+			pass
 
 	LOG_CHANNEL_KEYS = ("age_log", "reverify_age_log", "verification_failure_log", "approval_channel")
 
