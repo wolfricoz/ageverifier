@@ -8,7 +8,8 @@ from discord_py_utilities.messages import send_message, send_response
 from discord_py_utilities.permissions import check_missing_channel_permissions, find_first_accessible_text_channel
 
 from classes.config.utils import ConfigUtils
-from classes.permissions_notice import humanize_permission
+from classes.permissions_notice import AGEVERIFIER_PERMISSIONS_DOCS, DEFAULT_CHANNEL_PERMS, DISCORD_PERMISSIONS_DOCS, \
+	describe_permission
 from classes.support.queue import Queue
 from databases.transactions.AgeRoleTransactions import AgeRoleTransactions
 from databases.transactions.ConfigData import ConfigData
@@ -343,132 +344,178 @@ class ConfigSetup :
 
 		return None
 
-	async def create_permission_channels_embed(self, guild: discord.Guild) :
-		embed = discord.Embed(title="Permissions Check (channels)", color=0x00ff00)
-		embed.description = f"Checking channel permissions in {guild.name}:"
+	# Shown under the embeds and on the dashboard, so both tell staff the same thing.
+	CHANNEL_FIX_STEPS = [
+		"Open the channel → **Edit Channel → Permissions**, add the **Ageverifier** role, and enable the missing permissions.",
+		"Or grant them server-wide: **Server Settings → Roles → Ageverifier**.",
+		"Re-run this check afterwards to confirm everything is green.",
+	]
+	ROLE_FIX_STEPS = [
+		"Enable **Manage Roles** for the **Ageverifier** role in **Server Settings → Roles → Ageverifier**.",
+		"Drag the **Ageverifier** role **above** every role it needs to assign — a bot can only manage roles below its own.",
+		"Re-run this check afterwards to confirm everything is green.",
+	]
 
-		has_issue = False
+	def audit_permissions(self, guild: discord.Guild) -> dict :
+		"""The permission check as data. The Discord embeds and the dashboard API both render this."""
+		channels = self.audit_channel_permissions(guild)
+		roles = self.audit_role_permissions(guild)
+		issue_count = sum(1 for check in channels["checks"] + roles["checks"] if check["status"] != "ok")
+		if not roles["manage_roles"]["granted"] :
+			issue_count += 1
+		return {
+			"guild"       : {"id" : str(guild.id), "name" : guild.name},
+			"ok"          : issue_count == 0,
+			"issue_count" : issue_count,
+			"channels"    : channels,
+			"roles"       : roles,
+			"docs"        : {"ageverifier" : AGEVERIFIER_PERMISSIONS_DOCS, "discord" : DISCORD_PERMISSIONS_DOCS},
+		}
+
+	def audit_channel_permissions(self, guild: discord.Guild) -> dict :
+		checks = []
 		for key in self.channelchoices.keys() :
+			check = {"key" : key, "status" : "ok", "channel_id" : None, "channel_name" : None, "missing" : []}
 			try :
 				channel = guild.get_channel(ConfigData().get_key_int_or_zero(guild.id, key))
 				if channel is None :
-					has_issue = True
-					embed.add_field(name=f"**{key}**", value=f"❌ Not set, or the channel no longer exists — set it with `/config channels`", inline=False)
-					continue
-				missing = check_missing_channel_permissions(channel,
-				                                            ['view_channel', 'send_messages', 'embed_links', 'attach_files'])
-				if len(missing) > 0 :
-					has_issue = True
-					pretty = ', '.join(humanize_permission(p) for p in missing)
-					embed.add_field(name=f"**{key}**", value=f"❌ {channel.mention} is missing: {pretty}", inline=False)
-					continue
-				embed.add_field(name=f"**{key}**", value=f"✅ All required permissions are set", inline=False)
-
+					check["status"] = "not_set"
+				else :
+					check["channel_id"] = str(channel.id)
+					check["channel_name"] = channel.name
+					missing = check_missing_channel_permissions(channel, DEFAULT_CHANNEL_PERMS)
+					if missing :
+						check["status"] = "missing"
+						check["missing"] = [describe_permission(perm) for perm in missing]
 			except Exception as e :
 				logging.error(e, exc_info=True)
-				has_issue = True
-				embed.add_field(name=f"**{key}**", value=f"❌ Error checking permissions", inline=False)
+				check["status"] = "error"
+			check["message"] = self.channel_check_text(check)
+			checks.append(check)
+		return {
+			"ok"        : all(check["status"] == "ok" for check in checks),
+			"checks"    : checks,
+			"fix_steps" : self.CHANNEL_FIX_STEPS,
+		}
 
-		if has_issue :
-			embed.color = 0xff0000
-			embed.add_field(
-				name="How to fix",
-				value=(
-					"1. Open the channel → **Edit Channel → Permissions**, add the **Ageverifier** role, and enable the missing permissions.\n"
-					"2. Or grant them server-wide: **Server Settings → Roles → Ageverifier**.\n"
-					"3. Re-run this check afterwards to confirm everything is green."
-				),
-				inline=False,
-			)
+	@staticmethod
+	def channel_check_text(check: dict, channel_ref: str | None = None) -> str :
+		"""``channel_ref`` names the channel; the embed passes a mention, the dashboard gets #name."""
+		if check["status"] == "not_set" :
+			return "Not set, or the channel no longer exists — set it with `/config channels`"
+		if check["status"] == "error" :
+			return "Error checking permissions"
+		if check["status"] == "missing" :
+			channel_ref = channel_ref or f"#{check['channel_name']}"
+			return f"{channel_ref} is missing: {', '.join(perm['label'] for perm in check['missing'])}"
+		return "All required permissions are set"
+
+	def audit_role_permissions(self, guild: discord.Guild) -> dict :
+		top_role = guild.me.top_role
+		can_manage_roles = guild.me.guild_permissions.manage_roles
+		checks = [self.audit_role_key(guild, key, ConfigData().get_key_or_none(guild.id, key), top_role)
+		          for key in self.rolechoices.keys()]
+		for age_role in AgeRoleTransactions().get_all_guild(guild.id) :
+			checks.append(self.audit_role_key(guild, "age role", age_role.role_id, top_role))
+		checks = [check for check in checks if check is not None]
+		return {
+			"ok"           : can_manage_roles and all(check["status"] == "ok" for check in checks),
+			"manage_roles" : {
+				**describe_permission("manage_roles"),
+				"granted" : can_manage_roles,
+				"message" : "I have permission to give roles" if can_manage_roles else "I don't have permission to give roles",
+			},
+			"top_role"     : {"id" : str(top_role.id), "name" : top_role.name},
+			"checks"       : checks,
+			"fix_steps"    : self.ROLE_FIX_STEPS,
+		}
+
+	def audit_role_key(self, guild: discord.Guild, key: str, data, top_role: discord.Role) -> dict | None :
+		"""Checks every role stored under one config key (or one age role) against the bot's top role."""
+		check = {"key" : key, "type" : "age role" if key == "age role" else "role", "status" : "ok", "roles" : []}
+		if not data :
+			check["status"] = "not_set"
+			check["message"] = "This key was not set"
+			return check
+		if isinstance(data, str | int) :
+			data = [data]
+		if not isinstance(data, list) :
+			return None
+		for role_id in data :
+			entry = {"id" : str(role_id), "name" : None, "status" : "ok"}
+			try :
+				# Single-role keys such as approval_ping_role are cached as the raw
+				# database string, and get_role only matches int keys.
+				role = guild.get_role(int(role_id))
+				if role is None :
+					raise ValueError("Role is None")
+				entry["name"] = role.name
+				if role.position >= top_role.position :
+					entry["status"] = "above_bot"
+			except ValueError :
+				entry["status"] = "not_found"
+				entry["message"] = "Unable to retrieve role"
+			except Exception as e :
+				logging.error(e, exc_info=True)
+				entry["status"] = "error"
+				entry["message"] = "Error checking permissions"
+			check["roles"].append(entry)
+
+		above_bot = [entry for entry in check["roles"] if entry["status"] == "above_bot"]
+		if above_bot :
+			check["status"] = "above_bot"
+			check["message"] = f"I don't have permission to assign roles: {', '.join(entry['name'] for entry in above_bot)}"
+		elif any(entry["status"] != "ok" for entry in check["roles"]) :
+			check["status"] = "error"
+			check["message"] = "; ".join(f"{entry['id']}: {entry['message']}" for entry in check["roles"] if entry["status"] != "ok")
+		else :
+			check["message"] = "I have permission to assign this role"
+		return check
+
+	async def create_permission_channels_embed(self, guild: discord.Guild) :
+		audit = self.audit_channel_permissions(guild)
+		embed = discord.Embed(title="Permissions Check (channels)", color=0x00ff00 if audit["ok"] else 0xff0000)
+		embed.description = f"Checking channel permissions in {guild.name}:"
+		for check in audit["checks"] :
+			mention = f"<#{check['channel_id']}>" if check["channel_id"] else None
+			mark = "✅" if check["status"] == "ok" else "❌"
+			embed.add_field(name=f"**{check['key']}**", value=f"{mark} {self.channel_check_text(check, mention)}", inline=False)
+		if not audit["ok"] :
+			self.add_fix_steps_field(embed, audit["fix_steps"])
 		return embed
 
 	async def create_permission_roles_embed(self, guild: discord.Guild) :
-		ement = discord.Embed(title="Permissions Check (roles)", color=0x00ff00)
+		audit = self.audit_role_permissions(guild)
+		ement = discord.Embed(title="Permissions Check (roles)", color=0x00ff00 if audit["ok"] else 0xff0000)
 		ement.description = f"Checking role permissions in {guild.name}:"
-		top_role = guild.me.top_role
-		can_manage_roles = guild.me.guild_permissions.manage_roles
-		ement.add_field(name=f"role giving permission",
-		                value="✅ I have permission to give roles" if can_manage_roles else "❌ I don't have permission to give roles",
-		                inline=False)
-		for key in self.rolechoices.keys() :
-			await self.process_roles(ement, guild, key, top_role)
-		ageroles = AgeRoleTransactions().get_all_guild(guild.id)
-		for age_role in ageroles :
-			await self.process_roles(ement, guild, str(age_role.role_id), top_role, type="age role", value=age_role.role_id)
-
-		if any((field.value or "").startswith("❌") for field in ement.fields) :
-			ement.color = 0xff0000
-			ement.add_field(
-				name="How to fix",
-				value=(
-					"1. Enable **Manage Roles** for the **Ageverifier** role in **Server Settings → Roles → Ageverifier**.\n"
-					"2. Drag the **Ageverifier** role **above** every role it needs to assign — a bot can only manage roles below its own.\n"
-					"3. Re-run this check afterwards to confirm everything is green."
-				),
-				inline=False,
-			)
+		mark = "✅" if audit["manage_roles"]["granted"] else "❌"
+		ement.add_field(name=f"role giving permission", value=f"{mark} {audit['manage_roles']['message']}", inline=False)
+		for check in audit["checks"] :
+			# Leave room for the fix steps under Discord's 25 field limit.
+			if len(ement.fields) > 20 :
+				break
+			self.add_role_check_fields(ement, check)
+		if not audit["ok"] :
+			self.add_fix_steps_field(ement, audit["fix_steps"])
 		return ement
 
+	@staticmethod
+	def add_role_check_fields(embed: discord.Embed, check: dict) :
+		key = check["key"]
+		if check["status"] in ("ok", "not_set", "above_bot") :
+			mark = "✅" if check["status"] == "ok" else "❌"
+			embed.add_field(name=f"**{key}**", value=f"{mark} {check['message']}", inline=False)
+			if check["status"] != "above_bot" :
+				return
+		# Roles we could not look up get their own field, so staff can see which id is stale.
+		for entry in check["roles"] :
+			if entry["status"] in ("not_found", "error") :
+				embed.add_field(name=f"**{key} - {entry['id']}**", value=f"❌ {entry['message']}", inline=False)
 
-	async def process_roles(self, ement, guild, key, top_role, type = "role", value = None) :
-		logging.info(key)
-		if len(ement.fields) > 20 :
-			return
-		if type == "role" :
-			data = ConfigData().get_key_or_none(guild.id, key)
-		else :
-			key = "age role"
-			data = value
-		if not data  :
-			ement.add_field(name=f"**{key}**", value=f"❌ This key was not set", inline=False)
-			return
-		if isinstance(data, str | int):
-			data = [data]
-		if isinstance(data, list) and len(data) > 0 :
-			fail = []
-			errored = False
-			for role_id in data :
-				try :
-					# Single-role keys such as approval_ping_role are cached as the raw
-					# database string, and get_role only matches int keys.
-					role = guild.get_role(int(role_id))
-					if not await self.check_role_permissions(role, top_role) :
-						fail.append(role_id)
-						continue
-				except ValueError :
-					errored = True
-					ement.add_field(name=f"**{key} - {role_id}**", value=f"❌ Unable to retrieve role", inline=False)
-					continue
-				except Exception as e :
-					errored = True
-					logging.error(e, exc_info=True)
-					ement.add_field(name=f"**{key} - {role_id}**", value=f"❌ Error checking permissions", inline=False)
-					continue
-			# A per-role error field was already added, so skip the summary unless
-			# there are also roles we simply cannot assign.
-			if fail or not errored :
-				await self.add_role_field(ement, key, len(fail) < 1, failed=fail)
-			return
-
-
-	async def check_role_permissions(self, role: discord.Role, top_role: discord.Role) :
-		if role is None :
-			raise ValueError("Role is None")
-		if role.position >= top_role.position :
-			return False
-		return True
-
-	async def add_role_field(self, embed, key, status: bool, failed: list = None):
-
-		if failed and len(failed) > 0 :
-			if len(failed) > 0 :
-				failed_names = ', '.join([str(r) for r in failed])
-
-			embed.add_field(name=f"**{key}**", value=f"❌ I don't have permission to assign roles: {failed_names}", inline=False)
-			return
-		if not status :
-			embed.add_field(name=f"**{key}**", value=f"❌ I don't have permission to assign this role" ,
-			                inline=False)
-			return
-		embed.add_field(name=f"**{key}**", value=f"✅ I have permission to assign this role", inline=False)
-
+	@staticmethod
+	def add_fix_steps_field(embed: discord.Embed, steps: list[str]) :
+		embed.add_field(
+			name="How to fix",
+			value="\n".join(f"{i}. {step}" for i, step in enumerate(steps, start=1)),
+			inline=False,
+		)
