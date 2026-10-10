@@ -36,6 +36,7 @@ from views.buttons.CrossServerAccessButton import CrossServerAccessButton
 from views.buttons.approvalbuttons import ApprovalButtons
 from views.buttons.dobentrybutton import dobentry
 from views.buttons.idreviewbuttons import IdReviewButton
+from views.buttons.idwithdrawbutton import IdWithdrawButton
 from views.buttons.idsubmitbutton import IdSubmitButton
 from views.buttons.idverifybutton import IdVerifyButton
 from views.buttons.reverifybutton import ReVerifyButton
@@ -270,6 +271,7 @@ async def setup_hook() :
 	bot.add_view(dobentry())
 	bot.add_view(IdSubmitButton())
 	bot.add_view(IdReviewButton())
+	bot.add_dynamic_items(IdWithdrawButton)
 	bot.add_view(OnboardingLayout())
 	bot.add_view(CrossServerAccessButton())
 

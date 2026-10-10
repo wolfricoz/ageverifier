@@ -6,6 +6,7 @@ from discord_py_utilities.messages import await_message, send_message, send_resp
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.VerificationTransactions import VerificationTransactions
 from views.buttons.idreviewbuttons import IdReviewButton
+from views.buttons.idwithdrawbutton import attach_withdraw_button
 
 
 #
@@ -83,7 +84,8 @@ class IdSubmitButton(discord.ui.View) :
 				interaction.user,
 				"Thank you — we received your ID for verification. Attached is a private copy of what you submitted.\n\n"
 				"This message is the only storage location for your submission. We keep it on Discord for review only, for up to 7 days. "
-				"When the review is complete, or 7 days pass (whichever comes first), this message will be deleted and no other copies will be kept.",
+				"When the review is complete, or 7 days pass (whichever comes first), this message will be deleted and no other copies will be kept.\n\n"
+				"You can withdraw your consent at any time with the button below: it deletes your ID straight away and cancels the review.",
 				files=[await attachment.to_file()]
 			)
 		except discord.HTTPException as e:
@@ -120,7 +122,8 @@ class IdSubmitButton(discord.ui.View) :
 		if self.reverify:
 			embed.add_field(name="Reverify", value="true")
 		embed.set_footer(text=interaction.user.id)
-		await mod_channel.send(f"{interaction.user.mention} has submitted an ID for verification.", embed=embed, view=IdReviewButton(reverify=self.reverify))
+		staff_message = await mod_channel.send(f"{interaction.user.mention} has submitted an ID for verification.", embed=embed, view=IdReviewButton(reverify=self.reverify))
+		await attach_withdraw_button(message, staff_message)
 		await send_response(interaction, "Your ID submission has been sent to the server staff for review. You will be notified once the review is complete.", ephemeral=True)
 		await self.disable_buttons(interaction)
 

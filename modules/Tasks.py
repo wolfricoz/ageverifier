@@ -21,6 +21,7 @@ from classes.permissions_notice import PermissionNotice
 from classes.support.RetentionPolicy import enforce_data_retention_policy
 from classes.support import quickleaves, weeklyreport
 from classes.support.queue import Queue
+from classes.verification.idmessages import expire_id_messages
 from classes.verification.reminders import send_abandoned_reminders
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.ServerTransactions import ServerTransactions
@@ -56,6 +57,7 @@ class Tasks(commands.Cog) :
 		self.update_invites.start()
 		self.verification_reminders.start()
 		self.weekly_report.start()
+		self.expire_id_images.start()
 
 
 	def cog_unload(self) :
@@ -72,6 +74,7 @@ class Tasks(commands.Cog) :
 		self.update_invites.cancel()
 		self.verification_reminders.cancel()
 		self.weekly_report.cancel()
+		self.expire_id_images.cancel()
 
 	@tasks.loop(minutes=10)
 	async def config_reload(self) :
@@ -376,6 +379,15 @@ class Tasks(commands.Cog) :
 			# A failing report must not stop the loop; next Sunday tries again.
 			logging.error(f"Weekly stats report failed: {e}", exc_info=True)
 
+	@tasks.loop(hours=1)
+	async def expire_id_images(self) :
+		"""Deletes ID images that waited longer than 7 days for review, as the member was promised."""
+		try :
+			await expire_id_messages(self.bot)
+		except Exception as e :
+			# A failing run must not stop the loop; the next run picks the same records up again.
+			logging.error(f"ID image expiry failed: {e}", exc_info=True)
+
 	@app_commands.command(name="expirecheck")
 	@app_commands.checks.has_permissions(administrator=True)
 	async def expirecheck(self, interaction: discord.Interaction) :
@@ -427,6 +439,10 @@ class Tasks(commands.Cog) :
 
 	@weekly_report.before_loop
 	async def before_weekly_report(self) :
+		await self.bot.wait_until_ready()
+
+	@expire_id_images.before_loop
+	async def before_expire_id_images(self) :
 		await self.bot.wait_until_ready()
 
 	@anonymize_data.before_loop

@@ -22,6 +22,7 @@ from databases.transactions.UserTransactions import UserTransactions
 from databases.transactions.VerificationTransactions import VerificationTransactions
 from databases.transactions.WebsiteDataTransactions import WebsiteDataTransactions
 from views.buttons.idreviewbuttons import IdReviewButton
+from views.buttons.idwithdrawbutton import attach_withdraw_button
 
 router = APIRouter()
 
@@ -236,7 +237,8 @@ async def verify_age(request: Request, guild_id: int, user_id: int, id_file: Ann
 			dm_channel,
 			"Thank you — we received your ID for verification. Attached is a private copy of what you submitted.\n\n"
 			"This message is the only storage location for your submission. We keep it on Discord for review only, for up to 7 days. "
-			"When the review is complete, or 7 days pass (whichever comes first), this message will be deleted and no other copies will be kept.",
+			"When the review is complete, or 7 days pass (whichever comes first), this message will be deleted and no other copies will be kept.\n\n"
+			"You can withdraw your consent at any time with the button below: it deletes your ID straight away and cancels the review.",
 			files=[discord.File(fp=io.BytesIO(id_bytes), filename="id.jpg", spoiler=True)],
 		)
 	except Exception as e:
@@ -274,8 +276,9 @@ async def verify_age(request: Request, guild_id: int, user_id: int, id_file: Ann
 	if alt_names := format_alts(alts) :
 		embed.add_field(name="Potential Alts", value=alt_names, inline=False)
 	embed.set_footer(text=member.id)
-	await mod_channel.send(f"{member.mention} has submitted an ID for verification.", embed=embed,
-	                       view=IdReviewButton(reverify=False)) # This route can never be reverify.
+	staff_message = await mod_channel.send(f"{member.mention} has submitted an ID for verification.", embed=embed,
+	                                       view=IdReviewButton(reverify=False)) # This route can never be reverify.
+	await attach_withdraw_button(message, staff_message)
 	if verification.guid :
 		WebsiteDataTransactions().set_verified(verification.guid)
 

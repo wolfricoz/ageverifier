@@ -255,9 +255,13 @@ class IdCheck(ABC) :
 			dm_channel = user.dm_channel or await user.create_dm()
 			message_to_delete = await dm_channel.fetch_message(idcheck.idmessage)
 			await message_to_delete.delete()
-			VerificationTransactions().remove_idmessage(user.id)
+		except discord.NotFound :
+			# Already gone (withdrawn, or deleted by hand): the record must still stop pointing at it.
+			pass
 		except Exception as e :
 			logging.debug(f"Could not remove ID message for {user.id}: {e}")
+			return
+		VerificationTransactions().remove_idmessage(user.id)
 
 
 	@staticmethod

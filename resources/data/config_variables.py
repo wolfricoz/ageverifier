@@ -6,6 +6,10 @@ MAX_BUTTON_LABEL_LENGTH = 80
 
 GDPR_REMOVAL_GRACE_DAYS = 30
 
+# The member's ID image waits for review in AgeVerifier's DM to them for at most this long
+# (classes.verification.idmessages); the DM and the privacy policy both promise it.
+ID_MESSAGE_RETENTION_DAYS = 7
+
 # The weekly developer stats report (classes.support.weeklyreport) posts on Sundays at this hour, UTC.
 WEEKLY_REPORT_HOUR = 12
 REPORT_TOP_SERVERS = 5
