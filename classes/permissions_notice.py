@@ -42,6 +42,12 @@ def humanize_permission(perm: str) -> str:
 	return label
 
 
+def describe_permission(perm: str) -> dict :
+	"""The notice wording for one permission as data, for callers that render it themselves (the dashboard)."""
+	_, why = PERMISSION_INFO.get(perm, ("", ""))
+	return {"permission" : perm, "label" : humanize_permission(perm), "reason" : why}
+
+
 class PermissionNotice :
 	"""Builds and delivers actionable permission notices, with per-problem rate limiting."""
 
@@ -89,8 +95,8 @@ class PermissionNotice :
 		if missing :
 			lines = []
 			for perm in missing :
-				label, why = PERMISSION_INFO.get(perm, (humanize_permission(perm), ""))
-				lines.append(f"• **{label}**" + (f" — to {why}" if why else ""))
+				info = describe_permission(perm)
+				lines.append(f"• **{info['label']}**" + (f" — to {info['reason']}" if info['reason'] else ""))
 			embed.add_field(name="Missing permissions", value="\n".join(lines)[:1024], inline=False)
 
 		# Tailor the fix steps to whether this is a channel-level or role-level problem.

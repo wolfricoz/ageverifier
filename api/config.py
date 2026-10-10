@@ -66,6 +66,21 @@ async def permission_check(request: Request, guildid: int) :
 	Queue().add(ConfigSetup().check_channel_permissions(guild))
 	return {"message" : f"Permission check for {guild.name} queued"}
 
+
+@router.get("/config/{guildid}/permissions")
+async def permission_audit(request: Request, guildid: int) :
+	"""The same check as /permissioncheck, returned to the dashboard instead of posted in Discord."""
+	if not await Auth(request).verify() :
+		# the error is usually raised in the verify function, but this is just a final catch.
+		raise HTTPException(status_code=403)
+
+	bot: commands.Bot = request.app.state.bot
+	# Only the cached guild has the channels, roles and member data the check reads; fetch_guild has none of them.
+	guild = bot.get_guild(guildid)
+	if not guild :
+		raise HTTPException(status_code=404, detail="Guild not found")
+	return ConfigSetup().audit_permissions(guild)
+
 @router.post("/config/{guildid}/changes/log")
 async def log_config_changes(request: Request, guildid: int, changes: dict, user_name: str = "dashboard_api") :
 	if not await Auth(request).verify() :
