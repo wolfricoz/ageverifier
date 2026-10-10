@@ -97,6 +97,28 @@ class TestStatsTransactions(unittest.TestCase) :
 		self.assertEqual(funnel, {"created" : 3, "opened" : 2, "verified" : 1, "reminded" : 1,
 		                          "after_reminder" : 1, "abandoned" : 1})
 
+	def test_website_funnel_for_one_guild(self) :
+		other_gid = guildgenerator().create().guild
+		uid = uidgenerator().create()
+		UserTransactions().add_user_empty(uid)
+		website = WebsiteDataTransactions()
+		mine = website.create(uid, self.gid)
+		website.create(uid, other_gid)
+		website.set_opened(mine, uid, self.gid)
+
+		funnel = self.stats.website_funnel(self.start, self.end, self.gid)
+		everywhere = self.stats.website_funnel(self.start, self.end)
+
+		self.assertEqual(funnel["created"], 1)
+		self.assertEqual(funnel["opened"], 1)
+		self.assertEqual(funnel["abandoned"], 1)
+		self.assertEqual(everywhere["created"], 2)
+
+	def test_website_funnel_for_guild_without_links(self) :
+		funnel = self.stats.website_funnel(self.start, self.end, self.gid)
+
+		self.assertEqual(set(funnel.values()), {0})
+
 	def test_id_check_backlog(self) :
 		now = datetime.now()
 		uid = uidgenerator().create()
