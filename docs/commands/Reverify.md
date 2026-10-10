@@ -2,7 +2,7 @@
 layout: default
 title: Reverify
 parent: Commands
-nav_order: 8
+nav_order: 9
 ---
 
 <h1>Reverify</h1>

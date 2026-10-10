@@ -27,12 +27,6 @@ QUICK_LEAVE_RETENTION_DAYS = 90
 # carried for the full 365 day record retention.
 IP_RETENTION_DAYS = 30
 
-# Points check_asn adds when a website verification does not come from the member's
-# own connection. The non-residential value is a placeholder until the threshold
-# these points are compared against is decided.
-ASN_NON_RESIDENTIAL_POINTS = 50
-KNOWN_VPN_POINTS = 100
-
 # Risk score shown on online verification approvals, see classes.verification.risk.
 # Each signal adds its points once; the total is capped at RISK_MAX. A device-only
 # alt scores lower than an IP alt because identical phone models can share a
@@ -90,6 +84,13 @@ PREMIUM_VERIFICATION_METHODS = (VerificationMethods.IDVERIFY, VerificationMethod
 
 FAIL_ACTION = "JOIN_FAIL_ACTION"
 
+# The QUARANTINE fail action gives the member this role, and a task in classes.lobby.Quarantine takes it
+# off again once QUARANTINE_HOURS have passed since they joined (checked every 10 minutes).
+QUARANTINE_ROLE_KEY = "QUARANTINE_ROLE"
+QUARANTINE_HOURS_KEY = "QUARANTINE_HOURS"
+DEFAULT_QUARANTINE_HOURS = 24
+MAX_QUARANTINE_HOURS = 30 * 24
+
 class JoinRequirementsToggles(StrEnum) :
 	ACCOUNT_AGE = "ACCOUNT_AGE"
 	HAS_AVATAR = "HAS_AVATAR"
@@ -101,6 +102,11 @@ class JoinRequirementsToggles(StrEnum) :
 
 
 
+# Staff notes on a member (classes.membernotes). Notes are capped so a handful fits in one
+# 1024 character embed field; the approval message shows the newest few.
+MAX_NOTE_LENGTH = 500
+APPROVAL_NOTES_SHOWN = 3
+
 lobby_approval_toggles = {
 	'picture_large'         : 'Show large profile picture in approval modal',
 	'picture_small'         : 'Show small profile picture (hides large)',
@@ -111,6 +117,7 @@ lobby_approval_toggles = {
 	'user_id'               : 'Show the user id of the account',
 	'show_previous_servers' : 'Show previous servers',
 	'risk_score'            : 'Show the risk score on online verifications',
+	'staff_notes'           : 'Show staff notes on the member (/notes)',
 	'debug'                 : 'shows debug approval message'
 }
 
@@ -128,7 +135,7 @@ int_options = {
 available_toggles = ["SEND_JOIN_MESSAGE", "SEND_VERIFICATION_COMPLETED_MESSAGE", "DM_VERIFICATION_COMPLETED_MESSAGE",
                      "AUTOMATIC_VERIFICATION",
                      "AUTOKICK_UNDERAGED_USERS", "AUTOKICK_ON_DISCREPANCY", "AUTO_UPDATE_AGE_ROLES", "PING_OWNER_ON_FAILURE", "SURVEY",
-                     "LOG_CONFIG_CHANGES", "CLEANUP_MESSAGES", "SEND_LEAVE_MESSAGE", "KICK_ON_CLEAN"]
+                     "LOG_CONFIG_CHANGES", "CLEANUP_MESSAGES", "SEND_LEAVE_MESSAGE", "KICK_ON_CLEAN", "VPN_FLAG_ONLY"]
 enabled_toggles = ["SEND_VERIFICATION_COMPLETED_MESSAGE", "SEND_JOIN_MESSAGE", 'BANS', 'JOINED_AT', 'CREATED_AT',
                    'USER_ID', 'PICTURE_SMALL',
-                   "LOG_CONFIG_CHANGES", "CLEANUP_MESSAGES", "KICK_ON_CLEAN"]
+                   "LOG_CONFIG_CHANGES", "CLEANUP_MESSAGES", "KICK_ON_CLEAN", 'STAFF_NOTES']

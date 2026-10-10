@@ -11,6 +11,7 @@ from classes.banwatch import BanWatch
 from classes.encryption import Encryption
 from classes.idcheck import IdCheck
 from classes.lobbyprocess import LobbyProcess
+from classes.membernotes import format_notes
 from classes.whitelist import check_whitelist
 from databases.enums.joinhistorystatus import JoinHistoryStatus
 from databases.enums.loggedmessagetype import LoggedMessageType
@@ -18,7 +19,9 @@ from databases.transactions.ButtonTransactions import LobbyDataTransactions
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.HistoryTransactions import JoinHistoryTransactions
 from databases.transactions.LoggedMessageTransactions import LoggedMessageTransactions
+from databases.transactions.MemberNoteTransactions import MemberNoteTransactions
 from databases.transactions.VerificationTransactions import VerificationTransactions
+from resources.data.config_variables import APPROVAL_NOTES_SHOWN
 from views.modals.inputmodal import send_modal
 
 
@@ -62,17 +65,24 @@ class ApprovalButtons(discord.ui.View) :
 		picture_small: bool = ConfigData().get_toggle(guild.id, "picture_small", default="ENABLED")
 		show_inline: bool = ConfigData().get_toggle(guild.id, "show_inline", default="DISABLED")
 		show_risk_score: bool = ConfigData().get_toggle(guild.id, "risk_score", default="ENABLED")
+		show_staff_notes: bool = ConfigData().get_toggle(guild.id, "staff_notes", default="ENABLED")
 		debug: bool = ConfigData().get_toggle(guild.id, "debug", default="DISABLED")
 
 		# fetching previous servers
 		if show_previous_servers :
 			previous_guilds = "\n".join([guild.get('name', 'Failed to fetch name') for guild in
 			                             JoinHistoryTransactions().fetch_previous_verifications(user.id)])
+		staff_notes = None
+		if show_staff_notes :
+			notes = MemberNoteTransactions().get_for_member(guild.id, user.id, limit=APPROVAL_NOTES_SHOWN)
+			if notes :
+				staff_notes = format_notes(notes, MemberNoteTransactions().count_for_member(guild.id, user.id))
 		# filling the fields
 		fields = {
 			"Risk Score"             : self.risk.format() if self.risk is not None and show_risk_score else None,
 			"ID Verified"            : id_verified,
 			"Potential Alts"         : format_alts(self.alts),
+			"Staff Notes"            : staff_notes,
 			"Date of Birth"          : self.dob if whitelisted and legacy_message is False else None,
 			"Age"                    : self.age if legacy_message is False else None,
 			"Banwatch Bans"          : await BanWatch().fetchBanCount(user.id) if show_bans else None,  # Potentially premium?

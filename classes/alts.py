@@ -50,7 +50,6 @@ def find_alts(member: discord.Member, ip: str | None, fingerprint: str | None = 
 		for user in users :
 			matches.setdefault(user.uid, AltMatch(user=user)).reasons.add(reason)
 
-	# Imported here, VerificationHelpers loads the ASN blacklist from disk at import.
 	from api.helpers.VerificationHelpers import check_ip
 
 	try :

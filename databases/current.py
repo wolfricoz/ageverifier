@@ -1,4 +1,5 @@
 import os
+import uuid
 from datetime import datetime
 from typing import List, Optional
 
@@ -18,7 +19,9 @@ DEBUG = os.getenv('TEST')
 
 db_string = f"{DB}/rmrbotnew"
 if DEBUG == "true" :
-	db_string = f"{DB}/rmrbotnew_test"
+	# Every test run gets its own database, so parallel runs never share tables.
+	os.environ.setdefault('TEST_DB_NAME', f"rmrtest_{uuid.uuid4().hex[:8]}_test")
+	db_string = f"{DB}/{os.environ['TEST_DB_NAME']}"
 engine = create_engine(db_string, poolclass=NullPool, echo=False, isolation_level="READ COMMITTED")
 if not database_exists(engine.url) :
 	create_database(engine.url)
@@ -184,6 +187,26 @@ class LoggedMessage(Base) :
 	message: Mapped[int] = mapped_column(BigInteger, nullable=False)
 	type: Mapped[str] = mapped_column(Enum(LoggedMessageType), nullable=False)
 	created_date: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class MemberNotes(Base) :
+	"""Notes a guild's staff keep on a member, shown on that member's approval message.
+
+	Notes belong to one guild and are never shown to another. There is no separate expiry: the
+	foreign keys cascade, so notes go with the user row (GDPR removal and the inactivity purge)
+	and with the server row. author is the staff member's id and deliberately not a foreign key,
+	so a staff member's own removal doesn't take the guild's notes with it.
+	"""
+	__tablename__ = "member_notes"
+	__table_args__ = (
+		Index("ix_member_notes_guild_uid", "guild", "uid"),
+	)
+	id: Mapped[int] = mapped_column(primary_key=True)
+	uid: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.uid", ondelete="CASCADE"), nullable=False)
+	guild: Mapped[int] = mapped_column(BigInteger, ForeignKey("servers.guild", ondelete="CASCADE"), nullable=False)
+	author: Mapped[int] = mapped_column(BigInteger, nullable=False)
+	text: Mapped[str] = mapped_column(String(500), nullable=False)
+	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class LobbyData(Base) :

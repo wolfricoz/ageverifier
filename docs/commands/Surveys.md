@@ -2,7 +2,7 @@
 layout: default
 title: Surveys
 parent: Commands
-nav_order: 11
+nav_order: 12
 ---
 
 <h1>Surveys</h1>

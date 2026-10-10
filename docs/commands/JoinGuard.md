@@ -29,6 +29,20 @@ Requires 'Manage Server' permissions.
 **Usage:** `/joinguard action <penalty>`
 
 > Define what the bot does when an incoming user flags one of your enabled requirements.
+Quarantine Role gives them the role set with `/joinguard quarantine` for a set time instead of kicking them.
+
+**Permissions:**
+- Requires `Manage Server` permission.
+
+---
+
+### `quarantine`
+
+**Usage:** `/joinguard quarantine <role> <hours>`
+
+> Set the role members get when they fail a join requirement and the action is Quarantine Role, and how many
+hours after joining it is taken off again (default 24, up to 720). Use a role only for this: anyone holding it
+longer than the duration since they joined has it removed.
 
 **Permissions:**
 - Requires `Manage Server` permission.

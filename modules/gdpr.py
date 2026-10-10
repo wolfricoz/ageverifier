@@ -8,6 +8,7 @@ from discord_py_utilities.messages import send_response
 
 from classes.encryption import Encryption
 from classes.gdpr import pending_removal_date
+from databases.transactions.MemberNoteTransactions import MemberNoteTransactions
 from databases.transactions.UserTransactions import UserTransactions
 from databases.transactions.VerificationTransactions import VerificationTransactions
 from views.buttons.gdprremoval import GDPRRemoval
@@ -89,12 +90,20 @@ If you want to continue, please confirm your request."""
 			                            f"\n**No data found for you.**")
 			return
 
+		# Only the number: the notes are written by each server's staff, and their content is
+		# handed out through a support ticket rather than posted straight into the DM.
+		note_count = MemberNoteTransactions().count_for_user(interaction.user.id)
+		notes_line = f"\nModeration notes: {note_count}"
+		if note_count > 0 :
+			notes_line += f" (to view your moderation notes, open a ticket in our [support server]({invite}))"
+
 		await interaction.user.send(f"**__User Data Request__**"
 		                            f"\nUser: {interaction.user.mention}({interaction.user.id})"
 		                            f"\ndate of birth (decrypted): {Encryption().decrypt(user_data.date_of_birth) if user_data.date_of_birth is not None else 'Not set'}"
 		                            f"\nLast server: {user_data.server if user_data.server is not None else 'Not set'}"
 		                            f"\nID Verified: {'Yes' if id_verified and id_verified.idverified else 'No'}"
 		                            f"\nPending removal: {f'Yes, scheduled for on or shortly after {removal_date}' if removal_date else 'No'}"
+		                            f"{notes_line}"
 		                            f"\n\n-# Note: All personal data is encrypted and stored securely. If you have any questions or concerns please contact the developer `ricostryker` or join our [support server]({invite}) and open a ticket.")
 
 		await send_response(interaction, "Your data will be sent to you through DM..", ephemeral=True)

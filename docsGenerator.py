@@ -118,10 +118,10 @@ nav_order: {nav}
 		if getattr(func_obj, '__cog_listener__', False) or function.startswith('on_') :
 			return
 
-		# Skip developer/owner-only commands (marked with @commands.is_owner()).
+		# Skip developer/owner-only commands (marked with @commands.is_owner() or DevTools' @check_access()).
 		# These are internal tools and should not be exposed to server admins.
 		checks = getattr(func_obj, 'checks', None) or []
-		if any(getattr(c, '__qualname__', '').startswith('is_owner') for c in checks) :
+		if any(getattr(c, '__qualname__', '').startswith(('is_owner', 'check_access')) for c in checks) :
 			return
 		docstring = ""
 		# Check if it's a decorated command with a callback

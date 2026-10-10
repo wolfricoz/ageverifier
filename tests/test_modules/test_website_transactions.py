@@ -72,12 +72,20 @@ class TestWebsiteDataTransactions(unittest.TestCase) :
 	def test_set_verified_sets_timestamp(self) :
 		uuid = self.wt.create(self.uid, self.gid)
 
-		self.assertTrue(self.wt.set_verified(uuid))
+		self.assertTrue(self.wt.set_verified(uuid, self.uid))
 
 		self.assertIsNotNone(self.wt.read(uuid).verified)
 
 	def test_set_verified_nonexistent_returns_falsy(self) :
-		self.assertFalse(self.wt.set_verified("does-not-exist"))
+		self.assertFalse(self.wt.set_verified("does-not-exist", self.uid))
+
+	def test_set_verified_rejects_mismatched_user(self) :
+		uuid = self.wt.create(self.uid, self.gid)
+
+		with self.assertRaises(ValueError) :
+			self.wt.set_verified(uuid, self.uid + 1)
+
+		self.assertIsNone(self.wt.read(uuid).verified)
 
 	# check
 	def test_check_returns_uuid_for_pending_entry(self) :
@@ -101,7 +109,7 @@ class TestWebsiteDataTransactions(unittest.TestCase) :
 
 	def test_check_ignores_verified_entry(self) :
 		uuid = self.wt.create(self.uid, self.gid)
-		self.wt.set_verified(uuid)
+		self.wt.set_verified(uuid, self.uid)
 
 		self.assertFalse(self.wt.check(self.uid, self.gid))
 
@@ -159,7 +167,7 @@ class TestWebsiteDataTransactions(unittest.TestCase) :
 	def test_get_abandoned_skips_verified_and_reminded(self) :
 		verified = self.wt.create(self.uid, self.gid)
 		self.wt.set_opened(verified, self.uid, self.gid)
-		self.wt.set_verified(verified)
+		self.wt.set_verified(verified, self.uid)
 		reminded = self.wt.create(self.uid, self.gid)
 		self.wt.set_opened(reminded, self.uid, self.gid)
 
