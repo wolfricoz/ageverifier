@@ -17,6 +17,7 @@ from classes.blacklist import blacklist_check
 from classes.dashboard.Servers import Servers
 from classes.encryption import Encryption
 from classes.lobby.Clean import clean_lobby
+from classes.lobby.Quarantine import release_expired
 from classes.permissions_notice import PermissionNotice
 from classes.support.RetentionPolicy import enforce_data_retention_policy
 from classes.support import quickleaves, weeklyreport
@@ -58,6 +59,7 @@ class Tasks(commands.Cog) :
 		self.verification_reminders.start()
 		self.weekly_report.start()
 		self.expire_id_images.start()
+		self.release_quarantines.start()
 
 
 	def cog_unload(self) :
@@ -75,6 +77,7 @@ class Tasks(commands.Cog) :
 		self.verification_reminders.cancel()
 		self.weekly_report.cancel()
 		self.expire_id_images.cancel()
+		self.release_quarantines.cancel()
 
 	@tasks.loop(minutes=10)
 	async def config_reload(self) :
@@ -388,6 +391,17 @@ class Tasks(commands.Cog) :
 			# A failing run must not stop the loop; the next run picks the same records up again.
 			logging.error(f"ID image expiry failed: {e}", exc_info=True)
 
+	@tasks.loop(minutes=10)
+	async def release_quarantines(self) :
+		"""Takes the quarantine role off members who failed a join requirement once their time is up."""
+		try :
+			released = await release_expired(self.bot)
+			if released :
+				logging.info(f"Released {released} member(s) from quarantine.")
+		except Exception as e :
+			# A failing run must not stop the loop; the next run picks the same members up again.
+			logging.error(f"Quarantine release failed: {e}", exc_info=True)
+
 	@app_commands.command(name="expirecheck")
 	@app_commands.checks.has_permissions(administrator=True)
 	async def expirecheck(self, interaction: discord.Interaction) :
@@ -443,6 +457,10 @@ class Tasks(commands.Cog) :
 
 	@expire_id_images.before_loop
 	async def before_expire_id_images(self) :
+		await self.bot.wait_until_ready()
+
+	@release_quarantines.before_loop
+	async def before_release_quarantines(self) :
 		await self.bot.wait_until_ready()
 
 	@anonymize_data.before_loop

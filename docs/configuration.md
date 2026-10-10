@@ -173,6 +173,16 @@ section is a **premium** feature, and every check is **off by default**.
 
 - **Log Only** — Record the failure quietly but let the member in.
 - **Kick Member** — Remove the member from the server.
+- **Quarantine Role** &nbsp;💎 Premium — Let the member in, but give them a quarantine role for a set number of hours. The bot takes
+  the role off again once that time has passed since they joined (it checks every 10 minutes). Set the role and the
+  duration with `/joinguard quarantine` or on the dashboard's Join Guard page; the duration defaults to **24 hours** and
+  can be up to 720 (30 days). Use the role to limit what quarantined members can see or do, for example by denying it
+  access to your channels.
+
+  Use a role that's **only** for quarantine: anyone holding it longer than the duration since they joined has it
+  removed on the next check, including members you gave it to by hand. If no quarantine role is set, or the bot can't
+  give it out (it needs **Manage Roles**, and the role must be below the bot's highest role), the failure is logged and
+  the member gets in without it.
 
 ### Minimum Account Age
 

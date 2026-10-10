@@ -90,6 +90,13 @@ PREMIUM_VERIFICATION_METHODS = (VerificationMethods.IDVERIFY, VerificationMethod
 
 FAIL_ACTION = "JOIN_FAIL_ACTION"
 
+# The QUARANTINE fail action gives the member this role, and a task in classes.lobby.Quarantine takes it
+# off again once QUARANTINE_HOURS have passed since they joined (checked every 10 minutes).
+QUARANTINE_ROLE_KEY = "QUARANTINE_ROLE"
+QUARANTINE_HOURS_KEY = "QUARANTINE_HOURS"
+DEFAULT_QUARANTINE_HOURS = 24
+MAX_QUARANTINE_HOURS = 30 * 24
+
 class JoinRequirementsToggles(StrEnum) :
 	ACCOUNT_AGE = "ACCOUNT_AGE"
 	HAS_AVATAR = "HAS_AVATAR"

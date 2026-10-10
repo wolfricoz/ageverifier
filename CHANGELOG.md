@@ -10,6 +10,7 @@
 - **Abandoned verification reminder 💎 premium.** `/config verification_reminder minutes:<n>` DMs members their verification link once when they opened the website verification page but didn't finish within `n` minutes (up to 7 days, `0` turns it off). Members who left or were verified another way are skipped. The dashboard reports page opens through the new `POST /age/opened/{guild_id}/{user_id}` endpoint.
 - **Support module.** `/support help`, `feedback`, `bug`, `report`, `suggest` and `info` open a ticket in the support server; staff replies are sent back to the member by DM.
 - **Withdraw consent on ID submissions.** New ID submissions get a *Withdraw consent and delete my ID* button that deletes the image straight away and closes the staff review. It doesn't clear an ID check staff placed on the member.
+- **Quarantine Role join fail action.** Members who fail a join requirement can now get a quarantine role for a set number of hours instead of being kicked. Pick *Quarantine Role* with `/joinguard action` and set the role and duration (default 24 hours, up to 720) with `/joinguard quarantine`, or do both on the dashboard's Join Guard page. A task every 10 minutes takes the role off once that time has passed since the member joined (`classes/lobby/Quarantine.py`).
 
 ### Changed
 - **Website verification is free.** It no longer needs premium, and it stays the default for new servers.
