@@ -87,10 +87,13 @@ class WebsiteDataTransactions(DatabaseTransactions) :
 			self.commit(session)
 			return result
 
-	def set_verified(self, guid) :
+	def set_verified(self, guid, user_id) :
 		with self.createsession() as session :
 			entry = self.read(guid, session)
 			if entry :
+				if entry.uid != user_id :
+					raise ValueError(f"User id {user_id} does not match {guid}.")
+
 				entry.verified = datetime.now()
 				self.commit(session)
 				logging.info(f"Set verification for {guid} to True.")

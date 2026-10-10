@@ -135,8 +135,11 @@ async def verify_age(request: Request, guild_id: int, user_id: int, verification
 				logging.warning(f"Unable to send message to {user.name}")
 
 			return {"success" : False, "message" : vp.discrepancy}
-		if verification.guid :
-			WebsiteDataTransactions().set_verified(verification.guid)
+		try:
+			if verification.guid :
+				WebsiteDataTransactions().set_verified(verification.guid, user_id)
+		except ValueError:
+			return {"success" : False, "message" : "UserID does NOT match guid."}
 
 		if vp.discrepancy is not None :
 			id_check = True
@@ -279,8 +282,11 @@ async def verify_age(request: Request, guild_id: int, user_id: int, id_file: Ann
 	staff_message = await mod_channel.send(f"{member.mention} has submitted an ID for verification.", embed=embed,
 	                                       view=IdReviewButton(reverify=False)) # This route can never be reverify.
 	await attach_withdraw_button(message, staff_message)
-	if verification.guid :
-		WebsiteDataTransactions().set_verified(verification.guid)
+	try :
+		if verification.guid :
+			WebsiteDataTransactions().set_verified(verification.guid, user_id)
+	except ValueError :
+		return {"success" : False, "message" : "UserID does NOT match guid."}
 
 	return {"success" : True, "message" : "Thank you for verifying."}
 
