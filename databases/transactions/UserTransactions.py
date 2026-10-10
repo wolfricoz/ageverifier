@@ -312,7 +312,9 @@ class UserTransactions(DatabaseTransactions) :
 			return []
 
 		with self.createsession() as session :
-			query = Select(Users).where(Users.ip_hash == ip_hash)
+			# Users waiting out their /gdpr removal grace period are hidden, so they must not
+			# surface to staff as alts; their hashes go with the row when the purge runs.
+			query = Select(Users).where(Users.ip_hash == ip_hash, Users.deleted_at.is_(None))
 			if exclude_uid is not None :
 				query = query.where(Users.uid != exclude_uid)
 			return session.scalars(query).all()
@@ -330,7 +332,8 @@ class UserTransactions(DatabaseTransactions) :
 			return []
 
 		with self.createsession() as session :
-			query = Select(Users).where(Users.device_fingerprint == fingerprint_digest)
+			# Same as check_duplicate_ips: users pending removal are hidden.
+			query = Select(Users).where(Users.device_fingerprint == fingerprint_digest, Users.deleted_at.is_(None))
 			if exclude_uid is not None :
 				query = query.where(Users.uid != exclude_uid)
 			return session.scalars(query).all()

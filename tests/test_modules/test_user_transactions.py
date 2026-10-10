@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from databases.Generators.uidgenerator import uidgenerator
 from databases.current import create_bot_database, drop_bot_database
 from databases.transactions.UserTransactions import UserTransactions
-from classes.iphash import hash_fingerprint
+from classes.iphash import hash_fingerprint, hash_ip
 from resources.data.config_variables import GDPR_REMOVAL_GRACE_DAYS, IP_RETENTION_DAYS
 from sqlalchemy import Update
 from databases.current import Users
@@ -110,6 +110,19 @@ class TestUserTransactions(unittest.TestCase) :
 
 		matches = self.ut.check_duplicate_fingerprints(hash_fingerprint(fingerprint), exclude_uid=self.uid)
 		self.assertEqual([match.uid for match in matches], [other])
+
+	def test_users_pending_gdpr_removal_are_not_matched_as_alts(self) :
+		fingerprint = "cd" * 32
+		address = "203.0.113.7"
+		pending = uidgenerator().create()
+		for uid in (self.uid, pending) :
+			self.ut.add_user_empty(uid)
+			self.ut.update_user(uid, ip_address=address, device_fingerprint=fingerprint)
+		self.ut.soft_delete(pending, self.guild)
+
+		ip_hash = hash_ip(address)["ip_hash"]
+		self.assertEqual(self.ut.check_duplicate_ips(ip_hash, exclude_uid=self.uid), [])
+		self.assertEqual(self.ut.check_duplicate_fingerprints(hash_fingerprint(fingerprint), exclude_uid=self.uid), [])
 
 	def test_an_empty_fingerprint_matches_nobody(self) :
 		self.ut.add_user_empty(self.uid)
