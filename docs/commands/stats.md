@@ -12,7 +12,7 @@ nav_order: 10
 Welcome to the Statistics Zone!
 This set of commands allows you to visualize various server statistics, such as member activity and age demographics.
 It's a great way to get a snapshot of your community's health and composition.
-These commands are available to everyone.
+These commands are available to everyone, except `/stats verification`, which needs premium and `Manage Server`.
 
 
 ### `graph`
@@ -39,6 +39,19 @@ It provides a global perspective on user activity.
 
 > Get a visual breakdown of the age demographics in your server! This command creates a pie chart showing the distribution of different age groups among your verified members.
 It's a great way to understand the age range of your community.
+
+---
+
+### `verification`
+
+**Usage:** `/stats verification <days>`
+
+> See how far members get with website verification: how many links were created, how many members opened the
+page, how many finished, and how many left it unfinished. Covers links created in the last `days` days
+(default 30, up to 90). This is a premium feature.
+
+**Permissions:**
+- Requires `Manage Server` permission.
 
 ---
 

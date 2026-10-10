@@ -1,4 +1,4 @@
-"""Read-only queries behind the weekly developer stats report (classes.support.weeklyreport).
+"""Read-only queries behind the weekly developer stats report (classes.support.weeklyreport) and `/stats verification`.
 
 Every window method takes a naive [start, end) pair, the same way the rest of the bot compares
 against these columns. join_history rows are edited in place when their status changes, so the
@@ -81,12 +81,14 @@ class StatsTransactions(DatabaseTransactions) :
 			).all()
 			return [(row.name, row.total) for row in rows]
 
-	def website_funnel(self, start: datetime, end: datetime) -> dict :
-		"""Online verification links created in the window, and how far they got."""
-		created = _between(WebsiteData.created_date, start, end)
+	def website_funnel(self, start: datetime, end: datetime, guild_id: int = None) -> dict :
+		"""Online verification links created in the window, and how far they got. Pass guild_id for one server."""
+		scope = [_between(WebsiteData.created_date, start, end)]
+		if guild_id is not None :
+			scope.append(WebsiteData.gid == guild_id)
 		with self.createsession() as session :
 			def count(*where) :
-				return session.scalar(Select(func.count(WebsiteData.id)).where(created, *where)) or 0
+				return session.scalar(Select(func.count(WebsiteData.id)).where(*scope, *where)) or 0
 
 			return {
 				"created"            : count(),
