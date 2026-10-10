@@ -11,6 +11,7 @@
 - **Support module.** `/support help`, `feedback`, `bug`, `report`, `suggest` and `info` open a ticket in the support server; staff replies are sent back to the member by DM.
 - **Withdraw consent on ID submissions.** New ID submissions get a *Withdraw consent and delete my ID* button that deletes the image straight away and closes the staff review. It doesn't clear an ID check staff placed on the member.
 - **Quarantine Role join fail action.** Members who fail a join requirement can now get a quarantine role for a set number of hours instead of being kicked. Pick *Quarantine Role* with `/joinguard action` and set the role and duration (default 24 hours, up to 720) with `/joinguard quarantine`, or do both on the dashboard's Join Guard page. A task every 10 minutes takes the role off once that time has passed since the member joined (`classes/lobby/Quarantine.py`).
+- **Staff notes.** `/notes add`, `/notes list` and `/notes remove` keep notes on a member for your server's staff. Notes survive the member leaving and rejoining, and the newest three show as **Staff Notes** on the approval message (hide them with the new `staff_notes` option of `/config approval_toggles`). Notes are never shown to other servers and are deleted with the member's record, on a GDPR removal or after a year of inactivity. `/gdpr data` tells members how many notes exist and that the content is available through a support ticket. Needs `Manage Messages`.
 
 ### Changed
 - **Website verification is free.** It no longer needs premium, and it stays the default for new servers.

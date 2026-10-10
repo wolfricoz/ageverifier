@@ -219,6 +219,7 @@ information appears on that card, so your staff see exactly what they need to ma
 | **User ID**               | Shows the user's account ID number.                                                   | On      | Free |
 | **Show Previous Servers** | Shows other servers the user has been in.                                             | Off     | Free |
 | **Risk Score**            | Shows the risk score on website verifications (see below).                            | On      | Free |
+| **Staff Notes**           | Shows the newest staff notes on the member (see `/notes`).                            | On      | Free |
 | **Legacy Message**        | Uses the older style of approval message.                                             | Off     | Free |
 | **Debug**                 | Shows a technical debug version of the approval message (mainly for troubleshooting). | Off     | Free |
 

@@ -108,6 +108,11 @@ class JoinRequirementsToggles(StrEnum) :
 
 
 
+# Staff notes on a member (classes.membernotes). Notes are capped so a handful fits in one
+# 1024 character embed field; the approval message shows the newest few.
+MAX_NOTE_LENGTH = 500
+APPROVAL_NOTES_SHOWN = 3
+
 lobby_approval_toggles = {
 	'picture_large'         : 'Show large profile picture in approval modal',
 	'picture_small'         : 'Show small profile picture (hides large)',
@@ -118,6 +123,7 @@ lobby_approval_toggles = {
 	'user_id'               : 'Show the user id of the account',
 	'show_previous_servers' : 'Show previous servers',
 	'risk_score'            : 'Show the risk score on online verifications',
+	'staff_notes'           : 'Show staff notes on the member (/notes)',
 	'debug'                 : 'shows debug approval message'
 }
 
@@ -138,4 +144,4 @@ available_toggles = ["SEND_JOIN_MESSAGE", "SEND_VERIFICATION_COMPLETED_MESSAGE",
                      "LOG_CONFIG_CHANGES", "CLEANUP_MESSAGES", "SEND_LEAVE_MESSAGE", "KICK_ON_CLEAN"]
 enabled_toggles = ["SEND_VERIFICATION_COMPLETED_MESSAGE", "SEND_JOIN_MESSAGE", 'BANS', 'JOINED_AT', 'CREATED_AT',
                    'USER_ID', 'PICTURE_SMALL',
-                   "LOG_CONFIG_CHANGES", "CLEANUP_MESSAGES", "KICK_ON_CLEAN"]
+                   "LOG_CONFIG_CHANGES", "CLEANUP_MESSAGES", "KICK_ON_CLEAN", 'STAFF_NOTES']

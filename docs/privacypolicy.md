@@ -133,6 +133,7 @@ Data generated from temporary interactions with the verification infrastructure 
 
 ### Core Verification Profiles
 - **Inactivity Deletion:** User profile verification records (containing the linked Discord ID and Date of Birth) are completely and permanently erased from the active database after **one year of continuous absence or inactivity** across all member guilds utilizing AgeVerifier.
+- **Staff Notes:** A guild's staff can attach notes to a member, for example to pass on context between moderators. Notes are only visible to the staff of the guild that wrote them and are never shared with other guilds. They are permanently erased together with the verification profile, so after the `/gdpr removal` grace period or after one year of inactivity, and when the guild's data is removed. `/gdpr data` reports how many notes are held about you; to view their content, open a ticket in our support guild. These requests are reviewed individually, and details about other people, such as the staff member who wrote a note, may be withheld.
 
 ## Automated Decision-Making
 AgeVerifier uses automated processes to flag discrepancies in submitted data (e.g., mismatched dates of birth). Flagged cases may require manual review by guild staff. Additionally, guilds can enable automated approvals for correct age and date of birth matches to reduce the strain on the guild's staff.
