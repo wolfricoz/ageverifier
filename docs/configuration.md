@@ -27,6 +27,7 @@ Most of AgeVerifier is **free**. The following features require **premium**:
 - **Leave Message** — the notification posted when a member leaves.
 - **Leave Survey** — the feedback survey sent to members who leave.
 - **Verification Button Label** — custom text on the verification button.
+- **Verification Reminder** — a DM to members who opened the website verification page but didn't finish.
 
 Everything else described in this guide is available on the free plan. Premium items are marked with **💎 Premium**
 below.
@@ -134,6 +135,20 @@ For each, you can pick one of these methods:
 > **Reverification** is 💎 **premium** and always happens inside Discord, so it can't be set to **Website**; it
 > defaults to **Basic**.
 
+### Verification Reminder &nbsp;💎 Premium {#verification-reminder}
+
+Members sometimes open the website verification page, get distracted, and never come back. The verification reminder
+sends them a DM with their verification link once they've had the page open for the number of minutes you choose, so
+they can pick up where they left off.
+
+Set it with `/config verification_reminder minutes:<minutes>`. **Default: off.** Set it to `0` to turn it off again;
+the longest delay is 7 days (10080 minutes).
+
+- It only applies when your verification mode is **Website**.
+- Each link is reminded **once**. Members with closed DMs are skipped silently.
+- Members who left the server, or who were verified some other way in the meantime (for example a staff approval that
+  removed their lobby role), aren't reminded.
+
 ---
 
 ## Join Requirements (Gatekeeping) &nbsp;💎 Premium
@@ -193,8 +208,43 @@ information appears on that card, so your staff see exactly what they need to ma
 | **Created At**            | Shows when the user's Discord account was created.                                    | On      | Free |
 | **User ID**               | Shows the user's account ID number.                                                   | On      | Free |
 | **Show Previous Servers** | Shows other servers the user has been in.                                             | Off     | Free |
+| **Risk Score**            | Shows the risk score on website verifications (see below).                            | On      | Free |
 | **Legacy Message**        | Uses the older style of approval message.                                             | Off     | Free |
 | **Debug**                 | Shows a technical debug version of the approval message (mainly for troubleshooting). | Off     | Free |
+
+Change these with `/config approval_toggles`, or on the dashboard.
+
+### Reading the Risk Score and Potential Alts
+
+Verifications done on the **website** (date of birth or ID) carry two extra fields on the approval card. They are there to
+help your staff decide, not to decide for them: neither one blocks or denies anyone on its own.
+
+**Potential Alts** lists other accounts that verified from the **same IP address** or the **same device** in the last
+30 days. Each one is labelled with what it matched on:
+
+| Label           | Meaning                                                                                                    |
+|-----------------|------------------------------------------------------------------------------------------------------------|
+| **IP**          | Verified from the same internet connection. Households, dorms and public Wi-Fi share one.                  |
+| **device**      | Verified from a browser and device that look identical. Phones of the same model can match, so this alone is weak. |
+| **IP + device** | Both match. This is the strongest sign that two accounts belong to the same person.                       |
+
+Up to 20 accounts are listed. Accounts that left your server still show, and accounts waiting on a GDPR removal never
+do. Addresses and device details are stored as one-way hashes, so staff only ever see the matching accounts.
+
+**Risk Score** sums up the signals into one number out of 100, with the reasons listed under it:
+
+| Signal                                     | Points |
+|--------------------------------------------|--------|
+| The website flagged a VPN or proxy         | +35    |
+| An alt matching on IP **and** device       | +40    |
+| An alt matching on IP only                 | +30    |
+| An alt matching on device only             | +20    |
+| Discord account younger than 7 / 30 / 90 days | +25 / +15 / +5 |
+
+Alts count once, for the strongest match, however many there are. The total lands in one of three bands:
+🟢 **Low** (0–29), 🟡 **Medium** (30–59) and 🔴 **High** (60–100). A high score is a prompt to take a closer look, for
+example by asking for ID, and a low score doesn't mean a verification can skip your usual checks. Turn the field off with
+the **Risk Score** option above; the Potential Alts list always shows.
 
 ---
 

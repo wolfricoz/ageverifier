@@ -54,6 +54,23 @@ complete the process.
 The verification page is a fully customizable page, allowing you to upload your own images, edit colors, add a lovely
 intro to your server and display your rules in style!
 
+Each member gets their own link, tied to their account. Pressing the verification button again hands back the same
+unfinished link instead of making a new one.
+
+Because the website sees more than Discord does, website verifications give your staff two extra fields on the approval
+card:
+
+- **Potential Alts**: other accounts that verified from the same IP address or the same device in the last 30 days.
+- **Risk Score**: one number out of 100 combining VPN or proxy use, alt matches and Discord account age, with the
+  reasons listed. You can hide it with the `risk_score` option of `/config approval_toggles`.
+
+Neither field blocks anyone by itself. See
+[Reading the Risk Score and Potential Alts](configuration.html#reading-the-risk-score-and-potential-alts) for what each
+value means.
+
+💎 With premium you can also turn on the [Verification Reminder](configuration.html#verification-reminder)
+(`/config verification_reminder`), which DMs members their link again when they opened the page but didn't finish.
+
 **Choose this when:** you prefer to handle verification outside of Discord's chat flow, or want the more guided
 experience the website provides. See the [Dashboard](dashboard.html) page for more on the web experience.
 

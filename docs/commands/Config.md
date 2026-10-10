@@ -127,6 +127,19 @@ This can help prevent spam. The cooldown is set in minutes. You can set it to 0 
 
 ---
 
+### `verification_reminder`
+
+**Usage:** `/config verification_reminder <minutes>`
+
+> 💎 Premium: Sends a DM to members who opened the online verification page but did not finish it within the set number of minutes.
+The DM contains their verification link, so members who got distracted can pick up where they left off. Each link is only reminded once.
+Set it to 0 to turn the reminder off. Only applies when the verification method is Website verification.
+
+**Permissions:**
+- You'll need the `Manage Server` permission to use this command.
+
+---
+
 ### `verification_mode`
 
 **Usage:** `/config verification_mode <verification_type> <mode>`
