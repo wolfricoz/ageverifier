@@ -107,6 +107,32 @@ class JoinRequirementsToggles(StrEnum) :
 MAX_NOTE_LENGTH = 500
 APPROVAL_NOTES_SHOWN = 3
 
+# Denial reason presets (classes.denialreasons): staff pick one in the approval message's deny flow
+# and the member gets the preset's message by DM. A select menu holds at most 25 options and one
+# is kept for a one-off custom reason. Labels double as select option labels, which Discord caps
+# at 100 characters; messages leave room for the DM's header and footer under the 2000 limit.
+MAX_DENIAL_REASONS = 24
+MAX_DENIAL_LABEL_LENGTH = 100
+MAX_DENIAL_MESSAGE_LENGTH = 1500
+# A server that has no presets gets these, see DenialReasonTransactions.get_for_guild.
+# {user} and {server} in a message are replaced with the member's mention and the server name.
+DEFAULT_DENIAL_REASONS = (
+	("Age and date of birth don't match",
+	 "The age you entered doesn't match your date of birth. Please check both and submit your verification again, "
+	 "with your date of birth as mm/dd/yyyy."),
+	("Invalid date of birth",
+	 "The date of birth you entered isn't a valid date. Please submit your verification again and write your date "
+	 "of birth as mm/dd/yyyy, for example 01/31/2000."),
+	("Inappropriate profile",
+	 "Your profile has content that isn't allowed here, such as an NSFW avatar, name, bio, status, banner or "
+	 "pronouns. Please update your profile and then submit your verification again."),
+	("Suspected alternate account",
+	 "Your account looks linked to another account in {server}. If you believe this is a mistake, please contact "
+	 "the server's staff."),
+	("Contact staff",
+	 "Your verification needs a closer look. Please contact the staff of {server} for the next steps."),
+)
+
 lobby_approval_toggles = {
 	'picture_large'         : 'Show large profile picture in approval modal',
 	'picture_small'         : 'Show small profile picture (hides large)',

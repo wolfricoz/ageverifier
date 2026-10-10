@@ -8,6 +8,7 @@ from discord_py_utilities.messages import send_message, send_response
 
 from classes.alts import format_alts
 from classes.banwatch import BanWatch
+from classes.denialreasons import send_denial
 from classes.encryption import Encryption
 from classes.idcheck import IdCheck
 from classes.lobbyprocess import LobbyProcess
@@ -17,12 +18,14 @@ from databases.enums.joinhistorystatus import JoinHistoryStatus
 from databases.enums.loggedmessagetype import LoggedMessageType
 from databases.transactions.ButtonTransactions import LobbyDataTransactions
 from databases.transactions.ConfigData import ConfigData
+from databases.transactions.DenialReasonTransactions import DenialReasonTransactions
 from databases.transactions.HistoryTransactions import JoinHistoryTransactions
 from databases.transactions.LoggedMessageTransactions import LoggedMessageTransactions
 from databases.transactions.MemberNoteTransactions import MemberNoteTransactions
 from databases.transactions.VerificationTransactions import VerificationTransactions
 from resources.data.config_variables import APPROVAL_NOTES_SHOWN
 from views.modals.inputmodal import send_modal
+from views.select.denialreasonselect import DenialReasonView
 
 
 class ApprovalButtons(discord.ui.View) :
@@ -151,6 +154,47 @@ class ApprovalButtons(discord.ui.View) :
 			await LobbyProcess.approve_user(interaction.guild, self.user, self.dob, self.age, interaction.user.name)
 		except discord.NotFound :
 			await send_response(interaction, "User not found, please manually add them to the database.", ephemeral=True)
+
+	@discord.ui.button(label="Deny", style=discord.ButtonStyle.red, custom_id="deny")
+	async def deny(self, interaction: discord.Interaction, button: discord.ui.Button) :
+		"""Lets staff pick a denial reason; the member is told by DM what went wrong and what to do next."""
+		if not interaction.user.guild_permissions.manage_roles :
+			return await send_response(interaction, "You must have the \"manage_roles\" permission to execute this action!",
+			                           ephemeral=True)
+		if not await self.load_data(interaction) or self.user is None :
+			await send_response(interaction,
+			                    'The bot has restarted and the data of this button is missing, or the member can no longer be found.',
+			                    ephemeral=True)
+			return
+		# This view is shared by every approval message, so the member and message are captured
+		# now: another approval can be handled while staff are still picking a reason.
+		user = self.user
+		approval_message = interaction.message
+
+		async def on_pick(pick_interaction: discord.Interaction, label: str, message: str) :
+			await self.deny_user(pick_interaction, approval_message, user, label, message)
+
+		reasons = DenialReasonTransactions().get_for_guild(interaction.guild.id)
+		await send_response(interaction, f"Pick a reason to deny {user.mention}. They are sent the reason's message by DM.",
+		                    view=DenialReasonView(reasons, on_pick), ephemeral=True)
+
+	async def deny_user(self, interaction: discord.Interaction, approval_message: discord.Message,
+	                    user: discord.User | discord.Member, label: str, message: str) :
+		# Answer first: the DM and the message edit can take longer than Discord waits for a response.
+		await interaction.response.edit_message(content=f"Denying {user.mention}…", view=None)
+		delivered = await send_denial(user, interaction.guild, label, message)
+		logging.info(f"[Deny] {interaction.user.id} denied {user.id} in {interaction.guild.id}, DM delivered: {delivered}")
+
+		notified = "notified by DM" if delivered else "not notified, their DMs are closed"
+		embed = approval_message.embeds[0] if approval_message.embeds else discord.Embed()
+		embed.color = discord.Color.red()
+		embed.add_field(name="Denied", value=f"{label}\n-# by {interaction.user.mention}, member {notified}", inline=False)
+		await self.disable_buttons(interaction, update=False)
+		try :
+			await approval_message.edit(embed=embed, view=self)
+		except discord.NotFound :
+			pass
+		await interaction.edit_original_response(content=f"{user.mention} was denied with **{label}** and {notified}.")
 
 	@discord.ui.button(label="Flag for ID Check", style=discord.ButtonStyle.red, custom_id="ID")
 	async def manual_id(self, interaction: discord.Interaction, button: discord.ui.Button) :
