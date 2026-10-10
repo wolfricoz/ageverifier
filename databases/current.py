@@ -1,4 +1,5 @@
 import os
+import uuid
 from datetime import datetime
 from typing import List, Optional
 
@@ -18,7 +19,9 @@ DEBUG = os.getenv('TEST')
 
 db_string = f"{DB}/rmrbotnew"
 if DEBUG == "true" :
-	db_string = f"{DB}/rmrbotnew_test"
+	# Every test run gets its own database, so parallel runs never share tables.
+	os.environ.setdefault('TEST_DB_NAME', f"rmrtest_{uuid.uuid4().hex[:8]}_test")
+	db_string = f"{DB}/{os.environ['TEST_DB_NAME']}"
 engine = create_engine(db_string, poolclass=NullPool, echo=False, isolation_level="READ COMMITTED")
 if not database_exists(engine.url) :
 	create_database(engine.url)
