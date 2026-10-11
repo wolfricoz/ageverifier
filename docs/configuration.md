@@ -132,6 +132,10 @@ For each, you can pick one of these methods:
 > **Default:** New servers start on **Website** verification. You can switch to **Basic** for free; **ID Verification**
 > and **All** are 💎 **premium**.
 >
+> **Setup:** `/config setup` **auto** always sets **Website** verification. **Manual** setup asks you to pick **Website**
+> or **Basic** first; skip it to keep your current method. ID Verification and All are set with
+> `/config verification_mode`.
+>
 > **Reverification** is 💎 **premium** and always happens inside Discord, so it can't be set to **Website**; it
 > defaults to **Basic**.
 

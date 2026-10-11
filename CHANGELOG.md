@@ -17,6 +17,7 @@
 - **Deny button with denial reasons.** The approval message has a new **Deny** button. Staff pick one of the server's denial reasons, or write a one-off custom reason, and the member gets a DM saying what went wrong and what to do next. Members with closed DMs are skipped, and the approval message records the reason, who denied and whether the member was told. Servers start with five default reasons; `/config denial_reasons` lists, adds, edits, removes and resets them (up to 24, `{user}` and `{server}` placeholders). Needs `Manage Roles` to deny and `Manage Server` to edit the reasons (`classes/denialreasons.py`).
 
 ### Changed
+- **Setup picks the verification mode.** `/config setup` **manual** (and the onboarding *Manual Setup* button) now starts by asking for **Website** (recommended) or **Basic** verification; Skip keeps the current method. **Auto** setup, from Discord or the dashboard, always sets **Website** verification, also when the server had picked another method.
 - **Website verification is free.** It no longer needs premium, and it stays the default for new servers.
 - **ID images are deleted after 7 days.** An hourly task now deletes ID images that are older than 7 days and closes their staff review, so an ID that was never reviewed no longer stays in the member's DMs.
 - **Docs generator** also skips commands behind DevTools' `@check_access()` developer check (such as `/dev stats_report`), not only `@commands.is_owner()` ones.
