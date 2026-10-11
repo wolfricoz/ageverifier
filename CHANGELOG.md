@@ -23,7 +23,7 @@
 
 ### Fixed
 - **Website verification link reuse.** Pressing the verify button again now hands back the member's unfinished link instead of creating a new one every time.
-- **Website verification link ownership.** Submitting a verification checks that the link belongs to the submitting member, so one member's link can't be marked complete by another account.
+- **Website verification link ownership.** A website verification submitted on a link that belongs to another member or server is rejected before anything is processed: no verification runs, no ID is sent to staff, and the link stays open for its owner.
 - **Approval ping role check** failed to resolve the role and reported "Unable to retrieve role" for a role that exists.
 - **Sentry errors** in config channel lookups (deleted channels retried until the queue timeout), invite logging, lobby flows, `dob_to_age` with `-` and `.` separators, the ID submit button timing out, already-deleted messages and permission notices.
 

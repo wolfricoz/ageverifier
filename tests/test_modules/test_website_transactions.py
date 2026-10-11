@@ -87,6 +87,25 @@ class TestWebsiteDataTransactions(unittest.TestCase) :
 
 		self.assertIsNone(self.wt.read(uuid).verified)
 
+	# owner_mismatch
+	def test_owner_mismatch_false_for_owner(self) :
+		uuid = self.wt.create(self.uid, self.gid)
+
+		self.assertFalse(self.wt.owner_mismatch(uuid, self.uid, self.gid))
+
+	def test_owner_mismatch_true_for_other_user(self) :
+		uuid = self.wt.create(self.uid, self.gid)
+
+		self.assertTrue(self.wt.owner_mismatch(uuid, self.uid + 1, self.gid))
+
+	def test_owner_mismatch_true_for_other_guild(self) :
+		uuid = self.wt.create(self.uid, self.gid)
+
+		self.assertTrue(self.wt.owner_mismatch(uuid, self.uid, self.gid + 1))
+
+	def test_owner_mismatch_false_for_unknown_guid(self) :
+		self.assertFalse(self.wt.owner_mismatch("does-not-exist", self.uid, self.gid))
+
 	# check
 	def test_check_returns_uuid_for_pending_entry(self) :
 		uuid = self.wt.create(self.uid, self.gid)

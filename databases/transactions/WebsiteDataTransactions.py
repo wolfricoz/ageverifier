@@ -87,6 +87,21 @@ class WebsiteDataTransactions(DatabaseTransactions) :
 			self.commit(session)
 			return result
 
+	def owner_mismatch(self, guid: str, user_id: int, guild_id: int) -> bool :
+		"""
+		Whether the link exists but was issued to another member or server. The verify routes call this
+		before processing anything, so a submission on someone else's link has no side effects.
+		An unknown guid is not a mismatch: set_verified already ignores those.
+		"""
+		with self.createsession() as session :
+			entry = self.read(guid, session)
+			if entry is None :
+				return False
+			if entry.uid != user_id or entry.gid != guild_id :
+				logging.warning(f"Verification submitted on {guid} by {user_id} in {guild_id}, but it belongs to {entry.uid} in {entry.gid}.")
+				return True
+			return False
+
 	def set_verified(self, guid, user_id) :
 		with self.createsession() as session :
 			entry = self.read(guid, session)

@@ -96,6 +96,9 @@ async def verify_age(request: Request, guild_id: int, user_id: int, verification
 	if verification.dob.count("/") <2 :
 		return {"success": False, "message" : "Invalid date format"}
 
+	if verification.guid and WebsiteDataTransactions().owner_mismatch(verification.guid, user_id, guild_id) :
+		return {"success" : False, "message" : "UserID does NOT match guid."}
+
 
 	dob = verification.dob.split('/')  # this should always be mm/dd/yyyy
 	age = verification.age
@@ -215,6 +218,9 @@ async def verify_age(request: Request, guild_id: int, user_id: int, id_file: Ann
 				"message" : f"File must be {MAX_ID_FILE_SIZE // (1024 * 1024)}MB or smaller.",
 			}
 		)
+
+	if verification.guid and WebsiteDataTransactions().owner_mismatch(verification.guid, user_id, guild_id) :
+		return {"success" : False, "message" : "UserID does NOT match guid."}
 
 	# Fetch the data from the api
 	try:
