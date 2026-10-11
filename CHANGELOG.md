@@ -26,6 +26,9 @@
 - **Website verification link reuse.** Pressing the verify button again now hands back the member's unfinished link instead of creating a new one every time.
 - **Website verification link ownership.** A website verification submitted on a link that belongs to another member or server is rejected before anything is processed: no verification runs, no ID is sent to staff, and the link stays open for its owner.
 - **Approval ping role check** failed to resolve the role and reported "Unable to retrieve role" for a role that exists.
+- **`/stats verification` counted finished links as never opened** when the dashboard hadn't reported the page load. A verified link now counts as opened, also for links verified before this fix.
+- **Permission check fix steps** now match what the check found. An unset channel or role points to `/config channels` or `/config roles`, and a deleted role is named as such, instead of every failure being sent to the permission settings. The dashboard's Channels page shows the same steps.
+- **Missing permissions during verification** showed members "failed to validate your date of birth due to an unknown error" when the bot couldn't post the approval message. Staff now get a permission notice, and the member is told their verification couldn't reach the staff.
 - **Sentry errors** in config channel lookups (deleted channels retried until the queue timeout), invite logging, lobby flows, `dob_to_age` with `-` and `.` separators, the ID submit button timing out, already-deleted messages and permission notices.
 
 ### Privacy

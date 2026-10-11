@@ -94,8 +94,10 @@ class TestAgeRoleTransactions(unittest.TestCase) :
 			                                         'BANS',
 			                                         'LEGACY_MESSAGE',
 			                                         'PICTURE_SMALL',
-			                                         'SHOW_INLINE',
 			                                         'PICTURE_LARGE',
+			"DM_VERIFICATION_COMPLETED_MESSAGE", "VERIFICATION_METHOD", "VPN_FLAG_ONLY", "SEND_LEAVE_MESSAGE",
+			"STAFF_NOTES", "LOG_CONFIG_CHANGES", "SHOW_PREVIOUS_SERVERS", "AUTOKICK_ON_DISCREPANCY", "SURVEY",
+			"CLEANUP_MESSAGES", "KICK_ON_CLEAN", "RISK_SCORE",
 		}
 
 		self.assertSetEqual(keys, expected_keys)

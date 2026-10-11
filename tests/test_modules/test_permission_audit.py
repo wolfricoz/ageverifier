@@ -159,6 +159,45 @@ class TestRoleAudit(PermissionAuditBase) :
 		self.assertFalse(audit["ok"])
 
 
+class TestFixSteps(PermissionAuditBase) :
+	"""The fix steps only cover the problems the check found."""
+
+	def test_unset_channel_is_not_sent_to_permissions(self) :
+		channels = self.set_all_channels()
+		del self.config.conf[GUILD_ID][channels[0].name.upper()]
+		steps = ConfigSetup().audit_channel_permissions(FakeGuild(channels))["fix_steps"]
+		self.assertEqual(steps, [ConfigSetup.CHANNEL_NOT_SET_STEP, ConfigSetup.RERUN_STEP])
+
+	def test_missing_channel_permissions(self) :
+		channels = self.set_all_channels()
+		channels[0].missing = ["send_messages"]
+		steps = ConfigSetup().audit_channel_permissions(FakeGuild(channels))["fix_steps"]
+		self.assertEqual(steps, ConfigSetup.CHANNEL_PERMISSION_STEPS + [ConfigSetup.RERUN_STEP])
+
+	def test_deleted_role_is_not_sent_to_permissions(self) :
+		roles = self.set_all_roles()
+		self.config.conf[GUILD_ID]["VERIFICATION_ADD_ROLE"] = [999]
+		steps = ConfigSetup().audit_role_permissions(FakeGuild(roles=roles))["fix_steps"]
+		self.assertEqual(steps, [ConfigSetup.ROLE_NOT_FOUND_STEP, ConfigSetup.RERUN_STEP])
+
+	def test_unset_role(self) :
+		roles = self.set_all_roles()
+		del self.config.conf[GUILD_ID]["VERIFICATION_ADD_ROLE"]
+		steps = ConfigSetup().audit_role_permissions(FakeGuild(roles=roles))["fix_steps"]
+		self.assertEqual(steps, [ConfigSetup.ROLE_NOT_SET_STEP, ConfigSetup.RERUN_STEP])
+
+	def test_role_permission_problems(self) :
+		roles = self.set_all_roles()
+		roles[0].position = 10
+		steps = ConfigSetup().audit_role_permissions(FakeGuild(roles=roles, manage_roles=False))["fix_steps"]
+		self.assertEqual(steps, [ConfigSetup.ROLE_MANAGE_ROLES_STEP, ConfigSetup.ROLE_ABOVE_BOT_STEP, ConfigSetup.RERUN_STEP])
+
+	def test_clean_server_has_no_steps(self) :
+		guild = FakeGuild(self.set_all_channels(), self.set_all_roles())
+		self.assertEqual(ConfigSetup().audit_channel_permissions(guild)["fix_steps"], [])
+		self.assertEqual(ConfigSetup().audit_role_permissions(guild)["fix_steps"], [])
+
+
 class TestFullAudit(PermissionAuditBase) :
 
 	def test_counts_issues_and_serialises(self) :

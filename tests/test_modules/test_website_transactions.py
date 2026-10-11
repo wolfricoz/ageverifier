@@ -76,6 +76,23 @@ class TestWebsiteDataTransactions(unittest.TestCase) :
 
 		self.assertIsNotNone(self.wt.read(uuid).verified)
 
+	def test_set_verified_records_open_when_dashboard_did_not(self) :
+		uuid = self.wt.create(self.uid, self.gid)
+
+		self.wt.set_verified(uuid, self.uid)
+
+		entry = self.wt.read(uuid)
+		self.assertEqual(entry.opened, entry.verified)
+
+	def test_set_verified_keeps_first_open(self) :
+		uuid = self.wt.create(self.uid, self.gid)
+		self.wt.set_opened(uuid, self.uid, self.gid)
+		opened = self.wt.read(uuid).opened
+
+		self.wt.set_verified(uuid, self.uid)
+
+		self.assertEqual(self.wt.read(uuid).opened, opened)
+
 	def test_set_verified_nonexistent_returns_falsy(self) :
 		self.assertFalse(self.wt.set_verified("does-not-exist", self.uid))
 

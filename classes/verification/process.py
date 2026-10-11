@@ -2,6 +2,7 @@ import logging
 
 import discord
 from discord.ext import commands
+from discord_py_utilities.exceptions import NoPermissionException
 
 import databases.current
 from classes.AgeCalculations import AgeCalculations
@@ -9,6 +10,7 @@ from classes.encryption import Encryption
 from classes.kernel.LocalCacheStorage import LocalCacheStorage
 from classes.lobbyprocess import LobbyProcess
 from classes.lobbytimers import LobbyTimers
+from classes.permissions_notice import PermissionNotice
 from databases.enums.joinhistorystatus import JoinHistoryStatus
 from databases.transactions.AgeRoleTransactions import AgeRoleTransactions
 from databases.transactions.ConfigData import ConfigData
@@ -116,9 +118,12 @@ class VerificationProcess :
 
 			return "Your age and date of birth have been submitted successfully. A staff member will review your verification shortly to ensure everything checks out."
 
-		except discord.Forbidden :
-			self.error = "Ageverifier is missing permissions, please use `/config permissioncheck` to test permissions."
-			logging.warning(f"Ageverifier is missing permissions, please use `/config permissioncheck` to test permissions.")
+		except (discord.Forbidden, NoPermissionException) :
+			# The member can't fix this, so tell staff and give the member a message about what happens next.
+			await PermissionNotice.notify(self.guild, channel=self.mod_channel, purpose="post the approval message")
+			self.error = ("Ageverifier is missing permissions in this server, so your verification could not be sent to the staff. "
+			              "The staff have been told; please try again later.")
+			logging.warning(f"Ageverifier is missing permissions to process a verification in {self.guild.id}.")
 			return self.error
 		except discord.NotFound :
 			self.error = "Ageverifier could not fetch one of the channels, please use `/config view` and check if the channels still exist, and if ageverifier has permissions to view them."
