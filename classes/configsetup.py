@@ -14,9 +14,10 @@ from classes.support.queue import Queue
 from databases.transactions.AgeRoleTransactions import AgeRoleTransactions
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.ConfigTransactions import ConfigTransactions
-from resources.data.config_variables import available_toggles, channelchoices, messagechoices, rolechoices
+from resources.data.config_variables import VERIFICATION_KEY, VerificationMethods, available_toggles, channelchoices, \
+	messagechoices, rolechoices
 from views.buttons.confirmButtons import confirmAction
-from views.select.configselectroles import ConfigSelectChannels, ConfigSelectRoles
+from views.select.configselectroles import ConfigSelectChannels, ConfigSelectRoles, ConfigSelectVerificationMode
 
 
 async def delete_quietly(msg: discord.Message) -> None :
@@ -33,6 +34,20 @@ class ConfigSetup :
 	channelchoices = channelchoices
 	messagechoices = messagechoices
 	available_toggles = available_toggles
+	# Automatic setup always picks website verification, even over a method the server chose earlier.
+	AUTO_VERIFICATION_METHOD = VerificationMethods.WEBSITE
+	VERIFICATION_METHOD_LABELS = {
+		VerificationMethods.BASIC    : "Basic",
+		VerificationMethods.IDVERIFY : "ID verification",
+		VerificationMethods.ALL      : "Basic + ID verification",
+		VerificationMethods.WEBSITE  : "Website",
+	}
+	VERIFICATION_MODE_PROMPT = (
+		"How should new members verify?\n"
+		"**Website** (recommended): members verify on our online verification page.\n"
+		"**Basic**: members enter their date of birth and age inside Discord.\n"
+		"Currently set to **{current}**. 💎 ID verification can be set afterwards with `/config verification_mode`."
+	)
 
 	def __init__(self) :
 		# Per instance: a class-level dict was shared by every server's setup, leaking
@@ -43,6 +58,8 @@ class ConfigSetup :
 	                 messagechoices: dict) :
 		logging.info("Manual setup started")
 		await interaction.response.defer(ephemeral=True)
+		if await self.choose_verification_method(interaction) is False :
+			return False
 		for channelkey, channelvalue in channelchoices.items() :
 			view = ConfigSelectChannels()
 			msg = await interaction.channel.send(f"Select a channel for {channelkey}: \n`{channelvalue}`", view=view)
@@ -110,12 +127,13 @@ class ConfigSetup :
 		logging.info("Auto setup started")
 		confirmation = confirmAction()
 		await confirmation.send_message(interaction,
-		                                "Are you sure you want to automatically setup the configuration for this server? You may see new channels and roles created and some configuration still needs to be done manually.")
+		                                "Are you sure you want to automatically setup the configuration for this server? You may see new channels and roles created and some configuration still needs to be done manually. Verification will be set to **Website** verification.")
 		await confirmation.wait()
 
 		if not confirmation.confirmed :
 			await send_response(interaction, "Setup has been cancelled")
 			return False
+		self.set_verification_method(interaction.guild.id, self.AUTO_VERIFICATION_METHOD)
 		category = get(interaction.guild.categories, name="Lobby")
 		if not category :
 			category: discord.CategoryChannel = await interaction.guild.create_category(name="Lobby", overwrites={
@@ -130,6 +148,26 @@ class ConfigSetup :
 			await self.set_messages(interaction.guild, messagechoices)
 		Queue().add(ConfigUtils.log_change(interaction.guild, self.changes, user_name=interaction.user.name), 1)
 		return completed
+
+	async def choose_verification_method(self, interaction: discord.Interaction) :
+		"""Manual setup's verification mode step. Returns False when the user cancelled."""
+		current = ConfigData().get_key(interaction.guild.id, VERIFICATION_KEY, VerificationMethods.WEBSITE)
+		view = ConfigSelectVerificationMode()
+		prompt = self.VERIFICATION_MODE_PROMPT.format(current=self.VERIFICATION_METHOD_LABELS.get(current, current))
+		msg = await interaction.channel.send(prompt, view=view)
+		await view.wait()
+		await delete_quietly(msg)
+		if view.value == "next" :
+			return True
+		if view.value is None :
+			await send_response(interaction, "Setup has been cancelled")
+			return False
+		self.set_verification_method(interaction.guild.id, view.value)
+		return True
+
+	def set_verification_method(self, guild_id: int, method: VerificationMethods) :
+		self.changes[VERIFICATION_KEY] = str(method)
+		ConfigTransactions().config_unique_add(guild_id, VERIFICATION_KEY, method, overwrite=True)
 
 	async def add_roles_to_channel(self, channel, roles) :
 		for r in roles :
@@ -303,6 +341,7 @@ class ConfigSetup :
 		return channel
 
 	async def api_auto_setup(self, guild: discord.Guild) :
+		self.set_verification_method(guild.id, self.AUTO_VERIFICATION_METHOD)
 		category = get(guild.categories, name="Lobby")
 		if not category :
 			category: discord.CategoryChannel = await guild.create_category(name="Lobby", overwrites={

@@ -6,6 +6,8 @@ from discord.ui import ChannelSelect, RoleSelect, UserSelect
 
 from discord_py_utilities.messages import send_response
 
+from resources.data.config_variables import VerificationMethods
+
 
 # Members and roles in one?
 
@@ -74,6 +76,41 @@ class ConfigSelectRoles(ui.View) :
 	async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button) :
 		self.value = None
 		# Without a response Discord shows "This interaction failed" on every click.
+		await interaction.response.edit_message()
+		self.stop()
+
+	@ui.button(label="Skip", style=discord.ButtonStyle.primary)
+	async def next(self, interaction: discord.Interaction, button: discord.ui.Button) :
+		self.value = "next"
+		await interaction.response.edit_message()
+		self.stop()
+
+
+class ConfigSelectVerificationMode(ui.View) :
+	"""Setup's verification mode step. Only the free methods are offered; ID verification stays on /config verification_mode."""
+
+	def __init__(self) :
+		super().__init__(timeout=1800)
+		self.value = None
+		button = discord.ui.Button(label='Help', style=discord.ButtonStyle.url,
+		                           url='https://wolfricoz.github.io/ageverifier/verification-methods.html', emoji="❓")
+		self.add_item(button)
+
+	@ui.button(label="Website (recommended)", style=discord.ButtonStyle.success)
+	async def website(self, interaction: discord.Interaction, button: discord.ui.Button) :
+		self.value = VerificationMethods.WEBSITE
+		await interaction.response.edit_message()
+		self.stop()
+
+	@ui.button(label="Basic", style=discord.ButtonStyle.secondary)
+	async def basic(self, interaction: discord.Interaction, button: discord.ui.Button) :
+		self.value = VerificationMethods.BASIC
+		await interaction.response.edit_message()
+		self.stop()
+
+	@ui.button(label="Cancel", style=discord.ButtonStyle.danger)
+	async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button) :
+		self.value = None
 		await interaction.response.edit_message()
 		self.stop()
 

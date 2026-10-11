@@ -28,8 +28,8 @@ Most commands require 'Manage Server' permissions.
 
 > This command helps you get the bot set up on your server. You have a few options to choose from:
 'dashboard' will give you a link to our web dashboard for an easy, graphical setup experience.
-'manual' will guide you step-by-step through the setup process using Discord commands.
-'auto' will automatically create the necessary roles and channels to get the bot running quickly.
+'manual' will guide you step-by-step through the setup process using Discord commands, starting with the verification mode (Website or Basic).
+'auto' will automatically create the necessary roles and channels to get the bot running quickly, and sets the verification mode to Website.
 
 **Permissions:**
 - You'll need the `Manage Server` permission to use this command.
