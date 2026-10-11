@@ -162,6 +162,19 @@ Reverification always happens inside Discord, so it can't be set to Website veri
 
 ---
 
+### `denial_reasons`
+
+**Usage:** `/config denial_reasons <action> <reason>`
+
+> Manage the reasons staff can pick after pressing **Deny** on an approval message. The member is sent the reason's message by DM, so it should explain what went wrong and what they can do next.
+Servers start with a few default reasons. `list` shows them, `add` and `edit` open a pop-up for the reason and its message, `remove` deletes one and `reset` puts the defaults back.
+Use `{user}` and `{server}` in a message for the member's mention and the server name. Up to 24 reasons; staff can always write a one-off custom reason as well.
+
+**Permissions:**
+- You'll need the `Manage Server` permission to use this command.
+
+---
+
 ### `view`
 
 **Usage:** `/config view <guild>`

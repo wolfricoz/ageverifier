@@ -257,6 +257,27 @@ Alts count once, for the strongest match, however many there are. The total land
 example by asking for ID, and a low score doesn't mean a verification can skip your usual checks. Turn the field off with
 the **Risk Score** option above; the Potential Alts list always shows.
 
+### Denial Reasons
+
+The **Deny** button on the approval card asks your staff why. They pick one of your server's denial reasons, or write a
+one-off custom reason, and the member gets a DM with the reason and its message: what went wrong and what to do next.
+Members with closed DMs are skipped, and the approval card shows whether the member was told. Denying doesn't kick the
+member or change their verification record, so they can fix the problem and submit again.
+
+Every server starts with these reasons, which you can edit or remove:
+
+| Reason                            | What the member is told                                                                 |
+|-----------------------------------|-----------------------------------------------------------------------------------------|
+| Age and date of birth don't match | Check both and submit again, with the date of birth as mm/dd/yyyy.                      |
+| Invalid date of birth             | Submit again with a valid date as mm/dd/yyyy.                                           |
+| Inappropriate profile             | Remove the NSFW content from their profile, then submit again.                          |
+| Suspected alternate account       | Their account looks linked to another one; contact staff if this is a mistake.          |
+| Contact staff                     | The verification needs a closer look; contact staff for the next steps.                 |
+
+Manage them with `/config denial_reasons`: `list` shows them, `add` and `edit` open a pop-up, `remove` deletes one and
+`reset` restores the defaults. `{user}` and `{server}` in a message are replaced with the member's mention and your server's
+name. A server can have up to 24 reasons. Free, needs `Manage Server`.
+
 ---
 
 ## General Toggles

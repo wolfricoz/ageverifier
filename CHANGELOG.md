@@ -13,6 +13,7 @@
 - **Quarantine Role join fail action.** Members who fail a join requirement can now get a quarantine role for a set number of hours instead of being kicked. Pick *Quarantine Role* with `/joinguard action` and set the role and duration (default 24 hours, up to 720) with `/joinguard quarantine`, or do both on the dashboard's Join Guard page. A task every 10 minutes takes the role off once that time has passed since the member joined (`classes/lobby/Quarantine.py`).
 - **Staff notes.** `/notes add`, `/notes list` and `/notes remove` keep notes on a member for your server's staff. Notes survive the member leaving and rejoining, and the newest three show as **Staff Notes** on the approval message (hide them with the new `staff_notes` option of `/config approval_toggles`). Notes are never shown to other servers and are deleted with the member's record, on a GDPR removal or after a year of inactivity. `/gdpr data` tells members how many notes exist and that the content is available through a support ticket. Needs `Manage Messages`.
 - **Permission check on the dashboard.** The Channels page on the web dashboard now shows Ageverifier's own permission check: each configured channel says what it's missing, and the roles it can't assign are listed with the fix steps. It is worded the same as the embeds `/config permissioncheck` posts, and it comes from the new `GET /config/{guild_id}/permissions` endpoint (`ConfigSetup.audit_permissions`).
+- **Deny button with denial reasons.** The approval message has a new **Deny** button. Staff pick one of the server's denial reasons, or write a one-off custom reason, and the member gets a DM saying what went wrong and what to do next. Members with closed DMs are skipped, and the approval message records the reason, who denied and whether the member was told. Servers start with five default reasons; `/config denial_reasons` lists, adds, edits, removes and resets them (up to 24, `{user}` and `{server}` placeholders). Needs `Manage Roles` to deny and `Manage Server` to edit the reasons (`classes/denialreasons.py`).
 
 ### Changed
 - **Website verification is free.** It no longer needs premium, and it stays the default for new servers.
@@ -22,7 +23,7 @@
 
 ### Fixed
 - **Website verification link reuse.** Pressing the verify button again now hands back the member's unfinished link instead of creating a new one every time.
-- **Website verification link ownership.** Submitting a verification checks that the link belongs to the submitting member, so one member's link can't be marked complete by another account.
+- **Website verification link ownership.** A website verification submitted on a link that belongs to another member or server is rejected before anything is processed: no verification runs, no ID is sent to staff, and the link stays open for its owner.
 - **Approval ping role check** failed to resolve the role and reported "Unable to retrieve role" for a role that exists.
 - **Sentry errors** in config channel lookups (deleted channels retried until the queue timeout), invite logging, lobby flows, `dob_to_age` with `-` and `.` separators, the ID submit button timing out, already-deleted messages and permission notices.
 

@@ -15,19 +15,27 @@ from discord_py_utilities.permissions import check_missing_channel_permissions
 from classes.access import AccessControl
 from classes.config.utils import ConfigUtils
 from classes.configsetup import ConfigSetup
+from classes.membernotes import EMBED_FIELD_LIMIT
 from classes.support.queue import Queue
 from databases.transactions.AgeRoleTransactions import AgeRoleTransactions
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.ConfigTransactions import ConfigTransactions
-from resources.data.config_variables import MAX_BUTTON_LABEL_LENGTH, MAX_VERIFICATION_REMINDER_MINUTES, \
+from databases.transactions.DenialReasonTransactions import DenialReasonTransactions
+from resources.data.config_variables import MAX_BUTTON_LABEL_LENGTH, MAX_DENIAL_REASONS, MAX_VERIFICATION_REMINDER_MINUTES, \
 	PREMIUM_VERIFICATION_METHODS, REVERIFICATION_KEY, \
 	VERIFICATION_KEY, VERIFICATION_REMINDER_KEY, \
 	VerificationMethods, \
 	available_toggles, channelchoices, \
 	lobby_approval_toggles, messagechoices, \
 	rolechoices
+from views.buttons.confirm import Confirm
 from views.modals.configinput import ConfigInputUnique
+from views.modals.denialreasonmodal import DenialReasonModal
 from views.v2.HelpLayout import HelpLayout
+
+
+# Discord's limit on all text in one embed, with some room left for the field separators.
+EMBED_TOTAL_LIMIT = 5800
 
 
 class Config(commands.GroupCog, name="config",
@@ -391,6 +399,77 @@ class Config(commands.GroupCog, name="config",
 		await send_response(interaction, f"The verification mode has been set to {mode.value}", ephemeral=True)
 
 
+
+	@app_commands.command(name="denial_reasons", description="Manage the reasons staff can pick when denying a verification.")
+	@app_commands.choices(action=[Choice(name=x, value=x) for x in ["list", "add", "edit", "remove", "reset"]])
+	@app_commands.checks.has_permissions(manage_guild=True)
+	async def denial_reasons(self, interaction: discord.Interaction, action: Choice[str], reason: int = None) :
+		"""
+        Manage the reasons staff can pick after pressing **Deny** on an approval message. The member is sent the reason's message by DM, so it should explain what went wrong and what they can do next.
+        Servers start with a few default reasons. `list` shows them, `add` and `edit` open a pop-up for the reason and its message, `remove` deletes one and `reset` puts the defaults back.
+        Use `{user}` and `{server}` in a message for the member's mention and the server name. Up to 24 reasons; staff can always write a one-off custom reason as well.
+
+        **Permissions:**
+        - You'll need the `Manage Server` permission to use this command.
+        """
+		transactions = DenialReasonTransactions()
+		reasons = transactions.get_for_guild(interaction.guild.id)
+		selected = None
+		if action.value in ("edit", "remove") :
+			selected = transactions.get(interaction.guild.id, reason) if reason is not None else None
+			if selected is None :
+				return await send_response(interaction, f"Pick the reason to {action.value} with the `reason` option.",
+				                           ephemeral=True)
+
+		match action.value :
+			case "list" :
+				embed = discord.Embed(title="Denial reasons",
+				                      description="Staff pick one of these after pressing **Deny** on an approval message.")
+				# 24 full messages would pass Discord's 6000 character embed limit, so long ones are shortened.
+				room = (EMBED_TOTAL_LIMIT - len(embed.title) - len(embed.description)
+				        - sum(len(entry.label) for entry in reasons)) // max(len(reasons), 1)
+				room = min(room, EMBED_FIELD_LIMIT)
+				for entry in reasons :
+					value = entry.message if len(entry.message) <= room else entry.message[:room - 1] + "…"
+					embed.add_field(name=entry.label, value=value, inline=False)
+				await send_response(interaction, " ", embed=embed, ephemeral=True)
+			case "add" :
+				if len(reasons) >= MAX_DENIAL_REASONS :
+					return await send_response(interaction,
+					                           f"A server can have up to {MAX_DENIAL_REASONS} denial reasons, remove one first.",
+					                           ephemeral=True)
+				# noinspection PyUnresolvedReferences
+				await interaction.response.send_modal(DenialReasonModal())
+			case "edit" :
+				# noinspection PyUnresolvedReferences
+				await interaction.response.send_modal(DenialReasonModal(selected))
+			case "remove" :
+				# Without a reason the deny flow would only offer a custom one; reset is the way back to the defaults.
+				if len(reasons) <= 1 :
+					return await send_response(interaction,
+					                           "This is the last denial reason. Add another first, or use `reset` to restore the defaults.",
+					                           ephemeral=True)
+				transactions.remove(interaction.guild.id, selected.id)
+				Queue().add(ConfigUtils.log_change(interaction.guild, {"denial reason removed" : selected.label},
+				                                   user_name=interaction.user.mention))
+				await send_response(interaction, f"Denial reason **{selected.label}** removed.", ephemeral=True)
+			case "reset" :
+				if not await Confirm().send_confirm(interaction, "This replaces all of your denial reasons with the defaults. Continue?") :
+					return
+				defaults = transactions.reset(interaction.guild.id)
+				Queue().add(ConfigUtils.log_change(interaction.guild, {"denial reasons" : "reset to the defaults"},
+				                                   user_name=interaction.user.mention))
+				# The confirm prompt answered the interaction already.
+				await interaction.followup.send(f"Denial reasons reset to the {len(defaults)} defaults.", ephemeral=True)
+			case _ :
+				raise NotImplementedError
+
+	# Leading underscore keeps the docs generator from listing it as a command.
+	@denial_reasons.autocomplete("reason")
+	async def _denial_reasons_autocomplete(self, interaction: discord.Interaction, current: str) -> list[Choice[int]] :
+		reasons = DenialReasonTransactions().get_for_guild(interaction.guild.id)
+		return [Choice(name=entry.label[:100], value=entry.id) for entry in reasons
+		        if current.lower() in entry.label.lower()][:25]
 
 	@app_commands.command(description="Provides a complete overview of the bot's current configuration for your server.")
 	@app_commands.checks.has_permissions(manage_guild=True)

@@ -209,6 +209,24 @@ class MemberNotes(Base) :
 	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
+class DenialReasons(Base) :
+	"""A server's preset reasons for denying a verification, picked in the approval message's deny flow.
+
+	The member is sent the message by DM (classes.denialreasons). A server without presets is given
+	resources.data.config_variables.DEFAULT_DENIAL_REASONS on first use. The rows hold no member
+	data and go with the server row.
+	"""
+	__tablename__ = "denial_reasons"
+	__table_args__ = (
+		Index("ix_denial_reasons_guild_label", "guild", "label", unique=True),
+	)
+	id: Mapped[int] = mapped_column(primary_key=True)
+	guild: Mapped[int] = mapped_column(BigInteger, ForeignKey("servers.guild", ondelete="CASCADE"), nullable=False)
+	label: Mapped[str] = mapped_column(String(100), nullable=False)
+	message: Mapped[str] = mapped_column(String(1500), nullable=False)
+	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
 class LobbyData(Base) :
 	__tablename__ = "lobby_data"
 	id: Mapped[int] = mapped_column(primary_key=True)
