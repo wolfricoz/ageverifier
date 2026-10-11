@@ -345,16 +345,45 @@ class ConfigSetup :
 		return None
 
 	# Shown under the embeds and on the dashboard, so both tell staff the same thing.
-	CHANNEL_FIX_STEPS = [
+	# Only the steps for the problems the check found are shown, so an unset channel isn't sent to the permission settings.
+	CHANNEL_PERMISSION_STEPS = [
 		"Open the channel → **Edit Channel → Permissions**, add the **Ageverifier** role, and enable the missing permissions.",
 		"Or grant them server-wide: **Server Settings → Roles → Ageverifier**.",
-		"Re-run this check afterwards to confirm everything is green.",
 	]
-	ROLE_FIX_STEPS = [
-		"Enable **Manage Roles** for the **Ageverifier** role in **Server Settings → Roles → Ageverifier**.",
-		"Drag the **Ageverifier** role **above** every role it needs to assign — a bot can only manage roles below its own.",
-		"Re-run this check afterwards to confirm everything is green.",
-	]
+	CHANNEL_NOT_SET_STEP = "Set the channels marked *Not set* with `/config channels`."
+	ROLE_MANAGE_ROLES_STEP = "Enable **Manage Roles** for the **Ageverifier** role in **Server Settings → Roles → Ageverifier**."
+	ROLE_ABOVE_BOT_STEP = "Drag the **Ageverifier** role **above** every role it needs to assign — a bot can only manage roles below its own."
+	ROLE_NOT_SET_STEP = "Set the roles marked *This key was not set* with `/config roles`, if you use them."
+	ROLE_NOT_FOUND_STEP = "The roles marked *Unable to retrieve role* no longer exist in this server. Set a replacement with `/config roles`."
+	RERUN_STEP = "Re-run this check afterwards to confirm everything is green."
+
+	@classmethod
+	def channel_fix_steps(cls, checks: list[dict]) -> list[str] :
+		statuses = {check["status"] for check in checks}
+		if statuses <= {"ok"} :
+			return []
+		steps = []
+		if "missing" in statuses :
+			steps += cls.CHANNEL_PERMISSION_STEPS
+		if "not_set" in statuses :
+			steps.append(cls.CHANNEL_NOT_SET_STEP)
+		return steps + [cls.RERUN_STEP]
+
+	@classmethod
+	def role_fix_steps(cls, can_manage_roles: bool, checks: list[dict]) -> list[str] :
+		statuses = {check["status"] for check in checks}
+		if can_manage_roles and statuses <= {"ok"} :
+			return []
+		steps = []
+		if not can_manage_roles :
+			steps.append(cls.ROLE_MANAGE_ROLES_STEP)
+		if "above_bot" in statuses :
+			steps.append(cls.ROLE_ABOVE_BOT_STEP)
+		if "not_set" in statuses :
+			steps.append(cls.ROLE_NOT_SET_STEP)
+		if any(entry["status"] == "not_found" for check in checks for entry in check["roles"]) :
+			steps.append(cls.ROLE_NOT_FOUND_STEP)
+		return steps + [cls.RERUN_STEP]
 
 	def audit_permissions(self, guild: discord.Guild) -> dict :
 		"""The permission check as data. The Discord embeds and the dashboard API both render this."""
@@ -395,7 +424,7 @@ class ConfigSetup :
 		return {
 			"ok"        : all(check["status"] == "ok" for check in checks),
 			"checks"    : checks,
-			"fix_steps" : self.CHANNEL_FIX_STEPS,
+			"fix_steps" : self.channel_fix_steps(checks),
 		}
 
 	@staticmethod
@@ -427,7 +456,7 @@ class ConfigSetup :
 			},
 			"top_role"     : {"id" : str(top_role.id), "name" : top_role.name},
 			"checks"       : checks,
-			"fix_steps"    : self.ROLE_FIX_STEPS,
+			"fix_steps"    : self.role_fix_steps(can_manage_roles, checks),
 		}
 
 	def audit_role_key(self, guild: discord.Guild, key: str, data, top_role: discord.Role) -> dict | None :

@@ -110,6 +110,9 @@ class WebsiteDataTransactions(DatabaseTransactions) :
 					raise ValueError(f"User id {user_id} does not match {guid}.")
 
 				entry.verified = datetime.now()
+				# The page has to be loaded to finish it, so a link the dashboard never reported as opened still was.
+				if entry.opened is None :
+					entry.opened = entry.verified
 				self.commit(session)
 				logging.info(f"Set verification for {guid} to True.")
 				return True

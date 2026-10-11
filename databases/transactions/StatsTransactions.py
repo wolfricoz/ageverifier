@@ -6,7 +6,7 @@ outcome counts use last_updated (or verification_date for approvals) rather than
 """
 from datetime import datetime, timedelta
 
-from sqlalchemy import Select, and_, extract, func
+from sqlalchemy import Select, and_, extract, func, or_
 
 from databases.current import IdVerification, JoinHistory, Servers, Users, Warnings, WebsiteData
 from databases.enums.joinhistorystatus import JoinHistoryStatus
@@ -92,7 +92,8 @@ class StatsTransactions(DatabaseTransactions) :
 
 			return {
 				"created"            : count(),
-				"opened"             : count(WebsiteData.opened.is_not(None)),
+				# Links verified before set_verified also recorded the open have no opened time, but were opened.
+				"opened"             : count(or_(WebsiteData.opened.is_not(None), WebsiteData.verified.is_not(None))),
 				"verified"           : count(WebsiteData.verified.is_not(None)),
 				"reminded"           : count(WebsiteData.reminded.is_not(None)),
 				"after_reminder"     : count(WebsiteData.reminded.is_not(None),

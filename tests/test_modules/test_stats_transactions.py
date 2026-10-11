@@ -114,6 +114,21 @@ class TestStatsTransactions(unittest.TestCase) :
 		self.assertEqual(funnel["abandoned"], 1)
 		self.assertEqual(everywhere["created"], 2)
 
+	def test_website_funnel_counts_verified_link_without_open_as_opened(self) :
+		uid = uidgenerator().create()
+		UserTransactions().add_user_empty(uid)
+		website = WebsiteDataTransactions()
+		uuid = website.create(uid, self.gid)
+		# Rows verified before set_verified recorded the open, so opened is still empty.
+		with self.stats.createsession() as session :
+			row = session.scalar(Select(WebsiteData).where(WebsiteData.uuid == uuid))
+			row.verified = datetime.now()
+			self.stats.commit(session)
+
+		funnel = self.stats.website_funnel(self.start, self.end, self.gid)
+
+		self.assertEqual((funnel["created"], funnel["opened"], funnel["verified"], funnel["abandoned"]), (1, 1, 1, 0))
+
 	def test_website_funnel_for_guild_without_links(self) :
 		funnel = self.stats.website_funnel(self.start, self.end, self.gid)
 
