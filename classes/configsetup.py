@@ -5,11 +5,12 @@ import discord
 from discord.utils import get
 from discord_py_utilities.exceptions import NoPermissionException
 from discord_py_utilities.messages import send_message, send_response
-from discord_py_utilities.permissions import check_missing_channel_permissions, find_first_accessible_text_channel
+from discord_py_utilities.permissions import check_missing_channel_permissions, check_missing_guild_permissions, \
+	find_first_accessible_text_channel
 
 from classes.config.utils import ConfigUtils
 from classes.permissions_notice import AGEVERIFIER_PERMISSIONS_DOCS, DEFAULT_CHANNEL_PERMS, DISCORD_PERMISSIONS_DOCS, \
-	describe_permission
+	PermissionNotice, describe_permission
 from classes.support.queue import Queue
 from databases.transactions.AgeRoleTransactions import AgeRoleTransactions
 from databases.transactions.ConfigData import ConfigData
@@ -36,6 +37,8 @@ class ConfigSetup :
 	available_toggles = available_toggles
 	# Automatic setup always picks website verification, even over a method the server chose earlier.
 	AUTO_VERIFICATION_METHOD = VerificationMethods.WEBSITE
+	# Auto setup creates the Lobby category, its channels and a Verified role.
+	AUTO_SETUP_PERMISSIONS = ["manage_channels", "manage_roles"]
 	VERIFICATION_METHOD_LABELS = {
 		VerificationMethods.BASIC    : "Basic",
 		VerificationMethods.IDVERIFY : "ID verification",
@@ -125,6 +128,10 @@ class ConfigSetup :
 	async def auto(self, interaction: discord.Interaction, channelchoices: dict, rolechoices: dict,
 	               messagechoices: dict) :
 		logging.info("Auto setup started")
+		# Checked before confirming; otherwise setup stops halfway with a generic error.
+		if missing := check_missing_guild_permissions(interaction.guild, self.AUTO_SETUP_PERMISSIONS) :
+			await PermissionNotice.respond(interaction, missing=missing, purpose="create the lobby channels and roles")
+			return False
 		confirmation = confirmAction()
 		await confirmation.send_message(interaction,
 		                                "Are you sure you want to automatically setup the configuration for this server? You may see new channels and roles created and some configuration still needs to be done manually. Verification will be set to **Website** verification.")

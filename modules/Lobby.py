@@ -7,12 +7,14 @@ from discord import app_commands
 from discord.app_commands import Choice
 from discord.ext import commands
 from discord_py_utilities.messages import send_response
+from discord_py_utilities.permissions import check_missing_channel_permissions, check_missing_guild_permissions
 
 import classes.permissions as permissions
 from classes.AgeCalculations import AgeCalculations
 from classes.idverify import verify
 from classes.lobby.Clean import clean_lobby
 from classes.lobbyprocess import LobbyProcess
+from classes.permissions_notice import PermissionNotice
 from classes.whitelist import check_whitelist
 from databases.transactions.ConfigData import ConfigData
 from views.buttons.approvalbuttons import ApprovalButtons
@@ -47,6 +49,8 @@ class Lobby(commands.GroupCog, description="Commands for managing the new member
 		await interaction.channel.send(
 			f"{text}\n-# GDPR AND INFORMATION USE DISCLOSURE: By entering your birth date (MM/DD/YYYY) and age, you consent to having this information about you stored by Age Verifier and used to verify that you are the age that you say you are, including sharing to relevant parties for age verification. This information will be stored for a maximum of 1 year if you are no longer in a server using Ageverifier.",
 			view=VerifyButton(interaction.guild.id))
+		# Without a response Discord shows "The application did not respond", even though the button was posted.
+		await send_response(interaction, "The verification button has been posted in this channel.", ephemeral=True)
 
 	@app_commands.command(description="Manually verifies a user with their ID and date of birth.")
 	@app_commands.checks.has_permissions(administrator=True)
@@ -71,7 +75,9 @@ class Lobby(commands.GroupCog, description="Commands for managing the new member
 			await interaction.response.defer(ephemeral=True)
 		except discord.InteractionResponded :
 			pass
-		await AgeCalculations.validatedob(dob, interaction)
+		dob = await AgeCalculations.validatedob(dob, interaction)
+		if dob is False :
+			return
 		await verify(user, interaction, dob, process)
 
 	@app_commands.command(description="Moves a user who has already been verified back into the lobby.")
@@ -118,7 +124,10 @@ class Lobby(commands.GroupCog, description="Commands for managing the new member
         **Permissions:**
         - You'll need the `Manage Messages` permission to use this command.
         """
-		await AgeCalculations.validatedob(dob, interaction)
+		dob = await AgeCalculations.validatedob(dob, interaction)
+		if dob is False :
+			# validatedob has already told the user which format to use.
+			return
 		age = AgeCalculations.dob_to_age(dob)
 		await send_response(interaction, f"As of today {dob} is {age} years old", ephemeral=True)
 
@@ -152,6 +161,17 @@ class Lobby(commands.GroupCog, description="Commands for managing the new member
 		if days > 30 :
 			days = 30
 			await interaction.channel.send("Max days is 14, setting to 14")
+
+		if lobby_channel is None :
+			await send_response(interaction, "The lobby channel no longer exists. Set a new one with `/config channels`.", ephemeral=True)
+			return
+		# Every kick and delete below would fail one by one with nothing shown, so stop before asking for confirmation.
+		missing_in_lobby = check_missing_channel_permissions(lobby_channel, ["view_channel", "read_message_history", "manage_messages"])
+		missing = check_missing_guild_permissions(interaction.guild, ["kick_members"]) + missing_in_lobby
+		if missing :
+			await PermissionNotice.respond(interaction, missing=missing, channel=lobby_channel if missing_in_lobby else None,
+			                               purpose="purge the lobby")
+			return
 
 		view = confirmAction()
 		await view.send_message(interaction,

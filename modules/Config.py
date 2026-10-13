@@ -490,7 +490,8 @@ class Config(commands.GroupCog, name="config",
 		optionsall = list(messagechoices) + list(channelchoices) + list(available_toggles) + list(
 			rolechoices)
 		await interaction.response.defer()
-		with open('config.txt', 'w') as file :
+		# utf-8: Windows' default codepage can't write emoji in configured messages (e.g. the default 👋 leave message).
+		with open('config.txt', 'w', encoding='utf-8') as file :
 			file.write(f"Config for {interaction.guild.name}: \n\n")
 			for item in optionsall :
 				info = ConfigData().get_key_or_none(interaction.guild.id if guild is None else int(guild), item)

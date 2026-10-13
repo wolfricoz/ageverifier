@@ -27,7 +27,7 @@ from discord.app_commands import AppCommandError, CheckFailure, command
 from discord.ext import commands
 from discord_py_utilities.exceptions import NoChannelException, NoPermissionException
 from discord_py_utilities.messages import send_message
-from discord_py_utilities.permissions import find_first_accessible_text_channel
+from discord_py_utilities.permissions import check_missing_channel_permissions, find_first_accessible_text_channel
 from dotenv import load_dotenv
 
 from databases.exceptions.KeyNotFound import KeyNotFound
@@ -143,10 +143,26 @@ def setup_logging() -> None:
 	_LOGGING_CONFIGURED = True
 
 
+def _forbidden_message(channel) -> str:
+	"""A 403 doesn't say which permission was refused, so name what's missing in the command's channel when there is something."""
+	# Lazy import keeps the logging module from loading the database layer that permissions_notice pulls in.
+	from classes.permissions_notice import AGEVERIFIER_PERMISSIONS_DOCS, DEFAULT_CHANNEL_PERMS, humanize_permission
+	missing = []
+	if isinstance(channel, (discord.abc.GuildChannel, discord.Thread)):
+		missing = check_missing_channel_permissions(channel, DEFAULT_CHANNEL_PERMS)
+	if missing:
+		return (f"Ageverifier is missing permissions in #{channel.name}: "
+		        f"{', '.join(humanize_permission(perm) for perm in missing)}. Enable them for the **Ageverifier** "
+		        f"role in the channel's permissions, then run the command again.\nGuide: <{AGEVERIFIER_PERMISSIONS_DOCS}>")
+	return ("Discord refused this action: Ageverifier is missing a server permission, or its role is below a role it "
+	        "needs to change. Run `/config permissioncheck` to see what's missing, and drag the **Ageverifier** role "
+	        f"above the roles it gives out (**Server Settings → Roles**).\nGuide: <{AGEVERIFIER_PERMISSIONS_DOCS}>")
+
+
 # Errors that are the user's fault / expected and should NOT be reported to
 # Sentry. Each maps to a friendly message shown to the user instead.
 def _expected_app_error_message(
-		error: AppCommandError, original: Optional[BaseException]
+		error: AppCommandError, original: Optional[BaseException], channel=None
 ) -> Optional[str]:
 	"""Returns a user-facing message for expected errors, or None if unexpected."""
 	if isinstance(error, CheckFailure):
@@ -164,10 +180,7 @@ def _expected_app_error_message(
 	if isinstance(error, commands.MemberNotFound):
 		return "Member not found."
 	if isinstance(original, discord.Forbidden):
-		return ("The bot does not have sufficient permission to run this command. "
-		        "Please check: \n* if the bot has permission to post in the channel "
-		        "\n* if the bot is above the role its trying to assign\n* If trying to "
-		        "ban, ensure the bot has the ban permission")
+		return _forbidden_message(channel)
 	return None
 
 
@@ -305,7 +318,7 @@ class Logging(commands.Cog):
 		arguments = self._format_options(interaction)
 
 		# Expected / user-facing errors: tell the user, don't bother Sentry.
-		user_message = _expected_app_error_message(error, original)
+		user_message = _expected_app_error_message(error, original, interaction.channel)
 		if user_message is not None:
 			return await self.on_fail_message(interaction, user_message)
 

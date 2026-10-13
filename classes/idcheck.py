@@ -5,9 +5,10 @@ from abc import ABC, abstractmethod
 import discord
 from discord_py_utilities.exceptions import NoPermissionException
 from discord_py_utilities.messages import send_message, send_response
-from discord_py_utilities.permissions import find_first_accessible_text_channel
+from discord_py_utilities.permissions import check_missing_guild_permissions
 
 from classes.gdpr import pending_removal_date
+from classes.permissions_notice import PermissionNotice
 from classes.verification.inform import notify_agecheck
 from databases.current import IdVerification
 from databases.enums.joinhistorystatus import JoinHistoryStatus
@@ -22,6 +23,8 @@ from views.buttons.idsubmitbutton import IdSubmitButton
 
 
 class IdCheck(ABC) :
+	STAFF_UNREACHABLE_MESSAGE = ("Ageverifier is missing permissions in this server, so your submission could not be sent to the staff. "
+	                             "The staff have been told; please try again later.")
 
 
 
@@ -113,15 +116,10 @@ class IdCheck(ABC) :
 			                                                                              "Thank you for submitting your age and date of birth, a staff member will contact you soon because of a discrepancy.")
 			                    ,
 			                    ephemeral=True)
-		except discord.Forbidden :
-			try:
-				await send_response(interaction,
-				                    f"I don't have permission to send messages in {channel.mention}. Please contact a server administrator to resolve this issue.",
-				                    ephemeral=True)
-
-			except (discord.Forbidden, NoPermissionException):
-				channel = find_first_accessible_text_channel(interaction.guild)
-				await send_message(channel, f"{f'{interaction.guild.owner.mention}' if ConfigData().get_key(interaction.guild.id, "ping_owner_on_failure") == 'ENABLED' else ''} I don't have permission to send messages in {channel.mention}. Please contact a server administrator to resolve this issue.")
+		except (discord.Forbidden, NoPermissionException) :
+			# send_message raises NoPermissionException, not Forbidden. The member can't fix this, so staff get the notice.
+			await PermissionNotice.notify(interaction.guild, channel=channel, purpose="post ID check requests")
+			await send_response(interaction, IdCheck.STAFF_UNREACHABLE_MESSAGE, ephemeral=True)
 
 		if id_check and message.get("channel-message", None) :
 			JoinHistoryTransactions().update(interaction.user.id, interaction.guild.id, JoinHistoryStatus.IDCHECK)
@@ -208,9 +206,10 @@ class IdCheck(ABC) :
 			LoggedMessageTransactions().track(id_check_message, user.id, LoggedMessageType.ID_CHECK)
 			await send_message(user, user.mention + " " + message.get("user-message",
 			                                                          "Thank you for submitting your age and date of birth, a staff member will contact you soon because of a discrepancy."))
-		except discord.Forbidden :
-			await send_message(user,
-			                   f"I don't have permission to send messages in {channel.mention}. Please contact a server administrator to resolve this issue.")
+		except (discord.Forbidden, NoPermissionException) :
+			await PermissionNotice.notify(guild, channel=channel, purpose="post ID check requests")
+			# The member may have DMs closed; that is their setting, not a server problem.
+			await send_message(user, IdCheck.STAFF_UNREACHABLE_MESSAGE, error_mode='ignore')
 
 		if id_check and message.get("channel-message", None) :
 			JoinHistoryTransactions().update(user.id, guild.id, JoinHistoryStatus.IDCHECK)
@@ -295,8 +294,18 @@ class IdCheck(ABC) :
 		# We only kick if a kick reason is set.
 		if not kick_message:
 			return
-		await send_message(member, kick_message)
-		await member.kick(reason=kick_message)
+		# Checked before the DM, so the member isn't told they were removed when the kick can't happen.
+		if missing := check_missing_guild_permissions(guild, ["kick_members"]) :
+			await PermissionNotice.notify(guild, missing=missing, purpose="auto-kick members who fail age verification")
+			return
+		await send_message(member, kick_message, error_mode='ignore')
+		try :
+			await member.kick(reason=kick_message)
+		except discord.Forbidden :
+			# Has the permission, so the member's top role is at or above the bot's.
+			await PermissionNotice.notify(guild, missing=["kick_members"],
+			                              purpose=f"auto-kick {member.name}, whose highest role is above Ageverifier's")
+			return
 		logging.info(f"[Autokick] Kicked {member}({member.id}) from {guild.name}({guild.id}) for discrepancy: {discrepancy}")
 		await channel.send(f"[Autokick] {staff_message}")
 

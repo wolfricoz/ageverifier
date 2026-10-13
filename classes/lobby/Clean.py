@@ -4,7 +4,9 @@ from datetime import UTC, datetime, timedelta
 
 import discord
 from discord_py_utilities.messages import send_message
+from discord_py_utilities.permissions import check_missing_channel_permissions, check_missing_guild_permissions
 
+from classes.permissions_notice import PermissionNotice
 from classes.support.queue import Queue
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.ServerTransactions import ServerTransactions
@@ -36,6 +38,22 @@ async def clean_lobby(bot, guild: discord.Guild, custom_days = None, clean = Tru
 		logging.info(f"[clean-up] Days are set to 0, skipping {guild.name}")
 		return
 	removal_date = datetime.now(tz=UTC) - timedelta(days=days)
+
+	dry_run = not kick and not clean
+
+	# Queued kicks and deletes fail without telling anyone, so check up front. A kick that can't happen also skips the removal DM.
+	if missing := check_missing_channel_permissions(lobby_channel, ["view_channel", "read_message_history"]) :
+		await PermissionNotice.notify(guild, channel=lobby_channel, missing=missing, purpose="read the lobby to find members to clean up")
+		return
+	skipped = []
+	if kick and (missing := check_missing_guild_permissions(guild, ["kick_members"])) :
+		await PermissionNotice.notify(guild, missing=missing, purpose="kick members who have waited in the lobby too long")
+		kick = False
+		skipped.append("kicks")
+	if clean and (missing := check_missing_channel_permissions(lobby_channel, ["manage_messages"])) :
+		await PermissionNotice.notify(guild, channel=lobby_channel, missing=missing, purpose="clean up old lobby messages")
+		clean = False
+		skipped.append("message removal")
 
 	async for message in lobby_channel.history(limit=None, before=removal_date) :
 		try:
@@ -69,8 +87,10 @@ async def clean_lobby(bot, guild: discord.Guild, custom_days = None, clean = Tru
 	if not os.path.isdir('temp') :
 		os.mkdir('temp')
 
-	if not kick and not clean:
+	if dry_run:
 		info_message = "[NOTICE] Ran in dry mode: No user have been kicked or messages have been removed.\n"
+	if skipped:
+		info_message += f"[NOTICE] Skipped {' and '.join(skipped)}: Ageverifier is missing permissions. Staff were sent a notice with the fix.\n"
 	await send_to_channel(mod_lobby, kicked_users, count_messages, info_message)
 
 

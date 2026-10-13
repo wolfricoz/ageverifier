@@ -3,11 +3,13 @@ import logging
 from typing import Optional
 
 from discord.ext import commands
+from discord_py_utilities.permissions import check_missing_guild_permissions
 from fastapi import APIRouter, HTTPException, Request
 
 from api.auth.auth import Auth
 from classes.config.utils import ConfigUtils
 from classes.configsetup import ConfigSetup
+from classes.permissions_notice import PermissionNotice, describe_permission, humanize_permission
 from classes.support.queue import Queue
 from databases.transactions.ConfigData import ConfigData
 
@@ -48,6 +50,11 @@ async def auto_setup(request: Request, guildid: int) :
 		guild = await bot.fetch_guild(guildid)
 	if not guild :
 		return {"message" : "Guild not found"}
+	# Checked here so the dashboard gets the answer; the notice tells staff in Discord too.
+	if missing := check_missing_guild_permissions(guild, ConfigSetup.AUTO_SETUP_PERMISSIONS) :
+		await PermissionNotice.notify(guild, missing=missing, purpose="run auto setup from the dashboard", throttle=False)
+		return {"error"   : f"Ageverifier is missing permissions in {guild.name}: {', '.join(humanize_permission(perm) for perm in missing)}",
+		        "missing" : [describe_permission(perm) for perm in missing]}
 	Queue().add(ConfigSetup().api_auto_setup(guild))
 	ConfigData().load_guild(guildid)
 	return {"message" : f"Auto Setup for {guild.name} queued"}

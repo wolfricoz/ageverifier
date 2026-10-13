@@ -3,7 +3,7 @@ from datetime import datetime
 
 import discord
 from discord_py_utilities.messages import send_message
-from discord_py_utilities.permissions import find_first_accessible_text_channel
+from discord_py_utilities.permissions import check_missing_channel_permissions, find_first_accessible_text_channel
 
 import databases.exceptions.KeyNotFound
 from classes.permissions_notice import PermissionNotice
@@ -46,7 +46,12 @@ async def welcome_user(member) :
 			return
 		warning = f"Lobby channel not found, sending to {channel.mention} instead."
 
-
+	missing = check_missing_channel_permissions(channel, ["view_channel", "send_messages", "embed_links"])
+	if missing :
+		# Without these the lobby has no verify button, so nobody can start verification.
+		await PermissionNotice.notify(member.guild, channel=channel, missing=missing,
+		                              purpose="post the welcome message and verify button in the lobby")
+		return
 	await send_message(channel,
 	                   f"Welcome {member.mention}! {lobby_welcome}\n{warning}"
 	                   f"\n"
@@ -63,8 +68,9 @@ async def add_join_roles(member) -> bool:
 		await member.add_roles(*roles)
 		return True
 	except discord.Forbidden :
-		await send_message(member.guild.owner,
-		                   f"The bot does not have permission to apply all roles to {member.mention}, please check if the bot is above the roles it is supposed to give.")
+		# Manage Roles is off, or a join role sits above Ageverifier's; the notice's hierarchy step covers the second.
+		await PermissionNotice.notify(member.guild, missing=["manage_roles"],
+		                              purpose="give new members the roles set as server_join_role")
 		return False
 	except Exception as e :
 		print(e)
