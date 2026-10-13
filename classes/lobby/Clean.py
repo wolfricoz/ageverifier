@@ -7,6 +7,7 @@ from discord_py_utilities.messages import send_message
 from discord_py_utilities.permissions import check_missing_channel_permissions, check_missing_guild_permissions
 
 from classes.permissions_notice import PermissionNotice
+from classes.text import plural
 from classes.support.queue import Queue
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.ServerTransactions import ServerTransactions
@@ -24,7 +25,7 @@ async def clean_lobby(bot, guild: discord.Guild, custom_days = None, clean = Tru
 	days = ConfigData().get_key_int_or_zero(guild.id, "clean_lobby_days")
 	guild_db = ServerTransactions().get(guild.id)
 	removal_message = (
-		f"You have been removed from the server due to {days} days of inactivity. "
+		f"You have been removed from the server due to {plural(days, 'day')} of inactivity. "
 		f"If you’d like to rejoin, you’re always welcome back! Here’s a new invite link: {guild_db.invite}"
 	)
 	info_message = "[NOTICE] All actions are taken through the queue system, meaning you may not see immediate results. The bot may take 10m to 24 hours depending on the amount of messages.\n"
@@ -76,7 +77,7 @@ async def clean_lobby(bot, guild: discord.Guild, custom_days = None, clean = Tru
 				if kick:
 					Queue().add(user.send(removal_message), 0)
 					if isinstance(user, discord.Member) :
-						Queue().add(user.kick(reason=f"In lobby for more than {days} days"), 0)
+						Queue().add(user.kick(reason=f"In lobby for more than {plural(days, 'day')}"), 0)
 				count_messages += await clean_messages([message], clean)
 		except Exception as e:
 			logging.error(f"[clean-up] {guild.name}: {e}")

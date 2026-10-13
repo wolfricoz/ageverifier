@@ -21,6 +21,14 @@ from views.buttons.tosbutton import TOSButton
 from views.buttons.websitebutton import WebsiteButton
 
 
+# Shown under every verify button. No date format here: the website uses the browser's date picker,
+# and Discord accepts DD/MM/YYYY too when the day makes it unambiguous.
+GDPR_DISCLOSURE = ("-# GDPR AND INFORMATION USE DISCLOSURE: By entering your birth date and age, you consent to having this "
+                   "information about you stored by Age Verifier and used to verify that you are the age that you say you are, "
+                   "including sharing to relevant parties for age verification. This information will be stored for a maximum "
+                   "of 1 year if you are no longer in a server using Ageverifier.")
+
+
 def get_verification_button_label(guild_id: int = None) -> str :
 	"""Resolves the label on the verification button for a guild.
 

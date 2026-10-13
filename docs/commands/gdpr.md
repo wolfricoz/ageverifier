@@ -6,7 +6,7 @@ nav_order: 3
 ---
 
 <h1>gdpr</h1>
-<h6>version: 3.4: Cleaned up and ready to go!</h6>
+<h6>version: 4.0: Easier setup and clearer errors</h6>
 <h6>Documentation automatically generated from docstrings.</h6>
 
 Commands related to your data and privacy.

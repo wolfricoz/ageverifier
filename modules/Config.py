@@ -22,7 +22,7 @@ from databases.transactions.ConfigData import ConfigData
 from databases.transactions.ConfigTransactions import ConfigTransactions
 from databases.transactions.DenialReasonTransactions import DenialReasonTransactions
 from resources.data.config_variables import MAX_BUTTON_LABEL_LENGTH, MAX_DENIAL_REASONS, MAX_VERIFICATION_REMINDER_MINUTES, \
-	PREMIUM_VERIFICATION_METHODS, REVERIFICATION_KEY, \
+	PREMIUM_VERIFICATION_METHODS, REVERIFICATION_KEY, config_title, \
 	VERIFICATION_KEY, VERIFICATION_REMINDER_KEY, \
 	VerificationMethods, \
 	available_toggles, channelchoices, \
@@ -84,24 +84,28 @@ class Config(commands.GroupCog, name="config",
 		                   "For more information about setting up the bot, visit our [Documentation](<https://wolfricoz.github.io/ageverifier/commands/Config.html>)")
 		logging.info(f"{interaction.guild.name} started {setup_type.value}")
 		status: bool = True
+		setup = ConfigSetup()
 		match setup_type.value.lower() :
 			case 'dashboard' :
 				return await send_response(interaction, f"You can access the dashboard here: {os.getenv("dashboard_url")}")
 			case 'manual' :
 				await send_message(interaction.channel,
 				                   f"You can access the dashboard here for easier setup! {os.getenv("DASHBOARD_URL")}")
-				status = await ConfigSetup().manual(self.bot, interaction, self.channelchoices, self.rolechoices,
-				                                    self.messagechoices)
+				status = await setup.manual(self.bot, interaction, self.channelchoices, self.rolechoices,
+				                            self.messagechoices)
 			case 'auto' :
-				status = await ConfigSetup().auto(interaction, self.channelchoices, self.rolechoices, self.messagechoices)
+				status = await setup.auto(interaction, self.channelchoices, self.rolechoices, self.messagechoices)
 
 		if not status :
 			# Cancelled or timed out; the setup flow has already told the user.
 			return None
-		await send_response(interaction,
-		                    "The config has been successfully setup, if you wish to check our toggles you please do /config toggles. Permission checking will commence shortly.",
-		                    ephemeral=True)
-		await ConfigSetup().check_channel_permissions(interaction.guild)
+		done = setup.done_message(interaction.guild, setup_type.value.lower())
+		# Setup has answered the interaction already; send_response would then post this in the channel for everyone.
+		if interaction.response.is_done() :
+			await interaction.followup.send(done, ephemeral=True)
+		else :
+			await send_response(interaction, done, ephemeral=True)
+		await setup.check_channel_permissions(interaction.guild)
 		return None
 
 	@app_commands.command(description="Triggers a check to ensure the bot has all the necessary permissions.")
@@ -227,19 +231,22 @@ class Config(commands.GroupCog, name="config",
 		await interaction.response.defer(ephemeral=True)
 		if value is not None :
 			value = value.id
+		elif action.value.lower() == 'set' :
+			# Setting without a channel used to store the text "None".
+			return await interaction.followup.send(f"Pick the channel to use as **{config_title(key.value)}** in the `value` option.")
 		match action.value.lower() :
 			case 'set' :
 				ConfigTransactions().config_unique_add(guildid=interaction.guild.id, key=key.value, value=value,
 				                                       overwrite=True)
 				Queue().add(ConfigUtils.log_change(interaction.guild, {key.value : value}, user_name=interaction.user.mention))
-				await interaction.followup.send(f"{key.value} has been added to the database with value:\n{value}")
+				await interaction.followup.send(f"**{config_title(key.value)}** (`{key.value}`) is now set to <#{value}>.")
 			case 'remove' :
 				result = ConfigTransactions().config_unique_remove(guild_id=interaction.guild.id, key=key.value)
 				if result is False :
-					await interaction.followup.send(f"{key.value} was not in database")
+					await interaction.followup.send(f"**{config_title(key.value)}** (`{key.value}`) was not set.")
 					return
 				Queue().add(ConfigUtils.log_change(interaction.guild, {key.value : None}, user_name=interaction.user.mention))
-				await interaction.followup.send(f"{key.value} has been removed from the database")
+				await interaction.followup.send(f"**{config_title(key.value)}** (`{key.value}`) has been removed.")
 			case _ :
 				raise NotImplementedError
 

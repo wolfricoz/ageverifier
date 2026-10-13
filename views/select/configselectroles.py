@@ -9,6 +9,19 @@ from discord_py_utilities.messages import send_response
 from resources.data.config_variables import VerificationMethods
 
 
+def add_clear_button(view: ui.View) :
+	"""Setup's "Clear" choice, offered only when the key already has a value; Skip keeps that value."""
+	button = discord.ui.Button(label="Clear", style=discord.ButtonStyle.secondary)
+
+	async def clear(interaction: discord.Interaction) :
+		view.value = "clear"
+		await interaction.response.edit_message()
+		view.stop()
+
+	button.callback = clear
+	view.add_item(button)
+
+
 # Members and roles in one?
 
 
@@ -16,12 +29,14 @@ from resources.data.config_variables import VerificationMethods
 # this example uses the UserSelect
 class ConfigSelectChannels(ui.View) :
 
-	def __init__(self) :
+	def __init__(self, can_clear: bool = False) :
 		super().__init__(timeout=1800)
 		self.value = None
 		button = discord.ui.Button(label='Help', style=discord.ButtonStyle.url,
 		                           url='https://wolfricoz.github.io/ageverifier/commands/Config.html', emoji="❓")
 		self.add_item(button)
+		if can_clear :
+			add_clear_button(self)
 
 	# @ui.select(cls=type_we_want, **other_things)
 	@ui.select(cls=ChannelSelect, channel_types=[discord.ChannelType.text], placeholder="Select a channel please!")
@@ -53,12 +68,14 @@ class ConfigSelectChannels(ui.View) :
 
 
 class ConfigSelectRoles(ui.View) :
-	def __init__(self) :
+	def __init__(self, can_clear: bool = False) :
 		super().__init__(timeout=1800)
 		self.value = None
 		button = discord.ui.Button(label='Help', style=discord.ButtonStyle.url,
 		                           url='https://wolfricoz.github.io/ageverifier/commands/Config.html', emoji="❓")
 		self.add_item(button)
+		if can_clear :
+			add_clear_button(self)
 
 	# @ui.select(cls=type_we_want, **other_things)
 	@ui.select(cls=RoleSelect, placeholder="Select a role please!")

@@ -88,7 +88,7 @@ class AgeCalculations(ABC) :
 		if validated_dob is None :
 			await send_message(channel,
 			                   f"[{location} info] {user.mention} failed in verification at date of birth: {age} {dateofbirth}")
-			raise ValueError("Failed to validate date of birth. Please enter the date of birth in the format: mm/dd/yyyy")
+			raise ValueError("Failed to validate date of birth. Please enter it as mm/dd/yyyy (dd/mm/yyyy also works when the day is 13 or higher)")
 		dateofbirth = AgeCalculations.dob_regex(dateofbirth)
 		return dateofbirth
 
@@ -124,6 +124,19 @@ class AgeCalculations(ABC) :
 				year = deconstruct.group(3)
 				return f"{month}/{day}/{year}"
 
+		return AgeCalculations.swap_day_first(dateofbirth)
+
+	@staticmethod
+	def swap_day_first(dateofbirth: str) -> str :
+		"""Turns DD/MM/YYYY into MM/DD/YYYY when the first number can only be a day (13-31).
+		Members outside the US often enter 18/06/1997; that can't be read as month 18, so there is no ambiguity.
+		Anything else is returned unchanged."""
+		match = re.match(r"^\s*(\d{1,2})([/.-])(\d{1,2})\2(\d{4})\s*$", str(dateofbirth))
+		if not match :
+			return dateofbirth
+		first, separator, second, year = match.groups()
+		if 12 < int(first) <= 31 and 1 <= int(second) <= 12 :
+			return f"{second}{separator}{first}{separator}{year}"
 		return dateofbirth
 
 	@staticmethod
@@ -150,7 +163,7 @@ class AgeCalculations(ABC) :
 	@abstractmethod
 	def dob_regex(date_of_birth) :
 		try :
-			date_of_birth = date_of_birth.replace("-", "/").replace(".", "/")
+			date_of_birth = AgeCalculations.swap_day_first(date_of_birth.replace("-", "/").replace(".", "/"))
 			datetime.strptime(date_of_birth, "%m/%d/%Y")
 			dob = str(date_of_birth)
 			dob_object = re.search(DobPatterns.VALIDATE, dob)
@@ -175,7 +188,7 @@ class AgeCalculations(ABC) :
 
 		except ValueError :
 			dob = "ValueError"
-			await send_response(interaction, "Please fill the dob in with the format: mm/dd/yyyy")
+			await send_response(interaction, "Please enter the date of birth as mm/dd/yyyy (dd/mm/yyyy also works when the day is 13 or higher).")
 			return False
 
 		return dob

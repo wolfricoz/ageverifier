@@ -4,6 +4,7 @@ import os
 import sys
 from glob import glob
 
+from discord import app_commands
 from discord.ext import commands
 
 from project.data import CACHE, VERSION
@@ -147,23 +148,35 @@ nav_order: {nav}
 			print("Could not retrieve signature for function:", function)
 			# This can happen for objects that are not inspectable
 			pass
-		self.add_command_to_cache(domain, function, docstring)
+		# The slash command as members type it; the python name (verify_button, support_help) means nothing to them.
+		usage = self.command_path(func_obj, function, tclass)
+		self.add_command_to_cache(usage, docstring)
 
 
 
 		# Use the slash command's name where it differs from the python function (e.g. support_help -> help).
 		command_name = getattr(func_obj, 'name', function)
 		docfile.write(f"### `{command_name}`\n\n"
-		              f"**Usage:** `/{domain.lower()} {command_name}{param_string}`\n\n"
+		              f"**Usage:** `{usage}{param_string}`\n\n"
 		              f"> {docstring}\n\n"
 		              f"---\n\n")
 
 
-	def add_command_to_cache(self, domain, function, docstring) :
+	@staticmethod
+	def command_path(func_obj, function, tclass) -> str :
+		"""'/lobby button' for a slash command in a group cog, '/bug' for one in a plain cog."""
+		name = getattr(func_obj, 'name', function)
+		if not isinstance(func_obj, app_commands.Command) :
+			# Prefix commands (e.g. ?approve) keep their bare name.
+			return name
+		group = getattr(tclass, '__cog_group_name__', None) if issubclass(tclass, commands.GroupCog) else None
+		return f"/{group} {name}" if group else f"/{name}"
+
+	def add_command_to_cache(self, usage, docstring) :
 		# if domain not in self.command_cache :
 		# 	self.command_cache[domain] = {}
 		# self.command_cache[domain][function] = docstring
-		self.command_cache[function] = docstring
+		self.command_cache[usage] = docstring
 
 	def create_cache_File(self):
 		print(f"===Creating command cache file===")

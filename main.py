@@ -21,6 +21,7 @@ import api
 from classes import whitelist
 from classes.access import AccessControl
 from classes.blacklist import blacklist_check
+from classes.devguild import sync_dev_guild
 from classes.dashboard.Servers import Servers as DashServers
 from classes.jsonmaker import Configer
 from classes.onboarding import Onboarding
@@ -181,6 +182,7 @@ async def on_ready() :
 	whitelist.create_whitelist(bot.guilds)
 	await Configer.create_bot_config()
 	Queue().add(bot.tree.sync(), 2)
+	Queue().add(sync_dev_guild(bot), 2)
 	Queue().add(devroom.send(f"AgeVerifier is in {len(bot.guilds)} guilds. Ageverifier {VERSION}"), 2)
 	logging.info(f"Commands synced, start up done! Connected to {len(bot.guilds)} guilds and {bot.shard_count} shards.")
 	logging.info("Loaded routers: " + ", ".join(routers))
@@ -288,6 +290,7 @@ async def cogreload(ctx) :
 	fp = ', '.join(filesloaded)
 	await ctx.send(f"Modules loaded: {fp}")
 	await bot.tree.sync()
+	await sync_dev_guild(bot)
 
 
 @bot.command()

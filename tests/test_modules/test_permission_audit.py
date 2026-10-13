@@ -95,6 +95,16 @@ class TestChannelAudit(PermissionAuditBase) :
 		self.assertIsNone(check["channel_id"])
 		self.assertIn("/config channels", check["message"])
 
+	def test_unset_optional_channel_is_not_an_issue(self) :
+		channels = [channel for channel in self.set_all_channels() if channel.name != "leave_log"]
+		del self.config.conf[GUILD_ID]["LEAVE_LOG"]
+		audit = ConfigSetup().audit_channel_permissions(FakeGuild(channels))
+		check = next(check for check in audit["checks"] if check["key"] == "leave_log")
+		self.assertEqual((check["status"], check["optional"]), ("not_set", True))
+		self.assertTrue(check["message"].startswith("Optional, not set"))
+		self.assertTrue(audit["ok"])
+		self.assertEqual(audit["fix_steps"], [])
+
 	def test_missing_permissions_use_notice_wording(self) :
 		channels = self.set_all_channels()
 		channels[0].missing = ["send_messages", "attach_files"]
@@ -121,8 +131,16 @@ class TestRoleAudit(PermissionAuditBase) :
 	def test_unset_key(self) :
 		audit = ConfigSetup().audit_role_permissions(FakeGuild())
 		self.assertEqual(audit["checks"][0]["status"], "not_set")
-		self.assertEqual(audit["checks"][0]["message"], "This key was not set")
+		self.assertEqual(audit["checks"][0]["message"], "Required, not set — set it with `/config roles`")
+		self.assertEqual(audit["checks"][1]["message"], "Optional, not set")
 		self.assertFalse(audit["ok"])
+
+	def test_assignable_roles_are_named(self) :
+		roles = self.set_all_roles()
+		roles.append(FakeRole(300, "18+", 0))
+		self.age_roles = [FakeAgeRole(300)]
+		checks = ConfigSetup().audit_role_permissions(FakeGuild(roles=roles))["checks"]
+		self.assertEqual(checks[-1]["message"], "I can assign 18+")
 
 	def test_role_above_bot_is_named(self) :
 		roles = self.set_all_roles()
@@ -164,7 +182,8 @@ class TestFixSteps(PermissionAuditBase) :
 
 	def test_unset_channel_is_not_sent_to_permissions(self) :
 		channels = self.set_all_channels()
-		del self.config.conf[GUILD_ID][channels[0].name.upper()]
+		# Required: an unset optional channel is not a problem to fix.
+		del self.config.conf[GUILD_ID]["SERVER_JOIN_CHANNEL"]
 		steps = ConfigSetup().audit_channel_permissions(FakeGuild(channels))["fix_steps"]
 		self.assertEqual(steps, [ConfigSetup.CHANNEL_NOT_SET_STEP, ConfigSetup.RERUN_STEP])
 
@@ -232,8 +251,8 @@ class TestEmbedsStillMatch(PermissionAuditBase) :
 		self.config.conf[GUILD_ID]["VERIFICATION_ADD_ROLE"] = [999]
 		embed = await ConfigSetup().create_permission_roles_embed(FakeGuild(roles=roles))
 		self.assertEqual(embed.fields[0].value, "✅ I have permission to give roles")
-		self.assertEqual((embed.fields[1].name, embed.fields[1].value), ("**verification_add_role - 999**", "❌ Unable to retrieve role"))
-		self.assertEqual(embed.fields[2].value, "✅ I have permission to assign this role")
+		self.assertEqual((embed.fields[1].name, embed.fields[1].value), ("**Roles given after verification - 999**", "❌ Unable to retrieve role"))
+		self.assertEqual(embed.fields[2].value, f"✅ I can assign {roles[1].name}")
 		self.assertEqual(embed.fields[-1].name, "How to fix")
 
 	async def test_clean_embeds_have_no_fix_steps(self) :

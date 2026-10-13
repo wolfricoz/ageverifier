@@ -11,7 +11,7 @@ from databases.enums.joinhistorystatus import JoinHistoryStatus
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.HistoryTransactions import JoinHistoryTransactions
 from databases.transactions.UserTransactions import UserTransactions
-from views.buttons.verifybutton import VerifyButton
+from views.buttons.verifybutton import GDPR_DISCLOSURE, VerifyButton
 
 
 async def has_onboarding(guild: discord.Guild) -> bool :
@@ -54,8 +54,7 @@ async def welcome_user(member) :
 		return
 	await send_message(channel,
 	                   f"Welcome {member.mention}! {lobby_welcome}\n{warning}"
-	                   f"\n"
-	                   f"-# GDPR AND INFORMATION USE DISCLOSURE: By entering your birth date (MM/DD/YYYY) and age, you consent to having this information about you stored by Age Verifier and used to verify that you are the age that you say you are, including sharing to relevant parties for age verification. This information will be stored for a maximum of 1 year if you are no longer in a server using Ageverifier.",
+	                   f"\n{GDPR_DISCLOSURE}",
 	                   view=VerifyButton(member.guild.id), error_mode="ignore")
 
 

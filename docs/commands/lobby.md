@@ -6,7 +6,7 @@ nav_order: 7
 ---
 
 <h1>Lobby</h1>
-<h6>version: 3.4: Cleaned up and ready to go!</h6>
+<h6>version: 4.0: Easier setup and clearer errors</h6>
 <h6>Documentation automatically generated from docstrings.</h6>
 
 Commands for managing the new member lobby and verification process.
@@ -65,7 +65,7 @@ This is a simple utility to check how old someone is without going through the f
 
 ### `approve`
 
-**Usage:** `/lobby approve <ctx> <user> <age> <dob>`
+**Usage:** `approve <ctx> <user> <age> <dob>`
 
 > Manually approves a user and grants them access to the server.
 This is a prefix command used by moderators to approve a user after a manual review. It logs the approval and assigns the correct roles.
@@ -77,11 +77,11 @@ This is a prefix command used by moderators to approve a user after a manual rev
 
 ### `raid_purge`
 
-**Usage:** `/lobby raid_purge <days>`
+**Usage:** `/lobby raid_purge <days> <dry_run>`
 
 > Kicks all users who joined during a suspected raid.
 This command looks at the join messages in the lobby channel within a specified number of days and kicks all mentioned users.
-You will be asked for confirmation before the purge begins.
+You will be shown how many members would be kicked, and asked for confirmation before the purge begins. Use `dry_run` to only see the list.
 
 **Permissions:**
 - You'll need `Administrator` permission to use this command.

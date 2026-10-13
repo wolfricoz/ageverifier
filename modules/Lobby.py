@@ -1,6 +1,7 @@
 """this module handles the lobby."""
 import datetime
-import os
+import io
+import logging
 
 import discord
 from discord import app_commands
@@ -15,12 +16,15 @@ from classes.idverify import verify
 from classes.lobby.Clean import clean_lobby
 from classes.lobbyprocess import LobbyProcess
 from classes.permissions_notice import PermissionNotice
+from classes.text import plural
 from classes.whitelist import check_whitelist
 from databases.transactions.ConfigData import ConfigData
 from views.buttons.approvalbuttons import ApprovalButtons
 from views.buttons.confirmButtons import confirmAction
 from views.buttons.dobentrybutton import dobentry
-from views.buttons.verifybutton import VerifyButton
+from views.buttons.verifybutton import GDPR_DISCLOSURE, VerifyButton
+
+MAX_RAID_PURGE_DAYS = 30
 
 
 class Lobby(commands.GroupCog, description="Commands for managing the new member lobby and verification process.") :
@@ -47,7 +51,7 @@ class Lobby(commands.GroupCog, description="Commands for managing the new member
         - You'll need `Administrator` permission to use this command.
         """
 		await interaction.channel.send(
-			f"{text}\n-# GDPR AND INFORMATION USE DISCLOSURE: By entering your birth date (MM/DD/YYYY) and age, you consent to having this information about you stored by Age Verifier and used to verify that you are the age that you say you are, including sharing to relevant parties for age verification. This information will be stored for a maximum of 1 year if you are no longer in a server using Ageverifier.",
+			f"{text}\n{GDPR_DISCLOSURE}",
 			view=VerifyButton(interaction.guild.id))
 		# Without a response Discord shows "The application did not respond", even though the button was posted.
 		await send_response(interaction, "The verification button has been posted in this channel.", ephemeral=True)
@@ -147,58 +151,84 @@ class Lobby(commands.GroupCog, description="Commands for managing the new member
 
 	@app_commands.command(description="Kicks all users who joined during a suspected raid.")
 	@app_commands.checks.has_permissions(administrator=True)
-	async def raid_purge(self, interaction: discord.Interaction, days: int = 30) :
+	@app_commands.describe(days="How many days back to look (at most 30)",
+	                       dry_run="Only list who would be kicked, without kicking anyone")
+	async def raid_purge(self, interaction: discord.Interaction, days: int = 30, dry_run: bool = False) :
 		"""
         Kicks all users who joined during a suspected raid.
         This command looks at the join messages in the lobby channel within a specified number of days and kicks all mentioned users.
-        You will be asked for confirmation before the purge begins.
+        You will be shown how many members would be kicked, and asked for confirmation before the purge begins. Use `dry_run` to only see the list.
 
         **Permissions:**
         - You'll need `Administrator` permission to use this command.
         """
 		lobby_config = ConfigData().get_key_int(interaction.guild.id, "server_join_channel")
 		lobby_channel = interaction.guild.get_channel(lobby_config)
-		if days > 30 :
-			days = 30
-			await interaction.channel.send("Max days is 14, setting to 14")
+		days = max(1, min(days, MAX_RAID_PURGE_DAYS))
 
 		if lobby_channel is None :
 			await send_response(interaction, "The lobby channel no longer exists. Set a new one with `/config channels`.", ephemeral=True)
 			return
 		# Every kick and delete below would fail one by one with nothing shown, so stop before asking for confirmation.
-		missing_in_lobby = check_missing_channel_permissions(lobby_channel, ["view_channel", "read_message_history", "manage_messages"])
-		missing = check_missing_guild_permissions(interaction.guild, ["kick_members"]) + missing_in_lobby
+		# A dry run only reads the lobby.
+		needed_in_lobby = ["view_channel", "read_message_history"] + ([] if dry_run else ["manage_messages"])
+		missing_in_lobby = check_missing_channel_permissions(lobby_channel, needed_in_lobby)
+		missing = ([] if dry_run else check_missing_guild_permissions(interaction.guild, ["kick_members"])) + missing_in_lobby
 		if missing :
 			await PermissionNotice.respond(interaction, missing=missing, channel=lobby_channel if missing_in_lobby else None,
 			                               purpose="purge the lobby")
 			return
 
+		cutoff = datetime.datetime.now() - datetime.timedelta(days=days)
+		join_messages, members = [], {}
+		async for message in lobby_channel.history(limit=None, after=cutoff) :
+			if not message.author.bot :
+				continue
+			join_messages.append(message)
+			for member in message.mentions :
+				# Members who already left can't be kicked again.
+				if isinstance(member, discord.Member) :
+					members[member.id] = member
+		period = f"the last {plural(days, 'day')}"
+		if not members :
+			await send_response(interaction, f"Nobody who joined in {period} is still in the lobby, so there is nothing to purge.",
+			                    ephemeral=True)
+			return
+		names = ", ".join(member.name for member in list(members.values())[:20])
+		if len(members) > 20 :
+			names += f" and {len(members) - 20} more"
+		if dry_run :
+			await send_response(interaction, f"Dry run: a purge would kick {plural(len(members), 'member')} who joined in {period}: {names}.\n"
+			                                 f"Run it without `dry_run` to kick them.", ephemeral=True)
+			return
+
 		view = confirmAction()
-		await view.send_message(interaction,
-		                        f"Are you sure you want to purge the lobby of users that have not been processed in the last {days} days?")
+		await view.send_message(interaction, f"This kicks **{plural(len(members), 'member')}** who joined in {period} and deletes "
+		                                     f"their join messages: {names}.\nAre you sure?")
 		await view.wait()
 		if not view.confirmed :
-			await interaction.followup.send("Purge cancelled")
+			await interaction.followup.send("Purge cancelled", ephemeral=True)
 			return
-		days_to_datetime = datetime.datetime.now() - datetime.timedelta(days=days)
-		kicked = []
-		async for x in lobby_channel.history(limit=None, after=days_to_datetime) :
-			if not x.author.bot :
-				continue
-			for a in x.mentions :
-				try :
-					await a.kick()
-					kicked.append(f"{a.name}({a.id})")
-				except Exception as e :
-					print(f"unable to kick {a} because {e}")
-			await x.delete()
-		with open("config/kicked.txt", "w") as file :
-			str_kicked = "\n".join(kicked)
-			file.write(f"these users were removed during the purge:\n")
-			file.write(str_kicked)
-		await interaction.channel.send(f"{interaction.user.mention} Kicked {len(kicked)}",
-		                               file=discord.File(file.name, "kicked.txt"))
-		os.remove("config/kicked.txt")
+		kicked, failed = [], []
+		for member in members.values() :
+			try :
+				await member.kick(reason=f"Raid purge by {interaction.user.name}")
+				kicked.append(f"{member.name}({member.id})")
+			except discord.HTTPException as e :
+				logging.info(f"Raid purge could not kick {member.id} in {interaction.guild.id}: {e}")
+				failed.append(f"{member.name}({member.id})")
+		for message in join_messages :
+			try :
+				await message.delete()
+			except discord.HTTPException :
+				pass
+		report = "These users were removed during the purge:\n" + "\n".join(kicked)
+		if failed :
+			# Usually a role at or above the bot's; the member stays in the server.
+			report += "\n\nThese users could not be kicked (their role is probably above the bot's):\n" + "\n".join(failed)
+		await interaction.followup.send(f"{interaction.user.mention} Kicked {plural(len(kicked), 'member')}"
+		                                + (f", {len(failed)} could not be kicked" if failed else "") + ".",
+		                                file=discord.File(io.BytesIO(report.encode("utf-8")), "kicked.txt"))
 
 	@app_commands.command(description="Kicks users who have been waiting in the lobby for too long.")
 	@app_commands.checks.has_permissions(administrator=True)

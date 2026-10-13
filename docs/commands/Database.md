@@ -6,7 +6,7 @@ nav_order: 2
 ---
 
 <h1>Database</h1>
-<h6>version: 3.4: Cleaned up and ready to go!</h6>
+<h6>version: 4.0: Easier setup and clearer errors</h6>
 <h6>Documentation automatically generated from docstrings.</h6>
 
 Commands for interacting with the user database.

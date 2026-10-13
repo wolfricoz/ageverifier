@@ -131,7 +131,7 @@ class VerificationProcess :
 			return self.error
 
 		except ValueError:
-			self.error = "Ageverifier could not validate your date of birth, please make sure it is in the format: mm/dd/yyyy"
+			self.error = "Ageverifier could not read your date of birth. Please enter it as mm/dd/yyyy (dd/mm/yyyy also works when the day is 13 or higher)."
 			return self.error
 
 		except Exception as e :

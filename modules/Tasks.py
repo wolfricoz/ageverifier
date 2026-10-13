@@ -15,6 +15,7 @@ from classes.access import AccessControl
 from classes.ageroles import change_age_roles
 from classes.blacklist import blacklist_check
 from classes.dashboard.Servers import Servers
+from classes.devguild import dev_guild_only
 from classes.encryption import Encryption
 from classes.lobby.Clean import clean_lobby
 from classes.lobby.Quarantine import release_expired
@@ -410,9 +411,10 @@ class Tasks(commands.Cog) :
 		Normally, this check runs automatically every 12 hours. This is useful if you want to force an immediate data cleanup.
 		You must have Administrator permissions to use this command.
 		"""
-		await send_response(interaction, "[Debug]Checking all entries.")
+		# restart() only schedules the run; it finishes in the background, so there is no result to report here.
 		self.check_users_expiration.restart()
-		await interaction.followup.send("check-up finished.")
+		await send_response(interaction, "Started the expired-data check. It runs in the background and removes "
+		                                 "records that are past their retention period.", ephemeral=True)
 
 	@update_age_roles.before_loop
 	async def before_update_age_roles(self) :
@@ -468,6 +470,7 @@ class Tasks(commands.Cog) :
 		"""stops event from starting before the bot has fully loaded"""
 		await self.bot.wait_until_ready()
 
+	@dev_guild_only
 	@app_commands.command(name="sync_servers",
 	                      description="[DEV] Forces all servers to be synced with the dashboard")
 	@check_access()
@@ -478,9 +481,10 @@ class Tasks(commands.Cog) :
 		**Permissions:**
 		- `Developer`
 		"""
-		await send_response(interaction, "[Debug]Checking all entries.")
 		self.check_active_servers.restart()
+		await send_response(interaction, "Started syncing all servers with the dashboard in the background.", ephemeral=True)
 
+	@dev_guild_only
 	@app_commands.command(name="stats_report",
 	                      description="[DEV] Posts the weekly stats report for the last 7 days to the dev channel now")
 	@check_access()

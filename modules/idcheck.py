@@ -14,6 +14,7 @@ from databases.current import IdVerification
 from databases.transactions.VerificationTransactions import VerificationTransactions
 from resources.data.responses import StringStorage
 from views.buttons.confirm import Confirm
+from views.buttons.confirmButtons import confirmAction
 from views.buttons.reasonchoice import ReasonChoice
 from views.modals.inputmodal import send_modal
 
@@ -50,9 +51,9 @@ class idcheck(commands.GroupCog, description="Commands for managing manual ID ve
 			if removal_date :
 				await interaction.followup.send(
 					f"Not found on the ID list, but this user has requested data removal. "
-					f"Their data is scheduled to be permanently removed on or shortly after {removal_date}.")
+					f"Their data is scheduled to be permanently removed on or shortly after {removal_date}.", ephemeral=True)
 				return
-			await interaction.followup.send("Not found")
+			await interaction.followup.send("Not found", ephemeral=True)
 			return
 		data = {
 			"user"                 : user.uid,
@@ -68,7 +69,8 @@ class idcheck(commands.GroupCog, description="Commands for managing manual ID ve
 		                      description="Reminder: This data is only allowed to be shared with relevant parties.")
 		for title, value in data.items() :
 			embed.add_field(name=title, value=value, inline=False)
-		await send_response(interaction, StringStorage.NO_SHARE_REMINDER, embed=embed, ephemeral=True)
+		# Straight to the followup: the interaction already has its response, and the details must stay private.
+		await interaction.followup.send(StringStorage.NO_SHARE_REMINDER, embed=embed, ephemeral=True)
 
 	@app_commands.command(description="Updates a user's ID check status.")
 	@app_commands.checks.has_permissions(administrator=True)
@@ -102,12 +104,16 @@ class idcheck(commands.GroupCog, description="Commands for managing manual ID ve
         **Permissions:**
         - You'll need the `Administrator` permission to use this command.
         """
-		await send_response(interaction, f"⌛ deleting {user.mention}'s ID check entry'", ephemeral=True)
+		confirmation = confirmAction()
+		await confirmation.send_message(interaction, f"Remove the ID check entry for {user.mention}?", ephemeral=True)
+		await confirmation.wait()
+		if not confirmation.confirmed :
+			return
 		dev_channel = interaction.client.get_channel(int(os.getenv('DEV')))
 		if VerificationTransactions().set_idcheck_to_false(user.id, server=interaction.guild.name) is False :
-			await interaction.followup.send(f"Can't find entry: <@{user.id}>")
+			await interaction.followup.send(f"Can't find entry: <@{user.id}>", ephemeral=True)
 			return
-		await interaction.followup.send(f"Deleted entry: <@{user.id}>")
+		await interaction.followup.send(f"Deleted entry: <@{user.id}>", ephemeral=True)
 		Queue().add(send_message(dev_channel,
 		                         f"{interaction.user.name} in {interaction.guild.name} removed id check for {user.global_name}"),
 		            0)

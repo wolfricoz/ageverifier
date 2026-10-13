@@ -68,6 +68,37 @@ rolechoices = {
 	"approval_ping_role"         : "This role is pinged when a user successfully submits their verification and awaits approval. Not compatitable with the automatic mode."
 }
 
+# Verification can't run without these; everything else in channelchoices and rolechoices is optional.
+REQUIRED_CHANNEL_KEYS = {"server_join_channel", "approval_channel", "age_log"}
+REQUIRED_ROLE_KEYS = {"verification_add_role"}
+
+# What staff see instead of the raw config key, in setup prompts, the permission check and config logs.
+CONFIG_TITLES = {
+	"invite_log"                     : "Invite log",
+	"verification_completed_channel" : "Welcome channel (after verification)",
+	"server_join_channel"            : "Lobby channel",
+	"age_log"                        : "Lobby log",
+	"approval_channel"               : "Approval channel (staff only)",
+	"verification_failure_log"       : "Failed verification log",
+	"reverify_age_log"               : "Reverification log",
+	"leave_log"                      : "Leave log",
+	"verification_add_role"          : "Roles given after verification",
+	"verification_remove_role"       : "Roles removed after verification",
+	"return_remove_role"             : "Roles removed when returning to the lobby",
+	"server_join_role"               : "Roles given on join (removed after verification)",
+	"auto_update_excluded_roles"     : "Roles excluded from automatic age updates",
+	"reverification_role"            : "Roles given after reverification",
+	"approval_ping_role"             : "Role pinged for new approvals",
+}
+
+
+def config_title(key: str) -> str :
+	return CONFIG_TITLES.get(key.lower(), key.replace("_", " ").capitalize())
+
+
+def is_required_key(key: str) -> bool :
+	return key.lower() in REQUIRED_CHANNEL_KEYS | REQUIRED_ROLE_KEYS
+
 # Verification choices
 VERIFICATION_KEY = "VERIFICATION_METHOD"
 REVERIFICATION_KEY = "REVERIFICATION_METHOD"

@@ -8,7 +8,7 @@ from discord_py_utilities.messages import send_message, send_response
 from discord_py_utilities.permissions import check_missing_channel_permissions, check_missing_guild_permissions, \
 	find_first_accessible_text_channel
 
-from classes.config.utils import ConfigUtils
+from classes.config.utils import ConfigUtils, format_config_value, is_unset
 from classes.permissions_notice import AGEVERIFIER_PERMISSIONS_DOCS, DEFAULT_CHANNEL_PERMS, DISCORD_PERMISSIONS_DOCS, \
 	PermissionNotice, describe_permission
 from classes.support.queue import Queue
@@ -16,9 +16,20 @@ from databases.transactions.AgeRoleTransactions import AgeRoleTransactions
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.ConfigTransactions import ConfigTransactions
 from resources.data.config_variables import VERIFICATION_KEY, VerificationMethods, available_toggles, channelchoices, \
-	messagechoices, rolechoices
+	config_title, is_required_key, messagechoices, rolechoices
 from views.buttons.confirmButtons import confirmAction
 from views.select.configselectroles import ConfigSelectChannels, ConfigSelectRoles, ConfigSelectVerificationMode
+
+
+def is_issue(check: dict) -> bool :
+	"""Whether a permission check entry needs fixing; an optional setting left unset is a choice, not a problem."""
+	return check["status"] != "ok" and not (check["status"] == "not_set" and check.get("optional"))
+
+
+def check_mark(check: dict) -> str :
+	if check["status"] == "ok" :
+		return "✅"
+	return "❌" if is_issue(check) else "⚪"
 
 
 async def delete_quietly(msg: discord.Message) -> None :
@@ -56,6 +67,7 @@ class ConfigSetup :
 		# Per instance: a class-level dict was shared by every server's setup, leaking
 		# one server's channel ids into another server's config-change log.
 		self.changes = {}
+		self.verify_button_channel = None
 
 	async def manual(self, bot, interaction: discord.Interaction, channelchoices: dict, rolechoices: dict,
 	                 messagechoices: dict) :
@@ -64,39 +76,13 @@ class ConfigSetup :
 		if await self.choose_verification_method(interaction) is False :
 			return False
 		for channelkey, channelvalue in channelchoices.items() :
-			view = ConfigSelectChannels()
-			msg = await interaction.channel.send(f"Select a channel for {channelkey}: \n`{channelvalue}`", view=view)
-			await view.wait()
-			await delete_quietly(msg)
-			try :
-				if view.value == "next" :
-					continue
-				if view.value is None :
-					await send_response(interaction, "Setup has been cancelled")
-					return False
-			except AttributeError :
-				logging.info("No value found, message was deleted")
+			if not await self.prompt_choice(interaction, channelkey, channelvalue, "channel") :
 				return False
-			self.changes[channelkey] = int(view.value[0])
-			ConfigTransactions().config_unique_add(interaction.guild.id, channelkey, int(view.value[0]), overwrite=True)
 		for key, value in rolechoices.items() :
 			if key == "return_remove_role" :
 				continue
-			view = ConfigSelectRoles()
-			msg = await interaction.channel.send(f"{key}: \n{value}", view=view)
-			await view.wait()
-			await delete_quietly(msg)
-			try :
-				if view.value == "next" :
-					continue
-				if view.value is None :
-					await send_response(interaction, "Setup has been cancelled")
-					return False
-			except AttributeError :
-				logging.info("No value found, message was deleted")
+			if not await self.prompt_choice(interaction, key, value, "role") :
 				return False
-			self.changes[key] = int(view.value[0])
-			ConfigTransactions().config_unique_add(interaction.guild.id, key, int(view.value[0]), overwrite=True)
 		for messagekey, messagevalue in messagechoices.items() :
 			msg = await interaction.channel.send(f"Please set the message for {messagekey}\n"
 			                                     f"{messagevalue}\n"
@@ -150,11 +136,34 @@ class ConfigSetup :
 		# False means the user cancelled a step and has already been told so.
 		completed = await self.create_channels(interaction.guild, category, interaction) is not False
 		if completed :
-			completed = await self.create_roles(interaction.guild, rolechoices, interaction) is not False
+			# No interaction: auto setup only creates the Verified role; the optional roles stay on /config roles.
+			completed = await self.create_roles(interaction.guild, rolechoices) is not False
 		if completed :
 			await self.set_messages(interaction.guild, messagechoices)
+			self.verify_button_channel = await self.post_verify_button(interaction.guild)
 		Queue().add(ConfigUtils.log_change(interaction.guild, self.changes, user_name=interaction.user.name), 1)
 		return completed
+
+	AUTO_VERIFY_BUTTON_TEXT = "Welcome! Click the button below to verify your age and get access to the server."
+
+	async def post_verify_button(self, guild: discord.Guild) -> discord.TextChannel | None :
+		"""Auto setup ends with the verify button in the lobby, so members can start straight away.
+		Returns the lobby, or None when it has no lobby or the button could not be posted."""
+		# Lazy import: the button's module pulls in the whole verification flow.
+		from views.buttons.verifybutton import GDPR_DISCLOSURE, VerifyButton
+		lobby = guild.get_channel(ConfigData().get_channel_id(guild.id, "server_join_channel") or 0)
+		if lobby is None :
+			return None
+		try :
+			# Running auto setup again shouldn't stack a second button on the first.
+			async for message in lobby.history(limit=50) :
+				if message.author == guild.me and message.components :
+					return lobby
+			await lobby.send(f"{self.AUTO_VERIFY_BUTTON_TEXT}\n{GDPR_DISCLOSURE}", view=VerifyButton(guild.id))
+		except discord.Forbidden :
+			await PermissionNotice.notify(guild, channel=lobby, purpose="post the verify button in the lobby")
+			return None
+		return lobby
 
 	async def choose_verification_method(self, interaction: discord.Interaction) :
 		"""Manual setup's verification mode step. Returns False when the user cancelled."""
@@ -209,21 +218,8 @@ class ConfigSetup :
 						if interaction is None :
 							logging.info("Automated Setup, skipping verification_completed_channel channel")
 							continue
-						view = ConfigSelectChannels()
-						msg = await interaction.channel.send(f"Select a channel for {channelkey}: \n`{channelvalue}`", view=view)
-						await view.wait()
-						await delete_quietly(msg)
-						try :
-							if view.value == "next" :
-								continue
-							if view.value is None :
-								await send_response(interaction, "Setup has been cancelled")
-								return False
-						except AttributeError :
-							logging.info("No value found, message was deleted")
+						if not await self.prompt_choice(interaction, channelkey, channelvalue, "channel") :
 							return False
-						self.changes[channelkey] = int(view.value[0])
-						ConfigTransactions().config_unique_add(guild.id, channelkey, int(view.value[0]), overwrite=True)
 						continue
 					# This is your general channel, where the welcome message will be posted
 					case "server_join_channel" :
@@ -303,21 +299,42 @@ class ConfigSetup :
 			if interaction is None :
 				logging.info("Automated Setup, skipping role setup")
 				continue
-			view = ConfigSelectRoles()
-			msg = await interaction.channel.send(f"{key}: \n{value}", view=view)
-			await view.wait()
-			await delete_quietly(msg)
-			try :
-				if view.value == "next" :
-					continue
-				if view.value is None :
-					await send_response(interaction, "Setup has been cancelled")
-					return False
-			except AttributeError :
-				logging.info("No value found, message was deleted")
+			if not await self.prompt_choice(interaction, key, value, "role") :
 				return False
-			self.changes[key] = int(view.value[0])
-			ConfigTransactions().config_unique_add(guild.id, key, int(view.value[0]), overwrite=True)
+		return True
+
+	@staticmethod
+	def setup_prompt(guild_id: int, key: str, description: str, kind: str) -> str :
+		"""One setup step: what it is, whether it's needed, and what Skip does with the current value."""
+		current = ConfigData().get_key_or_none(guild_id, key)
+		lines = [f"**{config_title(key)}** ({'required' if is_required_key(key) else 'optional'})", description]
+		if is_unset(current) :
+			lines.append(f"Not set yet. Pick a {kind}, or **Skip** to leave it unset.")
+		else :
+			lines.append(f"Current: {format_config_value(key, current)}. **Skip** keeps it, **Clear** removes it.")
+		return "\n".join(lines)
+
+	async def prompt_choice(self, interaction: discord.Interaction, key: str, description: str, kind: str) -> bool :
+		"""Asks for one channel or role during setup. Returns False when the user cancelled."""
+		guild = interaction.guild
+		can_clear = not is_unset(ConfigData().get_key_or_none(guild.id, key))
+		view = ConfigSelectChannels(can_clear) if kind == "channel" else ConfigSelectRoles(can_clear)
+		# The current role is shown as a mention; it must not ping that role.
+		msg = await interaction.channel.send(self.setup_prompt(guild.id, key, description, kind), view=view,
+		                                     allowed_mentions=discord.AllowedMentions.none())
+		await view.wait()
+		await delete_quietly(msg)
+		if view.value == "next" :
+			return True
+		if view.value is None :
+			await send_response(interaction, "Setup has been cancelled")
+			return False
+		if view.value == "clear" :
+			ConfigTransactions().config_unique_remove(guild.id, key)
+			self.changes[key] = None
+			return True
+		self.changes[key] = int(view.value[0])
+		ConfigTransactions().config_unique_add(guild.id, key, int(view.value[0]), overwrite=True)
 		return True
 
 	async def set_messages(self, guild, messagechoices) :
@@ -360,12 +377,32 @@ class ConfigSetup :
 		await self.create_channels(guild, category)
 		await self.create_roles(guild, rolechoices)
 		await self.set_messages(guild, messagechoices)
+		await self.post_verify_button(guild)
 		lobby_mod = guild.get_channel(ConfigData().get_key_int(guild.id, "approval_channel"))
 		Queue().add(send_message(lobby_mod, f"## Auto Setup for {guild.name} has been completed!"), 0)
 		Queue().add(send_message(guild.owner, f"## Auto Setup for {guild.name} has been completed!"), 0)
 		Queue().add(ConfigUtils.log_change(guild, self.changes, user_name="Dashboard"), 1)
 
-	async def check_channel_permissions(self, guild: discord.Guild) :
+	def done_message(self, guild: discord.Guild, setup_type: str) -> str :
+		"""Tells staff what setup did, where the permission check lands, and what is left to do."""
+		lines = ["✅ The config has been set up."]
+		if self.verify_button_channel is not None :
+			lines.append(f"The verify button is posted in {self.verify_button_channel.mention}.")
+		else :
+			lines.append("Next: post the verify button in your lobby with `/lobby button`.")
+		report = self.permission_report_channel(guild)
+		if isinstance(report, discord.abc.GuildChannel) :
+			lines.append(f"The permission check is being posted in {report.mention}.")
+		elif report is not None :
+			lines.append("The permission check is being sent to the server owner's DMs.")
+		if setup_type == 'auto' :
+			lines.append("Optional roles (like roles to remove after verification) can be set with `/config roles`.")
+		lines.append("Toggles for the bot's features are in `/config toggles`.")
+		return "\n".join(lines)
+
+	@staticmethod
+	def permission_report_channel(guild: discord.Guild) :
+		"""Where the permission check is posted, so setup can tell staff where to look."""
 		channel = guild.get_channel(ConfigData().get_key_int_or_zero(guild.id, "approval_channel"))
 		if channel is None :
 			logging.warning("Mod channel is None, cannot check permissions")
@@ -373,6 +410,10 @@ class ConfigSetup :
 		if channel is None :
 			# No approval channel and no channel the bot can post in (AGEVERIFIER-FY); the owner is the last resort.
 			channel = guild.owner
+		return channel
+
+	async def check_channel_permissions(self, guild: discord.Guild) :
+		channel = self.permission_report_channel(guild)
 		if channel is None :
 			return
 		embed = await self.create_permission_channels_embed(guild)
@@ -396,17 +437,17 @@ class ConfigSetup :
 		"Open the channel → **Edit Channel → Permissions**, add the **Ageverifier** role, and enable the missing permissions.",
 		"Or grant them server-wide: **Server Settings → Roles → Ageverifier**.",
 	]
-	CHANNEL_NOT_SET_STEP = "Set the channels marked *Not set* with `/config channels`."
+	CHANNEL_NOT_SET_STEP = "Set the channels marked *Required, not set* with `/config channels`."
 	ROLE_MANAGE_ROLES_STEP = "Enable **Manage Roles** for the **Ageverifier** role in **Server Settings → Roles → Ageverifier**."
 	ROLE_ABOVE_BOT_STEP = "Drag the **Ageverifier** role **above** every role it needs to assign — a bot can only manage roles below its own."
-	ROLE_NOT_SET_STEP = "Set the roles marked *This key was not set* with `/config roles`, if you use them."
+	ROLE_NOT_SET_STEP = "Set the roles marked *Required, not set* with `/config roles`."
 	ROLE_NOT_FOUND_STEP = "The roles marked *Unable to retrieve role* no longer exist in this server. Set a replacement with `/config roles`."
 	RERUN_STEP = "Re-run this check afterwards to confirm everything is green."
 
 	@classmethod
 	def channel_fix_steps(cls, checks: list[dict]) -> list[str] :
-		statuses = {check["status"] for check in checks}
-		if statuses <= {"ok"} :
+		statuses = {check["status"] for check in checks if is_issue(check)}
+		if not statuses :
 			return []
 		steps = []
 		if "missing" in statuses :
@@ -417,8 +458,8 @@ class ConfigSetup :
 
 	@classmethod
 	def role_fix_steps(cls, can_manage_roles: bool, checks: list[dict]) -> list[str] :
-		statuses = {check["status"] for check in checks}
-		if can_manage_roles and statuses <= {"ok"} :
+		statuses = {check["status"] for check in checks if is_issue(check)}
+		if can_manage_roles and not statuses :
 			return []
 		steps = []
 		if not can_manage_roles :
@@ -435,7 +476,7 @@ class ConfigSetup :
 		"""The permission check as data. The Discord embeds and the dashboard API both render this."""
 		channels = self.audit_channel_permissions(guild)
 		roles = self.audit_role_permissions(guild)
-		issue_count = sum(1 for check in channels["checks"] + roles["checks"] if check["status"] != "ok")
+		issue_count = sum(1 for check in channels["checks"] + roles["checks"] if is_issue(check))
 		if not roles["manage_roles"]["granted"] :
 			issue_count += 1
 		return {
@@ -450,7 +491,8 @@ class ConfigSetup :
 	def audit_channel_permissions(self, guild: discord.Guild) -> dict :
 		checks = []
 		for key in self.channelchoices.keys() :
-			check = {"key" : key, "status" : "ok", "channel_id" : None, "channel_name" : None, "missing" : []}
+			check = {"key" : key, "title" : config_title(key), "optional" : not is_required_key(key), "status" : "ok",
+			         "channel_id" : None, "channel_name" : None, "missing" : []}
 			try :
 				channel = guild.get_channel(ConfigData().get_key_int_or_zero(guild.id, key))
 				if channel is None :
@@ -468,7 +510,7 @@ class ConfigSetup :
 			check["message"] = self.channel_check_text(check)
 			checks.append(check)
 		return {
-			"ok"        : all(check["status"] == "ok" for check in checks),
+			"ok"        : not any(is_issue(check) for check in checks),
 			"checks"    : checks,
 			"fix_steps" : self.channel_fix_steps(checks),
 		}
@@ -477,7 +519,9 @@ class ConfigSetup :
 	def channel_check_text(check: dict, channel_ref: str | None = None) -> str :
 		"""``channel_ref`` names the channel; the embed passes a mention, the dashboard gets #name."""
 		if check["status"] == "not_set" :
-			return "Not set, or the channel no longer exists — set it with `/config channels`"
+			if check.get("optional") :
+				return "Optional, not set. Set it with `/config channels` if you want to use it."
+			return "Required, not set (or the channel no longer exists) — set it with `/config channels`"
 		if check["status"] == "error" :
 			return "Error checking permissions"
 		if check["status"] == "missing" :
@@ -494,7 +538,7 @@ class ConfigSetup :
 			checks.append(self.audit_role_key(guild, "age role", age_role.role_id, top_role))
 		checks = [check for check in checks if check is not None]
 		return {
-			"ok"           : can_manage_roles and all(check["status"] == "ok" for check in checks),
+			"ok"           : can_manage_roles and not any(is_issue(check) for check in checks),
 			"manage_roles" : {
 				**describe_permission("manage_roles"),
 				"granted" : can_manage_roles,
@@ -507,10 +551,11 @@ class ConfigSetup :
 
 	def audit_role_key(self, guild: discord.Guild, key: str, data, top_role: discord.Role) -> dict | None :
 		"""Checks every role stored under one config key (or one age role) against the bot's top role."""
-		check = {"key" : key, "type" : "age role" if key == "age role" else "role", "status" : "ok", "roles" : []}
-		if not data :
+		check = {"key" : key, "title" : config_title(key), "optional" : key != "age role" and not is_required_key(key),
+		         "type" : "age role" if key == "age role" else "role", "status" : "ok", "roles" : []}
+		if is_unset(data) :
 			check["status"] = "not_set"
-			check["message"] = "This key was not set"
+			check["message"] = "Optional, not set" if check["optional"] else "Required, not set — set it with `/config roles`"
 			return check
 		if isinstance(data, str | int) :
 			data = [data]
@@ -544,7 +589,7 @@ class ConfigSetup :
 			check["status"] = "error"
 			check["message"] = "; ".join(f"{entry['id']}: {entry['message']}" for entry in check["roles"] if entry["status"] != "ok")
 		else :
-			check["message"] = "I have permission to assign this role"
+			check["message"] = f"I can assign {', '.join(entry['name'] for entry in check['roles'])}"
 		return check
 
 	async def create_permission_channels_embed(self, guild: discord.Guild) :
@@ -553,8 +598,8 @@ class ConfigSetup :
 		embed.description = f"Checking channel permissions in {guild.name}:"
 		for check in audit["checks"] :
 			mention = f"<#{check['channel_id']}>" if check["channel_id"] else None
-			mark = "✅" if check["status"] == "ok" else "❌"
-			embed.add_field(name=f"**{check['key']}**", value=f"{mark} {self.channel_check_text(check, mention)}", inline=False)
+			embed.add_field(name=f"**{check['title']}** (`{check['key']}`)",
+			                value=f"{check_mark(check)} {self.channel_check_text(check, mention)}", inline=False)
 		if not audit["ok"] :
 			self.add_fix_steps_field(embed, audit["fix_steps"])
 		return embed
@@ -577,15 +622,15 @@ class ConfigSetup :
 	@staticmethod
 	def add_role_check_fields(embed: discord.Embed, check: dict) :
 		key = check["key"]
+		name = f"**{check['title']}**" if check["type"] == "age role" else f"**{check['title']}** (`{key}`)"
 		if check["status"] in ("ok", "not_set", "above_bot") :
-			mark = "✅" if check["status"] == "ok" else "❌"
-			embed.add_field(name=f"**{key}**", value=f"{mark} {check['message']}", inline=False)
+			embed.add_field(name=name, value=f"{check_mark(check)} {check['message']}", inline=False)
 			if check["status"] != "above_bot" :
 				return
 		# Roles we could not look up get their own field, so staff can see which id is stale.
 		for entry in check["roles"] :
 			if entry["status"] in ("not_found", "error") :
-				embed.add_field(name=f"**{key} - {entry['id']}**", value=f"❌ {entry['message']}", inline=False)
+				embed.add_field(name=f"**{check['title']} - {entry['id']}**", value=f"❌ {entry['message']}", inline=False)
 
 	@staticmethod
 	def add_fix_steps_field(embed: discord.Embed, steps: list[str]) :

@@ -19,6 +19,7 @@ from databases.transactions.ServerTransactions import ServerTransactions
 from databases.transactions.UserTransactions import UserTransactions
 from databases.transactions.VerificationTransactions import VerificationTransactions
 from resources.data.responses import StringStorage
+from views.buttons.confirmButtons import confirmAction
 
 
 class Database(commands.GroupCog, name="database", description="Commands for interacting with the user database.") :
@@ -85,12 +86,12 @@ class Database(commands.GroupCog, name="database", description="Commands for int
 		userdata: Users = UserTransactions().get_user(user.id)
 		user_status = VerificationTransactions().get_id_info(user.id)
 		if not userdata :
-			await interaction.followup.send(f"No entry available for {user.mention}")
+			await interaction.followup.send(f"No entry available for {user.mention}", ephemeral=True)
 			return
 		if not permissions.check_dev(interaction.user.id) and (
 				user not in interaction.guild.members or userdata.server != interaction.guild.name) :
 			await interaction.followup.send(
-				"The user is not in the server and the date of birth was not added in this server.")
+				"The user is not in the server and the date of birth was not added in this server.", ephemeral=True)
 			return
 		data = {
 			"user"            : userdata.uid,
@@ -107,7 +108,8 @@ class Database(commands.GroupCog, name="database", description="Commands for int
 		                      description="Reminder: This data is only allowed to be shared with relevant parties.")
 		for title, value in data.items() :
 			embed.add_field(name=title, value=value, inline=False)
-		await send_response(interaction, StringStorage.NO_SHARE_REMINDER, embed=embed, ephemeral=True)
+		# Straight to the followup: the interaction already has its response, and a date of birth must stay private.
+		await interaction.followup.send(StringStorage.NO_SHARE_REMINDER, embed=embed, ephemeral=True)
 
 	@app_commands.command(description="Manually creates a new database entry for a user with their date of birth.")
 	@app_commands.checks.has_permissions(manage_messages=True)
@@ -177,14 +179,19 @@ class Database(commands.GroupCog, name="database", description="Commands for int
         - Your server must be whitelisted to use this feature.
         """
 
-		await send_response(interaction, f"⌛ deleting {user.mention} from the database", ephemeral=True)
 		if await whitelist(interaction) :
+			return
+		confirmation = confirmAction()
+		await confirmation.send_message(interaction, f"Delete the database entry for {user.mention}?\nReason: {reason}",
+		                                ephemeral=True)
+		await confirmation.wait()
+		if not confirmation.confirmed :
 			return
 		LocalCacheStorage().remove_submission(user.id)
 		if UserTransactions().soft_delete(user.id, interaction.guild.name) is False :
-			await interaction.followup.send(f"Can't find entry: ({user.name}){user.id}")
+			await interaction.followup.send(f"Can't find entry: ({user.name}){user.id}", ephemeral=True)
 			return
-		await send_response(interaction, f"Deleted entry: ({user.name}){user.id} with reason: {reason}")
+		await interaction.followup.send(f"Deleted entry: ({user.name}){user.id} with reason: {reason}", ephemeral=True)
 		await LobbyProcess.age_log(user.id, "", interaction, "deleted", False, reason=reason)
 
 
