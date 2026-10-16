@@ -19,7 +19,7 @@ sentry-sdk>=2.69.2
 fonttools>=4.61.1
 SQLAlchemy-Utils>=0.42.1
 PyMySQL>=1.1.2
-discord-py-utilities>=0.1.0.3
+discord-py-utilities>=0.1.0.4
 python-multipart
 
 psycopg2-binary

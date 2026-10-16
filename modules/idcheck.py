@@ -136,14 +136,19 @@ class idcheck(commands.GroupCog, description="Commands for managing manual ID ve
 			return
 		reason = discord.utils.escape_mentions(reason)
 
-		idinfo = VerificationTransactions().add_idcheck(user.id, reason, True, server=interaction.guild.name)
-		if idinfo:
-			if await Confirm().send_confirm(interaction, f"{user.name} is on the ID list already with reason: `{idinfo.reason}`, do you want to update it?") is False:
+		# Look before writing: add_idcheck returned the row it had just written, so every new entry was reported as an
+		# existing one, showing the reason just typed. /idcheck delete keeps the row with idcheck off, so only a
+		# flagged entry counts as already on the list.
+		existing = VerificationTransactions().get_id_info(user.id)
+		if existing is not None and existing.idcheck :
+			if await Confirm().send_confirm(interaction, f"{user.name} is on the ID list already with reason: `{existing.reason}`, do you want to update it?") is False:
 				return
 			VerificationTransactions().update_check(user.id, reason, True, server=interaction.guild.name)
 			await send_response(interaction, f"{user.mention}'s ID check entry has been updated with reason: {reason} and idcheck: {True}", ephemeral=True)
 			return
 
+		# Creates the entry, or turns a deleted (idcheck off) one back on.
+		VerificationTransactions().update_check(user.id, reason, True, server=interaction.guild.name)
 		await send_response(interaction,
 			f"<@{user.id}>'s userid entry has been added with reason: {reason} and idcheck: {True}")
 
@@ -163,7 +168,9 @@ class idcheck(commands.GroupCog, description="Commands for managing manual ID ve
 			return await send_response(interaction, "This feature is only for premium servers, please reach out to the user and verify manually.", ephemeral=True)
 
 		idinfo = VerificationTransactions().get_id_info(user.id)
-		if idinfo:
+		# Only a flagged entry with a reason has something to keep. A deleted entry (idcheck off, no reason) used to
+		# offer "Keep existing reason", which kept None, and that was then taken for a cancelled modal: nothing was sent.
+		if idinfo and idinfo.idcheck and idinfo.reason :
 			chooser = ReasonChoice()
 			choice = await chooser.prompt(
 				interaction,

@@ -12,6 +12,7 @@ from discord_py_utilities.permissions import check_missing_channel_permissions, 
 
 import classes.permissions as permissions
 from classes.AgeCalculations import AgeCalculations
+from classes.config.utils import is_unset
 from classes.idverify import verify
 from classes.lobby.Clean import clean_lobby
 from classes.lobbyprocess import LobbyProcess
@@ -25,6 +26,23 @@ from views.buttons.dobentrybutton import dobentry
 from views.buttons.verifybutton import GDPR_DISCLOSURE, VerifyButton
 
 MAX_RAID_PURGE_DAYS = 30
+
+
+def configured_roles(guild: discord.Guild, key: str) -> list[discord.Role] :
+	"""The roles stored under a config key. Unset keys and deleted roles are skipped: a deleted role used to reach
+	remove_roles() as None and crash /lobby returnlobby."""
+	value = ConfigData().get_key_or_none(guild.id, key)
+	if is_unset(value) :
+		return []
+	roles = []
+	for role_id in value if isinstance(value, list) else [value] :
+		try :
+			role = guild.get_role(int(role_id))
+		except (TypeError, ValueError) :
+			role = None
+		if role is not None :
+			roles.append(role)
+	return roles
 
 
 class Lobby(commands.GroupCog, description="Commands for managing the new member lobby and verification process.") :
@@ -96,25 +114,24 @@ class Lobby(commands.GroupCog, description="Commands for managing the new member
         - You'll need the `Manage Messages` permission to use this command.
         """
 		await interaction.response.defer()
-		if interaction.guild is None :
-			return await send_response(interaction, "This command is limited to a server.")
-		add_roles: list = ConfigData().get_key(interaction.guild.id, "VERIFICATION_ADD_ROLE")
-		add = list(add_roles)
-		rem: list = ConfigData().get_key(interaction.guild.id, "verification_remove_role")
-		returns: list = ConfigData().get_key(interaction.guild.id, "return_remove_role")
-		print('data retrieved')
-		rm = []
-		ra = []
-		for role in rem :
-			r = interaction.guild.get_role(role)
-			ra.append(r)
-		for role in add + returns :
-			r = interaction.guild.get_role(role)
-			rm.append(r)
-		print('roles retrieved')
-		await user.remove_roles(*rm, reason="returning to lobby")
-		await user.add_roles(*ra, reason="returning to lobby")
-		print('roles changed')
+		guild = interaction.guild
+		# Undo verification: take the verified roles (and return_remove_role) off, give back the roles verification removed.
+		remove = [role for role in configured_roles(guild, "verification_add_role") + configured_roles(guild, "return_remove_role")
+		          if role in user.roles]
+		add = [role for role in configured_roles(guild, "verification_remove_role") if role not in user.roles]
+		if not remove and not add :
+			return await interaction.followup.send(
+				f"{user.mention} has none of the verified roles and already has the lobby roles, so there was nothing to change. "
+				"The roles come from `verification_add_role`, `verification_remove_role` and `return_remove_role` in `/config roles`.",
+				ephemeral=True)
+		try :
+			if remove :
+				await user.remove_roles(*remove, reason="returning to lobby")
+			if add :
+				await user.add_roles(*add, reason="returning to lobby")
+		except discord.Forbidden :
+			return await PermissionNotice.respond(interaction, missing=["manage_roles"],
+			                                      purpose=f"move {user.name} back to the lobby")
 		return await interaction.followup.send(
 			f"{user.mention} has been moved back to the lobby by {interaction.user.mention}")
 
