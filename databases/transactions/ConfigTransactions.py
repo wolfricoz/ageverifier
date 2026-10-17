@@ -140,6 +140,11 @@ class ConfigTransactions(DatabaseTransactions) :
 		with self.createsession() as session :
 			return session.scalars(Select(db.Config).where(db.Config.guild == guildid)).all()
 
+	def guilds_with_key(self, key: str) -> set[int] :
+		"""The ids of every guild that has this key stored, whatever its value."""
+		with self.createsession() as session :
+			return set(session.scalars(Select(db.Config.guild).where(db.Config.key == key.upper()).distinct()).all())
+
 	def server_config_all(self) :
 		with self.createsession() as session :
 			return session.scalars(

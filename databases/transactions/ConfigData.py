@@ -140,7 +140,8 @@ class ConfigData(metaclass=Singleton) :
 			}
 		if reload :
 			self.load_guild(guild_id)
-		self.output_to_json()
+		# No output_to_json() here: it rewrote the whole cache on every guild load, so a cold cache took
+		# ~40s to fill and blocked the gateway heartbeat. config_reload still writes a snapshot before clearing.
 
 	def get_guild(self, guild_id: int) -> dict :
 		"""
