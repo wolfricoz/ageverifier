@@ -6,7 +6,6 @@ from typing import List, Optional
 from dotenv import load_dotenv
 from sqlalchemy import BigInteger, Boolean, DateTime, Enum, ForeignKey, Index, Integer, String, Text, create_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, sessionmaker
-from sqlalchemy.pool import NullPool
 from sqlalchemy.sql import func
 from sqlalchemy_utils import create_database, database_exists
 
@@ -18,13 +17,26 @@ DB = os.getenv('DB')
 DEBUG = os.getenv('TEST')
 
 db_string = f"{DB}/rmrbotnew"
+# Opening a connection per session cost ~38ms, and most DB calls run on the event loop, so that time blocked the bot.
+# pool_timeout is short so an exhausted pool fails fast instead of freezing the loop; pre_ping and recycle replace
+# connections the server or a firewall closed while they sat idle.
+pool_options = {"pool_size" : 32, "max_overflow" : 8, "pool_timeout" : 5, "pool_pre_ping" : True, "pool_recycle" : 1800}
 if DEBUG == "true" :
 	# Every test run gets its own database, so parallel runs never share tables.
 	os.environ.setdefault('TEST_DB_NAME', f"rmrtest_{uuid.uuid4().hex[:8]}_test")
 	db_string = f"{DB}/{os.environ['TEST_DB_NAME']}"
-engine = create_engine(db_string, poolclass=NullPool, echo=False, isolation_level="READ COMMITTED")
+engine = create_engine(db_string, echo=False, isolation_level="READ COMMITTED", **pool_options)
 if not database_exists(engine.url) :
 	create_database(engine.url)
+
+
+def _reset_pool_after_fork() :
+	"""A forked worker (gunicorn --preload) must not reuse the parent's pooled sockets; close=False leaves them to the parent."""
+	engine.dispose(close=False)
+
+
+if hasattr(os, "register_at_fork") :  # POSIX only; Windows has no fork
+	os.register_at_fork(after_in_child=_reset_pool_after_fork)
 
 
 
@@ -303,7 +315,7 @@ class Database :
 		global engine
 		engine.dispose()
 
-		engine = create_engine(db_string, poolclass=NullPool, echo=False, isolation_level="READ COMMITTED", )
+		engine = create_engine(db_string, echo=False, isolation_level="READ COMMITTED", **pool_options)
 
 
 def create_bot_database() :
