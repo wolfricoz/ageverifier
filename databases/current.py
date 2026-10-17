@@ -18,7 +18,6 @@ DB = os.getenv('DB')
 DEBUG = os.getenv('TEST')
 
 db_string = f"{DB}/rmrbotnew"
-pool_options = {"poolclass" : NullPool}
 # Opening a connection per session cost ~38ms, and most DB calls run on the event loop, so that time blocked the bot.
 # pool_timeout is short so an exhausted pool fails fast instead of freezing the loop; pre_ping and recycle replace
 # connections the server or a firewall closed while they sat idle.
