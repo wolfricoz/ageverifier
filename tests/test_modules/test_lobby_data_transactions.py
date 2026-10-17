@@ -1,13 +1,13 @@
 import unittest
 
 from classes.encryption import Encryption
+from databases.current import clear_bot_database, create_bot_database
 from databases.transactions.ButtonTransactions import LobbyDataTransactions
 from databases.transactions.UserTransactions import UserTransactions
-from databases.current import create_bot_database, drop_bot_database
 
 
 # Assuming these are defined elsewhere in your project
-# from databases.current import create_bot_database, drop_bot_database
+# from databases.current import create_bot_database, clear_bot_database
 # from databases.transactions.LobbyDataTransactions import LobbyDataTransactions
 # from databases.models.LobbyData import LobbyData
 
@@ -15,7 +15,7 @@ class TestLobbyDataTransactions(unittest.TestCase) :
 	"""
 	Test suite for the LobbyDataTransactions controller.
 	This test suite assumes the existence of `create_bot_database()` and
-	`drop_bot_database()` functions that manage an in-memory or temporary
+	`clear_bot_database()` functions that manage an in-memory or temporary
 	database for testing, ensuring each test runs in an isolated environment.
 	"""
 
@@ -40,7 +40,7 @@ class TestLobbyDataTransactions(unittest.TestCase) :
 		Drop the database after each test to ensure isolation.
 		"""
 		# This function should drop the temporary database
-		drop_bot_database()
+		clear_bot_database()
 
 	def test_create_record(self) :
 		"""

@@ -1,6 +1,6 @@
 import unittest
 
-from databases.current import create_bot_database, drop_bot_database
+from databases.current import clear_bot_database, create_bot_database
 from databases.transactions.AgeRoleTransactions import AgeRoleTransactions
 
 
@@ -13,7 +13,7 @@ class TestAgeRoleTransactions(unittest.TestCase):
         self.guild = guildgenerator().create().guild  # Generates a unique guild ID per test
 
     def tearDown(self):
-        drop_bot_database()
+        clear_bot_database()
 
     def test_add_role(self):
         controller = AgeRoleTransactions()

@@ -5,7 +5,7 @@ from types import SimpleNamespace
 from classes.membernotes import EMBED_FIELD_LIMIT, format_notes
 from databases.Generators.guildgenerator import guildgenerator
 from databases.Generators.uidgenerator import uidgenerator
-from databases.current import create_bot_database, drop_bot_database
+from databases.current import clear_bot_database, create_bot_database
 from databases.transactions.MemberNoteTransactions import MemberNoteTransactions
 from databases.transactions.ServerTransactions import ServerTransactions
 from databases.transactions.UserTransactions import UserTransactions
@@ -22,7 +22,7 @@ class TestMemberNoteTransactions(unittest.TestCase) :
 		self.gid = guildgenerator().create().guild
 
 	def tearDown(self) -> None :
-		drop_bot_database()
+		clear_bot_database()
 
 	def test_add_creates_a_missing_user_row(self) :
 		self.assertFalse(UserTransactions().user_exists(self.uid))

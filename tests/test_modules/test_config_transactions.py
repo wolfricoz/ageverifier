@@ -1,6 +1,6 @@
 import unittest
 
-from databases.current import create_bot_database, drop_bot_database
+from databases.current import clear_bot_database, create_bot_database
 from databases.transactions.ConfigTransactions import ConfigTransactions
 
 
@@ -16,7 +16,7 @@ class TestAgeRoleTransactions(unittest.TestCase) :
 		self.guild: int = guildgenerator().create().guild  # Generates a unique guild ID per test
 
 	def tearDown(self) :
-		drop_bot_database()
+		clear_bot_database()
 
 	def test_config_unique_add_and_get(self) :
 		added = self.config.config_unique_add(self.guild, self.key, self.value)

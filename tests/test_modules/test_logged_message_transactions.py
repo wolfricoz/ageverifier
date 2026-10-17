@@ -1,7 +1,7 @@
 import unittest
 
 from databases.Generators.uidgenerator import uidgenerator
-from databases.current import create_bot_database, drop_bot_database
+from databases.current import clear_bot_database, create_bot_database
 from databases.enums.loggedmessagetype import LoggedMessageType
 from databases.transactions.LoggedMessageTransactions import LoggedMessageTransactions
 from databases.transactions.UserTransactions import UserTransactions
@@ -34,7 +34,7 @@ class TestLoggedMessageTransactions(unittest.TestCase) :
 		self.ut.add_user_empty(self.uid)
 
 	def tearDown(self) :
-		drop_bot_database()
+		clear_bot_database()
 
 	def test_track_records_the_message(self) :
 		self.lmt.track(FakeMessage(1001, guild_id=55, channel_id=66), self.uid, LoggedMessageType.LOBBY_LOG)

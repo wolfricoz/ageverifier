@@ -1,8 +1,8 @@
 import random
 import unittest
 
+from databases.current import clear_bot_database, create_bot_database
 from databases.transactions.StaffTransactions import StaffDbTransactions
-from databases.current import create_bot_database, drop_bot_database
 
 
 class TestStaffDbTransactions(unittest.TestCase):
@@ -13,7 +13,7 @@ class TestStaffDbTransactions(unittest.TestCase):
         self.uid = random.randint(2**6, 2**8)
 
     def tearDown(self):
-        drop_bot_database()
+        clear_bot_database()
 
     def test_add_and_get_staff(self):
         added = self.st.add(self.uid, "Admin")

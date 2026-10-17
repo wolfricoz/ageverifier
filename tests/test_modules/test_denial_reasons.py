@@ -7,7 +7,7 @@ import discord
 from classes.denialreasons import DM_LIMIT, denial_message, fill_placeholders, send_denial
 from databases.Generators.guildgenerator import guildgenerator
 from databases.Generators.uidgenerator import uidgenerator
-from databases.current import create_bot_database, drop_bot_database
+from databases.current import clear_bot_database, create_bot_database
 from databases.transactions.DenialReasonTransactions import DenialReasonTransactions
 from databases.transactions.ServerTransactions import ServerTransactions
 from resources.data.config_variables import DEFAULT_DENIAL_REASONS, MAX_DENIAL_LABEL_LENGTH, MAX_DENIAL_REASONS
@@ -22,7 +22,7 @@ class TestDenialReasonTransactions(unittest.TestCase) :
 		self.gid = guildgenerator().create().guild
 
 	def tearDown(self) -> None :
-		drop_bot_database()
+		clear_bot_database()
 
 	def test_a_new_guild_gets_the_defaults(self) :
 		reasons = self.dt.get_for_guild(self.gid)

@@ -3,13 +3,13 @@ from datetime import datetime, timezone
 
 from databases.Generators.guildgenerator import guildgenerator
 from databases.Generators.uidgenerator import uidgenerator
-from databases.current import create_bot_database, drop_bot_database
+from databases.current import clear_bot_database, create_bot_database
 from databases.enums.joinhistorystatus import JoinHistoryStatus
 from databases.transactions.HistoryTransactions import JoinHistoryTransactions
 
 
 # Assuming the following are defined elsewhere in your project
-# from databases.current import create_bot_database, drop_bot_database
+# from databases.current import create_bot_database, clear_bot_database
 # from databases.transactions.JoinHistoryTransactions import JoinHistoryTransactions
 # from databases.models import JoinHistoryStatus
 # from databases.Generators.guildgenerator import guildgenerator
@@ -36,7 +36,7 @@ class TestJoinHistoryTransactions(unittest.TestCase):
         """
         Drop the database after each test to ensure isolation.
         """
-        drop_bot_database()
+        clear_bot_database()
 
     def test_add_entry(self):
         """

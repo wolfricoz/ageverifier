@@ -85,7 +85,8 @@ class Tasks(commands.Cog) :
 		"""Reloads the config for the latest data."""
 		# Storing old config for debugging
 		ConfigData().output_to_json()
-		ConfigData().cleanup()
+		# Replaces the cache in one go instead of clearing it, so nothing has to load guilds one by one afterwards.
+		await ConfigData().load_all_guilds(guild.id for guild in self.bot.guilds)
 		AccessControl().reload()
 		for guild in self.bot.guilds :
 			try :
@@ -278,7 +279,7 @@ class Tasks(commands.Cog) :
 		logging.info("Syncing config defaults across all guilds.")
 		inserted = await asyncio.to_thread(ServerTransactions().backfill_config)
 		if inserted :
-			await ConfigData().load_all_guilds()
+			await ConfigData().load_all_guilds(guild.id for guild in self.bot.guilds)
 		logging.info(f"Config sync complete. Inserted {inserted} missing config rows.")
 
 	@tasks.loop(hours=24 * 3)

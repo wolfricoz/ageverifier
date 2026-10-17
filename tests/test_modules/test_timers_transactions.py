@@ -2,9 +2,9 @@ import unittest
 
 from databases.Generators.guildgenerator import guildgenerator
 from databases.Generators.uidgenerator import uidgenerator
+from databases.current import clear_bot_database, create_bot_database
 from databases.transactions.TimersTransactions import TimersTransactions
 from databases.transactions.UserTransactions import UserTransactions
-from databases.current import create_bot_database, drop_bot_database
 
 
 class TestTimersTransactions(unittest.TestCase):
@@ -17,7 +17,7 @@ class TestTimersTransactions(unittest.TestCase):
         self.role_id = 1234567890
 
     def tearDown(self):
-        drop_bot_database()
+        clear_bot_database()
 
     def test_add_and_get_timer_with_role(self):
 

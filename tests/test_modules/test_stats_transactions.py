@@ -5,7 +5,7 @@ from sqlalchemy import Select
 
 from databases.Generators.guildgenerator import guildgenerator
 from databases.Generators.uidgenerator import uidgenerator
-from databases.current import IdVerification, JoinHistory, WebsiteData, create_bot_database, drop_bot_database
+from databases.current import IdVerification, JoinHistory, WebsiteData, clear_bot_database, create_bot_database
 from databases.enums.joinhistorystatus import JoinHistoryStatus
 from databases.transactions.HistoryTransactions import JoinHistoryTransactions
 from databases.transactions.StatsTransactions import StatsTransactions
@@ -23,7 +23,7 @@ class TestStatsTransactions(unittest.TestCase) :
 		self.start = self.end - timedelta(days=7)
 
 	def tearDown(self) -> None :
-		drop_bot_database()
+		clear_bot_database()
 
 	def _history(self, status, created: datetime, verified: datetime = None, updated: datetime = None) :
 		uid = uidgenerator().create()

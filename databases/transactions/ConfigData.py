@@ -2,6 +2,8 @@ import asyncio
 import json
 import logging
 import os
+from collections import defaultdict
+from typing import Iterable
 
 import discord
 from discord import CategoryChannel, ForumChannel, StageChannel, TextChannel, Thread, VoiceChannel
@@ -13,6 +15,10 @@ from databases.exceptions.KeyNotFound import KeyNotFound
 from databases.transactions.AgeRoleTransactions import AgeRoleTransactions
 from databases.transactions.ConfigTransactions import ConfigTransactions
 
+# Config keys that can be stored more than once per guild; they are cached as a list of ids.
+LIST_KEYS = ["VERIFICATION_REMOVE_ROLE", "RETURN_REMOVE_ROLE", "SERVER_JOIN_ROLE", "AUTO_UPDATE_EXCLUDED_ROLES",
+             "REVERIFICATION_ROLE"]
+
 
 class ConfigData(metaclass=Singleton) :
 	"""
@@ -20,77 +26,81 @@ class ConfigData(metaclass=Singleton) :
 	"""
 	conf = {}
 	reloading = False
+	# Guilds loaded one by one while load_all_guilds was reading; they get loaded again after the swap.
+	changed_during_reload = set()
 
 	def __init__(self) :
 		pass
 
 	async def reload(self) :
-		"""
+		"""Reloads every guild that is cached right now."""
+		await self.load_all_guilds(list(self.conf))
 
+	async def load_all_guilds(self, guild_ids: Iterable[int]) :
+		"""Loads the config of all these guilds with two queries and swaps it in as a whole.
+
+		Guilds without config rows get the same empty config load_guild gives them, so they aren't loaded one by one
+		later; guilds left out are dropped from the cache. Loading them one by one blocked the event loop for ~40s
+		with 770+ guilds and dropped the gateway connection. The queries and building run in a thread.
 		"""
-		logging.info("reloading config")
 		if self.reloading :
 			return
+		guild_ids = set(guild_ids)
+		logging.info(f"Loading config for {len(guild_ids)} guilds")
 		self.reloading = True
-		for guild_id in self.conf :
-			await asyncio.sleep(0.001)
-			self.load_guild(guild_id)
-		self.reloading = False
-
-	# logging.debug(self.conf)
-
-	async def load_all_guilds(self) :
-		return
-		logging.info(f"Loading all guilds")
-		# Regardless if the guild exists, we add it to the config to avoid KeyErrors
-
-		# Fetch the settings from the database
-		items = ConfigTransactions().server_config_all()
-		for item in items:
+		self.changed_during_reload = set()
+		try :
+			conf, legacy = await asyncio.to_thread(self._build_guilds, guild_ids)
+			self.conf = conf
+		finally :
+			self.reloading = False
+		# Guilds whose config changed while the thread was reading would otherwise hold stale data until the next reload.
+		for guild_id in legacy | (self.changed_during_reload & guild_ids) :
 			await asyncio.sleep(0)
-			guild_id = item.guild
+			try :
+				self.load_guild(guild_id)
+			except Exception as e :
+				# The bulk-built config stays in place; raising would stop the config_reload loop for good.
+				logging.error(f"Could not reload the config of {guild_id} after the bulk load: {e}", exc_info=True)
+		logging.info(f"Loaded config for {len(conf)} guilds")
 
-			# if guild doesn't exist, add it.
-			if guild_id not in self.conf :
-				self.conf[guild_id] = {}
+	def _build_guilds(self, guild_ids: set[int]) -> tuple[dict, set[int]] :
+		"""Builds the config of these guilds from two queries. Also returns the guilds that still have
+		VERIFICATION_ADD_ROLE rows in the config table; load_guild has to move those to the age roles first."""
+		settings = defaultdict(list)
+		for row in ConfigTransactions().server_config_for(guild_ids) :
+			settings[row.guild].append(row)
+		roles = defaultdict(list)
+		for role in AgeRoleTransactions().get_for_guilds(guild_ids) :
+			roles[role.guild_id].append(role)
+		legacy = {guild_id for guild_id, rows in settings.items() if
+		          any(row.key.upper() == "VERIFICATION_ADD_ROLE" for row in rows)}
+		conf = {guild_id : self._build_guild(guild_id, settings[guild_id], roles[guild_id]) for guild_id in guild_ids}
+		return conf, legacy
 
-			add_list = ["VERIFICATION_REMOVE_ROLE", "RETURN_REMOVE_ROLE", "SERVER_JOIN_ROLE", "AUTO_UPDATE_EXCLUDED_ROLES",
-			            "REVERIFICATION_ROLE"]
-			add_dict = ["VERIFICATION_ADD_ROLE"]
-
-			for key in add_list :
-				self.conf[guild_id][key] = []
-
-
-
-			for key in add_dict :
-				self.conf[guild_id][key] = {}
-
-			conf_key = item.key.upper()
-
-			if conf_key in ["VERIFICATION_ADD_ROLE"] :
-				AgeRoleTransactions().add(guild_id, item.value, "VERIFICATION_ADD_ROLE", reload=False)
-				ConfigTransactions().config_unique_remove(guild_id, item.key)
+	@staticmethod
+	def _build_guild(guild_id: int, settings, roles) -> dict :
+		"""Turns a guild's config rows and age roles into its cached config."""
+		conf = {key : [] for key in LIST_KEYS}
+		conf["VERIFICATION_ADD_ROLE"] = {}
+		for x in settings :
+			conf_key = x.key.upper()
+			if conf_key == "VERIFICATION_ADD_ROLE" :
 				continue
-
-			if conf_key in add_list :
-				self.conf[guild_id][conf_key].append(int(item.value))
+			if conf_key in LIST_KEYS :
+				try :
+					conf[conf_key].append(int(x.value))
+				except (TypeError, ValueError) :
+					# One bad row would otherwise fail the whole bulk load.
+					logging.warning(f"Skipping non-numeric {conf_key} value {x.value!r} in {guild_id}")
 				continue
-
-			self.conf[guild_id][conf_key] = item.value
-
-		# Moved to it doesn't run during every config item
-		ageroles = AgeRoleTransactions().get_all()
-		for x in ageroles :
-			self.conf[x.guild_id]["VERIFICATION_ADD_ROLE"][x.role_id] = {
+			conf[conf_key] = x.value
+		for x in roles :
+			conf["VERIFICATION_ADD_ROLE"][x.role_id] = {
 				"MAX" : x.maximum_age,
 				"MIN" : x.minimum_age,
 			}
-
-
-		self.output_to_json()
-
-
+		return conf
 
 	def cleanup(self) :
 		"""
@@ -105,43 +115,24 @@ class ConfigData(metaclass=Singleton) :
 		"""
 		logging.info(f"Loading guild {guild_id}")
 		print(f"Loading guild {guild_id}")
-		# Regardless if the guild exists, we add it to the config to avoid KeyErrors
-		self.conf[guild_id] = {}
+		if self.reloading :
+			self.changed_during_reload.add(guild_id)
 
 		# Fetch the settings from the database
-		config = ConfigTransactions().server_config_get(guild_id)
-		settings = config
-		add_list = ["VERIFICATION_REMOVE_ROLE", "RETURN_REMOVE_ROLE", "SERVER_JOIN_ROLE", "AUTO_UPDATE_EXCLUDED_ROLES",
-		            "REVERIFICATION_ROLE"]
-		add_dict = ["VERIFICATION_ADD_ROLE"]
-		reload = False
-
-		for key in add_list :
-			self.conf[guild_id][key] = []
-		role = AgeRoleTransactions().get_all_guild(guild_id)
-		for key in add_dict :
-			self.conf[guild_id][key] = {}
-
+		settings = ConfigTransactions().server_config_get(guild_id)
+		# Old servers stored their age roles in the config table; move them to the age roles table.
+		moved = False
 		for x in settings :
-			conf_key = x.key.upper()
-			if conf_key in ["VERIFICATION_ADD_ROLE"] :
+			if x.key.upper() == "VERIFICATION_ADD_ROLE" :
 				AgeRoleTransactions().add(guild_id, x.value, "VERIFICATION_ADD_ROLE", reload=False)
 				ConfigTransactions().config_unique_remove(guild_id, x.key)
-				reload = True
-				continue
-			if conf_key in add_list :
-				self.conf[guild_id][conf_key].append(int(x.value))
-				continue
-			self.conf[guild_id][conf_key] = x.value
-		for x in role :
-			self.conf[guild_id]["VERIFICATION_ADD_ROLE"][x.role_id] = {
-				"MAX" : x.maximum_age,
-				"MIN" : x.minimum_age,
-			}
-		if reload :
-			self.load_guild(guild_id)
+				moved = True
+		if moved :
+			settings = ConfigTransactions().server_config_get(guild_id)
+		# Regardless if the guild exists, we add it to the config to avoid KeyErrors
+		self.conf[guild_id] = self._build_guild(guild_id, settings, AgeRoleTransactions().get_all_guild(guild_id))
 		# No output_to_json() here: it rewrote the whole cache on every guild load, so a cold cache took
-		# ~40s to fill and blocked the gateway heartbeat. config_reload still writes a snapshot before clearing.
+		# ~40s to fill and blocked the gateway heartbeat. config_reload still writes a snapshot before reloading.
 
 	def get_guild(self, guild_id: int) -> dict :
 		"""

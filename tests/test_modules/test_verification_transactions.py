@@ -5,9 +5,9 @@ from sqlalchemy import Update
 
 from classes.encryption import Encryption
 from databases.Generators.uidgenerator import uidgenerator
+from databases.current import IdVerification, clear_bot_database, create_bot_database
 from databases.transactions.UserTransactions import UserTransactions
 from databases.transactions.VerificationTransactions import VerificationTransactions
-from databases.current import IdVerification, create_bot_database, drop_bot_database
 
 
 class TestVerificationTransactions(unittest.TestCase) :
@@ -19,7 +19,7 @@ class TestVerificationTransactions(unittest.TestCase) :
 		self.uid = uidgenerator().create()
 
 	def tearDown(self) -> None :
-		drop_bot_database()
+		clear_bot_database()
 
 	def test_add_and_get_id_info(self) :
 		self.vt.add_idcheck(self.uid, reason="Testing", idcheck=True, server="TestServer")

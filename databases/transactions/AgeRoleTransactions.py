@@ -25,6 +25,11 @@ class AgeRoleTransactions(DatabaseTransactions) :
 		with self.createsession() as session :
 			return session.scalars(Select(AgeRole)).all()
 
+	def get_for_guilds(self, guild_ids) :
+		"""Every age role of these guilds, in one query."""
+		with self.createsession() as session :
+			return session.scalars(Select(AgeRole).where(AgeRole.guild_id.in_(list(guild_ids)))).all()
+
 
 
 	def get_minimum_age(self, guild_id) :

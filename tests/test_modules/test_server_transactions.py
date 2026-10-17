@@ -2,9 +2,9 @@ import datetime
 import unittest
 
 from classes.access import AccessControl
-from databases.transactions.ServerTransactions import ServerTransactions
-from databases.current import create_bot_database, drop_bot_database
 from databases.Generators.guildgenerator import guildgenerator
+from databases.current import clear_bot_database, create_bot_database
+from databases.transactions.ServerTransactions import ServerTransactions
 
 
 class TestServerTransactions(unittest.TestCase):
@@ -15,7 +15,7 @@ class TestServerTransactions(unittest.TestCase):
         self.st = ServerTransactions()
 
     def tearDown(self):
-        drop_bot_database()
+        clear_bot_database()
 
     def test_add_new_guild_creates_entry(self):
         result = self.st.add(self.guild)

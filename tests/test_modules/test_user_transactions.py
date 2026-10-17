@@ -1,13 +1,13 @@
 import unittest
 from datetime import datetime, timedelta, timezone
 
-from databases.Generators.uidgenerator import uidgenerator
-from databases.current import create_bot_database, drop_bot_database
-from databases.transactions.UserTransactions import UserTransactions
-from classes.iphash import hash_fingerprint, hash_ip
-from resources.data.config_variables import GDPR_REMOVAL_GRACE_DAYS, IP_RETENTION_DAYS
 from sqlalchemy import Update
-from databases.current import Users
+
+from classes.iphash import hash_fingerprint, hash_ip
+from databases.Generators.uidgenerator import uidgenerator
+from databases.current import Users, clear_bot_database, create_bot_database
+from databases.transactions.UserTransactions import UserTransactions
+from resources.data.config_variables import GDPR_REMOVAL_GRACE_DAYS, IP_RETENTION_DAYS
 
 
 class TestUserTransactions(unittest.TestCase) :
@@ -19,7 +19,7 @@ class TestUserTransactions(unittest.TestCase) :
 		self.dob = "2000-01-01"
 
 	def tearDown(self) :
-		drop_bot_database()
+		clear_bot_database()
 
 	def test_add_user_empty(self) :
 		result = self.ut.add_user_empty(self.uid)

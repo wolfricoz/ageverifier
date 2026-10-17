@@ -4,7 +4,8 @@ from datetime import datetime
 from typing import List, Optional
 
 from dotenv import load_dotenv
-from sqlalchemy import BigInteger, Boolean, DateTime, Enum, ForeignKey, Index, Integer, String, Text, create_engine
+from sqlalchemy import BigInteger, Boolean, DateTime, Enum, ForeignKey, Index, Integer, String, Text, create_engine, \
+	text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, sessionmaker
 from sqlalchemy.pool import NullPool
 from sqlalchemy.sql import func
@@ -18,11 +19,14 @@ DB = os.getenv('DB')
 DEBUG = os.getenv('TEST')
 
 db_string = f"{DB}/rmrbotnew"
+pool_options = {"poolclass" : NullPool}
 if DEBUG == "true" :
 	# Every test run gets its own database, so parallel runs never share tables.
 	os.environ.setdefault('TEST_DB_NAME', f"rmrtest_{uuid.uuid4().hex[:8]}_test")
 	db_string = f"{DB}/{os.environ['TEST_DB_NAME']}"
-engine = create_engine(db_string, poolclass=NullPool, echo=False, isolation_level="READ COMMITTED")
+	# Tests reuse connections: a new one per session cost ~38ms and was ~90% of the test run time.
+	pool_options = {"pool_size" : 5, "max_overflow" : 10}
+engine = create_engine(db_string, echo=False, isolation_level="READ COMMITTED", **pool_options)
 if not database_exists(engine.url) :
 	create_database(engine.url)
 
@@ -306,14 +310,42 @@ class Database :
 		engine = create_engine(db_string, poolclass=NullPool, echo=False, isolation_level="READ COMMITTED", )
 
 
+_schema_created = False
+
+
 def create_bot_database() :
+	"""Creates the tables. Tests call this in every setUp, so only the first call in a process does the work."""
+	global _schema_created
+	if _schema_created :
+		return
 	Base.metadata.create_all(engine)
+	_schema_created = True
 
 
 def drop_bot_database() :
+	global _schema_created
 	if os.getenv('DISCORD_TOKEN') is not None :
 		raise Exception("You cannot drop the database while the bot is in production")
 	Session = sessionmaker(bind=engine)
 	session = Session()
 	session.close_all()
 	Base.metadata.drop_all(engine)
+	_schema_created = False
+
+
+def clear_bot_database() :
+	"""Empties every table but keeps the schema; what tests call in tearDown.
+	Dropping and recreating all the tables per test took 5-7s each and made up most of the test run."""
+	if os.getenv('DISCORD_TOKEN') is not None :
+		raise Exception("You cannot clear the database while the bot is in production")
+	Session = sessionmaker(bind=engine)
+	session = Session()
+	session.close_all()
+	with engine.begin() as connection :
+		if connection.dialect.name == "postgresql" :
+			tables = ", ".join(connection.dialect.identifier_preparer.format_table(table)
+			                   for table in Base.metadata.sorted_tables)
+			connection.execute(text(f"TRUNCATE {tables} RESTART IDENTITY CASCADE"))
+			return
+		for table in reversed(Base.metadata.sorted_tables) :
+			connection.execute(table.delete())

@@ -5,7 +5,7 @@ from sqlalchemy import Select
 
 from databases.Generators.guildgenerator import guildgenerator
 from databases.Generators.uidgenerator import uidgenerator
-from databases.current import WebsiteData, create_bot_database, drop_bot_database
+from databases.current import WebsiteData, clear_bot_database, create_bot_database
 from databases.transactions.UserTransactions import UserTransactions
 from databases.transactions.WebsiteDataTransactions import WebsiteDataTransactions
 
@@ -21,7 +21,7 @@ class TestWebsiteDataTransactions(unittest.TestCase) :
 		self.ut.add_user_empty(self.uid)
 
 	def tearDown(self) -> None :
-		drop_bot_database()
+		clear_bot_database()
 
 	def _set_created_date(self, uuid: str, created_date: datetime) :
 		with self.wt.createsession() as session :
