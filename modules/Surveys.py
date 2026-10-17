@@ -1,14 +1,15 @@
 import logging
 
 import discord
-from discord.ext.commands import Bot, Cog, GroupCog
+from discord.ext.commands import Bot, Cog
 
 from classes.access import AccessControl
 from databases.transactions.ConfigData import ConfigData
 from views.buttons.SurveyButton import SurveyButton
 
 
-class Surveys(GroupCog, description="This module helps you gather valuable feedback from members who decide to leave your server.") :
+# A plain Cog: as a GroupCog without commands it registered an empty /surveys that failed when run.
+class Surveys(Cog, description="This module helps you gather valuable feedback from members who decide to leave your server.") :
 	"""
 	This module helps you gather valuable feedback from members who decide to leave your server.
 	When a member leaves, this system can automatically send them a direct message with a link to a feedback survey.

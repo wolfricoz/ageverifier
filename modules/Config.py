@@ -15,17 +15,23 @@ from discord_py_utilities.permissions import check_missing_channel_permissions
 from classes.access import AccessControl
 from classes.config.utils import ConfigUtils
 from classes.configsetup import ConfigSetup
+from classes.membernotes import EMBED_FIELD_LIMIT
 from classes.support.queue import Queue
 from databases.transactions.AgeRoleTransactions import AgeRoleTransactions
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.ConfigTransactions import ConfigTransactions
-from resources.data.config_variables import MAX_BUTTON_LABEL_LENGTH, REVERIFICATION_KEY, VERIFICATION_KEY, \
-	VerificationMethods, \
-	available_toggles, channelchoices, \
-	lobby_approval_toggles, messagechoices, \
-	rolechoices
+from databases.transactions.DenialReasonTransactions import DenialReasonTransactions
+from resources.data.config_variables import MAX_BUTTON_LABEL_LENGTH, MAX_DENIAL_REASONS, \
+	MAX_VERIFICATION_REMINDER_MINUTES, PREMIUM_VERIFICATION_METHODS, REVERIFICATION_KEY, VERIFICATION_KEY, \
+	VERIFICATION_REMINDER_KEY, VerificationMethods, available_toggles, channelchoices, config_title, \
+	lobby_approval_toggles, messagechoices, rolechoices
+from views.buttons.confirm import Confirm
 from views.modals.configinput import ConfigInputUnique
+from views.modals.denialreasonmodal import DenialReasonModal
 from views.v2.HelpLayout import HelpLayout
+
+# Discord's limit on all text in one embed, with some room left for the field separators.
+EMBED_TOTAL_LIMIT = 5800
 
 
 class Config(commands.GroupCog, name="config",
@@ -59,8 +65,8 @@ class Config(commands.GroupCog, name="config",
 		"""
         This command helps you get the bot set up on your server. You have a few options to choose from:
         'dashboard' will give you a link to our web dashboard for an easy, graphical setup experience.
-        'manual' will guide you step-by-step through the setup process using Discord commands.
-        'auto' will automatically create the necessary roles and channels to get the bot running quickly.
+        'manual' will guide you step-by-step through the setup process using Discord commands, starting with the verification mode (Website or Basic).
+        'auto' will automatically create the necessary roles and channels to get the bot running quickly, and sets the verification mode to Website.
 
         **Permissions:**
         - You'll need the `Manage Server` permission to use this command.
@@ -74,23 +80,28 @@ class Config(commands.GroupCog, name="config",
 		                   "For more information about setting up the bot, visit our [Documentation](<https://wolfricoz.github.io/ageverifier/commands/Config.html>)")
 		logging.info(f"{interaction.guild.name} started {setup_type.value}")
 		status: bool = True
+		setup = ConfigSetup()
 		match setup_type.value.lower() :
 			case 'dashboard' :
 				return await send_response(interaction, f"You can access the dashboard here: {os.getenv("dashboard_url")}")
 			case 'manual' :
 				await send_message(interaction.channel,
 				                   f"You can access the dashboard here for easier setup! {os.getenv("DASHBOARD_URL")}")
-				status = await ConfigSetup().manual(self.bot, interaction, self.channelchoices, self.rolechoices,
-				                                    self.messagechoices)
+				status = await setup.manual(self.bot, interaction, self.channelchoices, self.rolechoices,
+				                            self.messagechoices)
 			case 'auto' :
-				status = await ConfigSetup().auto(interaction, self.channelchoices, self.rolechoices, self.messagechoices)
+				status = await setup.auto(interaction, self.channelchoices, self.rolechoices, self.messagechoices)
 
-		await send_response(interaction,
-		                    "The config has been successfully setup, if you wish to check our toggles you please do /config toggles. Permission checking will commence shortly.",
-		                    ephemeral=True)
 		if not status :
+			# Cancelled or timed out; the setup flow has already told the user.
 			return None
-		await ConfigSetup().check_channel_permissions(interaction.guild)
+		done = setup.done_message(interaction.guild, setup_type.value.lower())
+		# Setup has answered the interaction already; send_response would then post this in the channel for everyone.
+		if interaction.response.is_done() :
+			await interaction.followup.send(done, ephemeral=True)
+		else :
+			await send_response(interaction, done, ephemeral=True)
+		await setup.check_channel_permissions(interaction.guild)
 		return None
 
 	@app_commands.command(description="Triggers a check to ensure the bot has all the necessary permissions.")
@@ -204,10 +215,10 @@ class Config(commands.GroupCog, name="config",
 	@app_commands.choices(action=[Choice(name=x, value=x) for x in ["set", "remove"]])
 	@app_commands.checks.has_permissions(manage_guild=True)
 	async def channels(self, interaction: discord.Interaction, key: Choice[str], action: Choice[str],
-	                   value: discord.TextChannel = None) :
+	                   value: discord.TextChannel | discord.Thread = None) :
 		"""
         This command is for assigning specific channels for the bot's functions, like a channel for logging or a lobby for new members.
-        You can either 'set' a new channel or 'remove' an existing assignment.
+        You can either 'set' a new channel or 'remove' an existing assignment. Threads work too.
 
 
         **Permissions:**
@@ -216,19 +227,22 @@ class Config(commands.GroupCog, name="config",
 		await interaction.response.defer(ephemeral=True)
 		if value is not None :
 			value = value.id
+		elif action.value.lower() == 'set' :
+			# Setting without a channel used to store the text "None".
+			return await interaction.followup.send(f"Pick the channel to use as **{config_title(key.value)}** in the `value` option.")
 		match action.value.lower() :
 			case 'set' :
 				ConfigTransactions().config_unique_add(guildid=interaction.guild.id, key=key.value, value=value,
 				                                       overwrite=True)
 				Queue().add(ConfigUtils.log_change(interaction.guild, {key.value : value}, user_name=interaction.user.mention))
-				await interaction.followup.send(f"{key.value} has been added to the database with value:\n{value}")
+				await interaction.followup.send(f"**{config_title(key.value)}** (`{key.value}`) is now set to <#{value}>.")
 			case 'remove' :
 				result = ConfigTransactions().config_unique_remove(guild_id=interaction.guild.id, key=key.value)
 				if result is False :
-					await interaction.followup.send(f"{key.value} was not in database")
+					await interaction.followup.send(f"**{config_title(key.value)}** (`{key.value}`) was not set.")
 					return
 				Queue().add(ConfigUtils.log_change(interaction.guild, {key.value : None}, user_name=interaction.user.mention))
-				await interaction.followup.send(f"{key.value} has been removed from the database")
+				await interaction.followup.send(f"**{config_title(key.value)}** (`{key.value}`) has been removed.")
 			case _ :
 				raise NotImplementedError
 
@@ -248,10 +262,13 @@ class Config(commands.GroupCog, name="config",
         """
 		await interaction.response.defer(ephemeral=True)
 		value = value.id
+		# The choice values are the lowercase rolechoices keys, while config keys are stored
+		# uppercase; comparing key.value directly never matched, so age roles lost their ages.
+		config_key = key.value.upper()
 		match action.value.lower() :
 			case "add" :
-				if key.value == "VERIFICATION_ADD_ROLE" and maximum_age and minimum_age :
-					AgeRoleTransactions().add(guild_id=interaction.guild.id, role_id=value, role_type=key.value,
+				if config_key == "VERIFICATION_ADD_ROLE" and maximum_age and minimum_age :
+					AgeRoleTransactions().add(guild_id=interaction.guild.id, role_id=value, role_type=config_key,
 					                          minimum_age=minimum_age, maximum_age=maximum_age)
 					Queue().add(ConfigUtils.log_change(interaction.guild, {
 						key.value : f"role id: {value} minimum_age: {minimum_age} maximum age: {maximum_age}"},
@@ -269,8 +286,10 @@ class Config(commands.GroupCog, name="config",
 					return
 				await interaction.followup.send(f"{key.name}: <@&{value}> has been added to the database")
 			case 'remove' :
-				if key.value == "VERIFICATION_ADD_ROLE" :
-					AgeRoleTransactions().permanentdelete(interaction.guild_id, value)
+				if config_key == "VERIFICATION_ADD_ROLE" :
+					if not AgeRoleTransactions().permanentdelete(interaction.guild_id, value) :
+						await interaction.followup.send(f"{key.name}: <@&{value}> could not be found in database")
+						return
 					Queue().add(ConfigUtils.log_change(interaction.guild, {key.value : f"role id: {value} removed"},
 					                                   user_name=interaction.user.mention))
 					await interaction.followup.send(f"{key.name}: <@&{value}> has been removed from the database")
@@ -304,6 +323,30 @@ class Config(commands.GroupCog, name="config",
 			                       ))
 		await send_response(interaction, f"The cooldown has been set to {cooldown} minutes", ephemeral=True)
 
+	@app_commands.command(name="verification_reminder",
+	                      description="💎 Remind members who opened the online verification page but did not finish.")
+	@app_commands.checks.has_permissions(manage_guild=True)
+	@AccessControl().check_premium()
+	async def verification_reminder(self, interaction: discord.Interaction,
+	                                minutes: app_commands.Range[int, 0, MAX_VERIFICATION_REMINDER_MINUTES]) :
+		"""
+        💎 Premium: Sends a DM to members who opened the online verification page but did not finish it within the set number of minutes.
+        The DM contains their verification link, so members who got distracted can pick up where they left off. Each link is only reminded once.
+        Set it to 0 to turn the reminder off. Only applies when the verification method is Website verification.
+
+        **Permissions:**
+        - You'll need the `Manage Server` permission to use this command.
+        """
+		ConfigTransactions().config_unique_add(interaction.guild.id, VERIFICATION_REMINDER_KEY, minutes, overwrite=True)
+		Queue().add(
+			ConfigUtils.log_change(interaction.guild, {VERIFICATION_REMINDER_KEY : minutes}, user_name=interaction.user.mention,
+			                       ))
+		if minutes == 0 :
+			await send_response(interaction, "The abandoned verification reminder has been turned off.", ephemeral=True)
+			return
+		await send_response(interaction,
+		                    f"Members who open the verification page but don't finish will be reminded after {minutes} minutes.",
+		                    ephemeral=True)
 
 	@app_commands.command(name="verification_mode", description="Set the verification mode for the bot.")
 	@app_commands.choices(verification_type=
@@ -314,7 +357,6 @@ class Config(commands.GroupCog, name="config",
 	],
 		mode=[Choice(name=method.name, value=method.value) for method in VerificationMethods
 	])
-	@AccessControl().check_premium()
 	@app_commands.checks.has_permissions(manage_guild=True)
 	async def verification_mode(self, interaction: discord.Interaction, verification_type: Choice['str'], mode: Choice['str']) -> None:
 		"""
@@ -330,9 +372,29 @@ class Config(commands.GroupCog, name="config",
 
 			**Permissions:**
 			- You'll need the `Manage Server` permission to use this command.
-			- premium required
+			- premium required for Reverification, and for ID verification and Basic + ID verification
+
+			Reverification always happens inside Discord, so it can't be set to Website verification.
 
 		"""
+		is_premium = AccessControl().is_premium(interaction.guild.id)
+		if verification_type.value == REVERIFICATION_KEY :
+			if not is_premium :
+				return await send_response(interaction,
+				                           f"Reverification is a premium feature. "
+				                           f"You can find out more about premium here: {os.getenv('DASHBOARD_URL')}",
+				                           ephemeral=True)
+			# The dashboard has no reverify flow; TOSButton would silently fall back to basic anyway.
+			if mode.value == VerificationMethods.WEBSITE :
+				return await send_response(interaction,
+				                           "Reverification always happens inside Discord, so it can't use Website verification. "
+				                           "Please pick Basic, ID verification or Basic + ID verification.",
+				                           ephemeral=True)
+		if mode.value in PREMIUM_VERIFICATION_METHODS and not is_premium :
+			return await send_response(interaction,
+			                           f"ID verification and Basic + ID verification are premium features. Basic and Website verification are free. "
+			                           f"You can find out more about premium here: {os.getenv('DASHBOARD_URL')}",
+			                           ephemeral=True)
 		ConfigTransactions().config_unique_add(interaction.guild.id, verification_type.value, mode.value, overwrite=True)
 		Queue().add(
 			ConfigUtils.log_change(interaction.guild, { verification_type.value: mode.value}, user_name=interaction.user.mention,
@@ -340,6 +402,77 @@ class Config(commands.GroupCog, name="config",
 		await send_response(interaction, f"The verification mode has been set to {mode.value}", ephemeral=True)
 
 
+
+	@app_commands.command(name="denial_reasons", description="Manage the reasons staff can pick when denying a verification.")
+	@app_commands.choices(action=[Choice(name=x, value=x) for x in ["list", "add", "edit", "remove", "reset"]])
+	@app_commands.checks.has_permissions(manage_guild=True)
+	async def denial_reasons(self, interaction: discord.Interaction, action: Choice[str], reason: int = None) :
+		"""
+        Manage the reasons staff can pick after pressing **Deny** on an approval message. The member is sent the reason's message by DM, so it should explain what went wrong and what they can do next.
+        Servers start with a few default reasons. `list` shows them, `add` and `edit` open a pop-up for the reason and its message, `remove` deletes one and `reset` puts the defaults back.
+        Use `{user}` and `{server}` in a message for the member's mention and the server name. Up to 24 reasons; staff can always write a one-off custom reason as well.
+
+        **Permissions:**
+        - You'll need the `Manage Server` permission to use this command.
+        """
+		transactions = DenialReasonTransactions()
+		reasons = transactions.get_for_guild(interaction.guild.id)
+		selected = None
+		if action.value in ("edit", "remove") :
+			selected = transactions.get(interaction.guild.id, reason) if reason is not None else None
+			if selected is None :
+				return await send_response(interaction, f"Pick the reason to {action.value} with the `reason` option.",
+				                           ephemeral=True)
+
+		match action.value :
+			case "list" :
+				embed = discord.Embed(title="Denial reasons",
+				                      description="Staff pick one of these after pressing **Deny** on an approval message.")
+				# 24 full messages would pass Discord's 6000 character embed limit, so long ones are shortened.
+				room = (EMBED_TOTAL_LIMIT - len(embed.title) - len(embed.description)
+				        - sum(len(entry.label) for entry in reasons)) // max(len(reasons), 1)
+				room = min(room, EMBED_FIELD_LIMIT)
+				for entry in reasons :
+					value = entry.message if len(entry.message) <= room else entry.message[:room - 1] + "…"
+					embed.add_field(name=entry.label, value=value, inline=False)
+				await send_response(interaction, " ", embed=embed, ephemeral=True)
+			case "add" :
+				if len(reasons) >= MAX_DENIAL_REASONS :
+					return await send_response(interaction,
+					                           f"A server can have up to {MAX_DENIAL_REASONS} denial reasons, remove one first.",
+					                           ephemeral=True)
+				# noinspection PyUnresolvedReferences
+				await interaction.response.send_modal(DenialReasonModal())
+			case "edit" :
+				# noinspection PyUnresolvedReferences
+				await interaction.response.send_modal(DenialReasonModal(selected))
+			case "remove" :
+				# Without a reason the deny flow would only offer a custom one; reset is the way back to the defaults.
+				if len(reasons) <= 1 :
+					return await send_response(interaction,
+					                           "This is the last denial reason. Add another first, or use `reset` to restore the defaults.",
+					                           ephemeral=True)
+				transactions.remove(interaction.guild.id, selected.id)
+				Queue().add(ConfigUtils.log_change(interaction.guild, {"denial reason removed" : selected.label},
+				                                   user_name=interaction.user.mention))
+				await send_response(interaction, f"Denial reason **{selected.label}** removed.", ephemeral=True)
+			case "reset" :
+				if not await Confirm().send_confirm(interaction, "This replaces all of your denial reasons with the defaults. Continue?") :
+					return
+				defaults = transactions.reset(interaction.guild.id)
+				Queue().add(ConfigUtils.log_change(interaction.guild, {"denial reasons" : "reset to the defaults"},
+				                                   user_name=interaction.user.mention))
+				# The confirm prompt answered the interaction already.
+				await interaction.followup.send(f"Denial reasons reset to the {len(defaults)} defaults.", ephemeral=True)
+			case _ :
+				raise NotImplementedError
+
+	# Leading underscore keeps the docs generator from listing it as a command.
+	@denial_reasons.autocomplete("reason")
+	async def _denial_reasons_autocomplete(self, interaction: discord.Interaction, current: str) -> list[Choice[int]] :
+		reasons = DenialReasonTransactions().get_for_guild(interaction.guild.id)
+		return [Choice(name=entry.label[:100], value=entry.id) for entry in reasons
+		        if current.lower() in entry.label.lower()][:25]
 
 	@app_commands.command(description="Provides a complete overview of the bot's current configuration for your server.")
 	@app_commands.checks.has_permissions(manage_guild=True)
@@ -360,7 +493,8 @@ class Config(commands.GroupCog, name="config",
 		optionsall = list(messagechoices) + list(channelchoices) + list(available_toggles) + list(
 			rolechoices)
 		await interaction.response.defer()
-		with open('config.txt', 'w') as file :
+		# utf-8: Windows' default codepage can't write emoji in configured messages (e.g. the default 👋 leave message).
+		with open('config.txt', 'w', encoding='utf-8') as file :
 			file.write(f"Config for {interaction.guild.name}: \n\n")
 			for item in optionsall :
 				info = ConfigData().get_key_or_none(interaction.guild.id if guild is None else int(guild), item)

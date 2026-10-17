@@ -6,7 +6,7 @@ nav_order: 4
 ---
 
 <h1>General</h1>
-<h6>version: 3.3: Updated documentation and quality of life fixes.</h6>
+<h6>version: 4.0: Easier setup and clearer errors</h6>
 <h6>Documentation automatically generated from docstrings.</h6>
 
 General-purpose commands that any member can use.
@@ -16,7 +16,7 @@ help command to browse what the bot can do and read documentation for each comma
 
 ### `help`
 
-**Usage:** `/general help`
+**Usage:** `/help`
 
 > Provides information about the bot's commands and features.
 

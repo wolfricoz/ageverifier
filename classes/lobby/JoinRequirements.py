@@ -7,6 +7,7 @@ from discord_py_utilities.messages import send_message
 
 from classes.access import AccessControl
 from classes.banwatch import BanWatch
+from classes.lobby.Quarantine import apply_quarantine, quarantine_hours
 from classes.support.queue import Queue
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.ServerTransactions import ServerTransactions
@@ -61,12 +62,15 @@ class JoinRequirements :
 				f"**Reason:** {self.reason}\n\n"
 				f"If you'd like to rejoin once resolved, use this link: {invite}"
 			)
-			action = ConfigData().get_key(self.member.guild.id, FAIL_ACTION, "LOG")
+			action = ConfigData().get_key(self.member.guild.id, FAIL_ACTION, "LOG").upper()
 
-			if action.lower() == "kick" :
+			if action == "KICK" :
 				Queue().add(send_message(self.member, removal_message))
 				Queue().add(self.member.kick(reason=self.reason))
 
+			if action == "QUARANTINE" and not await apply_quarantine(self.member) :
+				# No role set, or Discord refused it: the member stays in without it, so staff see it as a log.
+				action = "LOG"
 
 			Queue().add(send_message(lobby_channel, " ", embed=self.create_embed(action)))
 		return None
@@ -203,9 +207,15 @@ class JoinRequirements :
 
 	def create_embed(self, action)-> discord.Embed:
 		# Determine color and dynamic title based on the action
-		is_kick = action.lower() == "kick"
-		embed_color = discord.Color.red() if is_kick else discord.Color.orange()
-		embed_title = "🛑 Join Requirement Failure" if is_kick else "⚠️ Join Requirement Warning"
+		is_kick = action.upper() == "KICK"
+		is_quarantine = action.upper() == "QUARANTINE"
+		embed_color = discord.Color.red() if is_kick or is_quarantine else discord.Color.orange()
+		embed_title = "🛑 Join Requirement Failure" if is_kick or is_quarantine else "⚠️ Join Requirement Warning"
+		action_taken = "`LOGGED`"
+		if is_kick :
+			action_taken = "`KICKED`"
+		if is_quarantine :
+			action_taken = f"`QUARANTINED` for {quarantine_hours(self.member.guild.id)} hour(s)"
 
 		# Create the embed
 		embed = discord.Embed(
@@ -224,7 +234,7 @@ class JoinRequirements :
 		# Action taken section
 		embed.add_field(
 			name="Action Taken",
-			value=f"`KICKED`" if is_kick else "`LOGGED`",
+			value=action_taken,
 			inline=True
 		)
 

@@ -56,7 +56,7 @@ class Toolbox():
 		for target in guilds:
 			# Same channels the GDPR removal sweeps, taken from there so the two can't drift.
 			for key in GDPRRemoval.LOG_CHANNEL_KEYS:
-				channel = target.get_channel(ConfigData().get_key_int_or_zero(target.id, key))
+				channel = target.get_channel_or_thread(ConfigData().get_key_int_or_zero(target.id, key))
 				if channel is None:
 					continue
 				try:

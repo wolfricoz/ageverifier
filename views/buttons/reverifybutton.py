@@ -56,7 +56,7 @@ class ReVerifyButton(discord.ui.View) :
 
 	async def id_verified_check(self, interaction: discord.Interaction, reverify= False) -> bool :
 		try :
-			modlobby = interaction.guild.get_channel(
+			modlobby = interaction.guild.get_channel_or_thread(
 				ConfigData().get_key_int_or_zero(interaction.guild.id, "approval_channel"))
 			if modlobby is None :
 				await send_response(interaction, f"Lobbymod not set, inform the server staff to setup the server.",
@@ -86,7 +86,7 @@ class ReVerifyButton(discord.ui.View) :
 					                    ephemeral=True)
 					return True
 				mod_lobby = ConfigData().get_key_int(interaction.guild.id, "approval_channel")
-				mod_channel = interaction.guild.get_channel(mod_lobby)
+				mod_channel = interaction.guild.get_channel_or_thread(mod_lobby)
 
 				# Ensure we are working with a Member object, this reduces issues with guild-specific actions
 				approval_buttons = ApprovalButtons(age=age, dob=dob, user=member)

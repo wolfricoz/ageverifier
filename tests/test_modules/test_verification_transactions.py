@@ -1,10 +1,13 @@
 import unittest
+from datetime import datetime, timedelta
+
+from sqlalchemy import Update
 
 from classes.encryption import Encryption
 from databases.Generators.uidgenerator import uidgenerator
 from databases.transactions.UserTransactions import UserTransactions
 from databases.transactions.VerificationTransactions import VerificationTransactions
-from databases.current import create_bot_database, drop_bot_database
+from databases.current import IdVerification, create_bot_database, drop_bot_database
 
 
 class TestVerificationTransactions(unittest.TestCase) :
@@ -78,3 +81,30 @@ class TestVerificationTransactions(unittest.TestCase) :
 		all_entries = self.vt.get_all()
 		self.assertEqual(len(all_entries), 2)
 
+
+	# get_expired_idmessages / remove_idmessage
+	def _set_idmessage(self, uid: int, message_id: int, created) :
+		self.vt.update_verification(uid, idmessage=message_id)
+		with self.vt.createsession() as session :
+			session.execute(Update(IdVerification).where(IdVerification.uid == uid).values(idmessagecreated=created))
+			session.commit()
+
+	def test_get_expired_idmessages_returns_old_and_undated_messages_only(self) :
+		old, recent, undated = self.uid, uidgenerator().create(), uidgenerator().create()
+		self._set_idmessage(old, 1, datetime.now() - timedelta(days=8))
+		self._set_idmessage(recent, 2, datetime.now() - timedelta(days=1))
+		self._set_idmessage(undated, 3, None)
+
+		expired = {record.uid for record in self.vt.get_expired_idmessages(timedelta(days=7))}
+
+		self.assertEqual(expired, {old, undated})
+
+	def test_removed_idmessages_no_longer_expire(self) :
+		self._set_idmessage(self.uid, 1, datetime.now() - timedelta(days=8))
+		self.vt.remove_idmessage(self.uid)
+
+		self.assertEqual(self.vt.get_expired_idmessages(timedelta(days=7)), [])
+
+	def test_remove_idmessage_without_a_record_does_nothing(self) :
+		self.vt.remove_idmessage(self.uid)
+		self.assertIsNone(self.vt.get_id_info(self.uid))

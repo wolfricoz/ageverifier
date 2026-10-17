@@ -14,6 +14,8 @@ from discord_py_utilities.invites import check_guild_invites, create_invite
 from discord_py_utilities.messages import send_message
 from discord_py_utilities.permissions import find_first_accessible_text_channel
 
+import classes.whitelist as wl
+from classes.devguild import dev_guild
 from classes.jsonmaker import Configer
 from classes.support.queue import Queue
 from classes.toolbox import Toolbox
@@ -25,7 +27,7 @@ from databases.transactions.ConfigTransactions import ConfigTransactions
 from databases.transactions.HistoryTransactions import JoinHistoryTransactions
 from databases.transactions.ServerTransactions import ServerTransactions
 from databases.transactions.UserTransactions import UserTransactions
-from resources.data.config_variables import VERIFICATION_KEY, VerificationMethods
+from resources.data.config_variables import VERIFICATION_KEY
 from views.modals.inputmodal import send_modal
 from views.select.configselectroles import *
 
@@ -48,6 +50,21 @@ class DevTools(commands.GroupCog, name="dev", description="A set of commands for
 
 	def __init__(self, bot: commands.Bot) :
 		self.bot = bot
+
+	# Moved here from /whitelist so that public group only holds `apply`.
+	@app_commands.command(name="whitelist_add", description="[DEV] Adds a guild to the whitelist")
+	@check_access()
+	async def whitelist_add(self, interaction: discord.Interaction, guild_id: str) :
+		"""[DEV] Adds a guild to the whitelist"""
+		wl.add_to_whitelist(guild_id)
+		await send_response(interaction, f"{guild_id} has been added to the whitelist")
+
+	@app_commands.command(name="whitelist_remove", description="[DEV] Removes a guild from the whitelist")
+	@check_access()
+	async def whitelist_remove(self, interaction: discord.Interaction, guild_id: str) :
+		"""[DEV] Removes a guild from the whitelist"""
+		wl.remove_from_whitelist(guild_id)
+		await send_response(interaction, f"{guild_id} has been removed from the whitelist")
 
 
 
@@ -188,7 +205,7 @@ class DevTools(commands.GroupCog, name="dev", description="A set of commands for
 			if lobbylog is None :
 				logging.warning(f"Could not find lobbylog for {guild.name}({guild.id})")
 				continue
-			channel = guild.get_channel(int(lobbylog))
+			channel = guild.get_channel_or_thread(int(lobbylog))
 			Queue().add(await self.history(channel, users, guild, create_records), priority=0)
 
 		await send_message(interaction.channel, f"Queued {len(users)} users to be updated.")
@@ -447,5 +464,9 @@ class DevTools(commands.GroupCog, name="dev", description="A set of commands for
 
 
 async def setup(bot: commands.Bot) :
-	"""Adds the cog to the bot"""
-	await bot.add_cog(DevTools(bot))
+	"""Adds the cog to the bot, in the developers' server only (see classes.devguild)."""
+	guild = dev_guild()
+	if guild is None :
+		await bot.add_cog(DevTools(bot))
+		return
+	await bot.add_cog(DevTools(bot), guild=guild)

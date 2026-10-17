@@ -14,6 +14,7 @@ from databases.current import IdVerification
 from databases.transactions.VerificationTransactions import VerificationTransactions
 from resources.data.responses import StringStorage
 from views.buttons.confirm import Confirm
+from views.buttons.confirmButtons import confirmAction
 from views.buttons.reasonchoice import ReasonChoice
 from views.modals.inputmodal import send_modal
 
@@ -50,9 +51,9 @@ class idcheck(commands.GroupCog, description="Commands for managing manual ID ve
 			if removal_date :
 				await interaction.followup.send(
 					f"Not found on the ID list, but this user has requested data removal. "
-					f"Their data is scheduled to be permanently removed on or shortly after {removal_date}.")
+					f"Their data is scheduled to be permanently removed on or shortly after {removal_date}.", ephemeral=True)
 				return
-			await interaction.followup.send("Not found")
+			await interaction.followup.send("Not found", ephemeral=True)
 			return
 		data = {
 			"user"                 : user.uid,
@@ -68,7 +69,8 @@ class idcheck(commands.GroupCog, description="Commands for managing manual ID ve
 		                      description="Reminder: This data is only allowed to be shared with relevant parties.")
 		for title, value in data.items() :
 			embed.add_field(name=title, value=value, inline=False)
-		await send_response(interaction, StringStorage.NO_SHARE_REMINDER, embed=embed, ephemeral=True)
+		# Straight to the followup: the interaction already has its response, and the details must stay private.
+		await interaction.followup.send(StringStorage.NO_SHARE_REMINDER, embed=embed, ephemeral=True)
 
 	@app_commands.command(description="Updates a user's ID check status.")
 	@app_commands.checks.has_permissions(administrator=True)
@@ -102,12 +104,16 @@ class idcheck(commands.GroupCog, description="Commands for managing manual ID ve
         **Permissions:**
         - You'll need the `Administrator` permission to use this command.
         """
-		await send_response(interaction, f"⌛ deleting {user.mention}'s ID check entry'", ephemeral=True)
+		confirmation = confirmAction()
+		await confirmation.send_message(interaction, f"Remove the ID check entry for {user.mention}?", ephemeral=True)
+		await confirmation.wait()
+		if not confirmation.confirmed :
+			return
 		dev_channel = interaction.client.get_channel(int(os.getenv('DEV')))
 		if VerificationTransactions().set_idcheck_to_false(user.id, server=interaction.guild.name) is False :
-			await interaction.followup.send(f"Can't find entry: <@{user.id}>")
+			await interaction.followup.send(f"Can't find entry: <@{user.id}>", ephemeral=True)
 			return
-		await interaction.followup.send(f"Deleted entry: <@{user.id}>")
+		await interaction.followup.send(f"Deleted entry: <@{user.id}>", ephemeral=True)
 		Queue().add(send_message(dev_channel,
 		                         f"{interaction.user.name} in {interaction.guild.name} removed id check for {user.global_name}"),
 		            0)
@@ -130,14 +136,19 @@ class idcheck(commands.GroupCog, description="Commands for managing manual ID ve
 			return
 		reason = discord.utils.escape_mentions(reason)
 
-		idinfo = VerificationTransactions().add_idcheck(user.id, reason, True, server=interaction.guild.name)
-		if idinfo:
-			if await Confirm().send_confirm(interaction, f"{user.name} is on the ID list already with reason: `{idinfo.reason}`, do you want to update it?") is False:
+		# Look before writing: add_idcheck returned the row it had just written, so every new entry was reported as an
+		# existing one, showing the reason just typed. /idcheck delete keeps the row with idcheck off, so only a
+		# flagged entry counts as already on the list.
+		existing = VerificationTransactions().get_id_info(user.id)
+		if existing is not None and existing.idcheck :
+			if await Confirm().send_confirm(interaction, f"{user.name} is on the ID list already with reason: `{existing.reason}`, do you want to update it?") is False:
 				return
 			VerificationTransactions().update_check(user.id, reason, True, server=interaction.guild.name)
 			await send_response(interaction, f"{user.mention}'s ID check entry has been updated with reason: {reason} and idcheck: {True}", ephemeral=True)
 			return
 
+		# Creates the entry, or turns a deleted (idcheck off) one back on.
+		VerificationTransactions().update_check(user.id, reason, True, server=interaction.guild.name)
 		await send_response(interaction,
 			f"<@{user.id}>'s userid entry has been added with reason: {reason} and idcheck: {True}")
 
@@ -157,7 +168,9 @@ class idcheck(commands.GroupCog, description="Commands for managing manual ID ve
 			return await send_response(interaction, "This feature is only for premium servers, please reach out to the user and verify manually.", ephemeral=True)
 
 		idinfo = VerificationTransactions().get_id_info(user.id)
-		if idinfo:
+		# Only a flagged entry with a reason has something to keep. A deleted entry (idcheck off, no reason) used to
+		# offer "Keep existing reason", which kept None, and that was then taken for a cancelled modal: nothing was sent.
+		if idinfo and idinfo.idcheck and idinfo.reason :
 			chooser = ReasonChoice()
 			choice = await chooser.prompt(
 				interaction,

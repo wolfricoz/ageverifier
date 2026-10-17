@@ -20,24 +20,6 @@ class whitelist(commands.GroupCog, name="whitelist") :
 	def __init__(self, bot: commands.Bot) :
 		self.bot = bot
 
-	@app_commands.command(name="add", description="[dev]Adds a guild to the whitelist")
-	async def add(self, interaction: discord.Interaction, guild_id: str) :
-		"""[DEV] Adds a guild to the whitelist"""
-		if interaction.user.id != 188647277181665280 :
-			await send_response(interaction, "You are not the developer", ephemeral=True)
-			return
-		wl.add_to_whitelist(guild_id)
-		await send_response(interaction, f"{guild_id} has been added to the whitelist")
-
-	@app_commands.command(name="remove", description="[dev]Removes a guild from the whitelist")
-	async def remove(self, interaction: discord.Interaction, guild_id: str) :
-		"""[DEV] Removes a guild from the whitelist"""
-		if interaction.user.id != 188647277181665280 :
-			await send_response(interaction, "You are not the developer", ephemeral=True)
-			return
-		wl.remove_from_whitelist(guild_id)
-		await send_response(interaction, f"{guild_id} has been removed from the whitelist")
-
 	@app_commands.command(name="apply", description="Apply to be whitelisted.")
 	async def apply(self, interaction: discord.Interaction) :
 

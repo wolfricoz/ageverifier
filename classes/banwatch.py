@@ -3,13 +3,17 @@ import logging
 import os
 
 import aiohttp
-from dotenv import load_dotenv
 
-load_dotenv()
 
 class BanWatch :
-	url = os.getenv("BANWATCH_URL")
-	auth_token = os.getenv("BANWATCH_TOKEN")
+	# Read on use, not at import, so it doesn't matter whether .env was loaded before this module.
+	@property
+	def url(self) -> str | None :
+		return os.getenv("BANWATCH_URL")
+
+	@property
+	def auth_token(self) -> str | None :
+		return os.getenv("BANWATCH_TOKEN")
 
 	def __init__(self) :
 		# We don't initialize the session here to avoid attaching it
@@ -21,6 +25,9 @@ class BanWatch :
 		return f"{self.url}/{path}"
 
 	async def fetchBanCount(self, user_id) :
+		if not self.url :
+			logging.warning("BANWATCH_URL is not set, skipping the ban count")
+			return None
 		path = f"bans/count/{user_id}"
 		target_url = self.urlbuilder(path)
 

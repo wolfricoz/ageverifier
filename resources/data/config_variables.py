@@ -6,6 +6,41 @@ MAX_BUTTON_LABEL_LENGTH = 80
 
 GDPR_REMOVAL_GRACE_DAYS = 30
 
+# The member's ID image waits for review in AgeVerifier's DM to them for at most this long
+# (classes.verification.idmessages); the DM and the privacy policy both promise it.
+ID_MESSAGE_RETENTION_DAYS = 7
+
+# The weekly developer stats report (classes.support.weeklyreport) posts on Sundays at this hour, UTC.
+WEEKLY_REPORT_HOUR = 12
+REPORT_TOP_SERVERS = 5
+
+# A server that removes the bot within QUICK_LEAVE_DAYS of adding it, after using at least QUICK_LEAVE_MIN_COMMANDS
+# commands, gets its log trail saved to QUICK_LEAVE_DIR (classes.support.quickleaves). The files hold user names
+# and ids from the logs, so they are deleted after QUICK_LEAVE_RETENTION_DAYS.
+QUICK_LEAVE_DAYS = 7
+QUICK_LEAVE_MIN_COMMANDS = 1
+QUICK_LEAVE_DIR = "logs/quick_leaves"
+QUICK_LEAVE_RETENTION_DAYS = 90
+
+# How long a recorded IP stays useful for correlation. Dynamic addresses have
+# rotated well before this, so the digests are cleared here rather than being
+# carried for the full 365 day record retention.
+IP_RETENTION_DAYS = 30
+
+# Risk score shown on online verification approvals, see classes.verification.risk.
+# Each signal adds its points once; the total is capped at RISK_MAX. A device-only
+# alt scores lower than an IP alt because identical phone models can share a
+# fingerprint, while an alt matching on both is the strongest signal of all.
+RISK_MAX = 100
+RISK_VPN_POINTS = 35
+RISK_IP_ALT_POINTS = 30
+RISK_DEVICE_ALT_POINTS = 20
+RISK_IP_AND_DEVICE_ALT_POINTS = 40
+# (maximum account age in days, points), checked in order.
+RISK_ACCOUNT_AGE_POINTS = ((7, 25), (30, 15), (90, 5))
+# Lowest score for each band, highest band first.
+RISK_BANDS = ((60, "High", "🔴"), (30, "Medium", "🟡"), (0, "Low", "🟢"))
+
 messagechoices = {
 	"verification_completed_message" : 'This is the welcome message that will be posted in the verification_completed_channel channel This starts with: `Welcome to {server name} {user}! This is where the message goes`',
 	"server_join_message"            : 'This is the welcome message that will be posted in the lobby channel, and be the first message new users see. This starts with: `Welcome {user}! This is where the message goes`',
@@ -33,6 +68,37 @@ rolechoices = {
 	"approval_ping_role"         : "This role is pinged when a user successfully submits their verification and awaits approval. Not compatitable with the automatic mode."
 }
 
+# Verification can't run without these; everything else in channelchoices and rolechoices is optional.
+REQUIRED_CHANNEL_KEYS = {"server_join_channel", "approval_channel", "age_log"}
+REQUIRED_ROLE_KEYS = {"verification_add_role"}
+
+# What staff see instead of the raw config key, in setup prompts, the permission check and config logs.
+CONFIG_TITLES = {
+	"invite_log"                     : "Invite log",
+	"verification_completed_channel" : "Welcome channel (after verification)",
+	"server_join_channel"            : "Lobby channel",
+	"age_log"                        : "Lobby log",
+	"approval_channel"               : "Approval channel (staff only)",
+	"verification_failure_log"       : "Failed verification log",
+	"reverify_age_log"               : "Reverification log",
+	"leave_log"                      : "Leave log",
+	"verification_add_role"          : "Roles given after verification",
+	"verification_remove_role"       : "Roles removed after verification",
+	"return_remove_role"             : "Roles removed when returning to the lobby",
+	"server_join_role"               : "Roles given on join (removed after verification)",
+	"auto_update_excluded_roles"     : "Roles excluded from automatic age updates",
+	"reverification_role"            : "Roles given after reverification",
+	"approval_ping_role"             : "Role pinged for new approvals",
+}
+
+
+def config_title(key: str) -> str :
+	return CONFIG_TITLES.get(key.lower(), key.replace("_", " ").capitalize())
+
+
+def is_required_key(key: str) -> bool :
+	return key.lower() in REQUIRED_CHANNEL_KEYS | REQUIRED_ROLE_KEYS
+
 # Verification choices
 VERIFICATION_KEY = "VERIFICATION_METHOD"
 REVERIFICATION_KEY = "REVERIFICATION_METHOD"
@@ -44,7 +110,17 @@ class VerificationMethods(StrEnum) :
 	ALL = "ALL"
 	WEBSITE = "WEBSITE"
 
+# Verification methods that need premium; the others are free to pick.
+PREMIUM_VERIFICATION_METHODS = (VerificationMethods.IDVERIFY, VerificationMethods.ALL)
+
 FAIL_ACTION = "JOIN_FAIL_ACTION"
+
+# The QUARANTINE fail action gives the member this role, and a task in classes.lobby.Quarantine takes it
+# off again once QUARANTINE_HOURS have passed since they joined (checked every 10 minutes).
+QUARANTINE_ROLE_KEY = "QUARANTINE_ROLE"
+QUARANTINE_HOURS_KEY = "QUARANTINE_HOURS"
+DEFAULT_QUARANTINE_HOURS = 24
+MAX_QUARANTINE_HOURS = 30 * 24
 
 class JoinRequirementsToggles(StrEnum) :
 	ACCOUNT_AGE = "ACCOUNT_AGE"
@@ -57,6 +133,37 @@ class JoinRequirementsToggles(StrEnum) :
 
 
 
+# Staff notes on a member (classes.membernotes). Notes are capped so a handful fits in one
+# 1024 character embed field; the approval message shows the newest few.
+MAX_NOTE_LENGTH = 500
+APPROVAL_NOTES_SHOWN = 3
+
+# Denial reason presets (classes.denialreasons): staff pick one in the approval message's deny flow
+# and the member gets the preset's message by DM. A select menu holds at most 25 options and one
+# is kept for a one-off custom reason. Labels double as select option labels, which Discord caps
+# at 100 characters; messages leave room for the DM's header and footer under the 2000 limit.
+MAX_DENIAL_REASONS = 24
+MAX_DENIAL_LABEL_LENGTH = 100
+MAX_DENIAL_MESSAGE_LENGTH = 1500
+# A server that has no presets gets these, see DenialReasonTransactions.get_for_guild.
+# {user} and {server} in a message are replaced with the member's mention and the server name.
+DEFAULT_DENIAL_REASONS = (
+	("Age and date of birth don't match",
+	 "The age you entered doesn't match your date of birth. Please check both and submit your verification again, "
+	 "with your date of birth as mm/dd/yyyy."),
+	("Invalid date of birth",
+	 "The date of birth you entered isn't a valid date. Please submit your verification again and write your date "
+	 "of birth as mm/dd/yyyy, for example 01/31/2000."),
+	("Inappropriate profile",
+	 "Your profile has content that isn't allowed here, such as an NSFW avatar, name, bio, status, banner or "
+	 "pronouns. Please update your profile and then submit your verification again."),
+	("Suspected alternate account",
+	 "Your account looks linked to another account in {server}. If you believe this is a mistake, please contact "
+	 "the server's staff."),
+	("Contact staff",
+	 "Your verification needs a closer look. Please contact the staff of {server} for the next steps."),
+)
+
 lobby_approval_toggles = {
 	'picture_large'         : 'Show large profile picture in approval modal',
 	'picture_small'         : 'Show small profile picture (hides large)',
@@ -66,18 +173,26 @@ lobby_approval_toggles = {
 	'legacy_message'        : 'Use the old approval message style',
 	'user_id'               : 'Show the user id of the account',
 	'show_previous_servers' : 'Show previous servers',
+	'risk_score'            : 'Show the risk score on online verifications',
+	'staff_notes'           : 'Show staff notes on the member (/notes)',
 	'debug'                 : 'shows debug approval message'
 }
 
+# Abandoned online verification reminder (premium). 0 or unset disables it.
+VERIFICATION_REMINDER_KEY = "VERIFICATION_REMINDER_MINUTES"
+# Also how far back the reminder looks, so links opened before this are never reminded.
+MAX_VERIFICATION_REMINDER_MINUTES = 7 * 24 * 60
+
 int_options = {
 	'CLEAN_LOBBY_DAYS' : 'Inactive member cleanup threshold from the lobby (days).',
-	'MINIMUM_ACCOUNT_AGE' : 'The minimum required account age in days'
+	'MINIMUM_ACCOUNT_AGE' : 'The minimum required account age in days',
+	VERIFICATION_REMINDER_KEY : '💎 Premium: Message members who opened the online verification page but did not finish after this many minutes (0 disables).'
 }
 
 available_toggles = ["SEND_JOIN_MESSAGE", "SEND_VERIFICATION_COMPLETED_MESSAGE", "DM_VERIFICATION_COMPLETED_MESSAGE",
                      "AUTOMATIC_VERIFICATION",
                      "AUTOKICK_UNDERAGED_USERS", "AUTOKICK_ON_DISCREPANCY", "AUTO_UPDATE_AGE_ROLES", "PING_OWNER_ON_FAILURE", "SURVEY",
-                     "LOG_CONFIG_CHANGES", "CLEANUP_MESSAGES", "SEND_LEAVE_MESSAGE", "KICK_ON_CLEAN"]
+                     "LOG_CONFIG_CHANGES", "CLEANUP_MESSAGES", "SEND_LEAVE_MESSAGE", "KICK_ON_CLEAN", "VPN_FLAG_ONLY"]
 enabled_toggles = ["SEND_VERIFICATION_COMPLETED_MESSAGE", "SEND_JOIN_MESSAGE", 'BANS', 'JOINED_AT', 'CREATED_AT',
                    'USER_ID', 'PICTURE_SMALL',
-                   "LOG_CONFIG_CHANGES", "CLEANUP_MESSAGES", "KICK_ON_CLEAN"]
+                   "LOG_CONFIG_CHANGES", "CLEANUP_MESSAGES", "KICK_ON_CLEAN", 'STAFF_NOTES']

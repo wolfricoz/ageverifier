@@ -6,27 +6,37 @@ import uuid
 import discord
 from discord_py_utilities.messages import send_message, send_response
 
+from classes.alts import format_alts
 from classes.banwatch import BanWatch
+from classes.denialreasons import send_denial
 from classes.encryption import Encryption
 from classes.idcheck import IdCheck
 from classes.lobbyprocess import LobbyProcess
+from classes.membernotes import format_notes
 from classes.whitelist import check_whitelist
 from databases.enums.joinhistorystatus import JoinHistoryStatus
 from databases.enums.loggedmessagetype import LoggedMessageType
 from databases.transactions.ButtonTransactions import LobbyDataTransactions
 from databases.transactions.ConfigData import ConfigData
+from databases.transactions.DenialReasonTransactions import DenialReasonTransactions
 from databases.transactions.HistoryTransactions import JoinHistoryTransactions
 from databases.transactions.LoggedMessageTransactions import LoggedMessageTransactions
+from databases.transactions.MemberNoteTransactions import MemberNoteTransactions
 from databases.transactions.VerificationTransactions import VerificationTransactions
+from resources.data.config_variables import APPROVAL_NOTES_SHOWN
 from views.modals.inputmodal import send_modal
+from views.select.denialreasonselect import DenialReasonView
 
 
 class ApprovalButtons(discord.ui.View) :
-	def __init__(self, age: int = None, dob: str = None, user: discord.Member = None, reverify=False) :
+	def __init__(self, age: int = None, dob: str = None, user: discord.Member = None, reverify=False, alts=None, risk=None) :
 		self.age = age
 		self.dob = dob
 		self.user = user
 		self.reverify = reverify
+		self.alts = alts
+		# classes.verification.risk.RiskScore, only set for online verifications.
+		self.risk = risk
 		super().__init__(timeout=None)
 		logging.debug(f"approval buttons: {self.reverify}")
 		button = discord.ui.Button(label='Help', style=discord.ButtonStyle.url,
@@ -44,10 +54,9 @@ class ApprovalButtons(discord.ui.View) :
 		footer = f"{uuid.uuid4()}"
 		previous_guilds = None
 
-
 		# loading the config, since some settings are used multiple times we do it here to prevent the same call being made multiple times
 
-		approval_ping_role: int | None= ConfigData().get_key_or_none(guild.id, "approval_ping_role")
+		approval_ping_role: int | None = ConfigData().get_key_or_none(guild.id, "approval_ping_role")
 		legacy_message: bool = ConfigData().get_toggle(guild.id, "legacy_message", default="DISABLED")
 		show_previous_servers: bool = ConfigData().get_toggle(guild.id, "show_previous_servers",
 		                                                      default="ENABLED")
@@ -58,28 +67,37 @@ class ApprovalButtons(discord.ui.View) :
 		picture_large: bool = ConfigData().get_toggle(guild.id, "picture_large", default="DISABLED")
 		picture_small: bool = ConfigData().get_toggle(guild.id, "picture_small", default="ENABLED")
 		show_inline: bool = ConfigData().get_toggle(guild.id, "show_inline", default="DISABLED")
+		show_risk_score: bool = ConfigData().get_toggle(guild.id, "risk_score", default="ENABLED")
+		show_staff_notes: bool = ConfigData().get_toggle(guild.id, "staff_notes", default="ENABLED")
 		debug: bool = ConfigData().get_toggle(guild.id, "debug", default="DISABLED")
 
 		# fetching previous servers
 		if show_previous_servers :
 			previous_guilds = "\n".join([guild.get('name', 'Failed to fetch name') for guild in
 			                             JoinHistoryTransactions().fetch_previous_verifications(user.id)])
-
+		staff_notes = None
+		if show_staff_notes :
+			notes = MemberNoteTransactions().get_for_member(guild.id, user.id, limit=APPROVAL_NOTES_SHOWN)
+			if notes :
+				staff_notes = format_notes(notes, MemberNoteTransactions().count_for_member(guild.id, user.id))
 		# filling the fields
 		fields = {
+			"Risk Score"             : self.risk.format() if self.risk is not None and show_risk_score else None,
 			"ID Verified"            : id_verified,
+			"Potential Alts"         : format_alts(self.alts),
+			"Staff Notes"            : staff_notes,
 			"Date of Birth"          : self.dob if whitelisted and legacy_message is False else None,
 			"Age"                    : self.age if legacy_message is False else None,
-			"Banwatch Bans"          : await BanWatch().fetchBanCount(user.id) if show_bans else None, # Potentially premium?
+			"Banwatch Bans"          : await BanWatch().fetchBanCount(user.id) if show_bans else None,  # Potentially premium?
 			"Joined at"              : user.joined_at.strftime("%m/%d/%Y %I:%M %p") if show_joined_at else None,
 			"Created at"             : user.created_at.strftime("%m/%d/%Y") if show_created_at else None,
-			"Previous Verifications" : previous_guilds, # Potentially premium?
+			"Previous Verifications" : previous_guilds,  # Potentially premium?
 			"User ID"                : user.id if show_user_id else None,
 			"debug"                  : f"?approve {user.mention} {self.age} {self.dob}" if whitelisted and debug else None
 		}
 
 		profile_picture = None
-		if user.avatar:
+		if user.avatar :
 			profile_picture = user.avatar.url
 
 		# Build the embed
@@ -90,7 +108,7 @@ class ApprovalButtons(discord.ui.View) :
 
 		# create the ping if set
 		ping = ""
-		if approval_ping_role is not None:
+		if approval_ping_role is not None :
 			ping = f"<@&{approval_ping_role}> a new verification has been submitted"
 
 		embed.set_footer(text=footer)
@@ -108,9 +126,9 @@ class ApprovalButtons(discord.ui.View) :
 			embed.add_field(name=key, value=value, inline=show_inline)
 		# send the content and create the record
 		approval_message = await send_message(mod_channel,
-		                         f"{user.mention} {ping}\n-# All timestamps are (mm/dd/yyyy) ",
-		                         embed=embed,
-		                         view=self)
+		                                      f"{user.mention} {ping}\n-# All timestamps are (mm/dd/yyyy) ",
+		                                      embed=embed,
+		                                      view=self)
 		# Tracked for GDPR removal: this post carries the age and, on whitelisted guilds, the dob.
 		LoggedMessageTransactions().track(approval_message, self.user.id, LoggedMessageType.APPROVAL)
 		LobbyDataTransactions().create(footer, self.user.id, self.dob, self.age, reverify=self.reverify)
@@ -119,7 +137,8 @@ class ApprovalButtons(discord.ui.View) :
 	async def allow(self, interaction: discord.Interaction, button: discord.ui.Button) :
 		"""starts approving process"""
 		if not interaction.user.guild_permissions.manage_roles :
-			return await send_response(interaction, "You must have the \"manage_roles\" permission to execute this action!", ephemeral=True)
+			return await send_response(interaction, "You must have the \"manage_roles\" permission to execute this action!",
+			                           ephemeral=True)
 
 		await self.disable_buttons(interaction, button)
 		await self.load_data(interaction)
@@ -128,27 +147,70 @@ class ApprovalButtons(discord.ui.View) :
 			                    'The bot has restarted and the data of this button is missing. Please use the command.',
 			                    ephemeral=True)
 			return
-		await send_response(interaction, "User approval queue'd, please wait for ageverifier to process the user.", ephemeral=True)
+		await send_response(interaction, "User approval queue'd, please wait for ageverifier to process the user.",
+		                    ephemeral=True)
 		# Share this with the age commands
 		try :
 			await LobbyProcess.approve_user(interaction.guild, self.user, self.dob, self.age, interaction.user.name)
 		except discord.NotFound :
 			await send_response(interaction, "User not found, please manually add them to the database.", ephemeral=True)
 
+	@discord.ui.button(label="Deny", style=discord.ButtonStyle.red, custom_id="deny")
+	async def deny(self, interaction: discord.Interaction, button: discord.ui.Button) :
+		"""Lets staff pick a denial reason; the member is told by DM what went wrong and what to do next."""
+		if not interaction.user.guild_permissions.manage_roles :
+			return await send_response(interaction, "You must have the \"manage_roles\" permission to execute this action!",
+			                           ephemeral=True)
+		if not await self.load_data(interaction) or self.user is None :
+			await send_response(interaction,
+			                    'The bot has restarted and the data of this button is missing, or the member can no longer be found.',
+			                    ephemeral=True)
+			return
+		# This view is shared by every approval message, so the member and message are captured
+		# now: another approval can be handled while staff are still picking a reason.
+		user = self.user
+		approval_message = interaction.message
+
+		async def on_pick(pick_interaction: discord.Interaction, label: str, message: str) :
+			await self.deny_user(pick_interaction, approval_message, user, label, message)
+
+		reasons = DenialReasonTransactions().get_for_guild(interaction.guild.id)
+		await send_response(interaction, f"Pick a reason to deny {user.mention}. They are sent the reason's message by DM.",
+		                    view=DenialReasonView(reasons, on_pick), ephemeral=True)
+
+	async def deny_user(self, interaction: discord.Interaction, approval_message: discord.Message,
+	                    user: discord.User | discord.Member, label: str, message: str) :
+		# Answer first: the DM and the message edit can take longer than Discord waits for a response.
+		await interaction.response.edit_message(content=f"Denying {user.mention}…", view=None)
+		delivered = await send_denial(user, interaction.guild, label, message)
+		logging.info(f"[Deny] {interaction.user.id} denied {user.id} in {interaction.guild.id}, DM delivered: {delivered}")
+
+		notified = "notified by DM" if delivered else "not notified, their DMs are closed"
+		embed = approval_message.embeds[0] if approval_message.embeds else discord.Embed()
+		embed.color = discord.Color.red()
+		embed.add_field(name="Denied", value=f"{label}\n-# by {interaction.user.mention}, member {notified}", inline=False)
+		await self.disable_buttons(interaction, update=False)
+		try :
+			await approval_message.edit(embed=embed, view=self)
+		except discord.NotFound :
+			pass
+		await interaction.edit_original_response(content=f"{user.mention} was denied with **{label}** and {notified}.")
+
 	@discord.ui.button(label="Flag for ID Check", style=discord.ButtonStyle.red, custom_id="ID")
 	async def manual_id(self, interaction: discord.Interaction, button: discord.ui.Button) :
 		"""Flags user for manual id."""
 		if not interaction.user.guild_permissions.manage_roles :
-			return await send_response(interaction, "You must have the \"manage_roles\" permission to execute this action!", ephemeral=True)
+			return await send_response(interaction, "You must have the \"manage_roles\" permission to execute this action!",
+			                           ephemeral=True)
 		await self.disable_buttons(interaction, button)
 		await self.load_data(interaction)
 		reason = await send_modal(interaction, confirmation="The user has been flagged",
 		                          title="Why should the user be ID Checked?", max_length=1500)
 		if self.user is None :
 			await send_response(interaction,
-				'The bot has restarted and the data of this button is missing. Please manually report user to admins',
-				ephemeral=True)
-		await send_response(interaction,'User flagged for manual ID.', ephemeral=True)
+			                    'The bot has restarted and the data of this button is missing. Please manually report user to admins',
+			                    ephemeral=True)
+		await send_response(interaction, 'User flagged for manual ID.', ephemeral=True)
 		VerificationTransactions().set_idcheck_to_true(self.user.id,
 		                                               f"manually flagged by {interaction.user.name} with reason: {reason}",
 		                                               server=interaction.guild.name)
@@ -156,21 +218,21 @@ class ApprovalButtons(discord.ui.View) :
 		await IdCheck.send_id_log(interaction.guild, self.user, reason, interaction.client)
 		await interaction.message.edit(view=self)
 
-
 		return
 
 	@discord.ui.button(label="NSFW Profile Warning", style=discord.ButtonStyle.danger, custom_id="NSFW")
 	async def nsfw_warning(self, interaction: discord.Interaction, button: discord.ui.Button) :
 		"""Flags user for nsfw warning."""
 		if not interaction.user.guild_permissions.manage_roles :
-			return await send_response(interaction, "You must have the \"manage_roles\" permission to execute this action!", ephemeral=True)
+			return await send_response(interaction, "You must have the \"manage_roles\" permission to execute this action!",
+			                           ephemeral=True)
 		await self.disable_buttons(interaction, button)
 		await self.load_data(interaction)
 		if self.user is None :
 			await send_response(interaction,
-				'The bot has restarted and the data of this button is missing. Please manually report user to admins',
-				ephemeral=True)
-		await send_response(interaction,'User flagged for NSFW Warning.', ephemeral=True)
+			                    'The bot has restarted and the data of this button is missing. Please manually report user to admins',
+			                    ephemeral=True)
+		await send_response(interaction, 'User flagged for NSFW Warning.', ephemeral=True)
 		warning = f"""**NSFW Warning**\n
 Hello, this is the moderation team for {interaction.guild.name}. As Discord TOS prohibits NSFW content anywhere that can be accessed without an age gate, we will have to ask that you inspect your profile and remove any NSFW content. This includes but is not limited to: 
 * NSFW profile pictures 
@@ -193,19 +255,24 @@ Once you've made these changes you may resubmit your age and date of birth. Than
 		"""Adds user to db"""
 		await self.load_data(interaction)
 		if not interaction.user.guild_permissions.manage_roles :
-			return await send_response(interaction, "You must have the \"manage_roles\" permission to execute this action!", ephemeral=True)
+			return await send_response(interaction, "You must have the \"manage_roles\" permission to execute this action!",
+			                           ephemeral=True)
 		age_log = ConfigData().get_key_int(interaction.guild.id, "age_log")
 		await self.disable_buttons(interaction, button, disable_add=True)
 		if self.user is None :
 			await send_response(interaction,
-				'The bot has restarted and the data of this button is missing. Please add the user manually.',
-				ephemeral=True)
+			                    'The bot has restarted and the data of this button is missing. Please add the user manually.',
+			                    ephemeral=True)
 		await LobbyProcess.age_log(self.user.id, self.dob, interaction)
 		await interaction.message.add_reaction("✅")
-		await send_response(interaction,'User added to database and this message will be deleted in 3 minutes.',
-		                                ephemeral=True)
+		await send_response(interaction, 'User added to database and this message will be deleted in 3 minutes.',
+		                    ephemeral=True)
 		await asyncio.sleep(180)
-		await interaction.message.delete()
+		try :
+			await interaction.message.delete()
+		except discord.NotFound :
+			# Staff (or the lobby clean up) often removed it within the 3 minutes (AGEVERIFIER-12).
+			pass
 		return
 
 	@discord.ui.button(label="reactivate buttons", custom_id="reactivate_buttons", style=discord.ButtonStyle.secondary)
@@ -226,7 +293,7 @@ Once you've made these changes you may resubmit your age and date of birth. Than
 		await interaction.message.edit(view=self)
 
 	async def load_data(self, interaction: discord.Interaction) :
-		if len(interaction.message.embeds) < 1:
+		if len(interaction.message.embeds) < 1 :
 			return False
 
 		embed = interaction.message.embeds[0]
@@ -234,9 +301,9 @@ Once you've made these changes you may resubmit your age and date of birth. Than
 		data = LobbyDataTransactions().read(embed.footer.text)
 		self.user = interaction.guild.get_member(data.uid)
 		if self.user is None :
-			try:
+			try :
 				self.user = await interaction.client.fetch_user(data.uid)
-			except:
+			except :
 				self.user = None
 		self.dob = Encryption().decrypt(data.dob)
 		self.age = data.age

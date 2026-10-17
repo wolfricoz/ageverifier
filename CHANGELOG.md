@@ -5,6 +5,41 @@
 ### Added
 - **`DM_VERIFICATION_COMPLETED_MESSAGE` toggle.** Sends the verification completed message to the member's DMs as well. It is independent of `SEND_VERIFICATION_COMPLETED_MESSAGE`, so disabling that one and enabling this gives a DM-only welcome. Off by default, and members with closed DMs are skipped silently. Available on the web dashboard under Module Toggles.
 - **`VERIFICATION_BUTTON_LABEL` 💎 premium setting.** Lets a server change the text on the verification button (`/config messages key:verification_button_label`, or the Messages page on the dashboard). Unset, non-premium, or blank values keep the current `Start Age Verification!` label; values are capped at Discord's 80 character button limit.
+- **Alt detection by IP and device.** Website verifications now list **Potential Alts** on the approval card: other accounts that verified from the same IP address or the same browser and device in the last 30 days, each labelled `IP`, `device` or `IP + device`. Addresses and device fingerprints are stored as keyed one-way hashes and cleared after 30 days (`classes/alts.py`).
+- **Risk score.** Website verifications (date of birth and ID) show one **Risk Score** out of 100 on the approval card, built from VPN/proxy use, the strongest alt match and Discord account age, with the reasons listed and a Low/Medium/High band. On by default; hide it with the new `risk_score` option of `/config approval_toggles` (`classes/verification/risk.py`).
+- **Abandoned verification reminder 💎 premium.** `/config verification_reminder minutes:<n>` DMs members their verification link once when they opened the website verification page but didn't finish within `n` minutes (up to 7 days, `0` turns it off). Members who left or were verified another way are skipped. The dashboard reports page opens through the new `POST /age/opened/{guild_id}/{user_id}` endpoint.
+- **Website verification funnel 💎 premium.** `/stats verification days:<n>` shows how many verification links the server created in the last `n` days (default 30, up to 90), how many members opened the page, how many finished, and how many left it unfinished, plus how many came back after the abandoned link reminder. Needs `Manage Server`.
+- **Support module.** `/support help`, `feedback`, `bug`, `report`, `suggest` and `info` open a ticket in the support server; staff replies are sent back to the member by DM.
+- **Withdraw consent on ID submissions.** New ID submissions get a *Withdraw consent and delete my ID* button that deletes the image straight away and closes the staff review. It doesn't clear an ID check staff placed on the member.
+- **Quarantine Role join fail action.** Members who fail a join requirement can now get a quarantine role for a set number of hours instead of being kicked. Pick *Quarantine Role* with `/joinguard action` and set the role and duration (default 24 hours, up to 720) with `/joinguard quarantine`, or do both on the dashboard's Join Guard page. A task every 10 minutes takes the role off once that time has passed since the member joined (`classes/lobby/Quarantine.py`).
+- **Staff notes.** `/notes add`, `/notes list` and `/notes remove` keep notes on a member for your server's staff. Notes survive the member leaving and rejoining, and the newest three show as **Staff Notes** on the approval message (hide them with the new `staff_notes` option of `/config approval_toggles`). Notes are never shown to other servers and are deleted with the member's record, on a GDPR removal or after a year of inactivity. `/gdpr data` tells members how many notes exist and that the content is available through a support ticket. Needs `Manage Messages`.
+- **Permission check on the dashboard.** The Channels page on the web dashboard now shows Ageverifier's own permission check: each configured channel says what it's missing, and the roles it can't assign are listed with the fix steps. It is worded the same as the embeds `/config permissioncheck` posts, and it comes from the new `GET /config/{guild_id}/permissions` endpoint (`ConfigSetup.audit_permissions`).
+- **Deny button with denial reasons.** The approval message has a new **Deny** button. Staff pick one of the server's denial reasons, or write a one-off custom reason, and the member gets a DM saying what went wrong and what to do next. Members with closed DMs are skipped, and the approval message records the reason, who denied and whether the member was told. Servers start with five default reasons; `/config denial_reasons` lists, adds, edits, removes and resets them (up to 24, `{user}` and `{server}` placeholders). Needs `Manage Roles` to deny and `Manage Server` to edit the reasons (`classes/denialreasons.py`).
+
+### Changed
+- **Setup picks the verification mode.** `/config setup` **manual** (and the onboarding *Manual Setup* button) now starts by asking for **Website** (recommended) or **Basic** verification; Skip keeps the current method. **Auto** setup, from Discord or the dashboard, always sets **Website** verification, also when the server had picked another method.
+- **Website verification is free.** It no longer needs premium, and it stays the default for new servers.
+- **ID images are deleted after 7 days.** An hourly task now deletes ID images that are older than 7 days and closes their staff review, so an ID that was never reviewed no longer stays in the member's DMs.
+- **Docs generator** also skips commands behind DevTools' `@check_access()` developer check (such as `/dev stats_report`), not only `@commands.is_owner()` ones.
+- **Internal:** a weekly developer stats report posts on Sundays (`/dev stats_report` posts it on demand), and the RMRbot approvals and advertisements tables moved into this repo's migrations.
+
+### Fixed
+- **Website verification link reuse.** Pressing the verify button again now hands back the member's unfinished link instead of creating a new one every time.
+- **Website verification link ownership.** A website verification submitted on a link that belongs to another member or server is rejected before anything is processed: no verification runs, no ID is sent to staff, and the link stays open for its owner.
+- **Approval ping role check** failed to resolve the role and reported "Unable to retrieve role" for a role that exists.
+- **`/stats verification` counted finished links as never opened** when the dashboard hadn't reported the page load. A verified link now counts as opened, also for links verified before this fix.
+- **Permission check fix steps** now match what the check found. An unset channel or role points to `/config channels` or `/config roles`, and a deleted role is named as such, instead of every failure being sent to the permission settings. The dashboard's Channels page shows the same steps.
+- **Missing permissions during verification** showed members "failed to validate your date of birth due to an unknown error" when the bot couldn't post the approval message. Staff now get a permission notice, and the member is told their verification couldn't reach the staff.
+- **Sentry errors** in config channel lookups (deleted channels retried until the queue timeout), invite logging, lobby flows, `dob_to_age` with `-` and `.` separators, the ID submit button timing out, already-deleted messages and permission notices.
+
+### Privacy
+- **Dates of birth are kept out of the logs.** `dob` options are redacted in the slash-command log, which is also sent to Sentry.
+- **Members waiting on a GDPR removal** no longer show up as IP or device alts during the 30 day grace period.
+
+### Documentation
+- **Privacy policy** covers the 4.0 online verification data: device fingerprints, VPN and proxy checks, verification page progress, website request and security logs, how ID images are handled during review, and the withdraw button.
+- **Configuration Guide:** the Verification Reminder, the Risk Score approval option, and a staff guide to reading the Risk Score and Potential Alts fields. **Verification Methods** describes them under Website verification.
+- Regenerated the Config command page with `verification_reminder`.
 
 ## 2026-07-10
 

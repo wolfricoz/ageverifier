@@ -9,12 +9,15 @@ import logging
 import time
 
 import discord
+from discord_py_utilities.messages import send_response
 from discord_py_utilities.permissions import check_missing_channel_permissions, find_first_accessible_text_channel
 
 from databases.transactions.ConfigData import ConfigData
 
 # The channel permissions the bot needs to operate in a log / verification channel.
 DEFAULT_CHANNEL_PERMS = ["view_channel", "send_messages", "embed_links", "attach_files"]
+# In a thread, Discord checks Send Messages in Threads instead of Send Messages.
+THREAD_CHANNEL_PERMS = ["view_channel", "send_messages_in_threads", "embed_links", "attach_files"]
 
 # Documentation links surfaced on every notice.
 AGEVERIFIER_PERMISSIONS_DOCS = "https://wolfricoz.github.io/ageverifier/Permissions.html"
@@ -25,21 +28,36 @@ DISCORD_PERMISSIONS_DOCS = "https://support.discord.com/hc/en-us/articles/206029
 PERMISSION_INFO = {
 	"view_channel"          : ("View Channel", "see the channel so it can post verification and log messages"),
 	"send_messages"         : ("Send Messages", "post messages in the channel"),
+	"send_messages_in_threads" : ("Send Messages in Threads", "post messages in the thread"),
 	"embed_links"           : ("Embed Links", "send the verification and log embeds"),
 	"attach_files"          : ("Attach Files", "attach images, such as ID submissions"),
 	"read_message_history"  : ("Read Message History", "find previous messages when cleaning up the lobby"),
 	"manage_messages"       : ("Manage Messages", "clean up lobby and verification messages"),
 	"manage_roles"          : ("Manage Roles", "assign and remove verification and age roles"),
+	"manage_channels"       : ("Manage Channels", "create the lobby channels during auto setup"),
 	"manage_guild"          : ("Manage Server", "read invite data for invite logging"),
-	"kick_members"          : ("Kick Members", "remove users who fail verification (auto-kick)"),
+	"kick_members"          : ("Kick, Approve, and Reject Members", "remove members (auto-kick and lobby purges)"),
 	"create_instant_invite" : ("Create Invite", "generate an invite link for the dashboard"),
 }
+# Discord only offers these on the server role, not in a channel's permission overrides.
+SERVER_ONLY_PERMISSIONS = {"kick_members", "manage_guild", "manage_roles"}
+
+
+def default_channel_perms(channel) -> list[str] :
+	"""The permissions the bot needs in a configured channel, which can also be a thread."""
+	return THREAD_CHANNEL_PERMS if isinstance(channel, discord.Thread) else DEFAULT_CHANNEL_PERMS
 
 
 def humanize_permission(perm: str) -> str:
 	"""Return the Discord-facing label for a permission key (e.g. 'send_messages' -> 'Send Messages')."""
 	label, _ = PERMISSION_INFO.get(perm, (perm.replace("_", " ").title(), ""))
 	return label
+
+
+def describe_permission(perm: str) -> dict :
+	"""The notice wording for one permission as data, for callers that render it themselves (the dashboard)."""
+	_, why = PERMISSION_INFO.get(perm, ("", ""))
+	return {"permission" : perm, "label" : humanize_permission(perm), "reason" : why}
 
 
 class PermissionNotice :
@@ -54,8 +72,9 @@ class PermissionNotice :
 	def _should_send(cls, guild_id: int, dedupe_key: str) -> bool :
 		now = time.monotonic()
 		guild_map = cls._last_sent.setdefault(guild_id, {})
-		last = guild_map.get(dedupe_key, 0.0)
-		if now - last < cls._COOLDOWN_SECONDS :
+		# No 0.0 default: monotonic() counts from host boot, so that would drop every notice in the first hour of uptime.
+		last = guild_map.get(dedupe_key)
+		if last is not None and now - last < cls._COOLDOWN_SECONDS :
 			return False
 		guild_map[dedupe_key] = now
 		return True
@@ -74,7 +93,7 @@ class PermissionNotice :
 			location = f"channel **#{channel.name}** in **{guild.name}**"
 
 		embed = discord.Embed(
-			title="⚠️ Ageverifier is missing permissions",
+			title=f"⚠️ {guild.me.display_name if guild.me else 'Ageverifier'} is missing permissions",
 			colour=discord.Colour.orange(),
 		)
 		# set_author puts the server name + icon at the very top of the embed as a second signal.
@@ -88,28 +107,40 @@ class PermissionNotice :
 		if missing :
 			lines = []
 			for perm in missing :
-				label, why = PERMISSION_INFO.get(perm, (humanize_permission(perm), ""))
-				lines.append(f"• **{label}**" + (f" — to {why}" if why else ""))
+				info = describe_permission(perm)
+				lines.append(f"• **{info['label']}**" + (f" — to {info['reason']}" if info['reason'] else ""))
 			embed.add_field(name="Missing permissions", value="\n".join(lines)[:1024], inline=False)
 
 		# Tailor the fix steps to whether this is a channel-level or role-level problem.
-		needs_roles = any(p in ("manage_roles", "manage_guild", "kick_members") for p in missing)
+		# Only these depend on the role order; Manage Server or Manage Channels never do.
+		needs_hierarchy = any(p in ("manage_roles", "kick_members") for p in missing)
+		# Name the role staff will actually see in the list; test and white-label bots aren't called "Ageverifier".
+		role_name = guild.self_role.name if guild.self_role else "Ageverifier"
+		channel_perms = [perm for perm in missing if perm not in SERVER_ONLY_PERMISSIONS]
+		server_only = [perm for perm in missing if perm in SERVER_ONLY_PERMISSIONS]
 		steps = []
-		if is_channel :
+		if is_channel and channel_perms :
 			steps.append(
-				f"Open **{channel.name}** → **Edit Channel → Permissions**, add the **Ageverifier** role "
-				"(or the bot itself), and enable the permissions listed above."
+				f"Open **{channel.name}** → **Edit Channel → Permissions**, add the **{role_name}** role "
+				f"(or the bot itself), and enable {', '.join(f'**{humanize_permission(p)}**' for p in channel_perms)}."
 			)
-		steps.append(
-			"Or grant them server-wide: **Server Settings → Roles → Ageverifier**, then toggle the "
-			"permissions above **on**."
-		)
-		if needs_roles :
+		if is_channel and channel_perms and not server_only :
 			steps.append(
-				"For role management, drag the **Ageverifier** role **above** the roles it needs to assign "
-				"(**Server Settings → Roles**) — a bot can only manage roles below its own."
+				f"Or grant them server-wide: **Server Settings → Roles → {role_name}**, then toggle them **on**."
 			)
-		steps.append("When you're done, trigger the action again (or re-run setup) — this notice will clear on its own.")
+		else :
+			# Some of these can't be set on a channel, so the server role is the only place for them.
+			listed = server_only if is_channel and channel_perms else missing
+			steps.append(
+				f"Go to **Server Settings → Roles → {role_name}** and turn on "
+				f"{', '.join(f'**{humanize_permission(p)}**' for p in listed)}."
+			)
+		if needs_hierarchy :
+			steps.append(
+				f"Drag the **{role_name}** role **above** the roles it needs to give, remove or kick "
+				"(**Server Settings → Roles**) — a bot can only manage members and roles below its own."
+			)
+		steps.append("When you're done, run the command or action again. This notice stays as it is, so check the result there.")
 		embed.add_field(
 			name="How to fix",
 			value="\n".join(f"{i}. {s}" for i, s in enumerate(steps, start=1))[:1024],
@@ -147,6 +178,17 @@ class PermissionNotice :
 		return view
 
 	@classmethod
+	async def respond(cls, interaction: discord.Interaction, *, missing: list[str], channel=None,
+	                  purpose: str | None = None) -> None :
+		"""Answer a command with the notice itself, privately, for when the person who ran it can fix it.
+		Ephemeral responses render embeds whatever the channel's permissions are. Never raises."""
+		try :
+			embed = cls.build_embed(interaction.guild, channel=channel, missing=missing, purpose=purpose)
+			await send_response(interaction, " ", embed=embed, view=cls._links_view(), ephemeral=True)
+		except Exception as e :
+			logging.error(f"Failed to respond with a permission notice in {getattr(interaction.guild, 'id', '?')}: {e}", exc_info=True)
+
+	@classmethod
 	async def notify(cls, guild: discord.Guild, *, channel=None, missing: list[str] | None = None,
 	                 purpose: str | None = None, user=None, throttle: bool = True) -> bool :
 		"""Deliver a permission notice for ``guild``.
@@ -170,7 +212,7 @@ class PermissionNotice :
 				return False
 
 			if missing is None and isinstance(channel, (discord.abc.GuildChannel, discord.Thread)) :
-				missing = check_missing_channel_permissions(channel, DEFAULT_CHANNEL_PERMS)
+				missing = check_missing_channel_permissions(channel, default_channel_perms(channel))
 			missing = [m for m in (missing or []) if m]
 			if not missing :
 				return False
@@ -197,7 +239,7 @@ class PermissionNotice :
 				f"⚠️ **Ageverifier is missing permissions in {location_text}**\n"
 				f"Missing: {perms_text}"
 				+ (f" — needed so I can {purpose}" if purpose else "") + "\n"
-				f"How to fix: enable these for the **Ageverifier** role (**Server Settings → Roles**, "
+				f"How to fix: enable these for the **{guild.self_role.name if guild.self_role else 'Ageverifier'}** role (**Server Settings → Roles**, "
 				f"or the channel's permissions), then trigger the action again.\n"
 				f"Guide: <{AGEVERIFIER_PERMISSIONS_DOCS}>"
 			)
@@ -206,7 +248,7 @@ class PermissionNotice :
 			# accessible channel -> the triggering user's DMs -> the owner's DMs. Never target the
 			# broken channel itself.
 			targets = []
-			mod_channel = guild.get_channel(ConfigData().get_key_int_or_zero(guild.id, "approval_channel"))
+			mod_channel = guild.get_channel_or_thread(ConfigData().get_key_int_or_zero(guild.id, "approval_channel"))
 			if mod_channel is not None and mod_channel != channel :
 				targets.append(mod_channel)
 			accessible = find_first_accessible_text_channel(guild)

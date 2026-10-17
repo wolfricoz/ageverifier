@@ -3,8 +3,22 @@ import discord
 from discord import Interaction, ui
 # Only roles?
 from discord.ui import ChannelSelect, RoleSelect, UserSelect
-
 from discord_py_utilities.messages import send_response
+
+from resources.data.config_variables import VerificationMethods
+
+
+def add_clear_button(view: ui.View) :
+	"""Setup's "Clear" choice, offered only when the key already has a value; Skip keeps that value."""
+	button = discord.ui.Button(label="Clear", style=discord.ButtonStyle.secondary)
+
+	async def clear(interaction: discord.Interaction) :
+		view.value = "clear"
+		await interaction.response.edit_message()
+		view.stop()
+
+	button.callback = clear
+	view.add_item(button)
 
 
 # Members and roles in one?
@@ -14,15 +28,19 @@ from discord_py_utilities.messages import send_response
 # this example uses the UserSelect
 class ConfigSelectChannels(ui.View) :
 
-	def __init__(self) :
+	def __init__(self, can_clear: bool = False) :
 		super().__init__(timeout=1800)
 		self.value = None
 		button = discord.ui.Button(label='Help', style=discord.ButtonStyle.url,
 		                           url='https://wolfricoz.github.io/ageverifier/commands/Config.html', emoji="❓")
 		self.add_item(button)
+		if can_clear :
+			add_clear_button(self)
 
 	# @ui.select(cls=type_we_want, **other_things)
-	@ui.select(cls=ChannelSelect, channel_types=[discord.ChannelType.text], placeholder="Select a channel please!")
+	@ui.select(cls=ChannelSelect, channel_types=[discord.ChannelType.text, discord.ChannelType.public_thread,
+	                                             discord.ChannelType.private_thread],
+	           placeholder="Select a channel or thread please!")
 	async def my_channel_select(self, interaction: Interaction, select: UserSelect) :
 		# handle the selected users here
 		# select.values is a list of User or Member objects here
@@ -36,27 +54,32 @@ class ConfigSelectChannels(ui.View) :
 		self.stop()
 
 	@ui.button(label="Cancel", style=discord.ButtonStyle.danger)
-	async def cancel(self, button: discord.ui.Button, interaction: discord.Interaction) :
+	async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button) :
 		self.value = None
+		# Without a response Discord shows "This interaction failed" on every click.
+		await interaction.response.edit_message()
 		self.stop()
 
 	# next
 	@ui.button(label="Skip", style=discord.ButtonStyle.primary)
-	async def next(self, button: discord.ui.Button, interaction: discord.Interaction) :
+	async def next(self, interaction: discord.Interaction, button: discord.ui.Button) :
 		self.value = "next"
+		await interaction.response.edit_message()
 		self.stop()
 
 
 class ConfigSelectRoles(ui.View) :
-	def __init__(self) :
+	def __init__(self, can_clear: bool = False) :
 		super().__init__(timeout=1800)
 		self.value = None
 		button = discord.ui.Button(label='Help', style=discord.ButtonStyle.url,
 		                           url='https://wolfricoz.github.io/ageverifier/commands/Config.html', emoji="❓")
 		self.add_item(button)
+		if can_clear :
+			add_clear_button(self)
 
 	# @ui.select(cls=type_we_want, **other_things)
-	@ui.select(cls=RoleSelect, placeholder="Select a channel please!")
+	@ui.select(cls=RoleSelect, placeholder="Select a role please!")
 	async def my_user_select(self, interaction: Interaction, select: UserSelect) :
 		# handle the selected users here
 		# select.values is a list of User or Member objects here
@@ -68,11 +91,49 @@ class ConfigSelectRoles(ui.View) :
 		self.stop()
 
 	@ui.button(label="Cancel", style=discord.ButtonStyle.danger)
-	async def cancel(self, button: discord.ui.Button, interaction: discord.Interaction) :
+	async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button) :
 		self.value = None
+		# Without a response Discord shows "This interaction failed" on every click.
+		await interaction.response.edit_message()
 		self.stop()
 
 	@ui.button(label="Skip", style=discord.ButtonStyle.primary)
-	async def next(self, button: discord.ui.Button, interaction: discord.Interaction) :
+	async def next(self, interaction: discord.Interaction, button: discord.ui.Button) :
 		self.value = "next"
+		await interaction.response.edit_message()
+		self.stop()
+
+
+class ConfigSelectVerificationMode(ui.View) :
+	"""Setup's verification mode step. Only the free methods are offered; ID verification stays on /config verification_mode."""
+
+	def __init__(self) :
+		super().__init__(timeout=1800)
+		self.value = None
+		button = discord.ui.Button(label='Help', style=discord.ButtonStyle.url,
+		                           url='https://wolfricoz.github.io/ageverifier/verification-methods.html', emoji="❓")
+		self.add_item(button)
+
+	@ui.button(label="Website (recommended)", style=discord.ButtonStyle.success)
+	async def website(self, interaction: discord.Interaction, button: discord.ui.Button) :
+		self.value = VerificationMethods.WEBSITE
+		await interaction.response.edit_message()
+		self.stop()
+
+	@ui.button(label="Basic", style=discord.ButtonStyle.secondary)
+	async def basic(self, interaction: discord.Interaction, button: discord.ui.Button) :
+		self.value = VerificationMethods.BASIC
+		await interaction.response.edit_message()
+		self.stop()
+
+	@ui.button(label="Cancel", style=discord.ButtonStyle.danger)
+	async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button) :
+		self.value = None
+		await interaction.response.edit_message()
+		self.stop()
+
+	@ui.button(label="Skip", style=discord.ButtonStyle.primary)
+	async def next(self, interaction: discord.Interaction, button: discord.ui.Button) :
+		self.value = "next"
+		await interaction.response.edit_message()
 		self.stop()

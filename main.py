@@ -15,15 +15,18 @@ from discord_py_utilities.permissions import find_first_accessible_text_channel
 # IMPORT LOAD_DOTENV FUNCTION FROM DOTENV MODULE.
 from dotenv import load_dotenv
 from fastapi import FastAPI
+from starlette.formparsers import MultiPartParser
 
 import api
 from classes import whitelist
 from classes.access import AccessControl
 from classes.blacklist import blacklist_check
+from classes.devguild import sync_dev_guild
 from classes.dashboard.Servers import Servers as DashServers
 from classes.jsonmaker import Configer
 from classes.onboarding import Onboarding
 from classes.permissions_notice import PermissionNotice
+from classes.support import quickleaves
 from classes.support.queue import Queue
 from databases import current as db
 from databases.exceptions.KeyNotFound import KeyNotFound
@@ -34,6 +37,7 @@ from views.buttons.CrossServerAccessButton import CrossServerAccessButton
 from views.buttons.approvalbuttons import ApprovalButtons
 from views.buttons.dobentrybutton import dobentry
 from views.buttons.idreviewbuttons import IdReviewButton
+from views.buttons.idwithdrawbutton import IdWithdrawButton
 from views.buttons.idsubmitbutton import IdSubmitButton
 from views.buttons.idverifybutton import IdVerifyButton
 from views.buttons.reverifybutton import ReVerifyButton
@@ -135,6 +139,12 @@ async def lifespan(app: FastAPI) :
 				pass
 
 
+# Keep uploaded ID images in memory instead of letting Starlette roll them over to a
+# temp file on disk (default threshold is 1MB, which a phone-camera JPEG exceeds).
+# 25MB matches Discord's own attachment limit, so anything we can accept here is
+# something we can actually forward to Discord.
+MultiPartParser.spool_max_size = 25 * 1024 * 1024
+
 app = FastAPI(lifespan=lifespan,
               docs_url=None,  # disables /docs (Swagger UI)
               redoc_url=None,  # disables /redoc
@@ -172,6 +182,7 @@ async def on_ready() :
 	whitelist.create_whitelist(bot.guilds)
 	await Configer.create_bot_config()
 	Queue().add(bot.tree.sync(), 2)
+	Queue().add(sync_dev_guild(bot), 2)
 	Queue().add(devroom.send(f"AgeVerifier is in {len(bot.guilds)} guilds. Ageverifier {VERSION}"), 2)
 	logging.info(f"Commands synced, start up done! Connected to {len(bot.guilds)} guilds and {bot.shard_count} shards.")
 	logging.info("Loaded routers: " + ", ".join(routers))
@@ -229,6 +240,8 @@ async def on_guild_join(guild) :
 async def on_guild_remove(guild) :
 	devroom = bot.get_channel(bot.DEV)
 	await devroom.send(f"Left `{guild.name}({guild.id})`")
+	# Waits for the log buffer to flush before reading it, so it runs apart from this event.
+	bot.loop.create_task(quickleaves.capture(guild))
 
 
 # cogloader
@@ -260,6 +273,7 @@ async def setup_hook() :
 	bot.add_view(dobentry())
 	bot.add_view(IdSubmitButton())
 	bot.add_view(IdReviewButton())
+	bot.add_dynamic_items(IdWithdrawButton)
 	bot.add_view(OnboardingLayout())
 	bot.add_view(CrossServerAccessButton())
 
@@ -276,6 +290,7 @@ async def cogreload(ctx) :
 	fp = ', '.join(filesloaded)
 	await ctx.send(f"Modules loaded: {fp}")
 	await bot.tree.sync()
+	await sync_dev_guild(bot)
 
 
 @bot.command()

@@ -17,7 +17,8 @@
 /.idea/modules.xml
 /.idea/misc.xml
 /.env
-/debug/config.json
+# ConfigData.output_to_json writes this relative to wherever it runs, tests/ included.
+**/debug/config.json
 /whitelist.json
 /settings/config.json
 /.idea/material_theme_project_new.xml

@@ -206,7 +206,8 @@ class Queue(metaclass=Singleton):
         """Turn a queued permission failure into a user-facing notice, when the guild is known."""
         try:
             guild = getattr(channel, "guild", None)
-            if guild is None:
+            # A Member has a guild too, but a failed DM is the member's own settings, not a server permission (AGEVERIFIER-E6).
+            if guild is None or isinstance(channel, (discord.Member, discord.User)):
                 # DMs and unresolved channels have no guild; nothing actionable to report.
                 return
             # Lazy import to avoid a circular import at module load.

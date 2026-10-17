@@ -1,7 +1,7 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 
-from sqlalchemy import Select
+from sqlalchemy import Select, or_
 
 from classes.encryption import Encryption
 from databases.current import IdVerification
@@ -133,6 +133,8 @@ class VerificationTransactions(DatabaseTransactions) :
 	def remove_idmessage(self, uid: int) :
 		with self.createsession() as session :
 			verification = self.get_id_info(uid, session=session)
+			if verification is None :
+				return
 
 			verification.idmessage = None
 			verification.idmessagecreated = None
@@ -141,6 +143,18 @@ class VerificationTransactions(DatabaseTransactions) :
 			self.commit(session)
 			logging.info(f"Removed idmessage for {uid}")
 
+
+	def get_expired_idmessages(self, max_age: timedelta) -> list[IdVerification] :
+		"""
+		ID images still waiting in a member's DMs after max_age. A record with a message but no
+		created time predates idmessagecreated, so its age is unknown and it counts as expired.
+		"""
+		cutoff = datetime.now() - max_age
+		with self.createsession() as session :
+			return list(session.scalars(Select(IdVerification).where(
+				IdVerification.idmessage.is_not(None),
+				or_(IdVerification.idmessagecreated < cutoff, IdVerification.idmessagecreated.is_(None)),
+			)).all())
 
 	def get_all(self, ) :
 		with self.createsession() as session :

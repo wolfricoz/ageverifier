@@ -14,8 +14,12 @@ from databases.transactions.VerificationTransactions import VerificationTransact
 
 async def verify(user: discord.Member, interaction: discord.Interaction, dob: str, process=True, reverify=False) -> None :
 	if await check_staff_status(interaction, user):
-		return await send_response(interaction,
-		                    f"[CANNOT_VERIFY_STAFF] You cannot verify staff members using this command, if they wish to be verified they can open a ticket on the support guild. Attempting to circumvent this guideline will result in permanent blacklisting of all users involved.", )
+		message = ("Staff members can't be verified with this command, so staff accounts can't verify each other. "
+		           "If they want to be verified, they can open a ticket in the support server.")
+		# /lobby idverify defers first; answering the deferral clears its "thinking..." message.
+		if interaction.response.is_done() :
+			return await interaction.followup.send(message, ephemeral=True)
+		return await send_response(interaction, message, ephemeral=True)
 
 	if not interaction.user.guild_permissions.administrator:
 		return False

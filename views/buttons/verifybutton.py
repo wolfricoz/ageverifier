@@ -20,6 +20,13 @@ from views.buttons.approvalbuttons import ApprovalButtons
 from views.buttons.tosbutton import TOSButton
 from views.buttons.websitebutton import WebsiteButton
 
+# Shown under every verify button. No date format here: the website uses the browser's date picker,
+# and Discord accepts DD/MM/YYYY too when the day makes it unambiguous.
+GDPR_DISCLOSURE = ("-# GDPR AND INFORMATION USE DISCLOSURE: By entering your birth date and age, you consent to having this "
+                   "information about you stored by Age Verifier and used to verify that you are the age that you say you are, "
+                   "including sharing to relevant parties for age verification. This information will be stored for a maximum "
+                   "of 1 year if you are no longer in a server using Ageverifier.")
+
 
 def get_verification_button_label(guild_id: int = None) -> str :
 	"""Resolves the label on the verification button for a guild.
@@ -71,11 +78,13 @@ class VerifyButton(discord.ui.View) :
 		idcheck = await self.id_verified_check(interaction)
 		if idcheck :
 			return
-		if AccessControl().is_premium(interaction.guild.id) and ConfigData().get_key(interaction.guild.id, VERIFICATION_KEY, VerificationMethods.BASIC) == VerificationMethods.WEBSITE :
-
-			uuid = WebsiteDataTransactions().create(user_id=interaction.user.id, guild_id=interaction.guild.id)
+		if ConfigData().get_key(interaction.guild.id, VERIFICATION_KEY, VerificationMethods.WEBSITE) == VerificationMethods.WEBSITE :
+			# Test if a UUID for this server and user is active, otherwise we create a new one.
+			uuid = WebsiteDataTransactions().check(user_id=interaction.user.id, guild_id=interaction.guild.id, retrieve=True)
+			if not uuid :
+				uuid = WebsiteDataTransactions().create(user_id=interaction.user.id, guild_id=interaction.guild.id)
 			website_base = os.getenv("DASHBOARD_URL")
-			url = f"{website_base}/ageverifier/verification/{interaction.guild.id}/{uuid}"
+			url = f"{website_base}/ageverifier/verification/{interaction.user.id}/{interaction.guild.id}/{uuid}"
 
 			await send_response(interaction, f"This server uses our online verification system. Please use the button below to visit our verification page.", ephemeral=True, view=WebsiteButton(url))
 			return
@@ -93,7 +102,7 @@ class VerifyButton(discord.ui.View) :
 
 	async def id_verified_check(self, interaction: discord.Interaction) -> bool :
 		try :
-			modlobby = interaction.guild.get_channel(
+			modlobby = interaction.guild.get_channel_or_thread(
 				ConfigData().get_key_int_or_zero(interaction.guild.id, "approval_channel"))
 			if modlobby is None :
 				await send_response(interaction, f"Lobbymod not set, inform the server staff to setup the server.",
@@ -124,7 +133,7 @@ class VerifyButton(discord.ui.View) :
 					                    ephemeral=True)
 					return True
 				mod_lobby = ConfigData().get_key_int(interaction.guild.id, "approval_channel")
-				mod_channel = interaction.guild.get_channel(mod_lobby)
+				mod_channel = interaction.guild.get_channel_or_thread(mod_lobby)
 
 
 				approval_buttons = ApprovalButtons(age=age, dob=dob, user=member)

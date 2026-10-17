@@ -1,9 +1,10 @@
 import os
+import uuid
 from datetime import datetime
 from typing import List, Optional
 
 from dotenv import load_dotenv
-from sqlalchemy import BigInteger, Boolean, DateTime, Enum, ForeignKey, Integer, String, Text, create_engine
+from sqlalchemy import BigInteger, Boolean, DateTime, Enum, ForeignKey, Index, Integer, String, Text, create_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, sessionmaker
 from sqlalchemy.pool import NullPool
 from sqlalchemy.sql import func
@@ -18,7 +19,9 @@ DEBUG = os.getenv('TEST')
 
 db_string = f"{DB}/rmrbotnew"
 if DEBUG == "true" :
-	db_string = f"{DB}/rmrbotnew_test"
+	# Every test run gets its own database, so parallel runs never share tables.
+	os.environ.setdefault('TEST_DB_NAME', f"rmrtest_{uuid.uuid4().hex[:8]}_test")
+	db_string = f"{DB}/{os.environ['TEST_DB_NAME']}"
 engine = create_engine(db_string, poolclass=NullPool, echo=False, isolation_level="READ COMMITTED")
 if not database_exists(engine.url) :
 	create_database(engine.url)
@@ -51,6 +54,18 @@ class Users(Base) :
 	id_verification: Mapped[Optional["IdVerification"]] = relationship(back_populates="user",
 	                                                                   cascade="save-update, merge, delete, delete-orphan",
 	                                                                   uselist=False)
+	# The raw address is never stored; see classes.iphash for what these digests are
+	# and why several prefix widths are kept. ip_recorded_at is when the address was
+	# last seen, and is what the retention sweep clears these columns on.
+	ip_hash: Mapped[Optional[str]] = mapped_column(String(64), index=True)
+	ip_prefix_24: Mapped[Optional[str]] = mapped_column(String(64), index=True)
+	ip_prefix_20: Mapped[Optional[str]] = mapped_column(String(64))
+	ip_prefix_16: Mapped[Optional[str]] = mapped_column(String(64))
+	ip_recorded_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True, default=None, index=True)
+	# The browser fingerprint from the website, HMAC'd like the address (classes.iphash.hash_fingerprint).
+	# Cleared by the same retention sweep, on its own timestamp.
+	device_fingerprint: Mapped[Optional[str]] = mapped_column(String(64), index=True)
+	fingerprint_recorded_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True, default=None, index=True)
 	deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True, default=None)
 
 	join_history: Mapped[list["JoinHistory"]] = relationship("JoinHistory", back_populates="user", cascade="save-update, merge, delete, delete-orphan")
@@ -174,6 +189,44 @@ class LoggedMessage(Base) :
 	created_date: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 
+class MemberNotes(Base) :
+	"""Notes a guild's staff keep on a member, shown on that member's approval message.
+
+	Notes belong to one guild and are never shown to another. There is no separate expiry: the
+	foreign keys cascade, so notes go with the user row (GDPR removal and the inactivity purge)
+	and with the server row. author is the staff member's id and deliberately not a foreign key,
+	so a staff member's own removal doesn't take the guild's notes with it.
+	"""
+	__tablename__ = "member_notes"
+	__table_args__ = (
+		Index("ix_member_notes_guild_uid", "guild", "uid"),
+	)
+	id: Mapped[int] = mapped_column(primary_key=True)
+	uid: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.uid", ondelete="CASCADE"), nullable=False)
+	guild: Mapped[int] = mapped_column(BigInteger, ForeignKey("servers.guild", ondelete="CASCADE"), nullable=False)
+	author: Mapped[int] = mapped_column(BigInteger, nullable=False)
+	text: Mapped[str] = mapped_column(String(500), nullable=False)
+	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class DenialReasons(Base) :
+	"""A server's preset reasons for denying a verification, picked in the approval message's deny flow.
+
+	The member is sent the message by DM (classes.denialreasons). A server without presets is given
+	resources.data.config_variables.DEFAULT_DENIAL_REASONS on first use. The rows hold no member
+	data and go with the server row.
+	"""
+	__tablename__ = "denial_reasons"
+	__table_args__ = (
+		Index("ix_denial_reasons_guild_label", "guild", "label", unique=True),
+	)
+	id: Mapped[int] = mapped_column(primary_key=True)
+	guild: Mapped[int] = mapped_column(BigInteger, ForeignKey("servers.guild", ondelete="CASCADE"), nullable=False)
+	label: Mapped[str] = mapped_column(String(100), nullable=False)
+	message: Mapped[str] = mapped_column(String(1500), nullable=False)
+	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
 class LobbyData(Base) :
 	__tablename__ = "lobby_data"
 	id: Mapped[int] = mapped_column(primary_key=True)
@@ -186,12 +239,26 @@ class LobbyData(Base) :
 	reverify: Mapped[bool] = mapped_column(Boolean, default=False, nullable=True)
 
 class WebsiteData(Base) :
+	"""
+	One online verification link. uuid is always a str(uuid4()), so 36 characters; the dashboard
+	looks rows up by it on every page load, which the unique index covers on its own.
+	opened is reported by the dashboard the first time the member loads the page, and reminded is
+	set once the abandoned link reminder has been handled so a link is only ever reminded once.
+	"""
 	__tablename__ = "website_data"
+	__table_args__ = (
+		Index("ix_website_data_uuid", "uuid", unique=True),
+		# WebsiteDataTransactions.check() runs on every verify button click.
+		Index("ix_website_data_gid_uid", "gid", "uid"),
+		Index("ix_website_data_opened", "opened"),
+	)
 	id: Mapped[int] = mapped_column(primary_key=True)
-	uuid: Mapped[str] = mapped_column(String(2048))
+	uuid: Mapped[str] = mapped_column(String(36))
 	uid: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.uid", ondelete="CASCADE"))
 	gid: Mapped[int] = mapped_column(BigInteger, ForeignKey("servers.guild", ondelete="CASCADE"))
 	verified: Mapped[datetime] = mapped_column(DateTime, default=None, nullable=True)
+	opened: Mapped[Optional[datetime]] = mapped_column(DateTime, default=None, nullable=True)
+	reminded: Mapped[Optional[datetime]] = mapped_column(DateTime, default=None, nullable=True)
 	created_date: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 	last_updated: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), server_onupdate=func.now())
 
@@ -210,8 +277,8 @@ class Approvals(Base) :
 
 
 class Advertisements(Base) :
-	"""RMRbot's index of the adverts in its forums; an advert is cross-posted to the website when it has consent and
-	isn't deleted."""
+	"""RMRbot's index of the adverts in its forums; an advert is cross-posted to the website when it has consent,
+	is approved and isn't deleted."""
 	__tablename__ = "advertisements"
 	id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=False)
 	thread_id: Mapped[int] = mapped_column(BigInteger, index=True)
