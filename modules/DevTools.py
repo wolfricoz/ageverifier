@@ -27,7 +27,7 @@ from databases.transactions.ConfigTransactions import ConfigTransactions
 from databases.transactions.HistoryTransactions import JoinHistoryTransactions
 from databases.transactions.ServerTransactions import ServerTransactions
 from databases.transactions.UserTransactions import UserTransactions
-from resources.data.config_variables import VERIFICATION_KEY, VerificationMethods
+from resources.data.config_variables import VERIFICATION_KEY
 from views.modals.inputmodal import send_modal
 from views.select.configselectroles import *
 
@@ -205,7 +205,7 @@ class DevTools(commands.GroupCog, name="dev", description="A set of commands for
 			if lobbylog is None :
 				logging.warning(f"Could not find lobbylog for {guild.name}({guild.id})")
 				continue
-			channel = guild.get_channel(int(lobbylog))
+			channel = guild.get_channel_or_thread(int(lobbylog))
 			Queue().add(await self.history(channel, users, guild, create_records), priority=0)
 
 		await send_message(interaction.channel, f"Queued {len(users)} users to be updated.")

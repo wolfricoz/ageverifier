@@ -3,7 +3,6 @@ import discord
 from discord import Interaction, ui
 # Only roles?
 from discord.ui import ChannelSelect, RoleSelect, UserSelect
-
 from discord_py_utilities.messages import send_response
 
 from resources.data.config_variables import VerificationMethods
@@ -39,7 +38,9 @@ class ConfigSelectChannels(ui.View) :
 			add_clear_button(self)
 
 	# @ui.select(cls=type_we_want, **other_things)
-	@ui.select(cls=ChannelSelect, channel_types=[discord.ChannelType.text], placeholder="Select a channel please!")
+	@ui.select(cls=ChannelSelect, channel_types=[discord.ChannelType.text, discord.ChannelType.public_thread,
+	                                             discord.ChannelType.private_thread],
+	           placeholder="Select a channel or thread please!")
 	async def my_channel_select(self, interaction: Interaction, select: UserSelect) :
 		# handle the selected users here
 		# select.values is a list of User or Member objects here

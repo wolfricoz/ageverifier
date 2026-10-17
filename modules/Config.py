@@ -21,18 +21,14 @@ from databases.transactions.AgeRoleTransactions import AgeRoleTransactions
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.ConfigTransactions import ConfigTransactions
 from databases.transactions.DenialReasonTransactions import DenialReasonTransactions
-from resources.data.config_variables import MAX_BUTTON_LABEL_LENGTH, MAX_DENIAL_REASONS, MAX_VERIFICATION_REMINDER_MINUTES, \
-	PREMIUM_VERIFICATION_METHODS, REVERIFICATION_KEY, config_title, \
-	VERIFICATION_KEY, VERIFICATION_REMINDER_KEY, \
-	VerificationMethods, \
-	available_toggles, channelchoices, \
-	lobby_approval_toggles, messagechoices, \
-	rolechoices
+from resources.data.config_variables import MAX_BUTTON_LABEL_LENGTH, MAX_DENIAL_REASONS, \
+	MAX_VERIFICATION_REMINDER_MINUTES, PREMIUM_VERIFICATION_METHODS, REVERIFICATION_KEY, VERIFICATION_KEY, \
+	VERIFICATION_REMINDER_KEY, VerificationMethods, available_toggles, channelchoices, config_title, \
+	lobby_approval_toggles, messagechoices, rolechoices
 from views.buttons.confirm import Confirm
 from views.modals.configinput import ConfigInputUnique
 from views.modals.denialreasonmodal import DenialReasonModal
 from views.v2.HelpLayout import HelpLayout
-
 
 # Discord's limit on all text in one embed, with some room left for the field separators.
 EMBED_TOTAL_LIMIT = 5800
@@ -219,10 +215,10 @@ class Config(commands.GroupCog, name="config",
 	@app_commands.choices(action=[Choice(name=x, value=x) for x in ["set", "remove"]])
 	@app_commands.checks.has_permissions(manage_guild=True)
 	async def channels(self, interaction: discord.Interaction, key: Choice[str], action: Choice[str],
-	                   value: discord.TextChannel = None) :
+	                   value: discord.TextChannel | discord.Thread = None) :
 		"""
         This command is for assigning specific channels for the bot's functions, like a channel for logging or a lobby for new members.
-        You can either 'set' a new channel or 'remove' an existing assignment.
+        You can either 'set' a new channel or 'remove' an existing assignment. Threads work too.
 
 
         **Permissions:**

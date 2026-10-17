@@ -18,7 +18,7 @@ class NsfwFunctions(ABC):
     async def log(user, guild, age, dob):
         """Logs the user into the nsfwlog"""
         lobbylog = ConfigData().get_key(guild.id, "nsfwlog")
-        channel = guild.get_channel(int(lobbylog))
+        channel = guild.get_channel_or_thread(int(lobbylog))
 
         embed = discord.Embed(title=f"{user.name}", description=f"Age: {age} \n"
                                                                 f"DOB: {dob} \n")
@@ -68,7 +68,7 @@ class NsfwVerifyModal(discord.ui.Modal):
     async def on_submit(self, interaction: discord.Interaction):
         userdata = UserTransactions().get_user(interaction.user.id)
         modlobby = ConfigData().get_key_int(interaction.guild.id, "approval_channel")
-        channel = interaction.guild.get_channel(modlobby)
+        channel = interaction.guild.get_channel_or_thread(modlobby)
         age = self.age.value
         # validates inputs with regex
         if await AgeCalculations.validate_user_info(interaction, age, self.dateofbirth.value, channel, "NSFW") is False:

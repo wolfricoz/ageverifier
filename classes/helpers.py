@@ -24,7 +24,7 @@ async def welcome_user(member) :
 	JoinHistoryTransactions().add(member.id, member.guild.id, JoinHistoryStatus.NEW)
 	warning = ""
 	lobby = ConfigData().get_key_int_or_zero(member.guild.id, "server_join_channel")
-	channel = member.guild.get_channel(lobby)
+	channel = member.guild.get_channel_or_thread(lobby)
 	if channel is None:
 		warning = "WARNING: Lobby channel not set, please configure your lobby with `/config channels`"
 		channel = find_first_accessible_text_channel(member.guild)

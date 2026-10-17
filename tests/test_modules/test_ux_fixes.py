@@ -1,6 +1,5 @@
 import asyncio
 import unittest
-from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import discord
@@ -62,7 +61,7 @@ class TestRaidPurge(unittest.TestCase) :
 
 		lobby = MagicMock(history=history)
 		interaction = MagicMock()
-		interaction.guild.get_channel.return_value = lobby
+		interaction.guild.get_channel_or_thread.return_value = lobby
 		interaction.followup.send = AsyncMock()
 		send = AsyncMock()
 		# Cancelled, so the test never reaches the kicks.

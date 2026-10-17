@@ -105,7 +105,7 @@ class LobbyProcess :
 			if revlog is not None:
 				lobbylog = revlog
 
-		channel = guild.get_channel(lobbylog) if lobbylog else None
+		channel = guild.get_channel_or_thread(lobbylog) if lobbylog else None
 		# age_log may be unset or deleted; there is nowhere to log to then (AGEVERIFIER-GQ).
 		if channel is None :
 			logging.warning(f"{guild.name} ({guild.id}) has no usable age_log channel, verification of {user.id} was not logged")
@@ -173,7 +173,7 @@ class LobbyProcess :
 			if (message.author == user or user in message.mentions) and count < 10 :
 				count += 1
 				Queue().add(message.delete(), priority=0)
-		channel = guild.get_channel(lobbymod) if lobbymod else None
+		channel = guild.get_channel_or_thread(lobbymod) if lobbymod else None
 		# Same guard as above: approval_channel may be unset or deleted (AGEVERIFIER-EB).
 		if channel is None :
 			return
@@ -215,7 +215,7 @@ class LobbyProcess :
 		if verification_completed_channel is None :
 			logging.info(f"{guild.name} ({guild.id}) has no verification_completed_channel, skipping the welcome message")
 			return
-		channel = guild.get_channel(verification_completed_channel)
+		channel = guild.get_channel_or_thread(verification_completed_channel)
 
 
 		if channel is None:
@@ -245,7 +245,7 @@ class LobbyProcess :
 	@staticmethod
 	async def age_log(userid, dob, interaction, operation="added", log=True, reason="") :
 		try:
-			age_log = interaction.guild.get_channel(ConfigData().get_key_int(interaction.guild.id, "age_log"))
+			age_log = interaction.guild.get_channel_or_thread(ConfigData().get_key_int(interaction.guild.id, "age_log"))
 		except KeyNotFound:
 			age_log = find_first_accessible_text_channel(interaction.guild)
 			await send_message(age_log, f"Could not find age log channel, using {age_log.mention} instead. Please set one up with `/config channels`")

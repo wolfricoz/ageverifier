@@ -20,8 +20,8 @@ from classes.encryption import Encryption
 from classes.lobby.Clean import clean_lobby
 from classes.lobby.Quarantine import release_expired
 from classes.permissions_notice import PermissionNotice
-from classes.support.RetentionPolicy import enforce_data_retention_policy
 from classes.support import quickleaves, weeklyreport
+from classes.support.RetentionPolicy import enforce_data_retention_policy
 from classes.support.queue import Queue
 from classes.verification.idmessages import expire_id_messages
 from classes.verification.reminders import send_abandoned_reminders
@@ -291,7 +291,7 @@ class Tasks(commands.Cog) :
 			await asyncio.sleep(0.001)
 			rem_roles = (ConfigData().get_key_or_none(guild.id, "verification_remove_role") or []) + (
 					ConfigData().get_key_or_none(guild.id, "server_join_role") or [])
-			mod_lobby = guild.get_channel(ConfigData().get_key_int_or_zero(guild.id, "approval_channel"))
+			mod_lobby = guild.get_channel_or_thread(ConfigData().get_key_int_or_zero(guild.id, "approval_channel"))
 			if mod_lobby is None :
 				logging.info(f"Mod lobby not found in {guild.name}, skipping age role update.")
 				continue

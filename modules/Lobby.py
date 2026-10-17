@@ -180,7 +180,7 @@ class Lobby(commands.GroupCog, description="Commands for managing the new member
         - You'll need `Administrator` permission to use this command.
         """
 		lobby_config = ConfigData().get_key_int(interaction.guild.id, "server_join_channel")
-		lobby_channel = interaction.guild.get_channel(lobby_config)
+		lobby_channel = interaction.guild.get_channel_or_thread(lobby_config)
 		days = max(1, min(days, MAX_RAID_PURGE_DAYS))
 
 		if lobby_channel is None :

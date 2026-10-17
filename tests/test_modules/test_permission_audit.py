@@ -42,7 +42,7 @@ class FakeGuild :
 		self.roles = {role.id : role for role in roles or []}
 		self.me = FakeMe(FakeRole(1, "Ageverifier", 10), manage_roles)
 
-	def get_channel(self, channel_id) :
+	def get_channel_or_thread(self, channel_id) :
 		return self.channels.get(channel_id)
 
 	def get_role(self, role_id) :

@@ -153,8 +153,8 @@ class VerificationProcess :
 		id_log = ConfigData().get_key_int_or_zero(self.guild.id, "verification_failure_log")
 		if mod_lobby == 0 or id_log == 0 :
 			raise Exception("Lobbymod or id_channel not set, inform the server staff to setup the server.")
-		self.mod_channel = self.guild.get_channel(mod_lobby)
-		self.id_channel = self.guild.get_channel(id_log)
+		self.mod_channel = self.guild.get_channel_or_thread(mod_lobby)
+		self.id_channel = self.guild.get_channel_or_thread(id_log)
 		if self.id_channel is None :
 			self.id_channel = await self.guild.fetch_channel(id_log)
 		if self.mod_channel is None :

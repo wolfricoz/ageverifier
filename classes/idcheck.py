@@ -86,7 +86,7 @@ class IdCheck(ABC) :
 			                    message.get("user-message",
 			                                "There was an issue with the age and date of birth you provided. Please try again."),
 			                    ephemeral=True)
-			lobbymod = interaction.guild.get_channel(
+			lobbymod = interaction.guild.get_channel_or_thread(
 				ConfigData().get_key_int_or_zero(interaction.guild.id, "approval_channel"))
 			await lobbymod.send(f"Lobby Debug] Age: {age} dob {dob} userid: {interaction.user.mention}\n" + message.get('channel-message', "Message not found."))
 			await IdCheck.auto_kick(interaction.user, m_key, interaction.guild, channel, message.get('channel-message', "Message not found."))
@@ -179,7 +179,7 @@ class IdCheck(ABC) :
 		if m_key in ['mismatch', 'age_too_high', 'below_minimum_age'] :
 			await send_message(user, message.get("user-message",
 			                                     "There was an issue with the age and date of birth you provided. Please try again."))
-			lobbymod = guild.get_channel(ConfigData().get_key_int_or_zero(guild.id, "approval_channel"))
+			lobbymod = guild.get_channel_or_thread(ConfigData().get_key_int_or_zero(guild.id, "approval_channel"))
 			if lobbymod :
 				await lobbymod.send(
 					f"Lobby Debug] Age: {age} dob {dob} userid: {user.mention}\n" + message.get('channel-message'))

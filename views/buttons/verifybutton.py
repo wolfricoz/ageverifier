@@ -20,7 +20,6 @@ from views.buttons.approvalbuttons import ApprovalButtons
 from views.buttons.tosbutton import TOSButton
 from views.buttons.websitebutton import WebsiteButton
 
-
 # Shown under every verify button. No date format here: the website uses the browser's date picker,
 # and Discord accepts DD/MM/YYYY too when the day makes it unambiguous.
 GDPR_DISCLOSURE = ("-# GDPR AND INFORMATION USE DISCLOSURE: By entering your birth date and age, you consent to having this "
@@ -103,7 +102,7 @@ class VerifyButton(discord.ui.View) :
 
 	async def id_verified_check(self, interaction: discord.Interaction) -> bool :
 		try :
-			modlobby = interaction.guild.get_channel(
+			modlobby = interaction.guild.get_channel_or_thread(
 				ConfigData().get_key_int_or_zero(interaction.guild.id, "approval_channel"))
 			if modlobby is None :
 				await send_response(interaction, f"Lobbymod not set, inform the server staff to setup the server.",
@@ -134,7 +133,7 @@ class VerifyButton(discord.ui.View) :
 					                    ephemeral=True)
 					return True
 				mod_lobby = ConfigData().get_key_int(interaction.guild.id, "approval_channel")
-				mod_channel = interaction.guild.get_channel(mod_lobby)
+				mod_channel = interaction.guild.get_channel_or_thread(mod_lobby)
 
 
 				approval_buttons = ApprovalButtons(age=age, dob=dob, user=member)

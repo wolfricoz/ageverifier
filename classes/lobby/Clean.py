@@ -7,8 +7,8 @@ from discord_py_utilities.messages import send_message
 from discord_py_utilities.permissions import check_missing_channel_permissions, check_missing_guild_permissions
 
 from classes.permissions_notice import PermissionNotice
-from classes.text import plural
 from classes.support.queue import Queue
+from classes.text import plural
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.ServerTransactions import ServerTransactions
 
@@ -20,8 +20,8 @@ async def clean_lobby(bot, guild: discord.Guild, custom_days = None, clean = Tru
 	logging.info(f" {guild.id}: clean: {clean}, kick: {kick}, custom_days: {custom_days}")
 	count_messages = 0
 	kicked_users = []
-	lobby_channel = guild.get_channel(ConfigData().get_key_int_or_zero(guild.id, "server_join_channel"))
-	mod_lobby = guild.get_channel(ConfigData().get_key_int_or_zero(guild.id, "approval_channel"))
+	lobby_channel = guild.get_channel_or_thread(ConfigData().get_key_int_or_zero(guild.id, "server_join_channel"))
+	mod_lobby = guild.get_channel_or_thread(ConfigData().get_key_int_or_zero(guild.id, "approval_channel"))
 	days = ConfigData().get_key_int_or_zero(guild.id, "clean_lobby_days")
 	guild_db = ServerTransactions().get(guild.id)
 	removal_message = (

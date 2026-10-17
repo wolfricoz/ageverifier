@@ -23,7 +23,7 @@ class WarningModal(discord.ui.Modal, title='Official Warning'):
     )
 
     async def on_submit(self, interaction: discord.Interaction):
-        channel = interaction.guild.get_channel(self.warnlog)
+        channel = interaction.guild.get_channel_or_thread(self.warnlog)
         warning = f"{interaction.guild.name} **__WARNING__**: {self.reason}"
         UserTransactions().user_add_warning(self.user.id, self.reason.value)
         if self.notify.upper() == "YES":

@@ -78,7 +78,7 @@ If you want to continue, please confirm your request."""
 
 		invite = "Failed to generate invite link, please contact the developer."
 		if server:
-			invite_channel = server.get_channel(int(dev if dev else 0))
+			invite_channel = server.get_channel_or_thread(int(dev if dev else 0))
 			if invite_channel :
 				invite = await invite_channel.create_invite(max_age=3600, max_uses=1,
 				                                            reason="GDPR data request")

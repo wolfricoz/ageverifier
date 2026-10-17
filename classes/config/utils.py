@@ -43,7 +43,7 @@ class ConfigUtils(ABC):
 		logging.info("Logging of configuration changes is enabled.")
 		if not channel:
 			modlobby = ConfigData().get_key_int_or_zero(guild_id, "approval_channel")
-			channel = guild.get_channel(modlobby)
+			channel = guild.get_channel_or_thread(modlobby)
 		if channel is None :
 			logging.info("No modlobby channel found for logging configuration changes.")
 			return

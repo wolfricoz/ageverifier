@@ -9,8 +9,8 @@ from discord_py_utilities.permissions import check_missing_channel_permissions, 
 	find_first_accessible_text_channel
 
 from classes.config.utils import ConfigUtils, format_config_value, is_unset
-from classes.permissions_notice import AGEVERIFIER_PERMISSIONS_DOCS, DEFAULT_CHANNEL_PERMS, DISCORD_PERMISSIONS_DOCS, \
-	PermissionNotice, describe_permission
+from classes.permissions_notice import AGEVERIFIER_PERMISSIONS_DOCS, DISCORD_PERMISSIONS_DOCS, PermissionNotice, \
+	default_channel_perms, describe_permission
 from classes.support.queue import Queue
 from databases.transactions.AgeRoleTransactions import AgeRoleTransactions
 from databases.transactions.ConfigData import ConfigData
@@ -151,7 +151,7 @@ class ConfigSetup :
 		Returns the lobby, or None when it has no lobby or the button could not be posted."""
 		# Lazy import: the button's module pulls in the whole verification flow.
 		from views.buttons.verifybutton import GDPR_DISCLOSURE, VerifyButton
-		lobby = guild.get_channel(ConfigData().get_channel_id(guild.id, "server_join_channel") or 0)
+		lobby = guild.get_channel_or_thread(ConfigData().get_channel_id(guild.id, "server_join_channel") or 0)
 		if lobby is None :
 			return None
 		try :
@@ -378,7 +378,7 @@ class ConfigSetup :
 		await self.create_roles(guild, rolechoices)
 		await self.set_messages(guild, messagechoices)
 		await self.post_verify_button(guild)
-		lobby_mod = guild.get_channel(ConfigData().get_key_int(guild.id, "approval_channel"))
+		lobby_mod = guild.get_channel_or_thread(ConfigData().get_key_int(guild.id, "approval_channel"))
 		Queue().add(send_message(lobby_mod, f"## Auto Setup for {guild.name} has been completed!"), 0)
 		Queue().add(send_message(guild.owner, f"## Auto Setup for {guild.name} has been completed!"), 0)
 		Queue().add(ConfigUtils.log_change(guild, self.changes, user_name="Dashboard"), 1)
@@ -403,7 +403,7 @@ class ConfigSetup :
 	@staticmethod
 	def permission_report_channel(guild: discord.Guild) :
 		"""Where the permission check is posted, so setup can tell staff where to look."""
-		channel = guild.get_channel(ConfigData().get_key_int_or_zero(guild.id, "approval_channel"))
+		channel = guild.get_channel_or_thread(ConfigData().get_key_int_or_zero(guild.id, "approval_channel"))
 		if channel is None :
 			logging.warning("Mod channel is None, cannot check permissions")
 			channel = find_first_accessible_text_channel(guild)
@@ -494,13 +494,13 @@ class ConfigSetup :
 			check = {"key" : key, "title" : config_title(key), "optional" : not is_required_key(key), "status" : "ok",
 			         "channel_id" : None, "channel_name" : None, "missing" : []}
 			try :
-				channel = guild.get_channel(ConfigData().get_key_int_or_zero(guild.id, key))
+				channel = guild.get_channel_or_thread(ConfigData().get_key_int_or_zero(guild.id, key))
 				if channel is None :
 					check["status"] = "not_set"
 				else :
 					check["channel_id"] = str(channel.id)
 					check["channel_name"] = channel.name
-					missing = check_missing_channel_permissions(channel, DEFAULT_CHANNEL_PERMS)
+					missing = check_missing_channel_permissions(channel, default_channel_perms(channel))
 					if missing :
 						check["status"] = "missing"
 						check["missing"] = [describe_permission(perm) for perm in missing]

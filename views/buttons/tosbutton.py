@@ -81,7 +81,7 @@ class TOSButton(discord.ui.View) :
 
 	async def decline_callback(self, interaction: discord.Interaction) :
 		mod_channel_id = ConfigData().get_key_int(interaction.guild.id, "approval_channel")
-		modlobby = interaction.guild.get_channel(mod_channel_id)
+		modlobby = interaction.guild.get_channel_or_thread(mod_channel_id)
 
 		if modlobby :
 			await send_message(

@@ -270,7 +270,7 @@ class ConfigData(metaclass=Singleton) :
 			await self._notify_owner(guild, f"missing-channel:{channel_type}",
 			                         f"No `{channel_type}` channel set for {guild.name}, please set it up using the /config command")
 			return None
-		channel = guild.get_channel(channel_id)
+		channel = guild.get_channel_or_thread(channel_id)
 		attempts = 0
 		# Only Discord-side errors are worth retrying. A deleted or hidden channel will not come back, and
 		# retrying it without counting attempts looped until the queue's 600s timeout (AGEVERIFIER-HY and friends).

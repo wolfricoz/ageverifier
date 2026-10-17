@@ -7,8 +7,7 @@ from discord_py_utilities.exceptions import NoPermissionException
 
 import classes.helpers as helpers
 import modules.logs as logs
-from classes import idcheck
-from classes import lobbyprocess
+from classes import idcheck, lobbyprocess
 from classes.configsetup import ConfigSetup
 from classes.lobby import Clean
 
@@ -71,7 +70,7 @@ class TestCleanLobby(unittest.TestCase) :
 
 		lobby = MagicMock(history=history)
 		guild = MagicMock(id=GUILD_ID)
-		guild.get_channel.return_value = lobby
+		guild.get_channel_or_thread.return_value = lobby
 		config = MagicMock()
 		config.get_key_int_or_zero.return_value = 7
 		queue = MagicMock()
@@ -125,7 +124,7 @@ class TestVerifiedWelcome(unittest.TestCase) :
 	def test_tells_staff_when_the_welcome_channel_refuses_the_message(self) :
 		guild = MagicMock(id=GUILD_ID)
 		channel = MagicMock()
-		guild.get_channel.return_value = channel
+		guild.get_channel_or_thread.return_value = channel
 		config = MagicMock()
 		config.get_toggle.side_effect = lambda guild_id, key, *args : key == "send_verification_completed_message"
 		config.get_channel_id.return_value = 55
@@ -155,7 +154,7 @@ class TestJoinHelpers(unittest.TestCase) :
 	def test_a_lobby_the_bot_cannot_post_in_tells_staff(self) :
 		member = MagicMock()
 		lobby = MagicMock()
-		member.guild.get_channel.return_value = lobby
+		member.guild.get_channel_or_thread.return_value = lobby
 		config = MagicMock()
 		config.get_key.return_value = "enabled"
 		notify, send = AsyncMock(), AsyncMock()

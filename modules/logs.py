@@ -146,10 +146,10 @@ def setup_logging() -> None:
 def _forbidden_message(channel) -> str:
 	"""A 403 doesn't say which permission was refused, so name what's missing in the command's channel when there is something."""
 	# Lazy import keeps the logging module from loading the database layer that permissions_notice pulls in.
-	from classes.permissions_notice import AGEVERIFIER_PERMISSIONS_DOCS, DEFAULT_CHANNEL_PERMS, humanize_permission
+	from classes.permissions_notice import AGEVERIFIER_PERMISSIONS_DOCS, default_channel_perms, humanize_permission
 	missing = []
 	if isinstance(channel, (discord.abc.GuildChannel, discord.Thread)):
-		missing = check_missing_channel_permissions(channel, DEFAULT_CHANNEL_PERMS)
+		missing = check_missing_channel_permissions(channel, default_channel_perms(channel))
 	if missing:
 		return (f"Ageverifier is missing permissions in #{channel.name}: "
 		        f"{', '.join(humanize_permission(perm) for perm in missing)}. Enable them for the **Ageverifier** "

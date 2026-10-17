@@ -65,7 +65,7 @@ class AgeCalculations(ABC) :
 	async def id_check(guild, user: discord.Member) :
 		userinfo: databases.current.IdVerification = VerificationTransactions().get_id_info(user.id)
 		idlog = ConfigData().get_key_int(guild.id, "verification_failure_log")
-		idchannel = guild.get_channel(idlog)
+		idchannel = guild.get_channel_or_thread(idlog)
 		if userinfo is None :
 			return False
 		if userinfo.idcheck :

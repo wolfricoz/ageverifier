@@ -52,7 +52,7 @@ class GDPRRemoval(discord.ui.View) :
 				await self.delete_lobby_entry(interaction, guild)
 			if interaction.user in guild.members:
 				try:
-					mod_lobby = guild.get_channel(ConfigData().get_key_int(guild.id, "approval_channel"))
+					mod_lobby = guild.get_channel_or_thread(ConfigData().get_key_int(guild.id, "approval_channel"))
 					await send_message(mod_lobby, embed=embed)
 				except KeyNotFound:
 					pass
@@ -103,7 +103,7 @@ class GDPRRemoval(discord.ui.View) :
 		tracked = LoggedMessageTransactions().get_for_user(interaction.user.id)
 		for entry in tracked :
 			guild = interaction.client.get_guild(entry.guild)
-			channel = guild.get_channel(entry.channel) if guild else None
+			channel = guild.get_channel_or_thread(entry.channel) if guild else None
 			if channel is None :
 				continue
 			try :
@@ -131,7 +131,7 @@ class GDPRRemoval(discord.ui.View) :
 			# get_key_int_or_zero rather than ConfigData().get_channel: get_channel DMs the guild
 			# owner a "channel not set" nag, which across four keys and every guild would spam
 			# owners on every single removal.
-			channel = guild.get_channel(ConfigData().get_key_int_or_zero(guild.id, key))
+			channel = guild.get_channel_or_thread(ConfigData().get_key_int_or_zero(guild.id, key))
 			if channel is None :
 				continue
 			try:

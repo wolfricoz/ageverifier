@@ -16,6 +16,8 @@ from databases.transactions.ConfigData import ConfigData
 
 # The channel permissions the bot needs to operate in a log / verification channel.
 DEFAULT_CHANNEL_PERMS = ["view_channel", "send_messages", "embed_links", "attach_files"]
+# In a thread, Discord checks Send Messages in Threads instead of Send Messages.
+THREAD_CHANNEL_PERMS = ["view_channel", "send_messages_in_threads", "embed_links", "attach_files"]
 
 # Documentation links surfaced on every notice.
 AGEVERIFIER_PERMISSIONS_DOCS = "https://wolfricoz.github.io/ageverifier/Permissions.html"
@@ -26,6 +28,7 @@ DISCORD_PERMISSIONS_DOCS = "https://support.discord.com/hc/en-us/articles/206029
 PERMISSION_INFO = {
 	"view_channel"          : ("View Channel", "see the channel so it can post verification and log messages"),
 	"send_messages"         : ("Send Messages", "post messages in the channel"),
+	"send_messages_in_threads" : ("Send Messages in Threads", "post messages in the thread"),
 	"embed_links"           : ("Embed Links", "send the verification and log embeds"),
 	"attach_files"          : ("Attach Files", "attach images, such as ID submissions"),
 	"read_message_history"  : ("Read Message History", "find previous messages when cleaning up the lobby"),
@@ -38,6 +41,11 @@ PERMISSION_INFO = {
 }
 # Discord only offers these on the server role, not in a channel's permission overrides.
 SERVER_ONLY_PERMISSIONS = {"kick_members", "manage_guild", "manage_roles"}
+
+
+def default_channel_perms(channel) -> list[str] :
+	"""The permissions the bot needs in a configured channel, which can also be a thread."""
+	return THREAD_CHANNEL_PERMS if isinstance(channel, discord.Thread) else DEFAULT_CHANNEL_PERMS
 
 
 def humanize_permission(perm: str) -> str:
@@ -204,7 +212,7 @@ class PermissionNotice :
 				return False
 
 			if missing is None and isinstance(channel, (discord.abc.GuildChannel, discord.Thread)) :
-				missing = check_missing_channel_permissions(channel, DEFAULT_CHANNEL_PERMS)
+				missing = check_missing_channel_permissions(channel, default_channel_perms(channel))
 			missing = [m for m in (missing or []) if m]
 			if not missing :
 				return False
@@ -240,7 +248,7 @@ class PermissionNotice :
 			# accessible channel -> the triggering user's DMs -> the owner's DMs. Never target the
 			# broken channel itself.
 			targets = []
-			mod_channel = guild.get_channel(ConfigData().get_key_int_or_zero(guild.id, "approval_channel"))
+			mod_channel = guild.get_channel_or_thread(ConfigData().get_key_int_or_zero(guild.id, "approval_channel"))
 			if mod_channel is not None and mod_channel != channel :
 				targets.append(mod_channel)
 			accessible = find_first_accessible_text_channel(guild)

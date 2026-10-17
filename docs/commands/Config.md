@@ -94,7 +94,7 @@ I highly recommend using the website, as it provides a more user-friendly interf
 **Usage:** `/config channels <key> <action> <value>`
 
 > This command is for assigning specific channels for the bot's functions, like a channel for logging or a lobby for new members.
-You can either 'set' a new channel or 'remove' an existing assignment.
+You can either 'set' a new channel or 'remove' an existing assignment. Threads work too.
 
 
 **Permissions:**
