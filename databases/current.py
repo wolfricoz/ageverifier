@@ -20,7 +20,7 @@ db_string = f"{DB}/rmrbotnew"
 # Opening a connection per session cost ~38ms, and most DB calls run on the event loop, so that time blocked the bot.
 # pool_timeout is short so an exhausted pool fails fast instead of freezing the loop; pre_ping and recycle replace
 # connections the server or a firewall closed while they sat idle.
-pool_options = {"pool_size" : 5, "max_overflow" : 10, "pool_timeout" : 5, "pool_pre_ping" : True, "pool_recycle" : 1800}
+pool_options = {"pool_size" : 64, "max_overflow" : 16, "pool_timeout" : 5, "pool_pre_ping" : True, "pool_recycle" : 1800}
 if DEBUG == "true" :
 	# Every test run gets its own database, so parallel runs never share tables.
 	os.environ.setdefault('TEST_DB_NAME', f"rmrtest_{uuid.uuid4().hex[:8]}_test")
