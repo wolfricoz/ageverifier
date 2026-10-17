@@ -3,7 +3,7 @@ from datetime import datetime
 
 import discord
 from discord_py_utilities.messages import send_message
-from discord_py_utilities.permissions import find_first_accessible_text_channel
+from discord_py_utilities.permissions import check_missing_channel_permissions, find_first_accessible_text_channel
 
 import databases.exceptions.KeyNotFound
 from classes.permissions_notice import PermissionNotice
@@ -11,7 +11,7 @@ from databases.enums.joinhistorystatus import JoinHistoryStatus
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.HistoryTransactions import JoinHistoryTransactions
 from databases.transactions.UserTransactions import UserTransactions
-from views.buttons.verifybutton import VerifyButton
+from views.buttons.verifybutton import GDPR_DISCLOSURE, VerifyButton
 
 
 async def has_onboarding(guild: discord.Guild) -> bool :
@@ -24,7 +24,7 @@ async def welcome_user(member) :
 	JoinHistoryTransactions().add(member.id, member.guild.id, JoinHistoryStatus.NEW)
 	warning = ""
 	lobby = ConfigData().get_key_int_or_zero(member.guild.id, "server_join_channel")
-	channel = member.guild.get_channel(lobby)
+	channel = member.guild.get_channel_or_thread(lobby)
 	if channel is None:
 		warning = "WARNING: Lobby channel not set, please configure your lobby with `/config channels`"
 		channel = find_first_accessible_text_channel(member.guild)
@@ -46,11 +46,15 @@ async def welcome_user(member) :
 			return
 		warning = f"Lobby channel not found, sending to {channel.mention} instead."
 
-
+	missing = check_missing_channel_permissions(channel, ["view_channel", "send_messages", "embed_links"])
+	if missing :
+		# Without these the lobby has no verify button, so nobody can start verification.
+		await PermissionNotice.notify(member.guild, channel=channel, missing=missing,
+		                              purpose="post the welcome message and verify button in the lobby")
+		return
 	await send_message(channel,
 	                   f"Welcome {member.mention}! {lobby_welcome}\n{warning}"
-	                   f"\n"
-	                   f"-# GDPR AND INFORMATION USE DISCLOSURE: By entering your birth date (MM/DD/YYYY) and age, you consent to having this information about you stored by Age Verifier and used to verify that you are the age that you say you are, including sharing to relevant parties for age verification. This information will be stored for a maximum of 1 year if you are no longer in a server using Ageverifier.",
+	                   f"\n{GDPR_DISCLOSURE}",
 	                   view=VerifyButton(member.guild.id), error_mode="ignore")
 
 
@@ -63,8 +67,9 @@ async def add_join_roles(member) -> bool:
 		await member.add_roles(*roles)
 		return True
 	except discord.Forbidden :
-		await send_message(member.guild.owner,
-		                   f"The bot does not have permission to apply all roles to {member.mention}, please check if the bot is above the roles it is supposed to give.")
+		# Manage Roles is off, or a join role sits above Ageverifier's; the notice's hierarchy step covers the second.
+		await PermissionNotice.notify(member.guild, missing=["manage_roles"],
+		                              purpose="give new members the roles set as server_join_role")
 		return False
 	except Exception as e :
 		print(e)

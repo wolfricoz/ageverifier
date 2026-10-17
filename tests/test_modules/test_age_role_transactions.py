@@ -61,5 +61,9 @@ class TestAgeRoleTransactions(unittest.TestCase):
     def test_permanent_delete(self):
         controller = AgeRoleTransactions()
         controller.add(self.guild, self.role_id, "ADULT")
-        controller.permanentdelete(self.guild, self.role_id)
+        self.assertTrue(controller.permanentdelete(self.guild, self.role_id))
         self.assertIsNone(controller.get(self.guild, self.role_id))
+
+    def test_permanent_delete_missing_role(self):
+        controller = AgeRoleTransactions()
+        self.assertFalse(controller.permanentdelete(self.guild, self.role_id))

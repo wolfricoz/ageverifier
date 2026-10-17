@@ -197,12 +197,16 @@ class AgeCharts :
 			age = AgeCalculations.dob_to_age(dob)
 			for age_group in age_groups.values() :
 				age_group: dict
-				if age_group.get('start', 18) < age < age_group.get('end', 200) :
+				# Inclusive: with < on both ends, members aged exactly 18, 24, 25, 34, ... fell in no group.
+				if age_group.get('start', 18) <= age <= age_group.get('end', 200) :
 					if age_group.get('name') not in graph_data :
 						graph_data[age_group.get('name')] = 0
 					graph_data[age_group.get('name')] += 1
 					break
 		print(graph_data)
+		if not graph_data :
+			# pie() raises "All wedge sizes are zero" on an empty chart; the caller reports there is nothing to show.
+			return None
 		self.filename = 'age_distribution_chart.png'
 		fig, ax = plt.subplots(figsize=(12, 5))
 		ax.pie(graph_data.values(), labels=list(graph_data.keys()), autopct='%1.1f%%')

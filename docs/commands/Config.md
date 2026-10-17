@@ -6,7 +6,7 @@ nav_order: 1
 ---
 
 <h1>Config</h1>
-<h6>version: 3.3: Updated documentation and quality of life fixes.</h6>
+<h6>version: 4.0: Easier setup and clearer errors</h6>
 <h6>Documentation automatically generated from docstrings.</h6>
 
 Commands for configuring the bot's settings in the server.
@@ -22,14 +22,14 @@ Most commands require 'Manage Server' permissions.
 
 ---
 
-### `configsetup`
+### `setup`
 
-**Usage:** `/config configsetup <setup_type>`
+**Usage:** `/config setup <setup_type>`
 
 > This command helps you get the bot set up on your server. You have a few options to choose from:
 'dashboard' will give you a link to our web dashboard for an easy, graphical setup experience.
-'manual' will guide you step-by-step through the setup process using Discord commands.
-'auto' will automatically create the necessary roles and channels to get the bot running quickly.
+'manual' will guide you step-by-step through the setup process using Discord commands, starting with the verification mode (Website or Basic).
+'auto' will automatically create the necessary roles and channels to get the bot running quickly, and sets the verification mode to Website.
 
 **Permissions:**
 - You'll need the `Manage Server` permission to use this command.
@@ -56,6 +56,7 @@ It's a great way to diagnose problems if the bot isn't behaving as expected. Any
 > Lets you customize the various messages the bot sends. You can either set a new custom message or remove an existing one to revert it back to the default.
 When you choose to 'set' a message, a pop-up will appear for you to enter your new text.
 
+Some of these are premium only, such as `verification_button_label`, which changes the text on the verification button itself.
 
 **Permissions:**
 - You'll need the `Manage Server` permission to use this command.
@@ -93,7 +94,7 @@ I highly recommend using the website, as it provides a more user-friendly interf
 **Usage:** `/config channels <key> <action> <value>`
 
 > This command is for assigning specific channels for the bot's functions, like a channel for logging or a lobby for new members.
-You can either 'set' a new channel or 'remove' an existing assignment.
+You can either 'set' a new channel or 'remove' an existing assignment. Threads work too.
 
 
 **Permissions:**
@@ -126,6 +127,19 @@ This can help prevent spam. The cooldown is set in minutes. You can set it to 0 
 
 ---
 
+### `verification_reminder`
+
+**Usage:** `/config verification_reminder <minutes>`
+
+> 💎 Premium: Sends a DM to members who opened the online verification page but did not finish it within the set number of minutes.
+The DM contains their verification link, so members who got distracted can pick up where they left off. Each link is only reminded once.
+Set it to 0 to turn the reminder off. Only applies when the verification method is Website verification.
+
+**Permissions:**
+- You'll need the `Manage Server` permission to use this command.
+
+---
+
 ### `verification_mode`
 
 **Usage:** `/config verification_mode <verification_type> <mode>`
@@ -142,7 +156,22 @@ You can set the verification mode for the following types:
 
 **Permissions:**
 - You'll need the `Manage Server` permission to use this command.
-- premium required
+- premium required for Reverification, and for ID verification and Basic + ID verification
+
+Reverification always happens inside Discord, so it can't be set to Website verification.
+
+---
+
+### `denial_reasons`
+
+**Usage:** `/config denial_reasons <action> <reason>`
+
+> Manage the reasons staff can pick after pressing **Deny** on an approval message. The member is sent the reason's message by DM, so it should explain what went wrong and what they can do next.
+Servers start with a few default reasons. `list` shows them, `add` and `edit` open a pop-up for the reason and its message, `remove` deletes one and `reset` puts the defaults back.
+Use `{user}` and `{server}` in a message for the member's mention and the server name. Up to 24 reasons; staff can always write a one-off custom reason as well.
+
+**Permissions:**
+- You'll need the `Manage Server` permission to use this command.
 
 ---
 

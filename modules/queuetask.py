@@ -7,6 +7,7 @@ from discord import app_commands
 from discord.ext import commands, tasks
 from discord_py_utilities.messages import send_response
 
+from classes.devguild import dev_guild_only
 from classes.support.queue import Queue
 
 STUCK_AFTER = 300
@@ -30,7 +31,8 @@ class queueTask(commands.Cog):
         self.display_status.start()
         self.watchdog.start()
 
-    @app_commands.command(name="restart_queue", description="[dev command] Restart the bot queue")
+    @dev_guild_only
+    @app_commands.command(name="restart_queue", description="[DEV] Restart the bot queue")
     @check_access()
     async def restart_queue(self, interaction: discord.Interaction, empty: bool = False) :
         if empty :

@@ -6,6 +6,7 @@ from discord_py_utilities.messages import await_message, send_message, send_resp
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.VerificationTransactions import VerificationTransactions
 from views.buttons.idreviewbuttons import IdReviewButton
+from views.buttons.idwithdrawbutton import attach_withdraw_button
 
 
 #
@@ -58,10 +59,10 @@ class IdSubmitButton(discord.ui.View) :
 			return await send_response(interaction, "Too many attachments attached to this message, please send only 1 image.")
 
 		if self.user_initiated:
-			mod_channel: discord.TextChannel = self.guild.get_channel(
+			mod_channel: discord.TextChannel = self.guild.get_channel_or_thread(
 				ConfigData().get_key_int_or_zero(self.guild.id, "approval_channel"))
 		else:
-			mod_channel: discord.TextChannel = self.guild.get_channel(
+			mod_channel: discord.TextChannel = self.guild.get_channel_or_thread(
 				ConfigData().get_key_int_or_zero(self.guild.id, "verification_failure_log"))
 		if mod_channel is None:
 			await send_response(interaction, "Lobbymod channel not set, please contact the server staff.", ephemeral=True)
@@ -83,7 +84,8 @@ class IdSubmitButton(discord.ui.View) :
 				interaction.user,
 				"Thank you — we received your ID for verification. Attached is a private copy of what you submitted.\n\n"
 				"This message is the only storage location for your submission. We keep it on Discord for review only, for up to 7 days. "
-				"When the review is complete, or 7 days pass (whichever comes first), this message will be deleted and no other copies will be kept.",
+				"When the review is complete, or 7 days pass (whichever comes first), this message will be deleted and no other copies will be kept.\n\n"
+				"You can withdraw your consent at any time with the button below: it deletes your ID straight away and cancels the review.",
 				files=[await attachment.to_file()]
 			)
 		except discord.HTTPException as e:
@@ -120,7 +122,8 @@ class IdSubmitButton(discord.ui.View) :
 		if self.reverify:
 			embed.add_field(name="Reverify", value="true")
 		embed.set_footer(text=interaction.user.id)
-		await mod_channel.send(f"{interaction.user.mention} has submitted an ID for verification.", embed=embed, view=IdReviewButton(reverify=self.reverify))
+		staff_message = await mod_channel.send(f"{interaction.user.mention} has submitted an ID for verification.", embed=embed, view=IdReviewButton(reverify=self.reverify))
+		await attach_withdraw_button(message, staff_message)
 		await send_response(interaction, "Your ID submission has been sent to the server staff for review. You will be notified once the review is complete.", ephemeral=True)
 		await self.disable_buttons(interaction)
 
@@ -133,7 +136,7 @@ class IdSubmitButton(discord.ui.View) :
 			await send_response(interaction, "You are not a member of this server.", ephemeral=True)
 			return
 		await send_response(interaction, f"{interaction.user.mention} You have declined to submit ID verification. You will not be able to proceed with verification without submitting ID. If you change your mind, you can click the 'Submit ID' button again.", ephemeral=True)
-		mod_channel = self.guild.get_channel(ConfigData().get_key_int_or_zero(self.guild.id, "approval_channel"))
+		mod_channel = self.guild.get_channel_or_thread(ConfigData().get_key_int_or_zero(self.guild.id, "approval_channel"))
 		if mod_channel is None:
 			await send_response(interaction, "Lobbymod channel not set, please contact the server staff.", ephemeral=True)
 			return

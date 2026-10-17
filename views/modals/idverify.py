@@ -33,7 +33,7 @@ class IdVerifyModal(discord.ui.Modal) :
 	async def on_submit(self, interaction: discord.Interaction) :
 		# validates inputs with regex
 		if AgeCalculations.validate_dob(self.dateofbirth.value) is None :
-			return await send_response(interaction, f"Please fill in the date of birth as with the format: mm/dd/yyyy.")
+			return await send_response(interaction, "Please enter the date of birth as mm/dd/yyyy (dd/mm/yyyy also works when the day is 13 or higher).")
 
 		idcheckchannel = ConfigData().get_key_int_or_zero(interaction.guild.id, "verification_failure_log")
 		return await send_response(interaction,

@@ -2,6 +2,7 @@ import logging
 
 import discord
 from discord.ext import commands
+from discord_py_utilities.exceptions import NoPermissionException
 
 import databases.current
 from classes.AgeCalculations import AgeCalculations
@@ -9,6 +10,7 @@ from classes.encryption import Encryption
 from classes.kernel.LocalCacheStorage import LocalCacheStorage
 from classes.lobbyprocess import LobbyProcess
 from classes.lobbytimers import LobbyTimers
+from classes.permissions_notice import PermissionNotice
 from databases.enums.joinhistorystatus import JoinHistoryStatus
 from databases.transactions.AgeRoleTransactions import AgeRoleTransactions
 from databases.transactions.ConfigData import ConfigData
@@ -26,7 +28,9 @@ class VerificationProcess :
 	             month: str,
 	             year: str,
 	             age: int | str,
-	             reverify = False
+	             reverify = False,
+	             alts: list = None,
+	             risk = None
 	             ) :
 		self.bot = bot
 		self.member = member
@@ -48,6 +52,11 @@ class VerificationProcess :
 		# The date of birth to display as "Recorded" in a dob_mismatch idcheck.
 		# Set to the DB record when the DB check trips, or the cached value when the cache check trips.
 		self.recorded_dob = None
+		# [Online Verification Only] Other users who verified from the same address or device, as
+		# classes.alts.AltMatch, see classes.alts.find_alts.
+		self.alts = alts
+		# [Online Verification Only] classes.verification.risk.RiskScore for the approval embed.
+		self.risk = risk
 
 	async def verify(self) -> str :
 		try :
@@ -104,14 +113,17 @@ class VerificationProcess :
 			await AgeCalculations.check_history(self.guild.id, self.member, self.mod_channel)
 			LobbyTimers().add_cooldown(self.guild.id, self.member.id, ConfigData().get_key_int_or_zero(self.guild.id, 'COOLDOWN'))
 			logging.info(f"Verification validated: {self.member.id} with reverify: {self.reverify}")
-			approval_buttons = ApprovalButtons(age=self.age, dob=dob, user=self.member, reverify=self.reverify)
+			approval_buttons = ApprovalButtons(age=self.age, dob=dob, user=self.member, reverify=self.reverify, alts=self.alts, risk=self.risk)
 			await approval_buttons.send_message(self.guild, self.member, self.mod_channel)
 
 			return "Your age and date of birth have been submitted successfully. A staff member will review your verification shortly to ensure everything checks out."
 
-		except discord.Forbidden :
-			self.error = "Ageverifier is missing permissions, please use `/config permissioncheck` to test permissions."
-			logging.warning(f"Ageverifier is missing permissions, please use `/config permissioncheck` to test permissions.")
+		except (discord.Forbidden, NoPermissionException) :
+			# The member can't fix this, so tell staff and give the member a message about what happens next.
+			await PermissionNotice.notify(self.guild, channel=self.mod_channel, purpose="post the approval message")
+			self.error = ("Ageverifier is missing permissions in this server, so your verification could not be sent to the staff. "
+			              "The staff have been told; please try again later.")
+			logging.warning(f"Ageverifier is missing permissions to process a verification in {self.guild.id}.")
 			return self.error
 		except discord.NotFound :
 			self.error = "Ageverifier could not fetch one of the channels, please use `/config view` and check if the channels still exist, and if ageverifier has permissions to view them."
@@ -119,7 +131,7 @@ class VerificationProcess :
 			return self.error
 
 		except ValueError:
-			self.error = "Ageverifier could not validate your date of birth, please make sure it is in the format: mm/dd/yyyy"
+			self.error = "Ageverifier could not read your date of birth. Please enter it as mm/dd/yyyy (dd/mm/yyyy also works when the day is 13 or higher)."
 			return self.error
 
 		except Exception as e :
@@ -141,8 +153,8 @@ class VerificationProcess :
 		id_log = ConfigData().get_key_int_or_zero(self.guild.id, "verification_failure_log")
 		if mod_lobby == 0 or id_log == 0 :
 			raise Exception("Lobbymod or id_channel not set, inform the server staff to setup the server.")
-		self.mod_channel = self.guild.get_channel(mod_lobby)
-		self.id_channel = self.guild.get_channel(id_log)
+		self.mod_channel = self.guild.get_channel_or_thread(mod_lobby)
+		self.id_channel = self.guild.get_channel_or_thread(id_log)
 		if self.id_channel is None :
 			self.id_channel = await self.guild.fetch_channel(id_log)
 		if self.mod_channel is None :
@@ -216,4 +228,3 @@ class VerificationProcess :
 			self.id_check_info = id_check_info
 			return True
 		return None
-

@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 from uuid import uuid4
 
@@ -87,13 +87,84 @@ class WebsiteDataTransactions(DatabaseTransactions) :
 			self.commit(session)
 			return result
 
-	def set_verified(self, guid) :
+	def owner_mismatch(self, guid: str, user_id: int, guild_id: int) -> bool :
+		"""
+		Whether the link exists but was issued to another member or server. The verify routes call this
+		before processing anything, so a submission on someone else's link has no side effects.
+		An unknown guid is not a mismatch: set_verified already ignores those.
+		"""
+		with self.createsession() as session :
+			entry = self.read(guid, session)
+			if entry is None :
+				return False
+			if entry.uid != user_id or entry.gid != guild_id :
+				logging.warning(f"Verification submitted on {guid} by {user_id} in {guild_id}, but it belongs to {entry.uid} in {entry.gid}.")
+				return True
+			return False
+
+	def set_verified(self, guid, user_id) :
 		with self.createsession() as session :
 			entry = self.read(guid, session)
 			if entry :
+				if entry.uid != user_id :
+					raise ValueError(f"User id {user_id} does not match {guid}.")
+
 				entry.verified = datetime.now()
+				# The page has to be loaded to finish it, so a link the dashboard never reported as opened still was.
+				if entry.opened is None :
+					entry.opened = entry.verified
 				self.commit(session)
 				logging.info(f"Set verification for {guid} to True.")
 				return True
 			logging.warning(f"Attempted to set verification for {guid} to True, but entry not found.")
 
+	def check(self, user_id: int, guild_id: int, retrieve: bool = True) -> bool | str :
+		with self.createsession() as session :
+			result = session.scalar(Select(WebsiteData).where(WebsiteData.uid == user_id, WebsiteData.gid == guild_id, WebsiteData.verified.is_(None)))
+
+			if result and retrieve:
+				return result.uuid
+			if result:
+				return True
+			return False
+
+	def set_opened(self, guid: str, user_id: int, guild_id: int) -> bool :
+		"""
+		Records the first time the member loaded the verification page. Later loads keep the
+		original time, so the reminder counts from when they first saw the page.
+		The ids are checked against the row so a guid cannot be marked for someone else.
+		"""
+		with self.createsession() as session :
+			entry = self.read(guid, session)
+			if not entry or entry.uid != user_id or entry.gid != guild_id :
+				logging.warning(f"Attempted to mark {guid} as opened, but no matching entry was found.")
+				return False
+			if entry.opened is None :
+				entry.opened = datetime.now()
+				self.commit(session)
+			return True
+
+	def get_abandoned(self, max_age: timedelta) -> list[WebsiteData] :
+		"""
+		Returns links that were opened but never finished and have not been reminded yet.
+		max_age bounds how far back to look, so links abandoned long before the reminder
+		was enabled are not all messaged at once.
+		"""
+		with self.createsession() as session :
+			return list(session.scalars(
+				Select(WebsiteData).where(
+					WebsiteData.opened.is_not(None),
+					WebsiteData.opened >= datetime.now() - max_age,
+					WebsiteData.verified.is_(None),
+					WebsiteData.reminded.is_(None),
+				)
+			).all())
+
+	def set_reminded(self, guid: str) -> bool :
+		with self.createsession() as session :
+			entry = self.read(guid, session)
+			if not entry :
+				return False
+			entry.reminded = datetime.now()
+			self.commit(session)
+			return True

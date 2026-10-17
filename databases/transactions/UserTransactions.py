@@ -3,16 +3,17 @@ import logging
 from datetime import datetime, timedelta, timezone
 
 import sqlalchemy.exc
-from sqlalchemy import Select, and_, text
+from sqlalchemy import Select, Update, and_, text
 from sqlalchemy.exc import SQLAlchemyError
 
 from classes.encryption import Encryption
+from classes.iphash import hash_fingerprint, hash_ip
 from databases import current as db
 from databases.current import IdVerification, Users, Warnings
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.ConfigTransactions import ConfigTransactions
 from databases.transactions.DatabaseTransactions import DatabaseTransactions
-from resources.data.config_variables import GDPR_REMOVAL_GRACE_DAYS
+from resources.data.config_variables import GDPR_REMOVAL_GRACE_DAYS, IP_RETENTION_DAYS
 
 
 class UserTransactions(DatabaseTransactions) :
@@ -46,7 +47,7 @@ class UserTransactions(DatabaseTransactions) :
 				                server=guildname)
 				session.add(item)
 				self.commit(session)
-				logging.info(f"User {userid} added to database with dob {dob} in {guildname}")
+				logging.info(f"User {userid} added to database in {guildname}")
 				return True
 			except ValueError :
 				return False
@@ -58,20 +59,19 @@ class UserTransactions(DatabaseTransactions) :
 			if userdata is None :
 				self.add_user_full(userid, dob, guildname)
 				return False
-			old_dob = userdata.date_of_birth
 			# noinspection PyTypeChecker
 			userdata.date_of_birth = Encryption().encrypt(dob)
 			userdata.entry = datetime.now(tz=timezone.utc)
 			userdata.server = guildname
 			userdata.deleted_at = None
 			self.commit(session)
-			logging.info(f"Dob updated for {userid} from {old_dob} to {dob} in {guildname}")
+			logging.info(f"Dob updated for {userid} in {guildname}")
 			if userdata.date_of_birth is None :
 				return False
 			return True
 
 
-	def update_user(self, uid: int, entry: datetime = None, date_of_birth: str = None, server: str = None, override=False) :
+	def update_user(self, uid: int, entry: datetime = None, date_of_birth: str = None, server: str = None, ip_address: str = None, device_fingerprint: str = None, override=False) :
 		with self.createsession() as session :
 			user = self.get_user(uid, deleted=override)
 			data = {
@@ -79,6 +79,20 @@ class UserTransactions(DatabaseTransactions) :
 				"date_of_birth" : date_of_birth,
 				"server"        : server
 			}
+			# Hashed here rather than by the caller so a raw address cannot reach the
+			# columns or the log line below. A malformed address hashes to None and is
+			# dropped rather than recorded.
+			if ip_address is not None :
+				hashes = hash_ip(ip_address)
+				if hashes is not None :
+					data.update(hashes)
+					data["ip_recorded_at"] = datetime.now(tz=timezone.utc)
+			# Same for the fingerprint: only the peppered digest is ever stored.
+			if device_fingerprint is not None :
+				digest = hash_fingerprint(device_fingerprint)
+				if digest is not None :
+					data["device_fingerprint"] = digest
+					data["fingerprint_recorded_at"] = datetime.now(tz=timezone.utc)
 			for field, value in data.items() :
 				if field == 'date_of_birth' and value is not None :
 					encrypted_value = Encryption().encrypt(value)
@@ -87,8 +101,9 @@ class UserTransactions(DatabaseTransactions) :
 					setattr(user, field, value)
 			session.merge(user)
 			self.commit(session)
-			logging.info(f"Updated {uid} with:")
-			logging.info(data)
+			# Field names only: the values include the plaintext date of birth.
+			changed = [field for field, value in data.items() if value is not None]
+			logging.info(f"Updated {uid} fields: {', '.join(changed)}")
 
 
 	def soft_delete(self, userid: int, guildname: str) :
@@ -243,6 +258,34 @@ class UserTransactions(DatabaseTransactions) :
 			# Fetches users that have not updated their entry in over 365 days
 			return session.execute(text("select uid, entry from users where entry < NOW() - INTERVAL '365 days'")).all()
 
+	def clear_expired_ips(self) :
+		"""
+		Wipes the stored IP hashes of every user whose address was last seen more
+		than IP_RETENTION_DAYS ago.
+
+		This runs well ahead of the 365 day record expiry on purpose: a rotated
+		address stops being worth correlating long before the row itself expires,
+		so there is no reason to keep the digests around for the full year.
+
+		:return: the number of users cleared.
+		"""
+		with self.createsession() as session :
+			result = session.execute(
+				Update(Users)
+				.where(Users.ip_recorded_at < datetime.now(tz=timezone.utc) - timedelta(days=IP_RETENTION_DAYS))
+				.values(ip_hash=None, ip_prefix_24=None, ip_prefix_20=None, ip_prefix_16=None, ip_recorded_at=None)
+			)
+			# Device fingerprints are kept for the same window, on their own timestamp.
+			fingerprints = session.execute(
+				Update(Users)
+				.where(Users.fingerprint_recorded_at < datetime.now(tz=timezone.utc) - timedelta(days=IP_RETENTION_DAYS))
+				.values(device_fingerprint=None, fingerprint_recorded_at=None)
+			)
+			self.commit(session)
+			logging.info(f"Cleared stored IP hashes for {result.rowcount} users and device fingerprints for {fingerprints.rowcount}.")
+			return result.rowcount
+
+
 	def get_all_soft_deleted(self, expired=False):
 		with self.createsession() as session:
 			if expired:
@@ -254,3 +297,43 @@ class UserTransactions(DatabaseTransactions) :
 
 			# Fetches users that have been soft deleted
 			return session.scalars(Select(Users).where(Users.deleted_at.is_not(None))).all()
+
+	def check_duplicate_ips(self, ip_hash: str, exclude_uid: int = None) :
+		"""
+		Finds other users who last verified from the same address.
+
+		:param ip_hash: the digest from check_ip.
+		:param exclude_uid: the user being verified, who would otherwise match themselves.
+		:return: the matching users, empty if there are none.
+		"""
+		# Without this an empty digest becomes "ip_hash IS NULL", which matches every
+		# user who has no address recorded rather than matching nothing.
+		if not ip_hash :
+			return []
+
+		with self.createsession() as session :
+			# Users waiting out their /gdpr removal grace period are hidden, so they must not
+			# surface to staff as alts; their hashes go with the row when the purge runs.
+			query = Select(Users).where(Users.ip_hash == ip_hash, Users.deleted_at.is_(None))
+			if exclude_uid is not None :
+				query = query.where(Users.uid != exclude_uid)
+			return session.scalars(query).all()
+
+	def check_duplicate_fingerprints(self, fingerprint_digest: str, exclude_uid: int = None) :
+		"""
+		Finds other users who last verified from the same browser.
+
+		:param fingerprint_digest: the digest from classes.iphash.hash_fingerprint.
+		:param exclude_uid: the user being verified, who would otherwise match themselves.
+		:return: the matching users, empty if there are none.
+		"""
+		# Same guard as check_duplicate_ips: an empty digest must match nothing, not every NULL.
+		if not fingerprint_digest :
+			return []
+
+		with self.createsession() as session :
+			# Same as check_duplicate_ips: users pending removal are hidden.
+			query = Select(Users).where(Users.device_fingerprint == fingerprint_digest, Users.deleted_at.is_(None))
+			if exclude_uid is not None :
+				query = query.where(Users.uid != exclude_uid)
+			return session.scalars(query).all()

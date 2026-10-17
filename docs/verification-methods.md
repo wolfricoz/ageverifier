@@ -11,8 +11,9 @@ AgeVerifier can confirm a member's age in a few different ways. This page explai
 members, and when to choose it. You set the method with `/config verification_mode`.
 
 > You can set the method separately for first-time **Verification** and for **Reverification** (asking existing members
-> to verify again). Changing the method is a **premium** feature; **Basic** is the free default and is all many servers
-> ever need.
+> to verify again). New servers start on **Website** verification. **Basic** and **Website** are free; **ID
+> Verification** and **All** need premium. Reverification is premium and always happens inside Discord, so **Website**
+> is only available for first-time verification.
 
 ---
 
@@ -23,8 +24,6 @@ gives
 their age, the bot checks if they previously have submitted their date of birth and if that matches as well as a few
 additional
 checks to ensure they provided their actual date of birth.
-
-**This is the default for every new server.**
 
 **Choose this when:** you want a simple, low-friction check that keeps most people moving through quickly. It's the
 right starting point for the vast majority of communities.
@@ -45,13 +44,32 @@ options!
 
 **Choose this when:** Choose this if you want to give your members all the possible options.
 
-## Website Verification &nbsp;·&nbsp; 💎 Premium
+## Website Verification &nbsp;·&nbsp; Free
 
 Verification happens through the **web dashboard** instead of inside Discord. The member is directed to the site to
 complete the process.
 
+**This is the default for every new server.**
+
 The verification page is a fully customizable page, allowing you to upload your own images, edit colors, add a lovely
 intro to your server and display your rules in style!
+
+Each member gets their own link, tied to their account. Pressing the verification button again hands back the same
+unfinished link instead of making a new one.
+
+Because the website sees more than Discord does, website verifications give your staff two extra fields on the approval
+card:
+
+- **Potential Alts**: other accounts that verified from the same IP address or the same device in the last 30 days.
+- **Risk Score**: one number out of 100 combining VPN or proxy use, alt matches and Discord account age, with the
+  reasons listed. You can hide it with the `risk_score` option of `/config approval_toggles`.
+
+Neither field blocks anyone by itself. See
+[Reading the Risk Score and Potential Alts](configuration.html#reading-the-risk-score-and-potential-alts) for what each
+value means.
+
+💎 With premium you can also turn on the [Verification Reminder](configuration.html#verification-reminder)
+(`/config verification_reminder`), which DMs members their link again when they opened the page but didn't finish.
 
 **Choose this when:** you prefer to handle verification outside of Discord's chat flow, or want the more guided
 experience the website provides. See the [Dashboard](dashboard.html) page for more on the web experience.
@@ -65,7 +83,7 @@ experience the website provides. See the [Dashboard](dashboard.html) page for mo
 | **Basic**           | Enters date of birth          | Free       | Most servers; fast and simple |
 | **ID Verification** | Provides a photo ID           | 💎 Premium | Higher assurance              |
 | **All**             | Date of birth **OR** ID       | 💎 Premium | Maximum thoroughness          |
-| **Website**         | Verifies on the web dashboard | 💎 Premium | Guided, out-of-Discord flow   |
+| **Website**         | Verifies on the web dashboard | Free       | Guided, out-of-Discord flow   |
 
 ---
 

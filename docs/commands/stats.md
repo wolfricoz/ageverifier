@@ -2,43 +2,56 @@
 layout: default
 title: Stats
 parent: Commands
-nav_order: 9
+nav_order: 10
 ---
 
 <h1>Stats</h1>
-<h6>version: 3.2</h6>
+<h6>version: 4.0: Easier setup and clearer errors</h6>
 <h6>Documentation automatically generated from docstrings.</h6>
 
 Welcome to the Statistics Zone!
 This set of commands allows you to visualize various server statistics, such as member activity and age demographics.
 It's a great way to get a snapshot of your community's health and composition.
-These commands are available to everyone.
+These commands are available to everyone, except `/stats verification`, which needs premium and `Manage Server`.
 
 
-### `server`
+### `graph`
 
-**Usage:** `/stats server <days>`
+**Usage:** `/stats graph <days>`
 
 > Curious about your server's growth? This command generates a graph showing the number of members who have joined and left your server over a specific period.
 You can specify the number of days you want to look back on. It's a fantastic tool for tracking membership trends!
 
 ---
 
-### `all_bar_graph`
+### `graph_all`
 
-**Usage:** `/stats all_bar_graph <days>`
+**Usage:** `/stats graph_all <days>`
 
 > Want to see the bigger picture? This command shows the total number of joins and leaves across all servers using this bot.
 It provides a global perspective on user activity.
 
 ---
 
-### `average_ages_graph`
+### `average_ages`
 
-**Usage:** `/stats average_ages_graph`
+**Usage:** `/stats average_ages`
 
 > Get a visual breakdown of the age demographics in your server! This command creates a pie chart showing the distribution of different age groups among your verified members.
 It's a great way to understand the age range of your community.
+
+---
+
+### `verification`
+
+**Usage:** `/stats verification <days>`
+
+> See how far members get with website verification: how many links were created, how many members opened the
+page, how many finished, and how many left it unfinished. Covers links created in the last `days` days
+(default 30, up to 90). This is a premium feature.
+
+**Permissions:**
+- Requires `Manage Server` permission.
 
 ---
 

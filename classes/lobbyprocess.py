@@ -5,11 +5,13 @@ import re
 
 import discord
 from discord.utils import get
+from discord_py_utilities.exceptions import NoPermissionException
 from discord_py_utilities.messages import send_message
 from discord_py_utilities.permissions import find_first_accessible_text_channel
 
 from classes.AgeCalculations import AgeCalculations
 from classes.ageroles import change_age_roles
+from classes.permissions_notice import PermissionNotice
 from classes.support.queue import Queue
 from classes.whitelist import check_whitelist
 from databases.enums.joinhistorystatus import JoinHistoryStatus
@@ -103,7 +105,7 @@ class LobbyProcess :
 			if revlog is not None:
 				lobbylog = revlog
 
-		channel = guild.get_channel(lobbylog) if lobbylog else None
+		channel = guild.get_channel_or_thread(lobbylog) if lobbylog else None
 		# age_log may be unset or deleted; there is nowhere to log to then (AGEVERIFIER-GQ).
 		if channel is None :
 			logging.warning(f"{guild.name} ({guild.id}) has no usable age_log channel, verification of {user.id} was not logged")
@@ -171,7 +173,7 @@ class LobbyProcess :
 			if (message.author == user or user in message.mentions) and count < 10 :
 				count += 1
 				Queue().add(message.delete(), priority=0)
-		channel = guild.get_channel(lobbymod) if lobbymod else None
+		channel = guild.get_channel_or_thread(lobbymod) if lobbymod else None
 		# Same guard as above: approval_channel may be unset or deleted (AGEVERIFIER-EB).
 		if channel is None :
 			return
@@ -213,14 +215,19 @@ class LobbyProcess :
 		if verification_completed_channel is None :
 			logging.info(f"{guild.name} ({guild.id}) has no verification_completed_channel, skipping the welcome message")
 			return
-		channel = guild.get_channel(verification_completed_channel)
+		channel = guild.get_channel_or_thread(verification_completed_channel)
 
 
 		if channel is None:
 			try :
 				channel = await guild.fetch_channel(verification_completed_channel)
-			except (discord.NotFound, discord.Forbidden) :
-				logging.info(f"{guild.name} ({guild.id})'s verification_completed_channel no longer exists or is hidden")
+			except discord.NotFound :
+				logging.info(f"{guild.name} ({guild.id})'s verification_completed_channel no longer exists")
+				return
+			except discord.Forbidden :
+				# No channel object to name, so point staff at the setting instead.
+				await PermissionNotice.notify(guild, missing=["view_channel"],
+				                              purpose="see the welcome channel set as verification_completed_channel")
 				return
 
 		# if verification_completed_channel != server_join_channel:
@@ -229,12 +236,16 @@ class LobbyProcess :
 		# 		if cmessage.author.bot and user in cmessage.mentions :
 		# 			return
 
-		await send_message(channel, welcome_message)
+		try :
+			await send_message(channel, welcome_message)
+		except NoPermissionException :
+			# Runs from the queue under the member's name, which the queue can't turn into a notice itself.
+			await PermissionNotice.notify(guild, channel=channel, purpose="welcome newly verified members")
 
 	@staticmethod
 	async def age_log(userid, dob, interaction, operation="added", log=True, reason="") :
 		try:
-			age_log = interaction.guild.get_channel(ConfigData().get_key_int(interaction.guild.id, "age_log"))
+			age_log = interaction.guild.get_channel_or_thread(ConfigData().get_key_int(interaction.guild.id, "age_log"))
 		except KeyNotFound:
 			age_log = find_first_accessible_text_channel(interaction.guild)
 			await send_message(age_log, f"Could not find age log channel, using {age_log.mention} instead. Please set one up with `/config channels`")

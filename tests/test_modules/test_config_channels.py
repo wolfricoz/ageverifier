@@ -23,7 +23,7 @@ class FakeGuild :
 		self.fetch_calls = 0
 		self.fetch_side_effect = fetch_side_effect
 
-	def get_channel(self, channel_id) :
+	def get_channel_or_thread(self, channel_id) :
 		return self.cached.get(channel_id)
 
 	async def fetch_channel(self, channel_id) :

@@ -2,7 +2,7 @@
 import asyncio
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, time, timezone
 
 import discord
 from discord import app_commands
@@ -15,15 +15,21 @@ from classes.access import AccessControl
 from classes.ageroles import change_age_roles
 from classes.blacklist import blacklist_check
 from classes.dashboard.Servers import Servers
+from classes.devguild import dev_guild_only
 from classes.encryption import Encryption
 from classes.lobby.Clean import clean_lobby
+from classes.lobby.Quarantine import release_expired
 from classes.permissions_notice import PermissionNotice
+from classes.support import quickleaves, weeklyreport
 from classes.support.RetentionPolicy import enforce_data_retention_policy
 from classes.support.queue import Queue
+from classes.verification.idmessages import expire_id_messages
+from classes.verification.reminders import send_abandoned_reminders
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.ServerTransactions import ServerTransactions
 from databases.transactions.UserTransactions import UserTransactions
 from modules.DevTools import check_access
+from resources.data.config_variables import WEEKLY_REPORT_HOUR
 
 OLDLOBBY = int(os.getenv("OLDLOBBY"))
 DEBUG = os.getenv("DEBUG")
@@ -51,6 +57,10 @@ class Tasks(commands.Cog) :
 		self.clean_guilds.start()
 		self.anonymize_data.start()
 		self.update_invites.start()
+		self.verification_reminders.start()
+		self.weekly_report.start()
+		self.expire_id_images.start()
+		self.release_quarantines.start()
 
 
 	def cog_unload(self) :
@@ -65,6 +75,10 @@ class Tasks(commands.Cog) :
 		self.clean_guilds.cancel()
 		self.anonymize_data.cancel()
 		self.update_invites.cancel()
+		self.verification_reminders.cancel()
+		self.weekly_report.cancel()
+		self.expire_id_images.cancel()
+		self.release_quarantines.cancel()
 
 	@tasks.loop(minutes=10)
 	async def config_reload(self) :
@@ -277,7 +291,7 @@ class Tasks(commands.Cog) :
 			await asyncio.sleep(0.001)
 			rem_roles = (ConfigData().get_key_or_none(guild.id, "verification_remove_role") or []) + (
 					ConfigData().get_key_or_none(guild.id, "server_join_role") or [])
-			mod_lobby = guild.get_channel(ConfigData().get_key_int_or_zero(guild.id, "approval_channel"))
+			mod_lobby = guild.get_channel_or_thread(ConfigData().get_key_int_or_zero(guild.id, "approval_channel"))
 			if mod_lobby is None :
 				logging.info(f"Mod lobby not found in {guild.name}, skipping age role update.")
 				continue
@@ -321,6 +335,7 @@ class Tasks(commands.Cog) :
 	async def anonymize_data(self) :
 		logging.info("Starting data anonymization.")
 		enforce_data_retention_policy()
+		logging.info(f"Deleted {await asyncio.to_thread(quickleaves.prune)} expired quick leave files.")
 		logging.info("Data anonymized.")
 
 	@tasks.loop(hours=12)
@@ -348,6 +363,46 @@ class Tasks(commands.Cog) :
 		logging.info(f"Updated {count}/{server_count} servers.")
 
 
+	@tasks.loop(minutes=5)
+	async def verification_reminders(self) :
+		"""Reminds members who opened the online verification page but did not finish it."""
+		try :
+			await send_abandoned_reminders(self.bot)
+		except Exception as e :
+			# A failing run must not stop the loop; the next run picks the same links up again.
+			logging.error(f"Abandoned verification reminders failed: {e}", exc_info=True)
+
+	@tasks.loop(time=time(hour=WEEKLY_REPORT_HOUR, tzinfo=timezone.utc))
+	async def weekly_report(self) :
+		"""Posts the weekly developer stats report to the DEV channel. Runs daily, only reports on Sundays."""
+		if datetime.now(tz=timezone.utc).weekday() != 6 :
+			return
+		try :
+			await weeklyreport.send(self.bot)
+		except Exception as e :
+			# A failing report must not stop the loop; next Sunday tries again.
+			logging.error(f"Weekly stats report failed: {e}", exc_info=True)
+
+	@tasks.loop(hours=1)
+	async def expire_id_images(self) :
+		"""Deletes ID images that waited longer than 7 days for review, as the member was promised."""
+		try :
+			await expire_id_messages(self.bot)
+		except Exception as e :
+			# A failing run must not stop the loop; the next run picks the same records up again.
+			logging.error(f"ID image expiry failed: {e}", exc_info=True)
+
+	@tasks.loop(minutes=10)
+	async def release_quarantines(self) :
+		"""Takes the quarantine role off members who failed a join requirement once their time is up."""
+		try :
+			released = await release_expired(self.bot)
+			if released :
+				logging.info(f"Released {released} member(s) from quarantine.")
+		except Exception as e :
+			# A failing run must not stop the loop; the next run picks the same members up again.
+			logging.error(f"Quarantine release failed: {e}", exc_info=True)
+
 	@app_commands.command(name="expirecheck")
 	@app_commands.checks.has_permissions(administrator=True)
 	async def expirecheck(self, interaction: discord.Interaction) :
@@ -356,9 +411,10 @@ class Tasks(commands.Cog) :
 		Normally, this check runs automatically every 12 hours. This is useful if you want to force an immediate data cleanup.
 		You must have Administrator permissions to use this command.
 		"""
-		await send_response(interaction, "[Debug]Checking all entries.")
+		# restart() only schedules the run; it finishes in the background, so there is no result to report here.
 		self.check_users_expiration.restart()
-		await interaction.followup.send("check-up finished.")
+		await send_response(interaction, "Started the expired-data check. It runs in the background and removes "
+		                                 "records that are past their retention period.", ephemeral=True)
 
 	@update_age_roles.before_loop
 	async def before_update_age_roles(self) :
@@ -393,11 +449,28 @@ class Tasks(commands.Cog) :
 		"""stops event from starting before the bot has fully loaded"""
 		await self.bot.wait_until_ready()
 
+	@verification_reminders.before_loop
+	async def before_verification_reminders(self) :
+		await self.bot.wait_until_ready()
+
+	@weekly_report.before_loop
+	async def before_weekly_report(self) :
+		await self.bot.wait_until_ready()
+
+	@expire_id_images.before_loop
+	async def before_expire_id_images(self) :
+		await self.bot.wait_until_ready()
+
+	@release_quarantines.before_loop
+	async def before_release_quarantines(self) :
+		await self.bot.wait_until_ready()
+
 	@anonymize_data.before_loop
 	async def before_dataanonymize(self) :
 		"""stops event from starting before the bot has fully loaded"""
 		await self.bot.wait_until_ready()
 
+	@dev_guild_only
 	@app_commands.command(name="sync_servers",
 	                      description="[DEV] Forces all servers to be synced with the dashboard")
 	@check_access()
@@ -408,8 +481,24 @@ class Tasks(commands.Cog) :
 		**Permissions:**
 		- `Developer`
 		"""
-		await send_response(interaction, "[Debug]Checking all entries.")
 		self.check_active_servers.restart()
+		await send_response(interaction, "Started syncing all servers with the dashboard in the background.", ephemeral=True)
+
+	@dev_guild_only
+	@app_commands.command(name="stats_report",
+	                      description="[DEV] Posts the weekly stats report for the last 7 days to the dev channel now")
+	@check_access()
+	async def stats_report(self, interaction: discord.Interaction) :
+		"""
+		[DEV] Posts the weekly developer stats report now, covering the last 7 days, instead of waiting for Sunday.
+
+		**Permissions:**
+		- `Developer`
+		"""
+		await send_response(interaction, "Building the weekly stats report.", ephemeral=True)
+		sent = await weeklyreport.send(self.bot)
+		await interaction.followup.send("Report posted to the dev channel." if sent else
+		                                "The report could not be posted, check the logs.", ephemeral=True)
 
 
 async def setup(bot) :

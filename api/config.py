@@ -3,11 +3,13 @@ import logging
 from typing import Optional
 
 from discord.ext import commands
+from discord_py_utilities.permissions import check_missing_guild_permissions
 from fastapi import APIRouter, HTTPException, Request
 
 from api.auth.auth import Auth
 from classes.config.utils import ConfigUtils
 from classes.configsetup import ConfigSetup
+from classes.permissions_notice import PermissionNotice, describe_permission, humanize_permission
 from classes.support.queue import Queue
 from databases.transactions.ConfigData import ConfigData
 
@@ -48,6 +50,11 @@ async def auto_setup(request: Request, guildid: int) :
 		guild = await bot.fetch_guild(guildid)
 	if not guild :
 		return {"message" : "Guild not found"}
+	# Checked here so the dashboard gets the answer; the notice tells staff in Discord too.
+	if missing := check_missing_guild_permissions(guild, ConfigSetup.AUTO_SETUP_PERMISSIONS) :
+		await PermissionNotice.notify(guild, missing=missing, purpose="run auto setup from the dashboard", throttle=False)
+		return {"error"   : f"Ageverifier is missing permissions in {guild.name}: {', '.join(humanize_permission(perm) for perm in missing)}",
+		        "missing" : [describe_permission(perm) for perm in missing]}
 	Queue().add(ConfigSetup().api_auto_setup(guild))
 	ConfigData().load_guild(guildid)
 	return {"message" : f"Auto Setup for {guild.name} queued"}
@@ -66,11 +73,33 @@ async def permission_check(request: Request, guildid: int) :
 	Queue().add(ConfigSetup().check_channel_permissions(guild))
 	return {"message" : f"Permission check for {guild.name} queued"}
 
+
+@router.get("/config/{guildid}/permissions")
+async def permission_audit(request: Request, guildid: int) :
+	"""The same check as /permissioncheck, returned to the dashboard instead of posted in Discord."""
+	if not await Auth(request).verify() :
+		# the error is usually raised in the verify function, but this is just a final catch.
+		raise HTTPException(status_code=403)
+
+	bot: commands.Bot = request.app.state.bot
+	# Only the cached guild has the channels, roles and member data the check reads; fetch_guild has none of them.
+	guild = bot.get_guild(guildid)
+	if not guild :
+		raise HTTPException(status_code=404, detail="Guild not found")
+	return ConfigSetup().audit_permissions(guild)
+
 @router.post("/config/{guildid}/changes/log")
 async def log_config_changes(request: Request, guildid: int, changes: dict, user_name: str = "dashboard_api") :
 	if not await Auth(request).verify() :
 		# the error is usually raised in the verify function, but this is just a final catch.
 		raise HTTPException(status_code=403)
+
+	# The dashboard writes config straight to the database, so the bot's in-memory
+	# ConfigData cache stays stale until something reloads the guild. This endpoint is
+	# the one call the dashboard makes on every save, so reload here - before logging,
+	# so the log_config_changes toggle is itself read at its new value.
+	logger.info("Website Request: Reload Config (config change)")
+	ConfigData().load_guild(guildid)
 
 	bot: commands.Bot = request.app.state.bot
 	guild = bot.get_guild(guildid)

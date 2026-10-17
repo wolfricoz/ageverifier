@@ -83,7 +83,7 @@ async def change_age_roles(guild: discord.Guild, user: discord.Member, age, remo
 	except Exception as e:
 		logging.warning(f"Failed to remove reverify roles from {user.mention} in {guild.name}: {e}", exc_info=True)
 
-	mod_lobby = guild.get_channel(ConfigData().get_key_int(guild.id, "approval_channel"))
+	mod_lobby = guild.get_channel_or_thread(ConfigData().get_key_int(guild.id, "approval_channel"))
 	if mod_lobby is None:
 		return
 	Queue().add(send_message(mod_lobby, f"[AGE ROLES UPDATED] {user.mention} has been given the roles: {', '.join([role.name for role in add_roles])} and removed the roles: {', '.join([role.name for role in remove_roles])}"), priority=0)

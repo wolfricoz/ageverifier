@@ -43,11 +43,16 @@ class AgeRoleTransactions(DatabaseTransactions) :
 				self.reload_guild(guild_id)
 			return role
 
-	def permanentdelete(self, guild_id, role_id) :
+	def permanentdelete(self, guild_id, role_id) -> bool :
 		with self.createsession() as session :
-			role = session.scalar(Select(AgeRole).where(AgeRole.role_id == role_id))
+			role = session.scalar(Select(AgeRole).where(AgeRole.guild_id == guild_id, AgeRole.role_id == role_id))
+			if role is None :
+				return False
 			session.delete(role)
 			self.commit(session)
+		# Drop the role from the cached config too, or it keeps being handed out.
+		self.reload_guild(guild_id)
+		return True
 
 	def update(self, guild_id: int, role_id: int, role_type: str = None, maximum_age: int = None,
 	           minimum_age: int = None, reload=True) :

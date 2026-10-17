@@ -1,7 +1,7 @@
 import logging
 
 from discord import Member
-from discord.ext.commands import Bot, Cog, GroupCog
+from discord.ext.commands import Bot, Cog
 from discord_py_utilities.exceptions import NoPermissionException
 from discord_py_utilities.messages import send_message
 
@@ -10,7 +10,8 @@ from classes.permissions_notice import PermissionNotice
 from databases.transactions.ConfigData import ConfigData
 
 
-class LobbyListeners(GroupCog) :
+# A plain Cog: as a GroupCog without commands it registered an empty /lobby-listeners that failed when run.
+class LobbyListeners(Cog) :
 
 	def __init__(self, bot: Bot) :
 		self.bot = bot

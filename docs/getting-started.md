@@ -34,8 +34,10 @@ In any channel the bot can see, run:
 You'll be offered three ways to set up:
 
 - **dashboard** — gives you a link to the web dashboard for a graphical setup (recommended).
-- **auto** — automatically creates the channels and roles the bot needs, so you can be running in seconds.
-- **manual** — walks you through it step by step inside Discord.
+- **auto** — automatically creates the channels and roles the bot needs, so you can be running in seconds. It always
+  sets verification to **Website**, even if you picked another method before.
+- **manual** — walks you through it step by step inside Discord, starting with the verification mode: **Website**
+  (recommended) or **Basic**. Skip that step to keep your current method.
 
 If you're not sure, **auto** is the quickest way to a working baseline that you can fine-tune afterward.
 
@@ -71,7 +73,7 @@ You can customize the message that appears above the button. This is the entry p
 
 ## Step 7 — Choose how members verify (optional)
 
-By default, verification is **Basic** (members enter their date of birth), which is free and works well for most servers. If you have premium and want ID or website-based verification, set it with:
+By default, and after an **auto** setup, verification is **Website** (members verify on our online verification page), which is free. To switch to Basic date-of-birth verification (free) or ID verification (premium), use:
 
 ```
 /config verification_mode
