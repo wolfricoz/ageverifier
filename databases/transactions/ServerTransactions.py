@@ -31,7 +31,6 @@ class ServerTransactions(DatabaseTransactions) :
 				self.update(guildid, active, name, owner_name, member_count, invite,
 				            owner_id=owner_id if owner_id != 0 else None, invite_date=invite_date, )
 			else :
-				session = self.createsession()
 				g = Servers(
 					guild=guildid,
 					active=active,

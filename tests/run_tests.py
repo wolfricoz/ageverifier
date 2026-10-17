@@ -20,6 +20,8 @@ try :
 	runner = unittest.TextTestRunner()
 	result = runner.run(suite)
 finally :
+	# Tests use a connection pool; Postgres refuses to drop a database that still has open connections.
+	engine.dispose()
 	drop_database(engine.url)
 # Exit with a non-zero status code if tests failed
 sys.exit(not result.wasSuccessful())
