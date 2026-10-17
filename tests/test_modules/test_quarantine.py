@@ -24,6 +24,13 @@ def config(values: dict) :
 	return patch.object(Quarantine, "ConfigData", return_value=data)
 
 
+def configured(guild_ids: set[int]) :
+	"""Patches the one query release_expired uses to find servers that have a quarantine role set."""
+	transactions = MagicMock()
+	transactions.guilds_with_key.return_value = guild_ids
+	return patch.object(Quarantine, "ConfigTransactions", return_value=transactions)
+
+
 class TestQuarantineHours(unittest.TestCase) :
 	def hours(self, value) :
 		with config({"QUARANTINE_HOURS" : value}) :
@@ -83,7 +90,7 @@ class TestReleaseExpired(unittest.TestCase) :
 		guild.get_role.return_value = role
 		bot = MagicMock(guilds=[guild])
 		notify = AsyncMock()
-		with config({"QUARANTINE_ROLE" : ROLE_ID, "QUARANTINE_HOURS" : hours}), \
+		with config({"QUARANTINE_ROLE" : ROLE_ID, "QUARANTINE_HOURS" : hours}), configured({GUILD_ID}), \
 				patch.object(Quarantine.PermissionNotice, "notify", notify) :
 			released = asyncio.run(Quarantine.release_expired(bot))
 		return released, notify
@@ -114,10 +121,19 @@ class TestReleaseExpired(unittest.TestCase) :
 
 	def test_skips_servers_without_a_role(self) :
 		guild = MagicMock(id=GUILD_ID)
-		with config({}) :
+		with config({}), configured({GUILD_ID}) :
 			released = asyncio.run(Quarantine.release_expired(MagicMock(guilds=[guild])))
 
 		self.assertEqual(released, 0)
+
+	def test_does_not_load_the_config_of_servers_without_the_key(self) :
+		# Loading every server's config on a cold cache blocked the event loop and dropped the gateway.
+		guild = MagicMock(id=GUILD_ID)
+		with config({"QUARANTINE_ROLE" : ROLE_ID}) as config_data, configured(set()) :
+			released = asyncio.run(Quarantine.release_expired(MagicMock(guilds=[guild])))
+
+		self.assertEqual(released, 0)
+		config_data.assert_not_called()
 
 
 if __name__ == '__main__' :

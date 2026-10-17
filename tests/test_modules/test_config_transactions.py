@@ -40,6 +40,12 @@ class TestAgeRoleTransactions(unittest.TestCase) :
 		result = self.config.config_unique_get(self.guild, self.key)
 		self.assertEqual(result.value, "NEWVAL")
 
+	def test_guilds_with_key(self) :
+		self.config.config_unique_add(self.guild, self.key, self.value)
+
+		self.assertIn(self.guild, self.config.guilds_with_key(self.key.lower()))
+		self.assertNotIn(self.guild, self.config.guilds_with_key("OTHERKEY"))
+
 	def test_toggle_welcome_add_new(self) :
 		toggled = self.config.toggle(self.guild, self.key, "ENABLED")
 		self.assertFalse(toggled)

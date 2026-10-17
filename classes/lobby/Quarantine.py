@@ -5,6 +5,7 @@ plus QUARANTINE_HOURS, and a task every 10 minutes releases every member of the 
 across restarts, but it also means the role should only be used for this: a member staff give it to by hand is released
 on the next run once they've been in the server longer than the duration.
 """
+import asyncio
 import logging
 from datetime import UTC, datetime, timedelta
 
@@ -13,6 +14,7 @@ from discord.ext import commands
 
 from classes.permissions_notice import PermissionNotice
 from databases.transactions.ConfigData import ConfigData
+from databases.transactions.ConfigTransactions import ConfigTransactions
 from resources.data.config_variables import DEFAULT_QUARANTINE_HOURS, MAX_QUARANTINE_HOURS, QUARANTINE_HOURS_KEY, \
 	QUARANTINE_ROLE_KEY
 
@@ -66,7 +68,13 @@ async def release_expired(bot: commands.Bot) -> int :
 	Returns the number of members released."""
 	now = datetime.now(UTC)
 	released = 0
+	# One query for the servers that set a role. Loading the config of every server instead blocked the
+	# event loop long enough to drop the gateway connection whenever the config cache had just been cleared.
+	configured = ConfigTransactions().guilds_with_key(QUARANTINE_ROLE_KEY)
 	for guild in bot.guilds :
+		if guild.id not in configured :
+			continue
+		await asyncio.sleep(0)
 		role = quarantine_role(guild)
 		if role is None :
 			continue
