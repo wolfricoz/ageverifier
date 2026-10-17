@@ -17,7 +17,7 @@ python-dateutil>=2.9.0.post0
 Levenshtein>=0.27.5
 sentry-sdk>=2.69.2
 fonttools>=4.61.1
-SQLAlchemy-Utils>=0.42.1
+SQLAlchemy-Utils>=0.43.0
 PyMySQL>=1.1.2
 discord-py-utilities>=0.1.0.4
 python-multipart
