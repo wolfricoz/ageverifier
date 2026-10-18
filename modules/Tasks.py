@@ -375,7 +375,7 @@ class Tasks(commands.Cog) :
 
 	@tasks.loop(time=time(hour=WEEKLY_REPORT_HOUR, tzinfo=timezone.utc))
 	async def weekly_report(self) :
-		"""Posts the weekly developer stats report to the DEV channel. Runs daily, only reports on Sundays."""
+		"""Posts the weekly developer stats report to the stats channel. Runs daily, only reports on Sundays."""
 		if datetime.now(tz=timezone.utc).weekday() != 6 :
 			return
 		try :
@@ -487,7 +487,7 @@ class Tasks(commands.Cog) :
 
 	@dev_guild_only
 	@app_commands.command(name="stats_report",
-	                      description="[DEV] Posts the weekly stats report for the last 7 days to the dev channel now")
+	                      description="[DEV] Posts the weekly stats report for the last 7 days to the stats channel now")
 	@check_access()
 	async def stats_report(self, interaction: discord.Interaction) :
 		"""
@@ -498,7 +498,7 @@ class Tasks(commands.Cog) :
 		"""
 		await send_response(interaction, "Building the weekly stats report.", ephemeral=True)
 		sent = await weeklyreport.send(self.bot)
-		await interaction.followup.send("Report posted to the dev channel." if sent else
+		await interaction.followup.send("Report posted to the stats channel." if sent else
 		                                "The report could not be posted, check the logs.", ephemeral=True)
 
 

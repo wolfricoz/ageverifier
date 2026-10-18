@@ -1,4 +1,4 @@
-"""The weekly developer stats report, posted to the DEV channel on Sundays by modules.Tasks.
+"""The weekly developer stats report, posted to the stats channel (STATS_CHANNEL) on Sundays by modules.Tasks.
 
 Everything here comes from data the bot already keeps: the database (databases.transactions.StatsTransactions),
 the log files (classes.support.logreader) and the quick leave files (classes.support.quickleaves). collect() gathers it, build_embeds() only
@@ -6,6 +6,7 @@ formats it so it can be tested without a bot, and send() posts it.
 """
 import asyncio
 import logging
+import os
 import re
 from collections import Counter
 from dataclasses import dataclass, field
@@ -23,6 +24,8 @@ from databases.transactions.StatsTransactions import StatsTransactions
 from resources.data.config_variables import QUICK_LEAVE_DAYS, QUICK_LEAVE_DIR, REPORT_TOP_SERVERS
 
 FIELD_LIMIT = 1024
+# The channel the report posts in, overridable with the STATS_CHANNEL env var.
+DEFAULT_STATS_CHANNEL = 1561375724965728408
 WEEKDAYS = ("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")  # Postgres dow order
 # Module import happens while the cogs load, which is close enough to the bot's start for an uptime figure.
 _loaded = datetime.now(tz=timezone.utc)
@@ -230,10 +233,11 @@ def build_embeds(report: WeeklyReport) -> list[discord.Embed] :
 
 
 async def send(bot, now: datetime = None) -> bool :
-	"""Posts the report to the DEV channel. Returns False when it could not be posted."""
-	channel = bot.get_channel(bot.DEV)
+	"""Posts the report to the stats channel. Returns False when it could not be posted."""
+	channel_id = int(os.getenv("STATS_CHANNEL") or DEFAULT_STATS_CHANNEL)
+	channel = bot.get_channel(channel_id)
 	if channel is None :
-		logging.warning("Weekly report skipped: the DEV channel could not be found.")
+		logging.warning(f"Weekly report skipped: the stats channel {channel_id} could not be found.")
 		return False
 	report = await collect(bot, now)
 	embeds = build_embeds(report)
