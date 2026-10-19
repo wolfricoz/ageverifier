@@ -34,8 +34,10 @@ def configured_roles(guild: discord.Guild, key: str) -> list[discord.Role] :
 	value = ConfigData().get_key_or_none(guild.id, key)
 	if is_unset(value) :
 		return []
+	# The age roles (VERIFICATION_ADD_ROLE) are cached as {role_id: {"MAX": .., "MIN": ..}}; the ids are the keys.
+	role_ids = list(value) if isinstance(value, (list, dict)) else [value]
 	roles = []
-	for role_id in value if isinstance(value, list) else [value] :
+	for role_id in role_ids :
 		try :
 			role = guild.get_role(int(role_id))
 		except (TypeError, ValueError) :

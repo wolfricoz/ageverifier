@@ -51,6 +51,14 @@ class TestReturnLobby(unittest.TestCase) :
 		self.assertEqual(list(user.add_roles.await_args.args), [roles[2]])
 		self.assertIn("moved back to the lobby", interaction.followup.send.await_args.args[0])
 
+	def test_age_roles_are_removed(self) :
+		"""The age roles are cached as {role_id: {"MAX": .., "MIN": ..}}; reading that as one value skipped every age role."""
+		config = {"verification_add_role" : {1 : {"MAX" : 99, "MIN" : 18}, 999 : {"MAX" : 17, "MIN" : 13}}}
+		roles, user, interaction, respond = self.run_command(config, user_roles=[1])
+
+		self.assertEqual(list(user.remove_roles.await_args.args), [roles[1]])
+		self.assertIn("moved back to the lobby", interaction.followup.send.await_args.args[0])
+
 	def test_nothing_to_change_says_so(self) :
 		roles, user, interaction, respond = self.run_command({}, user_roles=[])
 
