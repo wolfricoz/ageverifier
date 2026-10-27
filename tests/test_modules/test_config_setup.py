@@ -1,9 +1,10 @@
+import asyncio
 import unittest
 from unittest import mock
 
 import discord
 
-from classes.configsetup import ConfigSetup
+from classes.configsetup import ConfigSetup, setup_response
 from databases.transactions.ConfigData import ConfigData
 from resources.data.config_variables import VERIFICATION_KEY, VerificationMethods
 
@@ -41,6 +42,7 @@ class SetupVerificationBase(unittest.IsolatedAsyncioTestCase) :
 		self.interaction = mock.MagicMock()
 		self.interaction.guild.id = GUILD_ID
 		self.interaction.channel.send = mock.AsyncMock()
+		self.interaction.is_expired.return_value = False
 
 	def tearDown(self) :
 		self.config.conf.pop(GUILD_ID, None)
@@ -166,6 +168,55 @@ class TestSetupPrompts(SetupVerificationBase) :
 	async def test_the_prompt_never_pings_the_role(self) :
 		await self.prompt("next", stored="555")
 		self.assertIn("allowed_mentions", self.interaction.channel.send.call_args.kwargs)
+
+
+class TestSetupResponse(unittest.IsolatedAsyncioTestCase) :
+	"""Setup can outlast the 15-minute interaction token (AGEVERIFIER-JM)."""
+
+	def setUp(self) :
+		self.interaction = mock.MagicMock()
+		self.interaction.user.mention = "<@1>"
+		self.interaction.followup.send = mock.AsyncMock()
+		patches = {
+			"send_response" : mock.patch("classes.configsetup.send_response", new_callable=mock.AsyncMock),
+			"send_message"  : mock.patch("classes.configsetup.send_message", new_callable=mock.AsyncMock),
+		}
+		self.mocks = {}
+		for name, patcher in patches.items() :
+			self.mocks[name] = patcher.start()
+			self.addCleanup(patcher.stop)
+
+	async def test_expired_interaction_answers_in_the_channel(self) :
+		self.interaction.is_expired.return_value = True
+		await setup_response(self.interaction, "Setup timed out")
+		self.mocks["send_message"].assert_awaited_once_with(self.interaction.channel, "<@1> Setup timed out")
+		self.mocks["send_response"].assert_not_awaited()
+		self.interaction.followup.send.assert_not_awaited()
+
+	async def test_live_interaction_uses_the_interaction(self) :
+		self.interaction.is_expired.return_value = False
+		await setup_response(self.interaction, "Setup has been cancelled")
+		self.mocks["send_response"].assert_awaited_once_with(self.interaction, "Setup has been cancelled", ephemeral=False)
+		self.mocks["send_message"].assert_not_awaited()
+
+	async def test_ephemeral_after_defer_uses_the_followup(self) :
+		self.interaction.is_expired.return_value = False
+		self.interaction.response.is_done.return_value = True
+		await setup_response(self.interaction, "done", ephemeral=True)
+		self.interaction.followup.send.assert_awaited_once_with("done", ephemeral=True)
+
+	async def test_manual_timeout_after_token_expiry(self) :
+		self.interaction.is_expired.return_value = True
+		self.interaction.response.defer = mock.AsyncMock()
+		self.interaction.channel.send = mock.AsyncMock()
+		bot = mock.MagicMock()
+		bot.wait_for = mock.AsyncMock(side_effect=asyncio.TimeoutError)
+		setup = ConfigSetup()
+		setup.choose_verification_method = mock.AsyncMock(return_value=True)
+		self.assertFalse(await setup.manual(bot, self.interaction, {}, {}, {"server_join_message" : ""}))
+		self.mocks["send_message"].assert_awaited_once()
+		self.assertIn("Setup timed out", self.mocks["send_message"].await_args.args[1])
+		self.mocks["send_response"].assert_not_awaited()
 
 
 class TestDoneMessage(unittest.TestCase) :

@@ -40,6 +40,18 @@ async def delete_quietly(msg: discord.Message) -> None :
 		pass
 
 
+async def setup_response(interaction: discord.Interaction, text: str, ephemeral: bool = False) :
+	"""Answers the user who ran setup. Setup waits up to 30 minutes per step, but the interaction token
+	expires after 15; past that, Discord rejects the followup (Invalid Webhook Token, AGEVERIFIER-JM),
+	so the answer goes to the channel instead."""
+	if interaction.is_expired() :
+		return await send_message(interaction.channel, f"{interaction.user.mention} {text}")
+	if ephemeral and interaction.response.is_done() :
+		# send_response would post this in the channel for everyone.
+		return await interaction.followup.send(text, ephemeral=True)
+	return await send_response(interaction, text, ephemeral=ephemeral)
+
+
 class ConfigSetup :
 	"""This class is used to setup the configuration for the bot"""
 	rolechoices = rolechoices
@@ -94,11 +106,11 @@ class ConfigSetup :
 				                            check=lambda m : m.author == interaction.user and m.channel == interaction.channel)
 			except asyncio.TimeoutError :
 				await delete_quietly(msg)
-				await send_response(interaction, "Setup timed out, run `/config setup` to try again.")
+				await setup_response(interaction, "Setup timed out, run `/config setup` to try again.")
 				return False
 			if result.content.lower() == "cancel" :
 				await delete_quietly(msg)
-				await send_response(interaction, "Setup has been cancelled")
+				await setup_response(interaction, "Setup has been cancelled")
 				return False
 			if result.content.lower() == "next" :
 				await result.delete()
@@ -124,7 +136,7 @@ class ConfigSetup :
 		await confirmation.wait()
 
 		if not confirmation.confirmed :
-			await send_response(interaction, "Setup has been cancelled")
+			await setup_response(interaction, "Setup has been cancelled")
 			return False
 		self.set_verification_method(interaction.guild.id, self.AUTO_VERIFICATION_METHOD)
 		category = get(interaction.guild.categories, name="Lobby")
@@ -176,7 +188,7 @@ class ConfigSetup :
 		if view.value == "next" :
 			return True
 		if view.value is None :
-			await send_response(interaction, "Setup has been cancelled")
+			await setup_response(interaction, "Setup has been cancelled")
 			return False
 		self.set_verification_method(interaction.guild.id, view.value)
 		return True
@@ -327,7 +339,7 @@ class ConfigSetup :
 		if view.value == "next" :
 			return True
 		if view.value is None :
-			await send_response(interaction, "Setup has been cancelled")
+			await setup_response(interaction, "Setup has been cancelled")
 			return False
 		if view.value == "clear" :
 			ConfigTransactions().config_unique_remove(guild.id, key)

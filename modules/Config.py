@@ -14,7 +14,7 @@ from discord_py_utilities.permissions import check_missing_channel_permissions
 
 from classes.access import AccessControl
 from classes.config.utils import ConfigUtils
-from classes.configsetup import ConfigSetup
+from classes.configsetup import ConfigSetup, setup_response
 from classes.membernotes import EMBED_FIELD_LIMIT
 from classes.support.queue import Queue
 from databases.transactions.AgeRoleTransactions import AgeRoleTransactions
@@ -96,11 +96,7 @@ class Config(commands.GroupCog, name="config",
 			# Cancelled or timed out; the setup flow has already told the user.
 			return None
 		done = setup.done_message(interaction.guild, setup_type.value.lower())
-		# Setup has answered the interaction already; send_response would then post this in the channel for everyone.
-		if interaction.response.is_done() :
-			await interaction.followup.send(done, ephemeral=True)
-		else :
-			await send_response(interaction, done, ephemeral=True)
+		await setup_response(interaction, done, ephemeral=True)
 		await setup.check_channel_permissions(interaction.guild)
 		return None
 
