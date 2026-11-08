@@ -1,11 +1,13 @@
 import unittest
 from datetime import datetime, timedelta, timezone
+from unittest import mock
 
 from sqlalchemy import Update
 
 from classes.iphash import hash_fingerprint, hash_ip
 from databases.Generators.uidgenerator import uidgenerator
 from databases.current import Users, clear_bot_database, create_bot_database
+from databases.exceptions.CommitError import CommitError
 from databases.transactions.UserTransactions import UserTransactions
 from resources.data.config_variables import GDPR_REMOVAL_GRACE_DAYS, IP_RETENTION_DAYS
 
@@ -33,6 +35,19 @@ class TestUserTransactions(unittest.TestCase) :
 		# # Adding again with overwrite should succeed
 		# result3 = self.ut.add_user_empty(self.uid, overwrite=True)
 		# self.assertTrue(result3)
+
+	def test_add_user_empty_lost_race(self) :
+		# AGEVERIFIER-6G: another thread inserts the same user between the check and the commit.
+		other = Users(uid=self.uid)
+		with mock.patch.object(UserTransactions, "get_user", side_effect=[None, other]), \
+				mock.patch.object(UserTransactions, "commit", side_effect=CommitError()) :
+			self.assertFalse(self.ut.add_user_empty(self.uid))
+
+	def test_add_user_empty_real_commit_failure_still_raises(self) :
+		with mock.patch.object(UserTransactions, "get_user", return_value=None), \
+				mock.patch.object(UserTransactions, "commit", side_effect=CommitError()) :
+			with self.assertRaises(CommitError) :
+				self.ut.add_user_empty(self.uid)
 
 	def test_add_user_full_and_get(self) :
 		result = self.ut.add_user_full(self.uid, self.dob, self.guild)

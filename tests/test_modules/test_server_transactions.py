@@ -4,7 +4,9 @@ import unittest
 from classes.access import AccessControl
 from databases.Generators.guildgenerator import guildgenerator
 from databases.current import clear_bot_database, create_bot_database
+from databases.Generators.uidgenerator import uidgenerator
 from databases.transactions.ServerTransactions import ServerTransactions
+from databases.transactions.UserTransactions import UserTransactions
 
 
 class TestServerTransactions(unittest.TestCase):
@@ -69,6 +71,14 @@ class TestServerTransactions(unittest.TestCase):
 
         updated = self.st.get(self.guild)
         self.assertFalse(updated.active)
+
+    def test_update_with_an_unseen_owner_adds_the_user(self):
+        # AGEVERIFIER-GP: owner_id is a foreign key to users.
+        self.st.add(self.guild)
+        owner_id = uidgenerator().create()
+        self.assertTrue(self.st.update(self.guild, owner_id=owner_id, reload=False))
+        self.assertEqual(self.st.get(self.guild).owner_id, owner_id)
+        self.assertIsNotNone(UserTransactions().get_user(owner_id))
 
     def test_update_nonexistent_returns_false(self):
         result = self.st.update(9999999999, active=True)

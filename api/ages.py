@@ -109,7 +109,8 @@ async def verify_age(request: Request, guild_id: int, user_id: int, verification
 			if not guild :
 				guild = await bot.fetch_guild(guild_id)
 		except discord.NotFound :
-			logging.error("guild not found", exc_info=True)
+			# The bot was removed from the server after the member opened the page (AGEVERIFIER-JS).
+			logging.warning(f"Guild not found, the bot may have been removed: {guild_id}")
 			return JSONResponse(
 				status_code=404,
 				content={"success" : False, "message" : "Guild not found"},

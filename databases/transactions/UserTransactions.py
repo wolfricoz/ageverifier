@@ -10,6 +10,7 @@ from classes.encryption import Encryption
 from classes.iphash import hash_fingerprint, hash_ip
 from databases import current as db
 from databases.current import IdVerification, Users, Warnings
+from databases.exceptions.CommitError import CommitError
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.ConfigTransactions import ConfigTransactions
 from databases.transactions.DatabaseTransactions import DatabaseTransactions
@@ -31,7 +32,13 @@ class UserTransactions(DatabaseTransactions) :
 				session.merge(item)
 			else:
 				session.add(item)
-			self.commit(session)
+			try :
+				self.commit(session)
+			except CommitError :
+				# Another thread (API, server sync) added the same user in between (AGEVERIFIER-6G).
+				if self.get_user(userid, deleted=True) is not None :
+					return False
+				raise
 			return item
 
 

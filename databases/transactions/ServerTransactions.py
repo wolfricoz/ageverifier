@@ -147,6 +147,10 @@ class ServerTransactions(DatabaseTransactions) :
 				logging.debug(f"No new data provided for server {guild_id}, no changes made.")
 				return True
 
+			# owner_id references users; a new owner may never have been seen by the bot (AGEVERIFIER-GP).
+			if owner_id and owner_id != guild.owner_id :
+				UserTransactions().add_user_empty(owner_id)
+
 			for field, value in data_to_update.items() :
 				setattr(guild, field, value)
 

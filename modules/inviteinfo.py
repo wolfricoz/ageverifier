@@ -42,6 +42,9 @@ class inviteInfo(commands.Cog) :
 			pass
 		except discord.NotFound:
 			pass
+		except discord.HTTPException as e:
+			# Mass leaves in big servers get rate limited (AGEVERIFIER-H1); the next leave or config reload refreshes it.
+			logging.info(f'Could not refresh invites in {member.guild.name}: {e}')
 
 
 async def setup(bot) :

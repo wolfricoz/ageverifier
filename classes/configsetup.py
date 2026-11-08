@@ -45,7 +45,15 @@ async def setup_response(interaction: discord.Interaction, text: str, ephemeral:
 	expires after 15; past that, Discord rejects the followup (Invalid Webhook Token, AGEVERIFIER-JM),
 	so the answer goes to the channel instead."""
 	if interaction.is_expired() :
-		return await send_message(interaction.channel, f"{interaction.user.mention} {text}")
+		if interaction.guild is None or interaction.guild.me is None :
+			# Removed from the server mid-setup: there is nobody left to tell (AGEVERIFIER-JT).
+			logging.info(f"Setup ended after the bot left guild {interaction.guild_id}")
+			return None
+		try :
+			return await send_message(interaction.channel, f"{interaction.user.mention} {text}")
+		except (discord.HTTPException, NoPermissionException) :
+			logging.info(f"Could not post the setup reply in {interaction.guild.name}")
+			return None
 	if ephemeral and interaction.response.is_done() :
 		# send_response would post this in the channel for everyone.
 		return await interaction.followup.send(text, ephemeral=True)

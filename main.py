@@ -227,6 +227,10 @@ async def on_guild_join(guild) :
 		# Names the server + how to fix, instead of a context-free owner DM.
 		await PermissionNotice.notify(guild, missing=["manage_guild"],
 		                              purpose="read invite data for invite tracking")
+	except discord.errors.NotFound :
+		# Removed again right after joining (AGEVERIFIER-GB); on_guild_remove handles the rest.
+		logging.info(f"Left {guild.name} ({guild.id}) during on_guild_join")
+		return
 	channel = find_first_accessible_text_channel(guild)
 	if not channel:
 		channel = guild.owner

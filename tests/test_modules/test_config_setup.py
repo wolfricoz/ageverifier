@@ -193,6 +193,18 @@ class TestSetupResponse(unittest.IsolatedAsyncioTestCase) :
 		self.mocks["send_response"].assert_not_awaited()
 		self.interaction.followup.send.assert_not_awaited()
 
+	async def test_expired_after_the_bot_left_stays_quiet(self) :
+		# AGEVERIFIER-JT: removed from the server mid-setup, so guild.me is None.
+		self.interaction.is_expired.return_value = True
+		self.interaction.guild.me = None
+		await setup_response(self.interaction, "Setup has been cancelled")
+		self.mocks["send_message"].assert_not_awaited()
+
+	async def test_expired_and_channel_unreachable_does_not_raise(self) :
+		self.interaction.is_expired.return_value = True
+		self.mocks["send_message"].side_effect = discord.Forbidden(mock.MagicMock(status=403), "Missing Access")
+		self.assertIsNone(await setup_response(self.interaction, "Setup has been cancelled"))
+
 	async def test_live_interaction_uses_the_interaction(self) :
 		self.interaction.is_expired.return_value = False
 		await setup_response(self.interaction, "Setup has been cancelled")

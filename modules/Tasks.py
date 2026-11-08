@@ -96,6 +96,10 @@ class Tasks(commands.Cog) :
 				# Names the server + how to fix, instead of a context-free owner DM.
 				await PermissionNotice.notify(guild, missing=["manage_guild"],
 				                              purpose="read invite data for invite tracking")
+			except discord.HTTPException as e :
+				# Left the server since the loop started (Unknown Guild, AGEVERIFIER-82) or rate limited;
+				# raising here would stop the task until the next restart.
+				logging.info(f"Could not fetch invites for {guild.name}: {e}")
 
 	async def user_expiration_update(self, userids) :
 		"""updates entry time, if entry is expired this also removes it."""
@@ -358,7 +362,13 @@ class Tasks(commands.Cog) :
 			guild = self.bot.get_guild(server.guild)
 			if guild is None :
 				continue
-			invite = await check_guild_invites(self.bot, guild, server.invite)
+			try :
+				invite = await check_guild_invites(self.bot, guild, server.invite)
+			except Exception as e :
+				# check_guild_invites raises when no channel is accessible (AGEVERIFIER-JP);
+				# one server must not stop the task for the rest.
+				logging.warning(f"Could not update the invite for guild {guild.id}: {e}")
+				continue
 			ServerTransactions().update(server.guild, invite=invite, invite_date=datetime.now())
 			count += 1
 		logging.info(f"Updated {count}/{server_count} servers.")
