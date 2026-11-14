@@ -91,7 +91,8 @@ class TOSButton(discord.ui.View) :
 
 		await send_response(
 			interaction,
-			"Privacy policy declined and the staff team has been informed. You can click the 'dismiss message' to hide it."
+			"Privacy policy declined and the staff team has been informed. You can click the 'dismiss message' to hide it.",
+			ephemeral=True
 		)
 		await self.disable_buttons(interaction)
 
