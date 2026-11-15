@@ -3,6 +3,7 @@ import logging
 import discord
 from discord_py_utilities.messages import await_message, send_message, send_response
 
+from classes.verification.setup_check import describe_setting
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.VerificationTransactions import VerificationTransactions
 from views.buttons.idreviewbuttons import IdReviewButton
@@ -58,14 +59,11 @@ class IdSubmitButton(discord.ui.View) :
 		if len(message.attachments) > 1:
 			return await send_response(interaction, "Too many attachments attached to this message, please send only 1 image.")
 
-		if self.user_initiated:
-			mod_channel: discord.TextChannel = self.guild.get_channel_or_thread(
-				ConfigData().get_key_int_or_zero(self.guild.id, "approval_channel"))
-		else:
-			mod_channel: discord.TextChannel = self.guild.get_channel_or_thread(
-				ConfigData().get_key_int_or_zero(self.guild.id, "verification_failure_log"))
+		channel_key = "approval_channel" if self.user_initiated else "verification_failure_log"
+		mod_channel: discord.TextChannel = self.guild.get_channel_or_thread(
+			ConfigData().get_key_int_or_zero(self.guild.id, channel_key))
 		if mod_channel is None:
-			await send_response(interaction, "Lobbymod channel not set, please contact the server staff.", ephemeral=True)
+			await send_response(interaction, f"This server's {describe_setting(channel_key)} is not set, please contact the server staff.", ephemeral=True)
 			return
 		attachment = message.attachments[0]
 		if attachment.size > self.DISCORD_BOT_UPLOAD_LIMIT:
@@ -138,7 +136,7 @@ class IdSubmitButton(discord.ui.View) :
 		await send_response(interaction, f"{interaction.user.mention} You have declined to submit ID verification. You will not be able to proceed with verification without submitting ID. If you change your mind, you can click the 'Submit ID' button again.", ephemeral=True)
 		mod_channel = self.guild.get_channel_or_thread(ConfigData().get_key_int_or_zero(self.guild.id, "approval_channel"))
 		if mod_channel is None:
-			await send_response(interaction, "Lobbymod channel not set, please contact the server staff.", ephemeral=True)
+			await send_response(interaction, f"This server's {describe_setting('approval_channel')} is not set, please contact the server staff.", ephemeral=True)
 			return
 		await mod_channel.send(f"{interaction.user.mention} ({interaction.user.id}) has declined to submit ID verification.")
 

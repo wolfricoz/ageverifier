@@ -10,6 +10,7 @@ from classes.encryption import Encryption
 from classes.gdpr import confirm_removal_cancellation
 from classes.lobbyprocess import LobbyProcess
 from classes.lobbytimers import LobbyTimers
+from classes.verification.setup_check import member_message, missing_verification_settings, notify_staff
 from databases.transactions.ConfigData import ConfigData
 from databases.transactions.UserTransactions import UserTransactions
 from databases.transactions.VerificationTransactions import VerificationTransactions
@@ -102,12 +103,18 @@ class VerifyButton(discord.ui.View) :
 
 	async def id_verified_check(self, interaction: discord.Interaction) -> bool :
 		try :
+			# Stop before the modal: a member shouldn't fill it in only to be told the server isn't set up.
+			if missing := missing_verification_settings(interaction.guild.id) :
+				await notify_staff(interaction.guild, missing)
+				await send_response(interaction, member_message(missing), ephemeral=True)
+				logging.info(f"{interaction.guild.name} is missing verification settings: {missing}")
+				return True
 			modlobby = interaction.guild.get_channel_or_thread(
 				ConfigData().get_key_int_or_zero(interaction.guild.id, "approval_channel"))
 			if modlobby is None :
-				await send_response(interaction, f"Lobbymod not set, inform the server staff to setup the server.",
+				await send_response(interaction, "Ageverifier can't find this server's Approval channel (`approval_channel`). Please let the server staff know.",
 				                    ephemeral=True)
-				logging.info(f"{interaction.guild.name} does not have lobbymod set.")
+				logging.info(f"{interaction.guild.name} has an approval_channel that can't be found.")
 				return False
 			# User is ID verified, so the user does not need to input their dob and age again.
 			userinfo = VerificationTransactions().get_id_info(interaction.user.id)

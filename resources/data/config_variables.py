@@ -69,7 +69,7 @@ rolechoices = {
 }
 
 # Verification can't run without these; everything else in channelchoices and rolechoices is optional.
-REQUIRED_CHANNEL_KEYS = {"server_join_channel", "approval_channel", "age_log"}
+REQUIRED_CHANNEL_KEYS = {"server_join_channel", "approval_channel", "age_log", "verification_failure_log"}
 REQUIRED_ROLE_KEYS = {"verification_add_role"}
 
 # What staff see instead of the raw config key, in setup prompts, the permission check and config logs.

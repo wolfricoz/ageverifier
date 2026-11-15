@@ -100,7 +100,7 @@ class DevTools(commands.GroupCog, name="dev", description="A set of commands for
 			except Exception as e :
 				try :
 					await guild.owner.send(
-						f"Age Verifier could not send the announcement to your lobbymod in {guild.name}, please check the mod channel settings. You can setup your lobbymod with: ```/config channels key:lobbymod action:set value:```")
+						f"Age Verifier could not send the announcement to your approval channel in {guild.name}, please check the channel settings. You can set your approval channel with: ```/config channels key:approval_channel action:set value:```")
 					await guild.owner.send(announcement)
 				except Exception as e :
 					await interaction.channel.send(f"Error sending to {guild}({guild.owner}): {e}")

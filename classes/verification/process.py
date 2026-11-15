@@ -11,6 +11,8 @@ from classes.kernel.LocalCacheStorage import LocalCacheStorage
 from classes.lobbyprocess import LobbyProcess
 from classes.lobbytimers import LobbyTimers
 from classes.permissions_notice import PermissionNotice
+from classes.verification.setup_check import VerificationNotSetUp, member_message, missing_verification_settings, \
+	notify_staff
 from databases.enums.joinhistorystatus import JoinHistoryStatus
 from databases.transactions.AgeRoleTransactions import AgeRoleTransactions
 from databases.transactions.ConfigData import ConfigData
@@ -125,6 +127,12 @@ class VerificationProcess :
 			              "The staff have been told; please try again later.")
 			logging.warning(f"Ageverifier is missing permissions to process a verification in {self.guild.id}.")
 			return self.error
+		except VerificationNotSetUp as e :
+			# Staff haven't set the channels verification needs; the member can't fix that.
+			await notify_staff(self.guild, e.missing)
+			self.error = member_message(e.missing)
+			logging.info(f"Verification in {self.guild.id} is not set up, missing: {e.missing}")
+			return self.error
 		except discord.NotFound :
 			self.error = "Ageverifier could not fetch one of the channels, please use `/config view` and check if the channels still exist, and if ageverifier has permissions to view them."
 			logging.warning(f"Ageverifier could not fetch one of the channels, please use `/config view` and check if the channels still exist, and if ageverifier has permissions to view them.")
@@ -149,10 +157,10 @@ class VerificationProcess :
 			raise Exception("Missing data for verification: " +
 			                f"age: {self.age}, day: {self.day}, month: {self.month}, year: {self.year}, member: {self.member}, guild: {self.guild}")
 		self.user_record: databases.current.Users = UserTransactions().get_user(self.member.id)
+		if missing := missing_verification_settings(self.guild.id) :
+			raise VerificationNotSetUp(missing)
 		mod_lobby = ConfigData().get_key_int_or_zero(self.guild.id, "approval_channel")
 		id_log = ConfigData().get_key_int_or_zero(self.guild.id, "verification_failure_log")
-		if mod_lobby == 0 or id_log == 0 :
-			raise Exception("Lobbymod or id_channel not set, inform the server staff to setup the server.")
 		self.mod_channel = self.guild.get_channel_or_thread(mod_lobby)
 		self.id_channel = self.guild.get_channel_or_thread(id_log)
 		if self.id_channel is None :
