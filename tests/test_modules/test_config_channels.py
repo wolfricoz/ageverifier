@@ -127,6 +127,26 @@ class TestDobToAge(unittest.TestCase) :
 		for dob in ("03-11-2002", "03.11.2002", " 03/11/2002 ") :
 			self.assertEqual(AgeCalculations.dob_to_age(dob), expected, dob)
 
+	def test_digits_only(self) :
+		"""Older ID verifications stored the date as typed, e.g. '12262008'."""
+		self.assertEqual(AgeCalculations.dob_to_age("12262008"), AgeCalculations.dob_to_age("12/26/2008"))
+
+
+class TestIdVerifyModalDob(unittest.TestCase) :
+	"""The ID verify modal stores mm/dd/yyyy, not the raw input (AGEVERIFIER-D7)."""
+
+	def test_normalises_input(self) :
+		from views.modals.idverify import IdVerifyModal
+		cases = {"12262008" : "12/26/2008", "12/26/2008" : "12/26/2008", "1-5-2000" : "01/05/2000",
+		         "18/06/1997" : "06/18/1997", " 12.26.2008 " : "12/26/2008"}
+		for value, expected in cases.items() :
+			self.assertEqual(IdVerifyModal.normalise_dob(value), expected, value)
+
+	def test_rejects_unreadable_input(self) :
+		from views.modals.idverify import IdVerifyModal
+		for value in ("", "not a date", "13/13/2000") :
+			self.assertIsNone(IdVerifyModal.normalise_dob(value), value)
+
 
 if __name__ == '__main__' :
 	unittest.main()

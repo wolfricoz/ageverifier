@@ -86,6 +86,9 @@ async def permission_audit(request: Request, guildid: int) :
 	guild = bot.get_guild(guildid)
 	if not guild :
 		raise HTTPException(status_code=404, detail="Guild not found")
+	# During a Discord outage the cached guild can be unavailable: no name, no members and no guild.me (AGEVERIFIER-JX).
+	if guild.unavailable or guild.me is None :
+		raise HTTPException(status_code=503, detail="Discord hasn't sent this server's data yet, please try again in a few minutes")
 	return ConfigSetup().audit_permissions(guild)
 
 @router.post("/config/{guildid}/changes/log")

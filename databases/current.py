@@ -4,8 +4,8 @@ from datetime import datetime
 from typing import List, Optional
 
 from dotenv import load_dotenv
-from sqlalchemy import BigInteger, Boolean, DateTime, Enum, ForeignKey, Index, Integer, String, Text, create_engine, \
-	text
+from sqlalchemy import BigInteger, Boolean, DateTime, Enum, ForeignKey, Index, Integer, String, Text, UniqueConstraint, \
+	create_engine, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, sessionmaker
 from sqlalchemy.sql import func
 from sqlalchemy_utils import create_database, database_exists
@@ -303,6 +303,24 @@ class Advertisements(Base) :
 	url: Mapped[Optional[str]] = mapped_column(String(255), default=None)
 	approved: Mapped[bool] = mapped_column(Boolean, default=False)
 	deleted: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), default=None)
+
+
+class PurgeDates(Base) :
+	"""RMRbot's yearly search forum purge dates; checked marks the guild's most recent completed purge."""
+	__tablename__ = "purge_dates"
+	__table_args__ = (UniqueConstraint("guild", "month", "day", name="uq_purge_dates_guild_month_day"),)
+	id: Mapped[int] = mapped_column(primary_key=True)
+	guild: Mapped[int] = mapped_column(BigInteger, ForeignKey("servers.guild", ondelete="CASCADE"), index=True)
+	# Repeats every year on this day and month.
+	day: Mapped[int] = mapped_column(Integer)
+	month: Mapped[int] = mapped_column(Integer)
+	checked: Mapped[bool] = mapped_column(Boolean, default=False)
+	# When this date last ran, so it runs once a year.
+	last_purged_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), default=None)
+	# When the 7-day announcement went out, so it goes out once per purge.
+	announced_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), default=None)
+	# A date added after its day has passed waits for next year.
+	created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class Database :

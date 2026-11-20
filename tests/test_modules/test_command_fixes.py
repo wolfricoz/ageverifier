@@ -52,6 +52,11 @@ class TestStatsCommands(unittest.TestCase) :
 		inter.followup.send.assert_awaited_once()
 		chart.clean_up_chart.assert_called_once()
 
+	def test_stats_group_is_server_only(self) :
+		"""Every stats command reads interaction.guild, which is None in DMs (AGEVERIFIER-JY)."""
+		cog = stats_module.Stats(MagicMock())
+		self.assertTrue(cog.__cog_app_commands_group__.guild_only)
+
 
 class TestAgecheck(unittest.TestCase) :
 	def test_stops_after_an_invalid_date(self) :

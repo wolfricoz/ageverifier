@@ -4,7 +4,6 @@ import discord
 from discord_py_utilities.messages import send_response
 
 from classes.AgeCalculations import AgeCalculations
-from databases.transactions.ConfigData import ConfigData
 from views.buttons.IDConfirm import IDConfirm
 
 
@@ -32,14 +31,26 @@ class IdVerifyModal(discord.ui.Modal) :
 
 	async def on_submit(self, interaction: discord.Interaction) :
 		# validates inputs with regex
-		if AgeCalculations.validate_dob(self.dateofbirth.value) is None :
+		dob = self.normalise_dob(self.dateofbirth.value)
+		if dob is None :
 			return await send_response(interaction, "Please enter the date of birth as mm/dd/yyyy (dd/mm/yyyy also works when the day is 13 or higher).")
 
-		idcheckchannel = ConfigData().get_key_int_or_zero(interaction.guild.id, "verification_failure_log")
+		# Staff confirm (and we store) the normalised mm/dd/yyyy date, never the raw input such as '12262008' (AGEVERIFIER-D7).
 		return await send_response(interaction,
-		                           f"Please confirm the Date of Birth matches the user's ID you viewed via DMs and that you personally reviewed the ID. Submitting a DOB without viewing the ID or maliciously adding a false date of births may result in blacklisting. If `{self.dateofbirth.value}` is correct for {self.user.mention}, please click `Confirm & Proceed`.",
-		                           view=IDConfirm(self.dateofbirth.value, self.user, self.message, reverify=self.reverify),
+		                           f"Please confirm the Date of Birth matches the user's ID you viewed via DMs and that you personally reviewed the ID. Submitting a DOB without viewing the ID or maliciously adding a false date of births may result in blacklisting. If `{dob}` is correct for {self.user.mention}, please click `Confirm & Proceed`.",
+		                           view=IDConfirm(dob, self.user, self.message, reverify=self.reverify),
 		                           ephemeral=True)
+
+	@staticmethod
+	def normalise_dob(value: str) -> str | None :
+		"""Returns the date of birth as mm/dd/yyyy, or None when it can't be read."""
+		value = value.strip()
+		if AgeCalculations.validate_dob(value) is None :
+			return None
+		try :
+			return AgeCalculations.dob_regex(AgeCalculations.add_slashes_to_dob(value))
+		except ValueError :
+			return None
 
 	async def on_error(self, interaction: discord.Interaction, error: Exception) -> None :
 		logging.error(f"Error in {type(self).__name__}: {error}", exc_info=True)
