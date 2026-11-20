@@ -261,3 +261,31 @@ class TestEmbedsStillMatch(PermissionAuditBase) :
 		              await ConfigSetup().create_permission_roles_embed(guild)) :
 			self.assertNotIn("How to fix", [field.name for field in embed.fields])
 			self.assertEqual(embed.color.value, 0x00ff00)
+
+
+class TestPermissionAuditRoute(unittest.IsolatedAsyncioTestCase) :
+	"""The dashboard route answers 503 instead of crashing on a guild Discord hasn't sent yet (AGEVERIFIER-JX)."""
+
+	async def call_route(self, guild) :
+		from fastapi import HTTPException
+		from api import config as config_api
+		request = mock.Mock()
+		request.app.state.bot.get_guild.return_value = guild
+		with mock.patch.object(config_api, "Auth") as auth, \
+				mock.patch.object(config_api.ConfigSetup, "audit_permissions", return_value={"ok" : True}) as audit :
+			auth.return_value.verify = mock.AsyncMock(return_value=True)
+			try :
+				return await config_api.permission_audit(request, GUILD_ID), audit
+			except HTTPException as error :
+				return error, audit
+
+	async def test_unavailable_guild(self) :
+		for guild in (mock.Mock(unavailable=True), mock.Mock(unavailable=False, me=None)) :
+			error, audit = await self.call_route(guild)
+			self.assertEqual(error.status_code, 503)
+			audit.assert_not_called()
+
+	async def test_available_guild_is_audited(self) :
+		result, audit = await self.call_route(mock.Mock(unavailable=False))
+		self.assertEqual(result, {"ok" : True})
+		audit.assert_called_once()

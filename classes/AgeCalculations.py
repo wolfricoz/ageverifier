@@ -153,7 +153,8 @@ class AgeCalculations(ABC) :
 	def dob_to_age(dob) :
 		# Stored dates of birth are not always normalised to slashes; dob_regex() accepts '-' and '.' too,
 		# so mirror that here instead of crashing on e.g. '03-11-2002' (AGEVERIFIER-D7).
-		dob = str(dob).strip().replace("-", "/").replace(".", "/")
+		# Older ID verifications also stored dates without separators ('12262008'); add_slashes_to_dob() reads those.
+		dob = AgeCalculations.add_slashes_to_dob(str(dob).strip()).replace("-", "/").replace(".", "/")
 		dob_object = datetime.strptime(dob, "%m/%d/%Y")
 		today = datetime.now()
 		age_output = relativedelta(today, dob_object)

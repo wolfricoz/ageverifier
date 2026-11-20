@@ -18,7 +18,7 @@ from databases.current import engine
 assert engine.url.database.endswith('_test'), f"Refusing to run tests against {engine.url.database}"
 # These load the root .env on import. Importing them here, before the pop below, keeps a test that first imports
 # one of them from putting DISCORD_TOKEN back, which made the production guard block clear_bot_database (STR-91).
-import classes.encryption, classes.iphash, modules.logs  # noqa: E401,F401
+import classes.encryption, classes.iphash, modules.logs, api.auth.auth  # noqa: E401,F401
 os.environ.pop('DISCORD_TOKEN', None)
 try :
 	# durations lists the slowest tests, so a slow test shows up in every run.

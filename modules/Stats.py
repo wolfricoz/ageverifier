@@ -41,6 +41,8 @@ def website_funnel_embed(funnel: dict, days: int) -> discord.Embed :
 	return embed
 
 
+# Every stats command reads interaction.guild; outside a server (DMs, user installs) it is None (AGEVERIFIER-JY).
+@app_commands.guild_only()
 class Stats(commands.GroupCog, name="stats", description="Commands for visualizing server statistics.") :
 	"""
 	Welcome to the Statistics Zone!
